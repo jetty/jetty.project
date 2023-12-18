@@ -19,11 +19,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
 
-import org.eclipse.jetty.ee9.plus.annotation.Injection;
-import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
-import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
-import org.eclipse.jetty.ee9.plus.jndi.Resource;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Descriptor;
 import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
@@ -31,8 +26,13 @@ import org.eclipse.jetty.ee9.webapp.Origin;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.plus.annotation.Injection;
+import org.eclipse.jetty.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.util.IntrospectionUtil;
+import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -179,7 +179,7 @@ public class PlusDescriptorProcessorTest
      * 
      * @param envCtx the java:comp/env context
      * @param envEntry the EnvEntry
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     private void doEnvConfiguration(Context envCtx, EnvEntry envEntry) throws Exception
     {

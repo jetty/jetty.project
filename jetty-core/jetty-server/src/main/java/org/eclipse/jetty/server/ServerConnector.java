@@ -459,6 +459,7 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
+     * Set the accept queue size (also known as accept backlog).
      * @param acceptQueueSize the accept queue size (also known as accept backlog)
      */
     public void setAcceptQueueSize(int acceptQueueSize)
@@ -495,6 +496,7 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
+     * Set whether it is allowed to bind multiple server sockets to the same host and port.
      * @param reusePort whether it is allowed to bind multiple server sockets to the same host and port
      */
     public void setReusePort(boolean reusePort)

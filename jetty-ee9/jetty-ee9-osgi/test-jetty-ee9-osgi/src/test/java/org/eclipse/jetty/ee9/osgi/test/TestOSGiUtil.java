@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.options.MavenArtifactProvisionOption;
+import org.ops4j.pax.exam.options.extra.VMOption;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
@@ -37,6 +38,7 @@ import org.osgi.framework.ServiceReference;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.Constants.START_LEVEL_SYSTEM_BUNDLES;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
@@ -103,6 +105,11 @@ public class TestOSGiUtil
         options.add(systemProperty("pax.exam.logging").value("none"));
         String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
+        int debugPort = Integer.getInteger("pax.exam.debug.port", -1);
+        if (debugPort >= 0)
+        {
+          options.add(new VMOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=" + debugPort));
+        }
         return options;
     }
 
@@ -132,7 +139,7 @@ public class TestOSGiUtil
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
 
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); //.versionAsInProject().noStart());
 
         /*
          * Jetty 11 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
@@ -140,7 +147,7 @@ public class TestOSGiUtil
          * file available so that jetty logging can be configured
          */
         // BEGIN - slf4j 1.7.x
-        /* slf4j-simple conflicts with both slf4j 1.7.x, and jetty-slf4j-impl. (but in different ways)
+        /* slf4j-simple conflicts with both slf4j 1.7.x, and jetty-slf4j-impl. (but in different ways) */
 
         TinyBundle simpleLoggingPropertiesBundle = TinyBundles.bundle();
         simpleLoggingPropertiesBundle.add("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
@@ -148,24 +155,25 @@ public class TestOSGiUtil
         simpleLoggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "slf4j-simple");
         simpleLoggingPropertiesBundle.add(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(simpleLoggingPropertiesBundle.build()).noStart());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").versionAsInProject().noStart());
-         */
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); // .versionAsInProject()
+
         // END - slf4j 1.7.x
 
         /*
          * When running with slf4j >= 2.0.0, remove the slf4j simple logger above and uncomment the following lines
          */
         // BEGIN - slf4j 2.x
-        TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
-        loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
-        loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
-        loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
-        loggingPropertiesBundle.add(FragmentActivator.class);
-        res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
+//        TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
+//        loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
+//        loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
+//        loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
+//        loggingPropertiesBundle.add(FragmentActivator.class);
+//        res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
+//        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         // END - slf4j 2.x
-
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jakarta-servlet-api").versionAsInProject().start());
+        String servletGroupId = System.getProperty("servlet.groupId", "org.eclipse.jetty.toolchain");
+        String servletArtifactId = System.getProperty("servlet.artifactId", "jetty-jakarta-servlet-api");
+        res.add(mavenBundle().groupId(servletGroupId).artifactId(servletArtifactId).versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.cm").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.device").versionAsInProject());
@@ -191,15 +199,29 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-analysis").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.inject").artifactId("jakarta.inject-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.cdi-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.interceptor").artifactId("jakarta.interceptor-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
+        String injectGroupId = System.getProperty("inject.groupId", "jakarta.inject");
+        String injectArtifactId = System.getProperty("inject.artifactId", "jakarta.inject-api");
+        res.add(mavenBundle().groupId(injectGroupId).artifactId(injectArtifactId).versionAsInProject().start());
+        String annotationGroupId = System.getProperty("annotation.groupId", "jakarta.annotation");
+        String annotationArtifactId = System.getProperty("annotation.artifactId", "jakarta.annotation-api");
+        res.add(mavenBundle().groupId(annotationGroupId).artifactId(annotationArtifactId).versionAsInProject().start());
+        String enterpriseGroupId = System.getProperty("enterprise.groupId", "jakarta.enterprise");
+        String enterpriseArtifactId = System.getProperty("enterprise.artifactId", "jakarta.enterprise.cdi-api");
+        res.add(mavenBundle().groupId(enterpriseGroupId).artifactId(enterpriseArtifactId).versionAsInProject().start());
+        String interceptorGroupId = System.getProperty("interceptor.groupId", "jakarta.interceptor");
+        String interceptorArtifactId = System.getProperty("interceptor.artifactId", "jakarta.interceptor-api");
+        res.add(mavenBundle().groupId(interceptorGroupId).artifactId(interceptorArtifactId).versionAsInProject().start());
+        String transactionGroupId = System.getProperty("transaction.groupId", "jakarta.transaction");
+        String transactionArtifactId = System.getProperty("transaction.artifactId", "jakarta.transaction-api");
+        res.add(mavenBundle().groupId(transactionGroupId).artifactId(transactionArtifactId).versionAsInProject().start());
+        String elGroupId = System.getProperty("el.groupId", "jakarta.el");
+        String elArtifactId = System.getProperty("el.artifactId", "jakarta.el-api");
+        res.add(mavenBundle().groupId(elGroupId).artifactId(elArtifactId).versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-io").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-jndi").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-plus").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-security").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-session").versionAsInProject().start());
@@ -240,7 +262,9 @@ public class TestOSGiUtil
          * However, as we are now configuring the full jsp bundle set, we need to remove the jakarta.el-api
          * bundle because the org.mortbay.jasper.apache-el bundle will be providing both the api and the impl.
          */
-        MavenArtifactProvisionOption option = mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject();
+        String elGroupId = System.getProperty("el.groupId", "jakarta.el");
+        String elArtifactId = System.getProperty("el.artifactId", "jakarta.el-api");
+        MavenArtifactProvisionOption option = mavenBundle().groupId(elGroupId).artifactId(elArtifactId).versionAsInProject();
         
         ListIterator<Option> iter = res.listIterator();
         while (iter.hasNext())
@@ -258,7 +282,9 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9").artifactId("jetty-ee9-apache-jsp").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
+        String jstlGroupId = System.getProperty("jstl.groupId", "jakarta.servlet.jsp.jstl");
+        String jstlArtifactId = System.getProperty("jstl.artifactId", "jakarta.servlet.jsp.jstl-api");
+        res.add(mavenBundle().groupId(jstlGroupId).artifactId(jstlArtifactId).versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.osgi").artifactId("jetty-ee9-osgi-boot-jsp").versionAsInProject().noStart());

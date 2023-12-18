@@ -70,7 +70,7 @@ public class GCloudSessionTestSupport
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
 
     public static DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
-            DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
+            DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:447.0.0-emulators")
     ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
             .withFlags("--consistency=1.0");
 

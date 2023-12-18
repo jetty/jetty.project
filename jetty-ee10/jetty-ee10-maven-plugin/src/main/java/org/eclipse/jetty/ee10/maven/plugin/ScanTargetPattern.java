@@ -48,6 +48,7 @@ public class ScanTargetPattern
     private ScanPattern _pattern;
 
     /**
+     * Get the _directory.
      * @return the _directory
      */
     public File getDirectory()
@@ -56,6 +57,7 @@ public class ScanTargetPattern
     }
 
     /**
+     * Set the directory to set.
      * @param directory the directory to set
      */
     public void setDirectory(File directory)

@@ -79,7 +79,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     private final Map<String, String> _parameters = new HashMap<>();
     private LoginService _loginService;
     private IdentityService _identityService;
-    private boolean _renewSession = true;
+    private boolean _renewSessionOnAuthentication = true;
+    private int _sessionMaxInactiveIntervalOnAuthentication = 0;
     private AuthenticationState.Deferred _deferred;
 
     static
@@ -430,22 +431,42 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     @Override
     public boolean isSessionRenewedOnAuthentication()
     {
-        return _renewSession;
+        return _renewSessionOnAuthentication;
     }
 
     /**
      * Set renew the session on Authentication.
      * <p>
-     * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
+     * If set to true, then on authentication, the session associated with a request is invalidated and replaced with a new session.
      *
      * @param renew true to renew the authentication on session
      * @see Configuration#isSessionRenewedOnAuthentication()
      */
     public void setSessionRenewedOnAuthentication(boolean renew)
     {
-        _renewSession = renew;
+        _renewSessionOnAuthentication = renew;
     }
-    
+
+    @Override
+    public int getSessionMaxInactiveIntervalOnAuthentication()
+    {
+        return _sessionMaxInactiveIntervalOnAuthentication;
+    }
+
+    /**
+     * Set the interval in seconds, which if non-zero, will be set with
+     * {@link org.eclipse.jetty.server.Session#setMaxInactiveInterval(int)}
+     * when a session is newly authenticated.
+     * @param seconds An interval in seconds; or 0 to not set the interval
+     *                on authentication; or a negative number to make the
+     *                session never timeout after authentication.
+     * @see Configuration#getSessionMaxInactiveIntervalOnAuthentication()
+     */
+    public void setSessionMaxInactiveIntervalOnAuthentication(int seconds)
+    {
+        _sessionMaxInactiveIntervalOnAuthentication = seconds;
+    }
+
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {

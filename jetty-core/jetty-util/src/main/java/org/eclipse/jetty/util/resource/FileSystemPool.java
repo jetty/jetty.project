@@ -108,27 +108,28 @@ public class FileSystemPool implements Dumpable
             throw new IllegalArgumentException("not an supported scheme: " + uri);
 
         FileSystem fileSystem = null;
+        URI jarURIRoot = toJarURIRoot(uri);
         try (AutoLock ignore = poolLock.lock())
         {
             try
             {
-                fileSystem = FileSystems.newFileSystem(uri, ENV_MULTIRELEASE_RUNTIME);
+                fileSystem = FileSystems.newFileSystem(jarURIRoot, ENV_MULTIRELEASE_RUNTIME);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Mounted new FS {}", uri);
+                    LOG.debug("Mounted new FS {}", jarURIRoot);
             }
             catch (FileSystemAlreadyExistsException fsaee)
             {
-                fileSystem = Paths.get(uri).getFileSystem();
+                fileSystem = Paths.get(jarURIRoot).getFileSystem();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Using existing FS {}", uri);
+                    LOG.debug("Using existing FS {}", jarURIRoot);
             }
             catch (ProviderNotFoundException pnfe)
             {
-                throw new IllegalArgumentException("Unable to mount FileSystem from unsupported URI: " + uri, pnfe);
+                throw new IllegalArgumentException("Unable to mount FileSystem from unsupported URI: " + jarURIRoot, pnfe);
             }
             // use root FS URI so that pool key/release/sweep is sane
             URI rootURI = fileSystem.getPath("/").toUri();
-            Mount mount = new Mount(rootURI, new MountedPathResource(uri));
+            Mount mount = new Mount(rootURI, new MountedPathResource(jarURIRoot));
             retain(rootURI, fileSystem, mount);
             return mount;
         }
@@ -137,6 +138,13 @@ public class FileSystemPool implements Dumpable
             IO.close(fileSystem);
             throw e;
         }
+    }
+
+    private URI toJarURIRoot(URI uri)
+    {
+        String rawURI = uri.toASCIIString();
+        int idx = rawURI.indexOf("!/");
+        return URI.create(rawURI.substring(0, idx + 2));
     }
 
     private void unmount(URI fsUri)

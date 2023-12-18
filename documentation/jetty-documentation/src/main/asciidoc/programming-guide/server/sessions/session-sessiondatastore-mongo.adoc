@@ -64,39 +64,29 @@ The time (in ms since the epoch) at which this session was most recently accesse
 lastNode::
 The xref:pg-server-session-workername[workerName] of the last server that saved the session data.
 version::
-An object that is updated every time a session is written out for a context.
+An object that is updated every time a session is written for a context.
 
-====== Configuration
-
-You can configure either a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStore] individually, or a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStoreFactory] if you want multiple ``SessionHandler``s to use ``MongoSessionDataStore``s that are identically configured.
+You can configure either a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStore] individually, or a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStoreFactory.html[MongoSessionDataStoreFactory] if you want multiple ``SessionHandler``s to use ``MongoSessionDataStore``s that are identically configured.
 The configuration methods for the `MongoSessionDataStoreFactory` are:
 
 include::session-sessiondatastore.adoc[tag=common-datastore-config]
 
-dbName::
+setDbName(String)::
 This is the name of the database.
-collectionName::
+setCollectionName(String)::
 The name of the document collection.
 
-There are two alternative ways to specify the connection to mongodb:
+setConnectionString(String)::
+a mongodb url, eg "mongodb://localhost".
+Alternatively, you can specify the *host,port* combination instead, see below.
+setHost(String)::
+setPort(int)::
+the hostname and port number of the mongodb instance to contact.
+Alternatively, you can specify the *connectionString* instead, see above.
 
-connectionString::
-This is a mongodb url, eg `mongodb://localhost`
-host::
-port::
-This is the hostname and port number of the mongodb instance to contact.
-
-Let's look at an example of configuring a `MongoSessionDataStoreFactory`:
+This is an example of configuring a `MongoSessionDataStoreFactory`:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=mongosdfactory]
 ----
-
-// TODO: the code example is missing.
-// Here's an alternate example, configuring a `MongoSessionDataStore` directly:
-
-//[source,java,indent=0]
-//----
-//include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=mongosessiondatastore]
-//----

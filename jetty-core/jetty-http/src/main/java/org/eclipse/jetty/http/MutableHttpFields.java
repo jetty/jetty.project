@@ -40,6 +40,7 @@ class MutableHttpFields implements HttpFields.Mutable
     private static final int SIZE_INCREMENT = 4;
 
     private HttpField[] _fields;
+    private boolean _immutable;
     private int _size;
 
     /**
@@ -67,7 +68,21 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields)
     {
-        add(fields);
+        if (fields instanceof ImmutableHttpFields immutable)
+        {
+            _immutable = true;
+            _fields = immutable._fields;
+            _size = immutable._size;
+        }
+        else if (fields != null)
+        {
+            _fields = new HttpField[fields.size() + SIZE_INCREMENT];
+            add(fields);
+        }
+        else
+        {
+            _fields = new HttpField[INITIAL_SIZE];
+        }
     }
 
     /**
@@ -120,10 +135,11 @@ class MutableHttpFields implements HttpFields.Mutable
     {
         if (field != null)
         {
-            if (_fields == null)
-                _fields = new HttpField[INITIAL_SIZE];
-            if (_size == _fields.length)
+            if (_immutable || _size == _fields.length)
+            {
+                _immutable = false;
                 _fields = Arrays.copyOf(_fields, _size + SIZE_INCREMENT);
+            }
             _fields[_size++] = field;
         }
         return this;
@@ -132,13 +148,14 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public Mutable add(HttpFields fields)
     {
-        if (_fields == null)
-            _fields = new HttpField[fields.size() + SIZE_INCREMENT];
-        else if (_size + fields.size() >= _fields.length)
-            _fields = Arrays.copyOf(_fields, _size + fields.size() + SIZE_INCREMENT);
-
         if (fields.size() == 0)
             return this;
+
+        if (_immutable || _size + fields.size() >= _fields.length)
+        {
+            _immutable = false;
+            _fields = Arrays.copyOf(_fields, _size + fields.size() + SIZE_INCREMENT);
+        }
 
         if (fields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
         {
@@ -163,12 +180,27 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public HttpFields asImmutable()
     {
-        return new org.eclipse.jetty.http.ImmutableHttpFields(Arrays.copyOf(_fields, _size));
+        _immutable = true;
+        return new ImmutableHttpFields(_fields, _size);
+    }
+
+    private void copyImmutable()
+    {
+        if (_immutable)
+        {
+            _immutable = false;
+            _fields = Arrays.copyOf(_fields, _fields.length);
+        }
     }
 
     @Override
     public Mutable clear()
     {
+        if (_immutable)
+        {
+            _fields = new HttpField[_fields.length];
+            _immutable = false;
+        }
         _size = 0;
         return this;
     }
@@ -176,7 +208,7 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public int hashCode()
     {
-        int hash = 0;
+        int hash = 2099; // prime
         for (int i = _size; i-- > 0; )
         {
             HttpField field = _fields[i];
@@ -212,6 +244,32 @@ class MutableHttpFields implements HttpFields.Mutable
     }
 
     @Override
+    public HttpField getField(HttpHeader header)
+    {
+        // default impl overridden for efficiency
+        for (int i = 0; i < _size; i++)
+        {
+            HttpField f = _fields[i];
+            if (f != null && f.getHeader() == header)
+                return f;
+        }
+        return null;
+    }
+
+    @Override
+    public HttpField getField(String name)
+    {
+        // default impl overridden for efficiency
+        for (int i = 0; i < _size; i++)
+        {
+            HttpField f = _fields[i];
+            if (f != null && f.is(name))
+                return f;
+        }
+        return null;
+    }
+
+    @Override
     public Iterator<HttpField> iterator()
     {
         return new Iterator<>()
@@ -243,18 +301,20 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public ListIterator<HttpField> listIterator()
     {
-        return new Listerator(0);
+        return listIterator(0);
     }
 
     @Override
     public ListIterator<HttpField> listIterator(int index)
     {
+        copyImmutable();
         return new Listerator(index);
     }
 
     @Override
     public Mutable put(HttpField field)
     {
+        copyImmutable();
         boolean put = false;
 
         for (int i = 0; i < _size; i++)
@@ -326,6 +386,7 @@ class MutableHttpFields implements HttpFields.Mutable
 
     public <T> Mutable computeField(T header, BiFunction<T, List<HttpField>, HttpField> computeFn, BiPredicate<HttpField, T> matcher)
     {
+        copyImmutable();
         // Look for first occurrence
         int first = -1;
         for (int i = 0; i < _size; i++)
@@ -418,7 +479,18 @@ class MutableHttpFields implements HttpFields.Mutable
     private void remove(int i)
     {
         _size--;
-        System.arraycopy(_fields, i + 1, _fields, i, _size - i);
+        if (_immutable)
+        {
+            _immutable = false;
+            HttpField[] fields = _fields;
+            _fields = new HttpField[fields.length];
+            System.arraycopy(fields, 0, _fields, 0, i);
+            System.arraycopy(fields, i + 1, _fields, i, _size - i);
+        }
+        else
+        {
+            System.arraycopy(_fields, i + 1, _fields, i, _size - i);
+        }
         _fields[_size] = null;
     }
 

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.Promise;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -122,7 +122,7 @@ public class ServletToHandlerDocs
             // Replaces:
             //   - servletRequest.getContentLength()
             //   - servletRequest.getContentLengthLong()
-            long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+            long contentLength = request.getLength();
 
             // Gets the request locales.
             // Replaces:
@@ -177,8 +177,8 @@ public class ServletToHandlerDocs
             Object value = "value";
             Set<String> names = request.getAttributeNameSet();
             Object attribute = request.getAttribute(name);
-            request.setAttribute(name, value);
-            request.removeAttribute(name);
+            Object oldValue = request.setAttribute(name, value);
+            Object removedValue = request.removeAttribute(name);
             request.clearAttributes();
             Map<String, Object> map = request.asAttributeMap();
 
@@ -209,8 +209,7 @@ public class ServletToHandlerDocs
         {
             // Non-blocking read the request content as a String.
             // Use with caution as the request content may be large.
-            Promise.Completable<String> completable = new Promise.Completable<>();
-            Content.Source.asString(request, UTF_8, completable);
+            CompletableFuture<String> completable = Content.Source.asStringAsync(request, UTF_8);
 
             completable.whenComplete((requestContent, failure) ->
             {
@@ -242,8 +241,7 @@ public class ServletToHandlerDocs
         {
             // Non-blocking read the request content as a ByteBuffer.
             // Use with caution as the request content may be large.
-            Promise.Completable<ByteBuffer> completable = new Promise.Completable<>();
-            Content.Source.asByteBuffer(request, completable);
+            CompletableFuture<ByteBuffer> completable = Content.Source.asByteBufferAsync(request);
 
             completable.whenComplete((requestContent, failure) ->
             {
@@ -393,11 +391,17 @@ public class ServletToHandlerDocs
 
             // Sets an HTTP cookie.
             // Replaces:
+            //   - Cookie cookie = new Cookie("name", "value");
+            //   - cookie.setDomain("example.org");
+            //   - cookie.setPath("/path");
+            //   - cookie.setMaxAge(24 * 3600);
+            //   - cookie.setAttribute("SameSite", "Lax");
             //   - servletResponse.addCookie(cookie);
             HttpCookie cookie = HttpCookie.build("name", "value")
                 .domain("example.org")
                 .path("/path")
                 .maxAge(Duration.ofDays(1).toSeconds())
+                .sameSite(HttpCookie.SameSite.LAX)
                 .build();
             Response.addCookie(response, cookie);
 

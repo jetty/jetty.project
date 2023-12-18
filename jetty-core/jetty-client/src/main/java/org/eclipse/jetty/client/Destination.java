@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 
@@ -67,6 +69,19 @@ public interface Destination
      * @param promise the promise of a new, unpooled, {@link Connection}
      */
     void newConnection(Promise<Connection> promise);
+
+    /**
+     * <p>Creates asynchronously a new, unpooled, {@link Connection} that
+     * will be returned at a later time through the given {@link Promise}.</p>
+     *
+     * @return a {@link CompletableFuture} for a new, unpooled, {@link Connection}
+     */
+    default CompletableFuture<Connection> newConnection()
+    {
+        Promise.Completable<Connection> promise = new Promise.Completable<>();
+        newConnection(promise);
+        return promise;
+    }
 
     /**
      * <p>Sends the given request to this destination.</p>

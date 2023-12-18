@@ -193,6 +193,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
+     * Get the name of the classloader.
      * @return the name of the classloader
      */
     public String getName()
@@ -201,6 +202,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
+     * Set the name of the classloader.
      * @param name the name of the classloader
      */
     public void setName(String name)

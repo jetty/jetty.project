@@ -196,7 +196,9 @@ public class HttpStreamOverFCGI implements HttpStream
     {
         if (_chunk == null)
             _chunk = Content.Chunk.EOF;
-        else if (!_chunk.isLast() && !(Content.Chunk.isFailure(_chunk)))
+        else if (Content.Chunk.isFailure(_chunk, false))
+            _chunk = Content.Chunk.from(_chunk.getFailure(), true);
+        else if (!_chunk.isLast())
             throw new IllegalStateException();
     }
 
@@ -314,7 +316,14 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public Throwable consumeAvailable()
     {
-        return HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
+        Throwable result = HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
+        if (result != null)
+        {
+            if (_chunk != null)
+                _chunk.release();
+            _chunk = Content.Chunk.from(result, true);
+        }
+        return result;
     }
 
     @Override

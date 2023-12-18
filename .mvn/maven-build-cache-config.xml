@@ -22,7 +22,11 @@
   </configuration>
   <input>
     <global>
-      <glob>*.{java,xml,properties,mod,adoc}</glob>
+      <glob>{*.java,*.xml,*.properties,*.mod,*.adoc}</glob>
+      <excludes>
+        <exclude>*Jenkinsfile*</exclude>
+        <exclude>./idea/*</exclude>
+      </excludes>
     </global>
     <plugins>
       <plugin groupId="org.apache.maven.plugins" artifactId="maven-invoker-plugin">
@@ -58,6 +62,11 @@
             <goal>install</goal>
           </goals>
         </goalsList>
+        <goalsList artifactId="maven-deploy-plugin">
+          <goals>
+            <goal>deploy</goal>
+          </goals>
+        </goalsList>
       </goalsLists>
     </runAlways>
     <reconcile>
@@ -81,6 +90,7 @@
             <reconcile propertyName="skipExec" skipValue="true"/>
             <reconcile propertyName="skipTests" skipValue="true"/>
             <reconcile propertyName="testFailureIgnore" skipValue="true"/>
+            <reconcile propertyName="test" skipValue="true"/>
           </reconciles>
           <nologs>
             <nolog propertyName="systemPropertyVariables"/>

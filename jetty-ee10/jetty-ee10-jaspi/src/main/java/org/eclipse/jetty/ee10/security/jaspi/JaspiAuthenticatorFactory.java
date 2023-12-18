@@ -48,6 +48,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     private String _serverName;
 
     /**
+     * Get the serviceSubject.
      * @return the serviceSubject
      */
     public Subject getServiceSubject()
@@ -56,6 +57,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     /**
+     * Set the serviceSubject to set.
      * @param serviceSubject the serviceSubject to set
      */
     public void setServiceSubject(Subject serviceSubject)
@@ -64,6 +66,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     /**
+     * Get the serverName.
      * @return the serverName
      */
     public String getServerName()
@@ -72,6 +75,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     /**
+     * Set the serverName to set.
      * @param serverName the serverName to set
      */
     public void setServerName(String serverName)

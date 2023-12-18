@@ -15,12 +15,10 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -31,6 +29,7 @@ import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -38,16 +37,18 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SizeLimitHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SizeLimitHandlerServletTest
 {
@@ -137,21 +138,23 @@ public class SizeLimitHandlerServletTest
         String content = "x".repeat(SIZE_LIMIT * 2);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
 
-        AtomicInteger contentReceived = new AtomicInteger();
-        CompletableFuture<Throwable> failure = new CompletableFuture<>();
+        StringBuilder contentReceived = new StringBuilder();
+        CompletableFuture<Result> resultFuture = new CompletableFuture<>();
         _client.POST(uri)
             .headers(httpFields -> httpFields.add(HttpHeader.CONTENT_ENCODING, "gzip"))
             .body(gzipContent(content))
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                contentReceived.addAndGet(chunk.getByteBuffer().remaining());
-                chunk.release();
+                contentReceived.append(BufferUtil.toString(chunk.getByteBuffer()));
                 demander.run();
-            }).send(result -> failure.complete(result.getFailure()));
+            })
+            .send(resultFuture::complete);
 
-        Throwable exception = failure.get(5, TimeUnit.SECONDS);
-        assertThat(exception, instanceOf(EOFException.class));
-        assertThat(contentReceived.get(), lessThan(SIZE_LIMIT));
+
+        Result result = resultFuture.get(5, TimeUnit.SECONDS);
+        assertNotNull(result);
+        assertThat(result.getResponse().getStatus(), equalTo(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(contentReceived.toString(), containsString("Response body is too large"));
     }
 
     public static Request.Content gzipContent(String content) throws Exception

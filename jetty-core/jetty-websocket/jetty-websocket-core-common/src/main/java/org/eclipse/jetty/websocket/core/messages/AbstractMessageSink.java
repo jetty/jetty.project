@@ -61,6 +61,7 @@ public abstract class AbstractMessageSink implements MessageSink
     }
 
     /**
+     * Get the WebSocket session.
      * @return the WebSocket session
      */
     public CoreSession getCoreSession()
@@ -69,6 +70,7 @@ public abstract class AbstractMessageSink implements MessageSink
     }
 
     /**
+     * Get the application function.
      * @return the application function
      */
     public MethodHandle getMethodHandle()

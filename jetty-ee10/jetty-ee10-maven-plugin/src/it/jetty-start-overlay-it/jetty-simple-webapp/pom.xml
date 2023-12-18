@@ -74,6 +74,8 @@
                 <artifactId>jetty-simple-base-webapp</artifactId>
                 <includes>
                   <include>index.html</include>
+                  <include>base/**</include>
+                  <include>WEB-INF/**</include>
                 </includes>
               </overlay>
               <overlay/>
@@ -100,8 +102,8 @@
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
             <context.path>/setbycontextxml</context.path>
-            <contentCheck>Simple Base Webapp Index</contentCheck>
-            <pathToCheck>/index.html</pathToCheck>
+            <contentCheck>Base Index</contentCheck>
+            <pathToCheck>/base/index.html</pathToCheck>
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>

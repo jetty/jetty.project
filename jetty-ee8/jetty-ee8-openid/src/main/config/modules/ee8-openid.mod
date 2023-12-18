@@ -45,4 +45,4 @@ etc/jetty-ee8-openid.xml
 # jetty.openid.sslContextFactory.trustAll=false
 
 ## What authentication method to use with the Token Endpoint (client_secret_post, client_secret_basic).
-# jetty.openid.authMethod=client_secret_post
+# jetty.openid.authenticationMethod=client_secret_post

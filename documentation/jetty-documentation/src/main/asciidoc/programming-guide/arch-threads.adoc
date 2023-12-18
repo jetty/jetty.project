@@ -193,7 +193,8 @@ Therefore, the "one-thread-per-request" model is too simplistic, and the real mo
 For example, a sudden large spike of requests arriving to the server may find the thread pool in an idle state where the number of threads is shrunk to the minimum.
 This will cause many tasks to be queued up, way before an HTTP request is even read from the network.
 Add to this that there could be I/O failures processing requests, which may be submitted as a new task to the thread pool.
-Furthermore, multiplexed protocols like HTTP/2 have a much more complex model (due to xref:pg-server-http2-flow-control[data flow control]) where the implementation must be able to write in order to progress reads (and must be able to read in order to progress writes), possibly causing more tasks to be submitted to the thread pool.
+Furthermore, multiplexed protocols like HTTP/2 have a much more complex model (due to xref:pg-server-http2-flow-control[data flow control]).
+For multiplexed protocols, the implementation must be able to write in order to progress reads (and must be able to read in order to progress writes), possibly causing more tasks to be submitted to the thread pool.
 
 If any of the submitted tasks is rejected because the queue is bounded the server may grind to a halt, because the task _must_ be executed, sometimes _necessarily_ in a different thread.
 
@@ -201,7 +202,7 @@ For these reasons:
 
 IMPORTANT: The thread pool queue must be unbounded.
 
-There are better strategies to limit the number of concurrent requests, discussed in xref:pg-server-http-handler-use-limit[this section].
+There are better strategies to limit the number of concurrent requests, discussed in xref:pg-server-http-handler-use-qos[this section].
 
 [[pg-arch-threads-thread-pool-configuration]]
 ===== `QueuedThreadPool` configuration

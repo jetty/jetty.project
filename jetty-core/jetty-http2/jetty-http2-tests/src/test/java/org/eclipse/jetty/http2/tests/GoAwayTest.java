@@ -15,12 +15,9 @@ package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.Response;
@@ -390,7 +387,6 @@ public class GoAwayTest extends AbstractTest
     {
         int flowControlWindow = 32 * 1024;
 
-        List<Stream.Data> dataList = new ArrayList<>();
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
@@ -406,21 +402,14 @@ public class GoAwayTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 stream.demand();
-                AtomicInteger dataFrames = new AtomicInteger();
                 return new Stream.Listener()
                 {
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        dataList.add(data);
-                        // Do not release the Data for this stream.
-                        // Only send the response after reading the first DATA frame.
-                        if (dataFrames.incrementAndGet() == 1)
-                        {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        }
+                        // Send the response, but do not read.
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
                 };
             }
@@ -507,7 +496,7 @@ public class GoAwayTest extends AbstractTest
                         // the server and be able to complete this stream.
                         clientStream1.data(new DataFrame(clientStream1.getId(), ByteBuffer.allocate(flowControlWindow / 2), true), Callback.NOOP);
                     }
-                }, new Stream.Listener() {});
+                }, AUTO_DISCARD);
             }
         });
 
@@ -518,8 +507,6 @@ public class GoAwayTest extends AbstractTest
 
         assertFalse(((HTTP2Session)serverSessionRef.get()).getEndPoint().isOpen());
         assertFalse(((HTTP2Session)clientSession).getEndPoint().isOpen());
-
-        dataList.forEach(Stream.Data::release);
     }
 
     @Test

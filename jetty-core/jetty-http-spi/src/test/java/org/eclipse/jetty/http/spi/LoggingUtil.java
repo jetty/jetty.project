@@ -26,4 +26,9 @@ public final class LoggingUtil
         org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
         org.slf4j.bridge.SLF4JBridgeHandler.install();
     }
+
+    public static void end()
+    {
+        org.slf4j.bridge.SLF4JBridgeHandler.uninstall();
+    }
 }

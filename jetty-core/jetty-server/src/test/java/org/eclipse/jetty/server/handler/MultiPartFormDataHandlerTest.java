@@ -16,7 +16,9 @@ package org.eclipse.jetty.server.handler;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -204,7 +206,7 @@ public class MultiPartFormDataHandlerTest
                 {
                     try
                     {
-                        // Allow method process(...) to return.
+                        // Allow method handle(...) to return.
                         Thread.sleep(1000);
 
                         // Add another part and close the multipart content.
@@ -214,7 +216,7 @@ public class MultiPartFormDataHandlerTest
                     }
                     catch (InterruptedException x)
                     {
-                        x.printStackTrace();
+                        source.fail(x);
                     }
                     finally
                     {
@@ -260,6 +262,192 @@ public class MultiPartFormDataHandlerTest
                 assertEquals(2, headers2.size());
                 assertEquals("application/octet-stream", headers2.get(HttpHeader.CONTENT_TYPE));
             }
+        }
+    }
+
+    @Test
+    public void testMultiPartWithTransferEncodingChunked() throws Exception
+    {
+        start(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+                parser.setMaxMemoryFileSize(-1);
+                MultiPartFormData.Parts parts = parser.parse(request).get(5, TimeUnit.SECONDS);
+
+                assertEquals(2, parts.size());
+                MultiPart.Part part0 = parts.get(0);
+                String part0Content = part0.getContentAsString(StandardCharsets.ISO_8859_1);
+                assertEquals("upload_file", part0Content);
+                MultiPart.Part part1 = parts.get(1);
+                String part1Content = part1.getContentAsString(StandardCharsets.US_ASCII);
+                assertEquals("abcde", part1Content);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: multipart/form-data; boundary=908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
+                Transfer-Encoding: chunked\r
+                \r
+                90\r
+                --908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
+                Content-Disposition: form-data; name="az"\r
+                Content-Type: text/plain; charset=ISO-8859-1\r
+                \r
+                upload_file\r
+                \r
+                94\r
+                --908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
+                Content-Disposition: form-data; name="file_upload"; filename="testUpload.test"\r
+                Content-Type: text/plain\r
+                \r
+                \r
+                5\r
+                abcde\r
+                2\r
+                \r
+                \r
+                28\r
+                --908d442b-2c7d-401a-ab46-7c6ec6f89fe6--\r
+                0\r
+                \r
+                """;
+
+            client.write(UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testMultiPartWithTransferEncodingChunkedContentEndingWithCR() throws Exception
+    {
+        start(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+                parser.setMaxMemoryFileSize(-1);
+                MultiPartFormData.Parts parts = parser.parse(request).get(5, TimeUnit.SECONDS);
+
+                assertEquals(2, parts.size());
+                MultiPart.Part part0 = parts.get(0);
+                String part0Content = part0.getContentAsString(StandardCharsets.ISO_8859_1);
+                assertEquals("text_one\r", part0Content);
+                MultiPart.Part part1 = parts.get(1);
+                String part1Content = part1.getContentAsString(StandardCharsets.US_ASCII);
+                assertEquals("text_two", part1Content);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: multipart/form-data; boundary=A1B2C3\r
+                Transfer-Encoding: chunked\r
+                \r
+                6A\r
+                --A1B2C3\r
+                Content-Disposition: form-data; name="one"\r
+                Content-Type: text/plain; charset=UTF-8\r
+                \r
+                text_one\r\r
+                61\r
+                \r
+                --A1B2C3\r
+                Content-Disposition: form-data; name="two"\r
+                Content-Type: text/plain; charset=UTF-8\r
+                \r
+                C\r
+                \r
+                text_two\r
+                \r
+                A\r
+                --A1B2C3--\r
+                0\r
+                \r
+                """;
+
+            client.write(UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testMultiPartWithTransferEncodingChunkedBoundaryOnNewChunk() throws Exception
+    {
+        start(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+                parser.setMaxMemoryFileSize(-1);
+                MultiPartFormData.Parts parts = parser.parse(request).get(5, TimeUnit.SECONDS);
+
+                assertEquals(2, parts.size());
+                MultiPart.Part part0 = parts.get(0);
+                String part0Content = part0.getContentAsString(StandardCharsets.ISO_8859_1);
+                assertEquals("text_one", part0Content);
+                MultiPart.Part part1 = parts.get(1);
+                String part1Content = part1.getContentAsString(StandardCharsets.US_ASCII);
+                assertEquals("text_two", part1Content);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: multipart/form-data; boundary=A1B2C3\r
+                Transfer-Encoding: chunked\r
+                \r
+                6A\r
+                --A1B2C3\r
+                Content-Disposition: form-data; name="one"\r
+                Content-Type: text/plain; charset=UTF-8\r
+                \r
+                text_one\r\r
+                76\r
+                \n--A1B2C3\r
+                Content-Disposition: form-data; name="two"\r
+                Content-Type: text/plain; charset=UTF-8\r
+                \r
+                text_two\r
+                --A1B2C3--\r
+                0\r
+                \r
+                """;
+
+            client.write(UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
 }

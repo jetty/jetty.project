@@ -38,6 +38,7 @@ public interface HttpCookie
     String PATH_ATTRIBUTE = "Path";
     String SAME_SITE_ATTRIBUTE = "SameSite";
     String SECURE_ATTRIBUTE = "Secure";
+    String PARTITIONED_ATTRIBUTE = "Partitioned";
 
     /**
      * @return the cookie name
@@ -151,6 +152,15 @@ public interface HttpCookie
     }
 
     /**
+     * @return whether the {@code Partitioned} attribute is present
+     * @see #PARTITIONED_ATTRIBUTE
+     */
+    default boolean isPartitioned()
+    {
+        return Boolean.parseBoolean(getAttributes().get(PARTITIONED_ATTRIBUTE));
+    }
+
+    /**
      * @return the cookie hash code
      * @see #hashCode(HttpCookie)
      */
@@ -174,7 +184,7 @@ public interface HttpCookie
 
         public Wrapper(HttpCookie wrapped)
         {
-            this.wrapped = wrapped;
+            this.wrapped = Objects.requireNonNull(wrapped);
         }
 
         public HttpCookie getWrapped()
@@ -258,6 +268,12 @@ public interface HttpCookie
         public boolean isHttpOnly()
         {
             return getWrapped().isHttpOnly();
+        }
+
+        @Override
+        public boolean isPartitioned()
+        {
+            return getWrapped().isPartitioned();
         }
 
         @Override
@@ -534,8 +550,46 @@ public interface HttpCookie
 
         public Builder attribute(String name, String value)
         {
-            _attributes = lazyAttributePut(_attributes, name, value);
+            if (name == null)
+                return this;
+            // Sanity checks on the values, expensive but necessary to avoid to store garbage.
+            switch (name.toLowerCase(Locale.ENGLISH))
+            {
+                case "expires" -> expires(parseExpires(value));
+                case "httponly" ->
+                {
+                    if (!isTruthy(value))
+                        throw new IllegalArgumentException("Invalid HttpOnly attribute");
+                    httpOnly(true);
+                }
+                case "max-age" -> maxAge(Long.parseLong(value));
+                case "samesite" ->
+                {
+                    SameSite sameSite = SameSite.from(value);
+                    if (sameSite == null)
+                        throw new IllegalArgumentException("Invalid SameSite attribute");
+                    sameSite(sameSite);
+                }
+                case "secure" ->
+                {
+                    if (!isTruthy(value))
+                        throw new IllegalArgumentException("Invalid Secure attribute");
+                    secure(true);
+                }
+                case "partitioned" ->
+                {
+                    if (!isTruthy(value))
+                        throw new IllegalArgumentException("Invalid Partitioned attribute");
+                    partitioned(true);
+                }
+                default -> _attributes = lazyAttributePut(_attributes, name, value);
+            }
             return this;
+        }
+
+        private boolean isTruthy(String value)
+        {
+            return value != null && (value.isEmpty() || "true".equalsIgnoreCase(value));
         }
 
         public Builder comment(String comment)
@@ -598,6 +652,15 @@ public interface HttpCookie
             return this;
         }
 
+        public Builder partitioned(boolean partitioned)
+        {
+            if (partitioned)
+                _attributes = lazyAttributePut(_attributes, PARTITIONED_ATTRIBUTE, Boolean.TRUE.toString());
+            else
+                _attributes = lazyAttributeRemove(_attributes, PARTITIONED_ATTRIBUTE);
+            return this;
+        }
+
         /**
          * @return an immutable {@link HttpCookie} instance.
          */
@@ -625,8 +688,8 @@ public interface HttpCookie
      * @param value the value of the cookie
      * @param attributes the map of attributes to use with this cookie (this map is used for field values
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
-     * {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
-     * code base.
+     * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
+     * attributes unknown to this code base.
      */
     static HttpCookie from(String name, String value, Map<String, String> attributes)
     {
@@ -641,8 +704,8 @@ public interface HttpCookie
      * @param version the version of the cookie (only used in RFC2965 mode)
      * @param attributes the map of attributes to use with this cookie (this map is used for field values
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
-     * {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
-     * code base.
+     * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
+     * attributes unknown to this code base.
      */
     static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
     {
@@ -754,6 +817,8 @@ public interface HttpCookie
     {
         if (httpCookie.getSameSite() != null)
             throw new IllegalArgumentException("SameSite attribute not supported by " + java.net.HttpCookie.class.getName());
+        if (httpCookie.isPartitioned())
+            throw new IllegalArgumentException("Partitioned attribute not supported by " + java.net.HttpCookie.class.getName());
         java.net.HttpCookie cookie = new java.net.HttpCookie(httpCookie.getName(), httpCookie.getValue());
         cookie.setVersion(httpCookie.getVersion());
         cookie.setComment(httpCookie.getComment());
@@ -818,26 +883,19 @@ public interface HttpCookie
         return obj1.equalsIgnoreCase(obj2);
     }
 
-    /**
-     * <p>Formats this cookie into a string suitable to be used
-     * in {@code Cookie} or {@code Set-Cookie} headers.</p>
-     *
-     * @param httpCookie the cookie to format
-     * @return a header string representation of the cookie
-     */
     private static String asString(HttpCookie httpCookie)
     {
         StringBuilder builder = new StringBuilder();
         builder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
-        int version = httpCookie.getVersion();
-        if (version > 0)
-            builder.append(";Version=").append(version);
-        String domain = httpCookie.getDomain();
-        if (domain != null)
-            builder.append(";Domain=").append(domain);
-        String path = httpCookie.getPath();
-        if (path != null)
-            builder.append(";Path=").append(path);
+        Map<String, String> attributes = httpCookie.getAttributes();
+        if (!attributes.isEmpty())
+        {
+            for (Map.Entry<String, String> entry : attributes.entrySet())
+            {
+                builder.append("; ");
+                builder.append(entry.getKey()).append("=").append(entry.getValue());
+            }
+        }
         return builder.toString();
     }
 

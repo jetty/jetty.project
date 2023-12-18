@@ -14,19 +14,19 @@
 [[pg-arch-io]]
 === Jetty I/O Architecture
 
-Jetty libraries (both client and server) use Java NIO to handle I/O, so that at its core Jetty I/O is completely non-blocking.
+The Jetty libraries (both client and server) use Java NIO to handle I/O, so that at its core Jetty I/O is completely non-blocking.
 
 [[pg-arch-io-selector-manager]]
 ==== Jetty I/O: `SelectorManager`
 
-The core class of Jetty I/O is link:{javadoc-url}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
+The main class of The Jetty I/O library is link:{javadoc-url}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
 
 `SelectorManager` manages internally a configurable number of link:{javadoc-url}/org/eclipse/jetty/io/ManagedSelector.html[`ManagedSelector`]s.
 Each `ManagedSelector` wraps an instance of `java.nio.channels.Selector` that in turn manages a number of `java.nio.channels.SocketChannel` instances.
 
 NOTE: TODO: add image
 
-`SocketChannel` instances can be created by clients when connecting to a server and by a server when accepting connections from clients.
+`SocketChannel` instances are typically created by the Jetty implementation, on client-side when connecting to a server and on server-side when accepting connections from clients.
 In both cases the `SocketChannel` instance is passed to `SelectorManager` (which passes it to `ManagedSelector` and eventually to `java.nio.channels.Selector`) to be registered for use within Jetty.
 
 It is possible for an application to create the `SocketChannel` instances outside Jetty, even perform some initial network traffic also outside Jetty (for example for authentication purposes), and then pass the `SocketChannel` instance to `SelectorManager` for use within Jetty.
@@ -56,9 +56,9 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[
 For example, an HTTP/1.1 server-side `Connection` implementation is responsible to deserialize HTTP/1.1 request bytes into an HTTP request object.
 Conversely, an HTTP/1.1 client-side `Connection` implementation is responsible to deserialize HTTP/1.1 response bytes into an HTTP response object.
 
-`Connection` is the abstraction that implements the reading side of a specific protocol such as HTTP/1.1, or HTTP/2, or HTTP/3, or WebSocket: it is able to read incoming communication in that protocol.
+`Connection` is the abstraction that implements the reading side of a specific protocol such as HTTP/1.1, or HTTP/2, or HTTP/3, or WebSocket: it is able to read and parse incoming bytes in that protocol.
 
-The writing side for a specific protocol _may_ be implemented in the `Connection` but may also be implemented in other components, although eventually the bytes to be written will be written through the `EndPoint`.
+The writing side for a specific protocol _may_ be implemented in the `Connection` but may also be implemented in other components, although eventually the bytes to write will be written through the `EndPoint`.
 
 While there are primarily only two implementations of `EndPoint`,link:{javadoc-url}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`] for TCP and link:{javadoc-url}/org/eclipse/jetty/io/DatagramChannelEndPoint.html[`DatagramChannelEndPoint`] for UDP (used both on the client-side and on the server-side), there are many implementations of `Connection`, typically two for each protocol (one for the client-side and one for the server-side).
 
@@ -103,13 +103,13 @@ The `EndPoint` APIs are typically called by `Connection` implementations, see xr
 
 `Connection` instances have two lifecycle methods:
 
-* `Connection.onOpen()`, invoked when the `Connection` is associated with the `EndPoint`
-* `Connection.onClose(Throwable)`, invoked when the `Connection` is disassociated from the `EndPoint`, where the `Throwable` parameter indicates whether the disassociation was normal (when the parameter is `null`) or was due to an error (when the parameter is not `null`)
+* `Connection.onOpen()`, invoked when the `Connection` is associated with the `EndPoint`.
+* `Connection.onClose(Throwable)`, invoked when the `Connection` is disassociated from the `EndPoint`, where the `Throwable` parameter indicates whether the disassociation was normal (when the parameter is `null`) or was due to an error (when the parameter is not `null`).
 
 When a `Connection` is first created, it is not registered for any Java NIO event.
-It is therefore typical to implement `onOpen()` to call `EndPoint.fillInterested(Callback)` so that the `Connection` declares interest for read events and it is invoked (via the `Callback`) when the read event happens.
+It is therefore typical to implement `onOpen()` to call `EndPoint.fillInterested(Callback)` so that the `Connection` declares interest for read events, and it is invoked (via the `Callback`) when the read event happens.
 
-Abstract class `AbstractConnection` partially implements `Connection` and provides simpler APIs.
+The abstract class `AbstractConnection` partially implements `Connection` and provides simpler APIs.
 The example below shows a typical implementation that extends `AbstractConnection`:
 
 [source,java,indent=0]
@@ -120,7 +120,30 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[
 [[pg-arch-io-connection-listener]]
 ===== Jetty I/O: `Connection.Listener`
 
-TODO
+The Jetty I/O library allows applications to register xref:pg-arch-listener[event listeners] for the `Connection` events "opened" and "closed" via the interface `Connection.Listener`.
+
+This is useful in many cases, for example:
+
+* Gather statistics about connection lifecycle, such as time of creation and duration.
+* Gather statistics about the number of concurrent connections, and take action if a threshold is exceeded.
+* Gather statistics about the number of bytes read and written, and the number of "messages" read and written, where "messages" may mean HTTP/1.1 requests or responses, or WebSocket frames, or HTTP/2 frames, etc.
+* Gather statistics about the different types of connections being opened (TLS, HTTP/1.1, HTTP/2, WebSocket, etc.).
+* Etc.
+
+`Connection.Listener` implementations must be added as beans to a server-side `Connector`, or to client-side `HttpClient`, `WebSocketClient`, `HTTP2Client` or `HTTP3Client`.
+You can add as beans many `Connection.Listener` objects, each with its own logic, so that you can separate different logics into different `Connection.Listener` implementations.
+
+The Jetty I/O library provides useful `Connection.Listener` implementations that you should evaluate before writing your own:
+
+* link:{javadoc-url}/org/eclipse/jetty/io/ConnectionStatistics[`ConnectionStatistics`]
+* link:{javadoc-url}/org/eclipse/jetty/server/ConnectionLimit[`ConnectionLimit`]
+
+Here is a simple example of a `Connection.Listener` used both on the client and on the server:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=connectionListener]
+----
 
 [[pg-arch-io-echo]]
 ==== Jetty I/O: TCP Network Echo
@@ -211,22 +234,39 @@ The high-level abstraction that Jetty offers to read bytes is `org.eclipse.jetty
 A `Content.Chunk` groups the following information:
 
 * A `ByteBuffer` with the bytes that have been read; it may be empty.
-* Whether the read reached end-of-file.
-* A failure that might have happened during the read.
+* Whether the read reached end-of-file, via its `last` flag.
+* A failure that might have happened during the read, via its `getFailure()` method.
 
-The ``Content.Chunk``'s `ByteBuffer` is typically a slice of a different `ByteBuffer` that has been read by a lower layer.
-There may be multiple layers between the bottom layer (where the initial read typically happens) and the application layer.
+The `Content.Chunk` returned from `Content.Source.read()` can either be a _normal_ chunk (a chunk containing a `ByteBuffer` and a `null` failure), or a _failure_ chunk (a chunk containing an empty `ByteBuffer` and a non-`null` failure).
 
-By slicing the `ByteBuffer` (rather than copying its bytes), there is no copy of the bytes between the layers.
+A failure chunk also indicates (via the `last` flag) whether the failure is a fatal (when `last=true`) or transient (when `last=false`) failure.
+
+A transient failure is a temporary failure that happened during the read, it may be ignored, and it is recoverable: it is possible to call `read()` again and obtain a normal chunk (or a `null` chunk).
+Typical cases of transient failures are idle timeout failures, where the read timed out, but the application may decide to insist reading until some other event happens.
+The application may convert a transient failure into a fatal failure by calling `Content.Source.fail(Throwable)`.
+
+A `Content.Source` must be fully consumed by reading all its content, or failed by calling `Content.Source.fail(Throwable)` to signal that the reader is not interested in reading anymore, otherwise it may leak underlying resources.
+
+Fully consuming a `Content.Source` means reading from it until it returns a `Content.Chunk` whose `last` flag is `true`.
+Reading or demanding from an already fully consumed `Content.Source` is always immediately serviced with the last state of the `Content.Source`: a `Content.Chunk` with the `last` flag set to `true`, either an end-of-file chunk, or a failure chunk.
+
+Once failed, a `Content.Source` is considered fully consumed.
+Further attempts to read from a failed `Content.Source` return a failure chunk whose `getFailure()` method returns the exception passed to `Content.Source.fail(Throwable)`.
+
+When reading a normal chunk, its `ByteBuffer` is typically a slice of a different `ByteBuffer` that has been read by a lower layer.
+There may be multiple layers between the bottom layer (where the initial read typically happens) and the application layer that calls `Content.Source.read()`.
+
+By slicing the `ByteBuffer` (rather than copying its bytes), there is no copy of the bytes between the layers, which yields greater performance.
 However, this comes with the cost that the `ByteBuffer`, and the associated `Content.Chunk`, have an intrinsic lifecycle: the final consumer of a `Content.Chunk` at the application layer must indicate when it has consumed the chunk, so that the bottom layer may reuse/recycle the `ByteBuffer`.
 
 Consuming the chunk means that the bytes in the `ByteBuffer` are read (or ignored), and that the application will not look at or reference that `ByteBuffer` ever again.
 
 `Content.Chunk` offers a retain/release model to deal with the `ByteBuffer` lifecycle, with a simple rule:
 
-IMPORTANT: A `Content.Chunk` returned by a call to `Content.Source.read()` **must** be released.
+IMPORTANT: A `Content.Chunk` returned by a call to `Content.Source.read()` **must** be released, except for ``Content.Chunk``s that are failure chunks.
+Failure chunks _may_ be released, but they do not _need_ to be.
 
-The example below is the idiomatic way to read from a `Content.Source`:
+The example below is the idiomatic way of reading from a `Content.Source`:
 
 [source,java,indent=0]
 ----
@@ -235,7 +275,7 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=idi
 <1> The `read()` that must be paired with a `release()`.
 <2> The `release()` that pairs the `read()`.
 
-Note how the reads happens in a loop, consuming the `Content.Source` as soon as it has content available to be read, and therefore no backpressure is applied to the reads.
+Note how the reads happen in a loop, consuming the `Content.Source` as soon as it has content available to be read, and therefore no backpressure is applied to the reads.
 
 An alternative way to read from a `Content.Source`, to use when the chunk is consumed asynchronously, and you don't want to read again until the `Content.Chunk` is consumed, is the following:
 
@@ -248,9 +288,9 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=asy
 
 Note how the reads do not happen in a loop, and therefore backpressure is applied to the reads, because there is not a next read until the chunk from the previous read has been consumed (and this may take time).
 
-You can use `Content.Source` static methods to conveniently read (in a blocking way or non-blocking way), for example via `static Content.Source.asStringAsync(Content.Source, Charset)`, or via an `InputStream` using `static Content.Source.asInputStream(Content.Source source)`.
+Since the `Chunk` is consumed asynchronously, you may need to retain it to extend its lifecycle, as explained in xref:pg-arch-io-content-source-chunk[this section].
 
-For
+You can use `Content.Source` static methods to conveniently read (in a blocking way or non-blocking way), for example via `static Content.Source.asStringAsync(Content.Source, Charset)`, or via an `InputStream` using `static Content.Source.asInputStream(Content.Source)`.
 
 Refer to the `Content.Source` link:{javadoc-url}/org/eclipse/jetty/io/Content.Source.html[`javadocs`] for further details.
 

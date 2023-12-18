@@ -20,7 +20,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -72,25 +71,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         {
             EventsRequest wrappedRequest = new EventsRequest(request, roRequest);
             EventsResponse wrappedResponse = new EventsResponse(roRequest, response);
-            request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
+            Request.addCompletionListener(request, x ->
             {
-                @Override
-                public void succeeded()
-                {
-                    notifyOnResponseBegin(roRequest, wrappedResponse);
-                    notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
-                    notifyOnComplete(roRequest, null);
-                    super.succeeded();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    notifyOnResponseBegin(roRequest, wrappedResponse);
-                    notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
-                    notifyOnComplete(roRequest, x);
-                    super.failed(x);
-                }
+                notifyOnResponseBegin(roRequest, wrappedResponse);
+                notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
+                notifyOnComplete(roRequest, x);
             });
 
             boolean handled = super.handle(wrappedRequest, wrappedResponse, callback);

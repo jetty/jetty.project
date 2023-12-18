@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.Principal;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -33,10 +34,10 @@ import javax.net.ssl.X509ExtendedKeyManager;
 
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.client.BasicAuthentication;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
@@ -325,9 +326,8 @@ public class ForwardProxyTLSServerTest
                 .body(new StringRequestContent(body2));
 
             // Make sure the second connection can send the exchange via the tunnel
-            FutureResponseListener listener2 = new FutureResponseListener(request2);
-            connection.get().send(request2, listener2);
-            ContentResponse response2 = listener2.get(5, TimeUnit.SECONDS);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request2).send(connection.get());
+            ContentResponse response2 = completable.get(5, TimeUnit.SECONDS);
 
             assertEquals(HttpStatus.OK_200, response2.getStatus());
             String content2 = response2.getContentAsString();

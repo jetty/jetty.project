@@ -480,6 +480,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     /**
+     * Set the growOutput to set.
      * @param growOutput the growOutput to set
      */
     public void setGrowOutput(boolean growOutput)

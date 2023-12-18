@@ -31,8 +31,8 @@ import org.eclipse.jetty.util.IO;
 public class ContentSourceInputStream extends InputStream
 {
     private final Blocker.Shared blocking = new Blocker.Shared();
-    private final byte[] oneByte = new byte[1];
     private final Content.Source content;
+    private byte[] oneByte;
     private Content.Chunk chunk;
 
     public ContentSourceInputStream(Content.Source content)
@@ -43,6 +43,8 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public int read() throws IOException
     {
+        if (oneByte == null)
+            oneByte = new byte[1];
         int read = read(oneByte, 0, 1);
         return read < 0 ? -1 : oneByte[0] & 0xFF;
     }
@@ -56,9 +58,9 @@ public class ContentSourceInputStream extends InputStream
             {
                 if (Content.Chunk.isFailure(chunk))
                 {
-                    Content.Chunk c = chunk;
-                    chunk = null;
-                    throw IO.rethrow(c.getFailure());
+                    Content.Chunk failure = chunk;
+                    chunk = Content.Chunk.next(failure);
+                    throw IO.rethrow(failure.getFailure());
                 }
 
                 ByteBuffer byteBuffer = chunk.getByteBuffer();
@@ -75,7 +77,13 @@ public class ContentSourceInputStream extends InputStream
                 return l;
             }
 
-            chunk = content.read();
+            // Skip empty chunks.
+            while (true)
+            {
+                chunk = content.read();
+                if (chunk == null || chunk.hasRemaining() || chunk.isLast() || Content.Chunk.isFailure(chunk))
+                    break;
+            }
 
             if (chunk == null)
             {
@@ -98,23 +106,51 @@ public class ContentSourceInputStream extends InputStream
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         // If we have already reached a real EOF or a persistent failure, close is a noop.
         if (chunk == Content.Chunk.EOF || Content.Chunk.isFailure(chunk, true))
             return;
 
+        boolean contentSkipped = false;
+
         // If we have a chunk here, then it needs to be released
         if (chunk != null)
         {
+            contentSkipped = chunk.hasRemaining();
             chunk.release();
-
-            // if the chunk was a last chunk (but not an instanceof EOF), then nothing more to do
-            if (chunk.isLast())
-                return;
+            chunk = Content.Chunk.next(chunk);
         }
 
-        // This is an abnormal close before EOF
+        // If we don't have a chunk and have not skipped content, try one read looking for EOF
+        if (!contentSkipped && chunk == null)
+        {
+            chunk = content.read();
+
+            // If we read a chunk
+            if (chunk != null)
+            {
+                // Handle a failure as read would
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    Content.Chunk failure = chunk;
+                    chunk = Content.Chunk.next(failure);
+                    if (!failure.isLast())
+                        content.fail(failure.getFailure());
+                    throw IO.rethrow(failure.getFailure());
+                }
+
+                contentSkipped = chunk.hasRemaining();
+                chunk.release();
+                chunk = Content.Chunk.next(chunk);
+            }
+        }
+
+        // if we are now really at EOF without skipping content, then nothing more to do
+        if (!contentSkipped && chunk != null && chunk.isLast())
+            return;
+
+        // Otherwise this is an abnormal close before EOF
         Throwable closed = new IOException("closed before EOF");
         chunk = Content.Chunk.from(closed);
         content.fail(closed);

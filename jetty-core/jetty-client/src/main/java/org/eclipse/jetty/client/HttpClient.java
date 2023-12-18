@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
-import java.net.CookieStore;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -25,7 +21,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,6 +45,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -113,6 +109,7 @@ public class HttpClient extends ContainerLifeCycle
 {
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
+    private static final SetCookieParser COOKIE_PARSER = SetCookieParser.newInstance();
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
@@ -123,7 +120,6 @@ public class HttpClient extends ContainerLifeCycle
     private final ClientConnector connector;
     private AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private HttpCookieStore cookieStore;
-    private HttpCookieParser cookieParser;
     private SocketAddressResolver resolver;
     private HttpField agentField = new HttpField(HttpHeader.USER_AGENT, USER_AGENT);
     private boolean followRedirects = true;
@@ -175,6 +171,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link SslContextFactory.Client} that manages TLS encryption.
      * @param sslContextFactory the {@link SslContextFactory.Client} that manages TLS encryption
      */
     public void setSslContextFactory(SslContextFactory.Client sslContextFactory)
@@ -221,7 +218,6 @@ public class HttpClient extends ContainerLifeCycle
 
         if (cookieStore == null)
             cookieStore = new HttpCookieStore.Default();
-        cookieParser = new HttpCookieParser();
 
         transport.setHttpClient(this);
 
@@ -265,6 +261,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the cookie store associated with this instance.
      * @return the cookie store associated with this instance
      */
     public HttpCookieStore getHttpCookieStore()
@@ -273,6 +270,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the cookie store associated with this instance.
      * @param cookieStore the cookie store associated with this instance
      */
     public void setHttpCookieStore(HttpCookieStore cookieStore)
@@ -284,20 +282,13 @@ public class HttpClient extends ContainerLifeCycle
 
     public void putCookie(URI uri, HttpField field)
     {
-        try
-        {
-            HttpCookie cookie = cookieParser.parse(uri, field);
-            if (cookie != null)
-                cookieStore.add(uri, cookie);
-        }
-        catch (IOException x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to store cookies {} from {}", field, uri, x);
-        }
+        HttpCookie cookie = COOKIE_PARSER.parse(field.getValue());
+        if (cookie != null)
+            cookieStore.add(uri, cookie);
     }
 
     /**
+     * Get the authentication store associated with this instance.
      * @return the authentication store associated with this instance
      */
     public AuthenticationStore getAuthenticationStore()
@@ -306,6 +297,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the authentication store associated with this instance.
      * @param authenticationStore the authentication store associated with this instance
      */
     public void setAuthenticationStore(AuthenticationStore authenticationStore)
@@ -587,6 +579,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the {@link ByteBufferPool} of this HttpClient.
      * @return the {@link ByteBufferPool} of this HttpClient
      */
     public ByteBufferPool getByteBufferPool()
@@ -595,6 +588,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link ByteBufferPool} of this HttpClient.
      * @param byteBufferPool the {@link ByteBufferPool} of this HttpClient
      */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
@@ -674,6 +668,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction).
      * @param idleTimeout the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction)
      */
     public void setIdleTimeout(long idleTimeout)
@@ -701,6 +696,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the "User-Agent" HTTP field of this HttpClient.
      * @return the "User-Agent" HTTP field of this HttpClient
      */
     public HttpField getUserAgentField()
@@ -709,6 +705,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the "User-Agent" HTTP header string of this HttpClient.
      * @param agent the "User-Agent" HTTP header string of this HttpClient
      */
     public void setUserAgentField(HttpField agent)
@@ -738,6 +735,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the {@link Executor} of this HttpClient.
      * @return the {@link Executor} of this HttpClient
      */
     public Executor getExecutor()
@@ -746,6 +744,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link Executor} of this HttpClient.
      * @param executor the {@link Executor} of this HttpClient
      */
     public void setExecutor(Executor executor)
@@ -754,6 +753,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the {@link Scheduler} of this HttpClient.
      * @return the {@link Scheduler} of this HttpClient
      */
     public Scheduler getScheduler()
@@ -762,6 +762,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link Scheduler} of this HttpClient.
      * @param scheduler the {@link Scheduler} of this HttpClient
      */
     public void setScheduler(Scheduler scheduler)
@@ -770,6 +771,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the {@link SocketAddressResolver} of this HttpClient.
      * @return the {@link SocketAddressResolver} of this HttpClient
      */
     public SocketAddressResolver getSocketAddressResolver()
@@ -778,6 +780,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link SocketAddressResolver} of this HttpClient.
      * @param resolver the {@link SocketAddressResolver} of this HttpClient
      */
     public void setSocketAddressResolver(SocketAddressResolver resolver)
@@ -850,6 +853,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the size of the buffer (in bytes) used to write requests.
      * @param requestBufferSize the size of the buffer (in bytes) used to write requests
      */
     public void setRequestBufferSize(int requestBufferSize)
@@ -867,6 +871,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the size of the buffer used to read responses.
      * @param responseBufferSize the size of the buffer used to read responses
      */
     public void setResponseBufferSize(int responseBufferSize)
@@ -1023,6 +1028,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the default content type for request content.
      * @param contentType the default content type for request content
      */
     public void setDefaultRequestContentType(String contentType)
@@ -1040,6 +1046,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set whether to use direct ByteBuffers for reading.
      * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
      */
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
@@ -1057,6 +1064,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set whether to use direct ByteBuffers for writing.
      * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
      */
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
@@ -1074,6 +1082,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the max size in bytes of the response headers.
      * @param maxResponseHeadersSize the max size in bytes of the response headers
      */
     public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
@@ -1082,6 +1091,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the forward proxy configuration.
      * @return the forward proxy configuration
      */
     public ProxyConfiguration getProxyConfiguration()
@@ -1101,72 +1111,5 @@ public class HttpClient extends ContainerLifeCycle
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
         return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
-    }
-
-    private static class HttpCookieParser extends CookieManager
-    {
-        public HttpCookieParser()
-        {
-            super(new Store(), CookiePolicy.ACCEPT_ALL);
-        }
-
-        public HttpCookie parse(URI uri, HttpField field) throws IOException
-        {
-            // TODO: hacky implementation waiting for a real HttpCookie parser.
-            String value = field.getValue();
-            if (value == null)
-                return null;
-            Map<String, List<String>> header = new HashMap<>(1);
-            header.put(field.getHeader().asString(), List.of(value));
-            put(uri, header);
-            Store store = (Store)getCookieStore();
-            HttpCookie cookie = store.cookie;
-            store.cookie = null;
-            return cookie;
-        }
-
-        private static class Store implements CookieStore
-        {
-            private HttpCookie cookie;
-
-            @Override
-            public void add(URI uri, java.net.HttpCookie cookie)
-            {
-                String domain = cookie.getDomain();
-                if ("localhost.local".equals(domain))
-                    cookie.setDomain("localhost");
-                this.cookie = HttpCookie.from(cookie);
-            }
-
-            @Override
-            public List<java.net.HttpCookie> get(URI uri)
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public List<java.net.HttpCookie> getCookies()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public List<URI> getURIs()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean remove(URI uri, java.net.HttpCookie cookie)
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean removeAll()
-            {
-                throw new UnsupportedOperationException();
-            }
-        }
     }
 }

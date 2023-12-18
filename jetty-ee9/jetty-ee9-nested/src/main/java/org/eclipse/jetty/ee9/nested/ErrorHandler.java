@@ -578,6 +578,7 @@ public class ErrorHandler extends AbstractHandler
     }
 
     /**
+     * Set if true, the error message appears in page title.
      * @param showMessageInTitle if true, the error message appears in page title
      */
     public void setShowMessageInTitle(boolean showMessageInTitle)

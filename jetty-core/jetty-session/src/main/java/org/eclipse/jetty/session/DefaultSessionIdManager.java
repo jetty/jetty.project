@@ -81,6 +81,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     /**
+     * Set the server associated with this id manager.
      * @param server the server associated with this id manager
      */
     public void setServer(Server server)
@@ -89,6 +90,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     /**
+     * Get the server associated with this id manager.
      * @return the server associated with this id manager
      */
     public Server getServer()
@@ -153,6 +155,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     /**
+     * Get the random number generator.
      * @return the random number generator
      */
     public Random getRandom()
@@ -161,6 +164,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     /**
+     * Set a random number generator for generating ids.
      * @param random a random number generator for generating ids
      */
     public void setRandom(Random random)
@@ -170,6 +174,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     /**
+     * Get the reseed probability.
      * @return the reseed probability
      */
     public long getReseed()

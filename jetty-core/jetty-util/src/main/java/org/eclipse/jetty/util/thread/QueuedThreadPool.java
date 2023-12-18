@@ -430,6 +430,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
+     * Set number of reserved threads or -1 for heuristically determined.
      * @param reservedThreads number of reserved threads or -1 for heuristically determined
      */
     public void setReservedThreads(int reservedThreads)
@@ -470,6 +471,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
+     * Set the priority of the pool threads.
      * @param priority the priority of the pool threads
      */
     public void setThreadsPriority(int priority)
@@ -969,6 +971,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         job.run();
     }
 
+    protected void onJobFailure(Throwable x)
+    {
+        LOG.warn("Job failed", x);
+    }
+
     /**
      * <p>Determines whether to evict the current thread from the pool.</p>
      *
@@ -1195,7 +1202,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             }
             catch (Throwable e)
             {
-                LOG.warn("Job failed", e);
+                onJobFailure(e);
             }
             finally
             {

@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -288,14 +289,13 @@ public class Socks4ProxyTest
         int serverPort = proxyPort + 1; // Any port will do
         Request request = client.newRequest(serverHost, serverPort)
             .timeout(timeout, TimeUnit.MILLISECONDS);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         try (SocketChannel ignored = proxy.accept())
         {
             // Accept the connection, but do not reply and don't close.
 
-            ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(2 * timeout, TimeUnit.MILLISECONDS));
+            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
             assertThat(x.getCause(), instanceOf(TimeoutException.class));
         }
     }
@@ -312,14 +312,13 @@ public class Socks4ProxyTest
         String serverHost = "127.0.0.13";
         int serverPort = proxyPort + 1; // Any port will do
         Request request = client.newRequest(serverHost, serverPort);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         try (SocketChannel ignored = proxy.accept())
         {
             // Accept the connection, but do not reply and don't close.
 
-            ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(2 * idleTimeout, TimeUnit.MILLISECONDS));
+            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(2 * idleTimeout, TimeUnit.MILLISECONDS));
             assertThat(x.getCause(), instanceOf(TimeoutException.class));
         }
     }
@@ -334,15 +333,14 @@ public class Socks4ProxyTest
         String serverHost = "127.0.0.13";
         int serverPort = proxyPort + 1; // Any port will do
         Request request = client.newRequest(serverHost, serverPort);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         try (SocketChannel channel = proxy.accept())
         {
             // Immediately close the connection.
             channel.close();
 
-            ExecutionException x = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
+            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(5, TimeUnit.SECONDS));
             assertThat(x.getCause(), instanceOf(IOException.class));
         }
     }

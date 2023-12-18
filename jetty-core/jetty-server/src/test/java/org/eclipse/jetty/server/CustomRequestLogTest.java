@@ -21,11 +21,15 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,6 +45,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -533,19 +538,17 @@ public class CustomRequestLogTest
         assertThat(log, is("RequestTime: [" + dateCache.format(requestTimeRef.get()) + "]"));
     }
 
-    @Test
-    public void testLogRequestTimeCustomFormats() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {"%{EEE MMM dd HH:mm:ss zzz yyyy}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|EST}t", "%{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t"})
+    public void testLogRequestTimeCustomFormats(String format) throws Exception
     {
         AtomicLong requestTimeRef = new AtomicLong();
-        start("""
-            %{EEE MMM dd HH:mm:ss zzz yyyy}t
-            %{EEE MMM dd HH:mm:ss zzz yyyy|EST}t
-            %{EEE MMM dd HH:mm:ss zzz yyyy|EST|ja}t""", new SimpleHandler()
+        start(format, new SimpleHandler()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                requestTimeRef.set(Request.getTimeStamp(request));
+                requestTimeRef.set(System.currentTimeMillis());
                 callback.succeeded();
                 return true;
             }
@@ -555,16 +558,16 @@ public class CustomRequestLogTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertNotNull(log);
-        long requestTime = requestTimeRef.get();
 
-        DateCache dateCache1 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault(), "GMT");
-        DateCache dateCache2 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault(), "EST");
-        DateCache dateCache3 = new DateCache("EEE MMM dd HH:mm:ss zzz yyyy", Locale.forLanguageTag("ja"), "EST");
+        String[] formats = format.substring(format.indexOf('{') + 1, format.indexOf('}')).split("\\|");
 
-        String[] logs = log.split("\n");
-        assertThat(logs[0], is("[" + dateCache1.format(requestTime) + "]"));
-        assertThat(logs[1], is("[" + dateCache2.format(requestTime) + "]"));
-        assertThat(logs[2], is("[" + dateCache3.format(requestTime) + "]"));
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formats[0])
+            .withLocale(formats.length > 2 ? Locale.forLanguageTag(formats[2]) : Locale.getDefault())
+            .withZone(formats.length > 1 ? TimeZone.getTimeZone(formats[1]).toZoneId() : TimeZone.getDefault().toZoneId());
+
+        Instant parsed = dateTimeFormatter.parse(log.substring(log.indexOf('[') + 1, log.indexOf(']')), Instant::from);
+        Instant request = Instant.ofEpochMilli(requestTimeRef.get());
+        assertThat(Math.abs(Duration.between(parsed, request).toSeconds()), Matchers.lessThanOrEqualTo(2L));
     }
 
     @ParameterizedTest

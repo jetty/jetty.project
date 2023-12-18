@@ -91,20 +91,19 @@ public class ConnectFutureTest
         CountDownLatch enteredCreator = new CountDownLatch(1);
         CountDownLatch exitCreator = new CountDownLatch(1);
         start(wsHandler ->
-            wsHandler.configure(container ->
-                container.addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+            {
+                try
                 {
-                    try
-                    {
-                        enteredCreator.countDown();
-                        exitCreator.await();
-                        return new EchoSocket();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        throw new IllegalStateException(e);
-                    }
-                })));
+                    enteredCreator.countDown();
+                    exitCreator.await();
+                    return new EchoSocket();
+                }
+                catch (InterruptedException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }));
 
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
@@ -127,8 +126,7 @@ public class ConnectFutureTest
     public void testAbortSessionOnCreated() throws Exception
     {
         start(wsHandler ->
-            wsHandler.configure(container ->
-                container.addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket())));
+            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CountDownLatch enteredListener = new CountDownLatch(1);
         CountDownLatch exitListener = new CountDownLatch(1);
@@ -166,8 +164,7 @@ public class ConnectFutureTest
     public void testAbortInHandshakeResponse() throws Exception
     {
         start(wsHandler ->
-            wsHandler.configure(container ->
-                container.addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket())));
+            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CountDownLatch enteredListener = new CountDownLatch(1);
         CountDownLatch exitListener = new CountDownLatch(1);
@@ -192,7 +189,7 @@ public class ConnectFutureTest
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest, upgradeListener);
 
-        // Abort after after handshake response, this is during the connection upgrade.
+        // Abort after handshake response, this is during the connection upgrade.
         assertTrue(enteredListener.await(5, TimeUnit.SECONDS));
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
@@ -206,8 +203,7 @@ public class ConnectFutureTest
     public void testAbortOnOpened() throws Exception
     {
         start(wsHandler ->
-            wsHandler.configure(container ->
-                container.addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket())));
+            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CountDownLatch exitOnConnect = new CountDownLatch(1);
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()
@@ -242,8 +238,7 @@ public class ConnectFutureTest
     public void testAbortAfterCompletion() throws Exception
     {
         start(wsHandler ->
-            wsHandler.configure(container ->
-                container.addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket())));
+            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
@@ -272,19 +267,18 @@ public class ConnectFutureTest
     {
         CountDownLatch exitCreator = new CountDownLatch(1);
         start(wsHandler ->
-            wsHandler.configure(container ->
-                container.addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+            {
+                try
                 {
-                    try
-                    {
-                        exitCreator.await();
-                        return new EchoSocket();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        throw new IllegalStateException(e);
-                    }
-                })));
+                    exitCreator.await();
+                    return new EchoSocket();
+                }
+                catch (InterruptedException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }));
 
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
@@ -303,19 +297,18 @@ public class ConnectFutureTest
     {
         CountDownLatch exitCreator = new CountDownLatch(1);
         start(wsHandler ->
-            wsHandler.configure(container ->
-                container.addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+            {
+                try
                 {
-                    try
-                    {
-                        exitCreator.await();
-                        return new EchoSocket();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        throw new IllegalStateException(e);
-                    }
-                })));
+                    exitCreator.await();
+                    return new EchoSocket();
+                }
+                catch (InterruptedException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }));
 
         // Complete the CompletableFuture with an exception the during the call to onOpened.
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
@@ -344,8 +337,7 @@ public class ConnectFutureTest
     public void testAbortWithExceptionAfterUpgrade() throws Exception
     {
         start(wsHandler ->
-            wsHandler.configure(container ->
-                container.addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket())));
+            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CountDownLatch exitOnConnect = new CountDownLatch(1);
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()

@@ -244,9 +244,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         try
         {
-            if (failure != null)
-                _servletChannel.abort(failure);
-
             if (closedCallback != null)
             {
                 if (failure == null)
@@ -321,13 +318,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    /**
+     * This method is invoked for the COMPLETE action handling in
+     * HttpChannel.handle.  The callback passed typically will call completed
+     * to finish the request cycle and so may need to asynchronously wait for:
+     * a pending/blocked operation to finish and then either an async close or
+     * wait for an application close to complete.
+     * @param callback The callback to complete when writing the output is complete.
+     */
     public void complete(Callback callback)
     {
-        // This method is invoked for the COMPLETE action handling in
-        // HttpChannel.handle.  The callback passed typically will call completed
-        // to finish the request cycle and so may need to asynchronously wait for:
-        // a pending/blocked operation to finish and then either an async close or
-        // wait for an application close to complete.
         boolean succeeded = false;
         Throwable error = null;
         ByteBuffer content = null;
@@ -432,7 +432,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (content != null)
-            channelWrite(content, true, new WriteCompleteCB());
+            channelWrite(content, true, new CompleteWriteCompleteCB());
     }
 
     /**
@@ -1764,6 +1764,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
+        }
+    }
+
+    private class CompleteWriteCompleteCB extends WriteCompleteCB
+    {
+        @Override
+        public void failed(Throwable x)
+        {
+            // TODO why is this needed for h2/h3?
+            HttpOutput.this._servletChannel.abort(x);
+            super.failed(x);
         }
     }
 }

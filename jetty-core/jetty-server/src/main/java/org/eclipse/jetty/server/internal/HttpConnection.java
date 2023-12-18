@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayList;
@@ -47,7 +46,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -57,6 +55,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -82,7 +81,7 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractConnection implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
+public class HttpConnection extends AbstractMetaDataConnection implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
@@ -92,8 +91,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private final TunnelSupport _tunnelSupport = new TunnelSupportOverHTTP1();
     private final AtomicLong _streamIdGenerator = new AtomicLong();
     private final long _id;
-    private final HttpConfiguration _configuration;
-    private final Connector _connector;
     private final HttpChannel _httpChannel;
     private final RequestHandler _requestHandler;
     private final HttpParser _parser;
@@ -138,11 +135,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
     {
-        super(endPoint, connector.getExecutor());
+        super(connector, configuration, endPoint);
         _id = __connectionIdGenerator.getAndIncrement();
-        _configuration = configuration;
-        _connector = connector;
-        _bufferPool = _connector.getByteBufferPool();
+        _bufferPool = connector.getByteBufferPool();
         _generator = newHttpGenerator();
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();
@@ -193,12 +188,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     public Server getServer()
     {
-        return _connector.getServer();
-    }
-
-    public Connector getConnector()
-    {
-        return _connector;
+        return getConnector().getServer();
     }
 
     public HttpChannel getHttpChannel()
@@ -220,7 +210,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     public String getId()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append(getEndPoint().getRemoteSocketAddress()).append('@');
+        builder.append(getRemoteSocketAddress()).append('@');
         try
         {
             TypeUtil.toHex(hashCode(), builder);
@@ -230,12 +220,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
         builder.append('#').append(_id);
         return builder.toString();
-    }
-
-    @Override
-    public HttpConfiguration getHttpConfiguration()
-    {
-        return _configuration;
     }
 
     @Override
@@ -252,40 +236,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     }
 
     @Override
-    public Connection getConnection()
-    {
-        return this;
-    }
-
-    @Override
     public boolean isPersistent()
     {
         return _generator.isPersistent(getHttpVersion());
-    }
-
-    @Override
-    public boolean isSecure()
-    {
-        return getEndPoint() instanceof SslConnection.SslEndPoint;
-    }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return getEndPoint().getRemoteSocketAddress();
-    }
-
-    @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        HttpConfiguration config = getHttpConfiguration();
-        if (config != null)
-        {
-            SocketAddress override = config.getLocalAddress();
-            if (override != null)
-                return override;
-        }
-        return getEndPoint().getLocalSocketAddress();
     }
 
     @Override
@@ -572,39 +525,49 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             _retainableByteBuffer = newBuffer;
         }
 
-        if (isRequestBufferEmpty())
+        if (!isRequestBufferEmpty())
+            return _retainableByteBuffer.remaining();
+
+        // Get a buffer
+        // We are not in a race here for the request buffer as we have not yet received a request,
+        // so there are not any possible legal threads calling #parseContent or #completed.
+        ByteBuffer requestBuffer = getRequestBuffer();
+
+        // fill
+        try
         {
-            // Get a buffer
-            // We are not in a race here for the request buffer as we have not yet received a request,
-            // so there are not an possible legal threads calling #parseContent or #completed.
-            ByteBuffer requestBuffer = getRequestBuffer();
+            int filled = getEndPoint().fill(requestBuffer);
+            if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
+                filled = getEndPoint().fill(requestBuffer);
 
-            // fill
-            try
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
+
+            if (filled > 0)
             {
-                int filled = getEndPoint().fill(requestBuffer);
-                if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
-                    filled = getEndPoint().fill(requestBuffer);
-
-                if (filled > 0)
-                    bytesIn.add(filled);
-                else if (filled < 0)
+                bytesIn.add(filled);
+            }
+            else
+            {
+                if (filled < 0)
                     _parser.atEOF();
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
-
-                return filled;
+                releaseRequestBuffer();
             }
-            catch (IOException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to fill from endpoint {}", getEndPoint(), e);
-                _parser.atEOF();
-                return -1;
-            }
+
+            return filled;
         }
-        return 0;
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
+            _parser.atEOF();
+            if (_retainableByteBuffer != null)
+            {
+                _retainableByteBuffer.clear();
+                releaseRequestBuffer();
+            }
+            return -1;
+        }
     }
 
     private boolean parseRequestBuffer()
@@ -683,10 +646,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
+        //  Revisit whether we still need IteratingCallback.close().
         if (cause == null)
             _sendCallback.close();
         else
-            _sendCallback.failed(cause);
+            _sendCallback.abort(cause);
         super.onClose(cause);
     }
 
@@ -786,26 +750,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _lastContent = last;
                 _callback = callback;
                 _header = null;
-
                 if (getConnector().isShutdown())
                     _generator.setPersistent(false);
-
                 return true;
             }
-
-            if (isClosed() && response == null && last && content == null)
+            else
             {
-                callback.succeeded();
+                if (isClosed())
+                    callback.failed(new EofException());
+                else
+                    callback.failed(new WritePendingException());
                 return false;
             }
-
-            LOG.warn("reset failed {}", this);
-
-            if (isClosed())
-                callback.failed(new EofException());
-            else
-                callback.failed(new WritePendingException());
-            return false;
         }
 
         @Override
@@ -836,15 +792,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(Math.min(_configuration.getResponseHeaderSize(), _configuration.getOutputBufferSize()), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(Math.min(getHttpConfiguration().getResponseHeaderSize(), getHttpConfiguration().getOutputBufferSize()), useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        if (_header.capacity() >= _configuration.getResponseHeaderSize())
+                        if (_header.capacity() >= getHttpConfiguration().getResponseHeaderSize())
                             throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response header too large");
                         releaseHeader();
-                        _header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK:
@@ -855,7 +811,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _bufferPool.acquire(_configuration.getResponseHeaderSize(), useDirectByteBuffers);
+                        _chunk = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:
@@ -1097,13 +1053,24 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (stream != null)
             {
                 BadMessageException bad = new BadMessageException("Early EOF");
+                Content.Chunk chunk = stream._chunk;
 
-                if (Content.Chunk.isFailure(stream._chunk))
-                    stream._chunk.getFailure().addSuppressed(bad);
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    if (chunk.isLast())
+                    {
+                        chunk.getFailure().addSuppressed(bad);
+                    }
+                    else
+                    {
+                        bad.addSuppressed(chunk.getFailure());
+                        stream._chunk = Content.Chunk.from(bad);
+                    }
+                }
                 else
                 {
-                    if (stream._chunk != null)
-                        stream._chunk.release();
+                    if (chunk != null)
+                        chunk.release();
                     stream._chunk = Content.Chunk.from(bad);
                 }
 
@@ -1122,7 +1089,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
-        private final String _id;
+        private final long _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
         private final HttpVersion _version;
@@ -1140,10 +1107,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
         protected HttpStreamOverHTTP1(String method, String uri, HttpVersion version)
         {
-            _id = Objects.requireNonNull(version).toString() + '#' + _streamIdGenerator.getAndIncrement();
+            _id = _streamIdGenerator.getAndIncrement();
             _method = method;
             _uri = uri == null ? null : HttpURI.build(method, uri);
-            _version = version;
+            _version = Objects.requireNonNull(version);
 
             if (_uri != null && _uri.getPath() == null && _uri.getScheme() != null && _uri.hasAuthority())
                 _uri.path("/");
@@ -1154,7 +1121,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         {
             Throwable result = HttpStream.consumeAvailable(this, getHttpConfiguration());
             if (result != null)
+            {
                 _generator.setPersistent(false);
+                if (_chunk != null)
+                    _chunk.release();
+                _chunk = Content.Chunk.from(result, true);
+            }
             return result;
         }
 
@@ -1220,7 +1192,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             UriCompliance compliance;
             if (_uri.hasViolations())
             {
-                compliance = _configuration.getUriCompliance();
+                compliance = getHttpConfiguration().getUriCompliance();
                 String badMessage = UriCompliance.checkUriCompliance(compliance, _uri);
                 if (badMessage != null)
                     throw new BadMessageException(badMessage);
@@ -1252,7 +1224,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
             // Set the authority (if not already set) in the URI
-            if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)
+            if (_uri.getAuthority() == null && !HttpMethod.CONNECT.is(_method))
             {
                 HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
                 int port = hostPort.getPort();
@@ -1267,7 +1239,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.path("/");
             }
 
-            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
+            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength)
+            {
+                @Override
+                public boolean is100ContinueExpected()
+                {
+                    return _expects100Continue;
+                }
+            };
 
             Runnable handle = _httpChannel.onRequest(_request);
             ++_requests;
@@ -1358,7 +1337,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public String getId()
         {
-            return _id;
+            return Long.toString(_id);
         }
 
         @Override
@@ -1401,12 +1380,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 if (onContentAvailable != null)
                     onContentAvailable.run();
                 return;
-            }
-
-            if (_expects100Continue)
-            {
-                _expects100Continue = false;
-                send(_request, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
             }
 
             tryFillInterested(_demandContentCallback);

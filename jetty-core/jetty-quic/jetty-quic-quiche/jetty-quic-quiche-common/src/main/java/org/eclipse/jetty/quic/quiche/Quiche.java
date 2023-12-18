@@ -70,17 +70,26 @@ public interface Quiche
         // The peer violated the local stream limits.
         QUICHE_ERR_STREAM_LIMIT = -12,
 
+        // The received data exceeds the stream's final size.
+        QUICHE_ERR_FINAL_SIZE = -13,
+
+        // Error in congestion control.
+        QUICHE_ERR_CONGESTION_CONTROL = -14,
+
         // The specified stream was stopped by the peer.
         QUICHE_ERR_STREAM_STOPPED = -15,
 
         // The specified stream was reset by the peer.
         QUICHE_ERR_STREAM_RESET = -16,
 
-        // The received data exceeds the stream's final size.
-        QUICHE_ERR_FINAL_SIZE = -13,
+        // Too many identifiers were provided.
+        QUICHE_ERR_ID_LIMIT = -17,
 
-        // Error in congestion control.
-        QUICHE_ERR_CONGESTION_CONTROL = -14;
+        // Not enough available identifiers.
+        QUICHE_ERR_OUT_OF_IDENTIFIERS = -18,
+
+        // Error in key update.
+        QUICHE_ERR_KEY_UPDATE = -19;
 
         static String errToString(long err)
         {
@@ -116,6 +125,12 @@ public interface Quiche
                 return "QUICHE_ERR_STREAM_STOPPED";
             if (err == QUICHE_ERR_STREAM_RESET)
                 return "QUICHE_ERR_STREAM_RESET";
+            if (err == QUICHE_ERR_ID_LIMIT)
+                return "QUICHE_ERR_ID_LIMIT";
+            if (err == QUICHE_ERR_OUT_OF_IDENTIFIERS)
+                return "QUICHE_ERR_OUT_OF_IDENTIFIERS";
+            if (err == QUICHE_ERR_KEY_UPDATE)
+                return "QUICHE_ERR_KEY_UPDATE";
             return "?? " + err;
         }
     }

@@ -60,6 +60,7 @@ public class NetworkTrafficServerConnector extends ServerConnector
     }
 
     /**
+     * Set the listener to set, or null to unset.
      * @param listener the listener to set, or null to unset
      */
     public void setNetworkTrafficListener(NetworkTrafficListener listener)
@@ -68,6 +69,7 @@ public class NetworkTrafficServerConnector extends ServerConnector
     }
 
     /**
+     * Get the listener.
      * @return the listener
      */
     public NetworkTrafficListener getNetworkTrafficListener()

@@ -69,6 +69,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /**
+     * Set the array of handlers to set..
      * @param handlers the array of handlers to set.
      */
     public void setHandlers(Handler[] handlers)

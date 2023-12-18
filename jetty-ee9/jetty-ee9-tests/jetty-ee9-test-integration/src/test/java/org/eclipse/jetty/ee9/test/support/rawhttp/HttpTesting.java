@@ -88,7 +88,7 @@ public class HttpTesting
 
             if (parsingHeader)
             {
-                if (line.equals(""))
+                if (line.isEmpty())
                 {
                     parsingHeader = false;
                     continue;

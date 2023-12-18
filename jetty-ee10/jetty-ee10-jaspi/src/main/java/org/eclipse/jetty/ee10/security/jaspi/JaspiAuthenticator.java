@@ -140,7 +140,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         UserIdentity user = _loginService.login(username, password, request, request::getSession);
         if (user != null)
         {
-            renewSession(request, response);
+            updateSession(request, response);
             HttpSession session = ((HttpServletRequest)request).getSession(true);
             if (session != null)
             {

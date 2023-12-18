@@ -53,7 +53,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 Such a simple `Handler` can access the request and response main features, such as xref:pg-server-http-handler-impl-request[reading request headers and content], or xref:pg-server-http-handler-impl-response[writing response headers and content].
 
 Note how `HelloWorldHandler` extends from `Handler.Abstract.NonBlocking`.
-This is a declaration that `HelloWorldHandler` does not use blocking APIs (of any kind) to perform its logic, allowing Jetty to apply optimizations that are not applied to ``Handler``s that declare themselves as blocking.
+This is a declaration that `HelloWorldHandler` does not use blocking APIs (of any kind) to perform its logic, allowing Jetty to apply optimizations (see xref:pg-server-http-handler[here]) that are not applied to ``Handler``s that declare themselves as blocking.
 
 If your `Handler` implementation uses blocking APIs (of any kind), extend from `Handler.Abstract`.
 
@@ -155,6 +155,58 @@ It is therefore mandatory to use `CompletableFuture` APIs that are invoked even 
 
 Failing to do so may result in the `Handler` `callback` parameter to never be completed, causing the request processing to hang forever.
 ====
+
+[[pg-server-http-handler-impl-request-listeners]]
+====== `Request` Listeners
+
+Application may add listeners to the `Request` object to be notified of particular events happening during the request/response processing.
+
+`Request.addIdleTimeoutListener(Predicate<TimeoutException>)` allows you to add an idle timeout listener, which is invoked when an idle timeout period elapses during the request/response processing, if the idle timeout event is not notified otherwise.
+
+When an idle timeout event happens, it is delivered to the application as follows:
+
+* If there is pending demand (via `Request.demand(Runnable)`), then the demand `Runnable` is invoked and the application may see the idle timeout failure by reading from the `Request`, obtaining a xref:pg-arch-io-content-source[transient failure chunk].
+* If there is a pending response write (via `Response.write(boolean, ByteBuffer, Callback)`), the response write `Callback` is failed.
+* If neither of the above, the idle timeout listeners are invoked, in the same order they have been added.
+The first idle timeout listener that returns `true` stops the Jetty implementation from invoking the idle timeout listeners that follow.
+
+The idle timeout listeners are therefore invoked only when the application is really idle, neither trying to read nor trying to write.
+
+An idle timeout listener may return `true` to indicate that the idle timeout should be treated as a fatal failure of the request/response processing; otherwise the listener may return `false` to indicate that no further handling of the idle timeout is needed from the Jetty implementation.
+
+When idle timeout listeners return `false`, then any subsequent idle timeouts are handled as above.
+In the case that the application does not initiate any read or write, then the idle timeout listeners are invoked again after another idle timeout period.
+
+`Request.addFailureListener(Consumer<Throwable>)` allows you to add a failure listener, which is invoked when a failure happens during the request/response processing.
+
+When a failure happens during the request/response processing, then:
+
+* The pending demand for request content, if any, is invoked; that is, the `Runnable` passed to `Request.demand(Runnable)` is invoked.
+* The callback of an outstanding call to `Response.write(boolean, ByteBuffer, Callback)`, if any, is failed.
+* The failure listeners are invoked, in the same order they have been added.
+
+Failure listeners are invoked also in case of idle timeouts, in the following cases:
+
+* At least one idle timeout listener returned `true` to indicate to the Jetty implementation to treat the idle timeout as a fatal failure.
+* There are no idle timeout listeners.
+
+Failures reported to a failure listener are always fatal failures; see also xref:pg-arch-io-content-source[this section] about fatal versus transient failures.
+This means that it is not possible to read or write from a failure listener: the read returns a fatal failure chunk, and the write will immediately fail the write callback.
+
+[NOTE]
+====
+Applications are always required to complete the `Handler` callback, as described xref:pg-server-http-handler-impl[here].
+In case of asynchronous failures, failure listeners are a good place to complete (typically by failing it) the `Handler` callback.
+====
+
+`Request.addCompletionListener(Consumer<Throwable>)` allows you to add a completion listener, which is invoked at the very end of the request/response processing.
+This is equivalent to adding an `HttpStream` wrapper and overriding both `HttpStream.succeeded()` and `HttpStream.failed(Throwable)`.
+
+Completion listeners are typically (but not only) used to recycle or dispose resources used during the request/response processing, or get a precise timing for when the request/response processing finishes, to be paired with `Request.getBeginNanoTime()`.
+
+Note that while failure listeners are invoked as soon as the failure happens, completion listeners are invoked only at the very end of the request/response processing: after the `Callback` passed to `Handler.handle(Request, Response, Callback)` has been completed, all container dispatched threads have returned, and all the response writes have been completed.
+
+In case of many completion listeners, they are invoked in the reverse order they have been added.
 
 [[pg-server-http-handler-impl-response]]
 ====== Using the `Response`

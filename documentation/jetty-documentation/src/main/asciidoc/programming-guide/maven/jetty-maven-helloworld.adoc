@@ -27,8 +27,6 @@ Using Maven for Jetty implementations is a popular choice, but users encouraged 
 Other popular tools include Ant and Gradle.
 ====
 
-First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the xref:jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
-
 [[configuring-embedded-jetty-with-maven]]
 ==== Using Embedded Jetty with Maven
 
@@ -146,40 +144,13 @@ You can now compile and execute the HelloWorld class by using these commands:
 > mvn clean compile exec:java
 ----
 
-You can point your browser to `+http://localhost:8080+` to see the _Hello World_ page.
-You can observe what Maven is doing for you behind the scenes by using the `mvn dependency:tree` command, which reveals the transitive dependency resolved and downloaded as:
-
-----
-> mvn dependency:tree
-[INFO] Scanning for projects...
-...
-[INFO]
-[INFO] ------------------------------------------------------------------------
-[INFO] Building Jetty HelloWorld 0.1-SNAPSHOT
-[INFO] ------------------------------------------------------------------------
-[INFO]
-[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ hello-world ---
-...
-[INFO] org.example:hello-world:jar:0.1-SNAPSHOT
-[INFO] \- org.eclipse.jetty:jetty-server:jar:9.3.9.v20160517:compile
-[INFO]    +- jakarta.servlet:jakarta.servlet-api:jar:3.1.0:compile
-[INFO]    +- org.eclipse.jetty:jetty-http:jar:9.3.9.v20160517:compile
-[INFO]    |  \- org.eclipse.jetty:jetty-util:jar:9.3.9.v20160517:compile
-[INFO]    \- org.eclipse.jetty:jetty-io:jar:9.3.9.v20160517:compile
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time: 4.145 s
-[INFO] Finished at: 2016-08-01T13:46:42-04:00
-[INFO] Final Memory: 15M/209M
-[INFO] ------------------------------------------------------------------------
-----
+Point your browser to `+http://localhost:8080+` to see the _Hello World_ page.
 
 [[developing-standard-webapp-with-jetty-and-maven]]
 ==== Developing a Standard WebApp with Jetty and Maven
 
 The previous section demonstrated how to use Maven with an application that embeds Jetty.
-Now we will examine instead how to develop a standard webapp with Maven and Jetty.
+We can instead develop a standard webapp using Maven and Jetty.
 First create the Maven structure (you can use the maven webapp archetype instead if you prefer):
 
 ----
@@ -216,17 +187,17 @@ public class HelloServlet extends HttpServlet
 }
 ----
 
-You need to declare this servlet in the deployment descriptor, so create the file `src/main/webapp/WEB-INF/web.xml` and add the following contents:
+This servlet must be declared in the web deployment descriptor, so create the file `src/main/webapp/WEB-INF/web.xml` and add the following contents:
 
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app
-   xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+   xmlns="https://jakarta.ee/xml/ns/jakartaee"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
    metadata-complete="false"
-   version="3.1">
+   version="6.0">
 
   <servlet>
     <servlet-name>Hello</servlet-name>
@@ -244,7 +215,7 @@ You need to declare this servlet in the deployment descriptor, so create the fil
 ===== Creating the POM Descriptor
 
 The `pom.xml` file declares the project name and its dependencies.
-Use an editor to create the file `pom.xml` with the following contents in the `JettyMavenHelloWarApp` directory, noting particularly the declaration of the xref:jetty-maven-plugin[jetty-maven-plugin]:
+Use an editor to create the file `pom.xml` with the following contents in the `JettyMavenHelloWarApp` directory, noting particularly the declaration of the xref:jetty-maven-plugin[jetty-maven-plugin] for the Jakarta {ee-current-caps} environment:
 
 [source,xml,subs="verbatim,attributes"]
 ----
@@ -267,7 +238,7 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>3.1.0</version>
+      <version>6.0.0</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -275,8 +246,8 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
   <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
         <version>${jettyVersion}</version>
       </plugin>
     </plugins>
@@ -288,7 +259,7 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
 [[building-and-running-web-application]]
 ===== Building and Running the Web Application
 
-Now you can both build and run the web application without needing to assemble it into a war by using the xref:jetty-maven-plugin[jetty-maven-plugin] via the command:
+The web application can now be built and run without first needing to assemble it into a war by using the xref:jetty-maven-plugin[jetty-maven-plugin] via the command:
 
 ----
 > mvn jetty:run
@@ -302,7 +273,7 @@ The full reference is at xref:jetty-maven-plugin[Configuring the Jetty Maven Plu
 [[building-war-file]]
 ===== Building a WAR file
 
-You can create a Web Application Archive (WAR) file from the project with the command:
+A Web Application Archive (WAR) file can be produced from the project with the command:
 
 ----
 > mvn package

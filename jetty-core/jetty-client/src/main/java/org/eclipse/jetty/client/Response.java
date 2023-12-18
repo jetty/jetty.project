@@ -190,6 +190,8 @@ public interface Response
             if (Content.Chunk.isFailure(chunk))
             {
                 response.abort(chunk.getFailure());
+                if (!chunk.isLast())
+                    contentSource.fail(chunk.getFailure());
                 return;
             }
             if (chunk.isLast() && !chunk.hasRemaining())
@@ -207,6 +209,7 @@ public interface Response
             {
                 chunk.release();
                 response.abort(x);
+                contentSource.fail(x);
             }
         }
     }

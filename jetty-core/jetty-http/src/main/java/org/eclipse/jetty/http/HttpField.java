@@ -436,6 +436,7 @@ public class HttpField
     }
 
     /**
+     * Get the {@link HttpHeader} of this field, or {@code null}.
      * @return the {@link HttpHeader} of this field, or {@code null}
      */
     public HttpHeader getHeader()
@@ -462,6 +463,7 @@ public class HttpField
     }
 
     /**
+     * Get the field name in lower-case.
      * @return the field name in lower-case
      */
     public String getLowerCaseName()
@@ -470,6 +472,7 @@ public class HttpField
     }
 
     /**
+     * Get the field name.
      * @return the field name
      */
     public String getName()
@@ -478,6 +481,7 @@ public class HttpField
     }
 
     /**
+     * Get the field value.
      * @return the field value
      */
     public String getValue()

@@ -572,7 +572,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     /**
      * Used by subclasses.
-     * @throws MojoExecutionException
+     * @throws MojoExecutionException if there is a mojo execution problem
      */
     protected void verifyPomConfiguration() throws MojoExecutionException
     {
@@ -583,7 +583,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Properties from the pom override properties from the file.
      * 
      * @return united properties map
-     * @throws MojoExecutionException
+     * @throws MojoExecutionException if there is a mojo execution problem
      */
     protected Map<String, String> mergeSystemProperties()
         throws MojoExecutionException
@@ -634,7 +634,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Augment jetty's classpath with dependencies marked as scope=provided
      * if useProvidedScope==true.
      * 
-     * @throws MojoExecutionException
+     * @throws MojoExecutionException if there is a mojo execution problem
      */
     protected void augmentPluginClasspath() throws MojoExecutionException
     {  
@@ -667,7 +667,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * included.
      * 
      * @return provided scope dependencies that are not also plugin dependencies.
-     * @throws MojoExecutionException
+     * @throws MojoExecutionException if there is a mojo execution problem
      */
     protected List<File> getProvidedJars() throws MojoExecutionException
     {  
@@ -688,7 +688,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * that are marked as provided and useProvidedScope is true.
      * 
      * @return jetty classpath
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     protected String getContainerClassPath() throws Exception
     {
@@ -784,7 +784,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Ensure there is a webapp, and that some basic defaults are applied
      * if the user has not supplied them.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     protected void configureWebApp()
         throws Exception
@@ -851,7 +851,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * @param name the name of the file
      * @return the created file
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     protected File getJettyOutputFile(String name) throws Exception
     {

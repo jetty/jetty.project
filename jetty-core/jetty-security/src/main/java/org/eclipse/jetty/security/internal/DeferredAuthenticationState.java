@@ -49,7 +49,7 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
     {
         try
         {
-            AuthenticationState authenticationState = _authenticator.validateRequest(request, __deferredResponse, null);
+            AuthenticationState authenticationState = _authenticator.validateRequest(request, __deferredResponse, Callback.NOOP);
             if (authenticationState != null)
             {
                 AuthenticationState.setAuthenticationState(request, authenticationState);

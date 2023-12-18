@@ -1061,6 +1061,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
+     * Set the web.xml descriptor to use. If set to null, WEB-INF/web.xml is used if it exists..
      * @param descriptor the web.xml descriptor to use. If set to null, WEB-INF/web.xml is used if it exists.
      */
     public void setDescriptor(String descriptor)
@@ -1156,7 +1157,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * Set temporary directory for context.
-     * The jakarta.servlet.context.tempdir attribute is also set.
+     * The {@value jakarta.servlet.ServletContext#TEMPDIR} attribute is also set.
      *
      * @param dir Writable temporary directory.
      */

@@ -44,11 +44,13 @@ import org.eclipse.jetty.util.Promise;
 public interface Stream
 {
     /**
+     * Get the stream id.
      * @return the stream id
      */
     public long getId();
 
     /**
+     * Get the session this stream is associated to.
      * @return the session this stream is associated to
      */
     public Session getSession();

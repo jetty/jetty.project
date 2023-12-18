@@ -195,7 +195,7 @@ public class DefaultServletCombinationsTest
                                 case REDIRECT ->
                                 {
                                     expectedStatus = HttpStatus.FOUND_302;
-                                    expected = pathInfoOnly ? "http://local/ctx/static/index.html" : "http://local/ctx/index.html";
+                                    expected = pathInfoOnly ? "/ctx/static/index.html" : "/ctx/index.html";
                                 }
                                 case REHANDLE ->
                                 {
@@ -222,7 +222,7 @@ public class DefaultServletCombinationsTest
                                 case REDIRECT ->
                                 {
                                     expectedStatus = HttpStatus.FOUND_302;
-                                    expected = pathInfoOnly ? "http://local/ctx/static/subdirHtml/index.html" : "http://local/ctx/subdirHtml/index.html";
+                                    expected = pathInfoOnly ? "/ctx/static/subdirHtml/index.html" : "/ctx/subdirHtml/index.html";
                                 }
                                 case REHANDLE ->
                                 {

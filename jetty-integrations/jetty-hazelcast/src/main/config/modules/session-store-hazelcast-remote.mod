@@ -38,5 +38,5 @@ jetty.session.hazelcast.onlyClient=true
 jetty.session.hazelcast.useQueries=false
 jetty.session.gracePeriod.seconds=3600
 jetty.session.savePeriod.seconds=0
-#jetty.session.hazelcast.configurationLocation
+#jetty.session.hazelcast.configurationLocation=
 #jetty.session.hazelcast.addresses=

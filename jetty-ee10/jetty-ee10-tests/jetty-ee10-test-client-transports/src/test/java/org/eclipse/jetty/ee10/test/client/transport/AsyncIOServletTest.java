@@ -44,9 +44,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
@@ -92,7 +92,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled
 public class AsyncIOServletTest extends AbstractTest
 {
     private static final ThreadLocal<RuntimeException> scope = new ThreadLocal<>();
@@ -1081,6 +1080,7 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
+    @Disabled // TODO Cannot write response from onError as failure has occurred
     public void testAsyncReadEarlyEOF(Transport transport) throws Exception
     {
         // SSLEngine receives the close alert from the client, and when
@@ -1197,8 +1197,8 @@ public class AsyncIOServletTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
-    public void testAsyncEcho(Transport transport) throws Exception
+    @MethodSource("transports")
+    public void testAsyncReadEcho(Transport transport) throws Exception
     {
         // TODO: investigate why H3 does not work.
         Assumptions.assumeTrue(transport != Transport.H3);
@@ -1208,8 +1208,6 @@ public class AsyncIOServletTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                System.err.println("service " + request);
-
                 AsyncContext asyncContext = request.startAsync();
                 ServletInputStream input = request.getInputStream();
                 input.setReadListener(new ReadListener()
@@ -1222,7 +1220,6 @@ public class AsyncIOServletTest extends AbstractTest
                             int b = input.read();
                             if (b >= 0)
                             {
-                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
                                 response.getOutputStream().write(b);
                             }
                             else
@@ -1523,8 +1520,7 @@ public class AsyncIOServletTest extends AbstractTest
             .method(HttpMethod.POST)
             .body(body)
             .timeout(15, TimeUnit.SECONDS);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         assertTrue(bodyLatch.await(5, TimeUnit.SECONDS));
 
@@ -1536,7 +1532,7 @@ public class AsyncIOServletTest extends AbstractTest
         // Complete the body.
         body.close();
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     }
 

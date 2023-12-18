@@ -277,7 +277,9 @@ public class FormAuthenticator extends LoginAuthenticator
                 // Redirect to original request
                 Session session = request.getSession(false);
                 HttpURI savedURI = (HttpURI)session.getAttribute(__J_URI);
-                String originalURI = savedURI != null ? savedURI.asString() : Request.getContextPath(request);
+                String originalURI = savedURI != null
+                    ? savedURI.getPathQuery()
+                    : Request.getContextPath(request);
                 if (originalURI == null)
                     originalURI = "/";
                 UserAuthenticationSent formAuth = new UserAuthenticationSent(getAuthenticationType(), user);

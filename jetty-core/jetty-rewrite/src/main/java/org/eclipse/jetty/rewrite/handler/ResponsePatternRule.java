@@ -52,6 +52,7 @@ public class ResponsePatternRule extends PatternRule
     }
 
     /**
+     * Set the response code.
      * @param code the response code
      */
     public void setCode(int code)
@@ -83,7 +84,7 @@ public class ResponsePatternRule extends PatternRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback)
+            protected boolean handle(Response response, Callback callback)
             {
                 String message = getMessage();
                 if (StringUtil.isBlank(message))

@@ -52,7 +52,7 @@ public class ServerSupport
      * @param server the server to use
      * @param contextHandlers the context handlers to include
      * @param requestLog a request log to use
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public static void configureHandlers(Server server, List<ContextHandler> contextHandlers, RequestLog requestLog) throws Exception 
     {
@@ -142,7 +142,7 @@ public class ServerSupport
      * Add a WebAppContext to a Server
      * @param server the server to use
      * @param webapp the webapp to add
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public static void addWebApplication(Server server, WebAppContext webapp) throws Exception
     {
@@ -228,7 +228,7 @@ public class ServerSupport
      * @param server the Server instance to configure
      * @param files the xml configs to apply
      * @return the Server after application of configs
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public static Server applyXmlConfigurations(Server server, List<File> files)
         throws Exception

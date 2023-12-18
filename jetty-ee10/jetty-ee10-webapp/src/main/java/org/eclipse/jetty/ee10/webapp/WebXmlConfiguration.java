@@ -46,7 +46,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
-            Resource dftResource = context.getResourceFactory().newSystemResource(defaultsDescriptor);
+            Resource dftResource = context.getResourceFactory().newClassLoaderResource(defaultsDescriptor);
             if (Resources.missing(dftResource))
             {
                 String pkg = WebXmlConfiguration.class.getPackageName().replace(".", "/") + "/";
@@ -80,7 +80,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         {
             if (overrideDescriptor != null && overrideDescriptor.length() > 0)
             {
-                Resource orideResource = context.getResourceFactory().newSystemResource(overrideDescriptor);
+                Resource orideResource = context.getResourceFactory().newClassLoaderResource(overrideDescriptor);
                 if (Resources.missing(orideResource))
                     orideResource = context.newResource(overrideDescriptor);
                 if (Resources.isReadableFile(orideResource))

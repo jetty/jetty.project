@@ -131,6 +131,7 @@ public class ResourceService
     }
 
     /**
+     * Get the cacheControl header to set on all static content..
      * @return the cacheControl header to set on all static content.
      */
     public String getCacheControl()
@@ -831,6 +832,7 @@ public class ResourceService
     }
 
     /**
+     * Set the cacheControl header to set on all static content..
      * @param cacheControl the cacheControl header to set on all static content.
      */
     public void setCacheControl(String cacheControl)
@@ -855,6 +857,7 @@ public class ResourceService
     }
 
     /**
+     * Set file extensions that signify that a file is gzip compressed. Eg ".svgz".
      * @param gzipEquivalentFileExtensions file extensions that signify that a file is gzip compressed. Eg ".svgz"
      */
     public void setGzipEquivalentFileExtensions(List<String> gzipEquivalentFileExtensions)

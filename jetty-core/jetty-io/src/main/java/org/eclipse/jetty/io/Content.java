@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
@@ -94,6 +95,11 @@ public class Content
 
     /**
      * <p>A source of content that can be read with a read/demand model.</p>
+     * <p>To avoid leaking its resources, a source <b>must</b> either:</p>
+     * <ul>
+     * <li>be read until it returns a {@link Chunk#isLast() last chunk}, either EOF or a terminal failure</li>
+     * <li>be {@link #fail(Throwable) failed}</li>
+     * </ul>
      * <h2><a id="idiom">Idiomatic usage</a></h2>
      * <p>The read/demand model typical usage is the following:</p>
      * <pre>{@code
@@ -109,12 +115,19 @@ public class Content
      *         }
      *
      *         // The chunk is a failure.
-     *         if (Content.Chunk.isFailure(chunk)) {
-     *             // Handle the failure.
-     *             Throwable cause = chunk.getFailure();
-     *             boolean transient = !chunk.isLast();
-     *             // ...
-     *             return;
+     *         if (Content.Chunk.isFailure(chunk))
+     *         {
+     *             boolean fatal = chunk.isLast();
+     *             if (fatal)
+     *             {
+     *                 handleFatalFailure(chunk.getFailure());
+     *                 return;
+     *             }
+     *             else
+     *             {
+     *                 handleTransientFailure(chunk.getFailure());
+     *                 continue;
+     *             }
      *         }
      *
      *         // It's a valid chunk, consume the chunk's bytes.
@@ -123,6 +136,10 @@ public class Content
      *
      *         // Release the chunk when it has been consumed.
      *         chunk.release();
+     *
+     *         // Exit if the Content.Source is fully consumed.
+     *         if (chunk.isLast())
+     *             break;
      *     }
      * }
      * }</pre>
@@ -159,6 +176,57 @@ public class Content
             {
                 throw IO.rethrow(x);
             }
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@code byte} array.</p>
+         *
+         * @param source the source to read
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return A {@link CompletableFuture} that will be completed when the complete content is read or
+         * failed if the max size is exceeded or there is a read error.
+         */
+        static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
+        {
+            return new ChunkAccumulator().readAll(source, maxSize);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @return the {@link CompletableFuture} to notify when the whole content has been read
+         */
+        static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source)
+        {
+            return asByteBufferAsync(source, -1);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return the {@link CompletableFuture} to notify when the whole content has been read
+         */
+        static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
+        {
+            return asByteArrayAsync(source, maxSize).thenApply(ByteBuffer::wrap);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
+         *
+         * @param source The {@link Content.Source} to read
+         * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
+         * @param direct True if the buffer should be direct.
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return A {@link CompletableFuture} that will be completed when the complete content is read or
+         * failed if the max size is exceeded or there is a read error.
+         */
+        static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
+        {
+            return new ChunkAccumulator().readAll(source, pool, direct, maxSize);
         }
 
         /**
@@ -398,6 +466,22 @@ public class Content
      */
     public interface Sink
     {
+        /**
+         * <p>Wraps the given content sink with a buffering sink.</p>
+         *
+         * @param sink the sink to write to
+         * @param bufferPool the {@link ByteBufferPool} to use
+         * @param direct true to use direct buffers, false to use heap buffers
+         * @param maxAggregationSize the maximum size that can be buffered in a single write;
+         * any size above this threshold triggers a buffer flush
+         * @param maxBufferSize the maximum size of the buffer
+         * @return a Sink that writes to the given content sink
+         */
+        static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int maxAggregationSize, int maxBufferSize)
+        {
+            return new BufferedContentSink(sink, bufferPool, direct, maxAggregationSize, maxBufferSize);
+        }
+
         /**
          * <p>Wraps the given content sink with an {@link OutputStream}.</p>
          *
@@ -791,9 +875,11 @@ public class Content
          */
         default Chunk asReadOnly()
         {
-            if (!canRetain())
+            if (getByteBuffer().isReadOnly())
                 return this;
-            return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            if (canRetain())
+                return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            return from(getByteBuffer().asReadOnlyBuffer(), isLast());
         }
 
         /**

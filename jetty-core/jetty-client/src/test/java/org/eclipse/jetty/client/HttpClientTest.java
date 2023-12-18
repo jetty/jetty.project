@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
@@ -96,7 +97,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
-
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testStoppingClosesConnections(Scenario scenario) throws Exception
@@ -631,8 +631,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         AsyncRequestContent body = new AsyncRequestContent();
-        body.write(false, BufferUtil.allocate(512), Callback.NOOP);
-        body.write(false, BufferUtil.allocate(512), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
+        body.write(false, ByteBuffer.allocate(512), Callback.NOOP);
+        body.write(false, ByteBuffer.allocate(512), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -1210,9 +1210,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         destination.newConnection(promise);
         try (Connection connection = promise.get(5, TimeUnit.SECONDS))
         {
-            FutureResponseListener listener = new FutureResponseListener(request);
-            connection.send(request, listener);
-            ContentResponse response = listener.get(2 * timeout, TimeUnit.MILLISECONDS);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send(connection);
+            ContentResponse response = completable.get(2 * timeout, TimeUnit.MILLISECONDS);
 
             assertEquals(200, response.getStatus());
             // The parser notifies end-of-content and therefore the CompleteListener
@@ -1340,13 +1339,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .version(version)
             .body(content);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
         // Wait some time to simulate a slow request.
         Thread.sleep(1000);
         content.close();
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(data, response.getContent());
@@ -1497,8 +1495,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             FuturePromise<Connection> promise = new FuturePromise<>();
             client.resolveDestination(request).newConnection(promise);
             Connection connection = promise.get(5, TimeUnit.SECONDS);
-            FutureResponseListener listener = new FutureResponseListener(request);
-            connection.send(request, listener);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send(connection);
 
             try (Socket socket = server.accept())
             {
@@ -1513,7 +1510,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
-                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                ContentResponse response = completable.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
                 assertThat(connection, Matchers.instanceOf(HttpConnectionOverHTTP.class));
                 HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
@@ -1528,8 +1525,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 httpConnection.fillInterested();
 
                 request = client.newRequest(host, port);
-                listener = new FutureResponseListener(request);
-                connection.send(request, listener);
+                completable = new CompletableResponseListener(request).send(connection);
 
                 consume(input, false);
 
@@ -1540,7 +1536,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
-                listener.get(5, TimeUnit.SECONDS);
+                completable.get(5, TimeUnit.SECONDS);
             }
         }
     }
@@ -1667,8 +1663,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             Request request = client.newRequest("localhost", server.getLocalPort())
                 .scheme(scenario.getScheme())
                 .timeout(5, TimeUnit.SECONDS);
-            FutureResponseListener listener = new FutureResponseListener(request);
-            request.send(listener);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
             try (Socket socket = server.accept())
             {
@@ -1686,7 +1681,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
-                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                ContentResponse response = completable.get(5, TimeUnit.SECONDS);
                 assertEquals(204, response.getStatus());
 
                 byte[] responseContent = response.getContent();
@@ -1697,8 +1692,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 request = client.newRequest("localhost", server.getLocalPort())
                     .scheme(scenario.getScheme())
                     .timeout(5, TimeUnit.SECONDS);
-                listener = new FutureResponseListener(request);
-                request.send(listener);
+                completable = new CompletableResponseListener(request).send();
 
                 consume(input, false);
 
@@ -1709,7 +1703,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
-                response = listener.get(5, TimeUnit.SECONDS);
+                response = completable.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
             }
         }

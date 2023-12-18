@@ -114,7 +114,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
     /**
      * Configure a webapp that has not been assembled into a war. 
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     protected void configureUnassembledWebApp() throws Exception
     {   

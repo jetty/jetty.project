@@ -81,11 +81,16 @@ class ServletCoreRequest implements Request
         String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
         boolean included = includedServletPath != null;
 
-        HttpURI.Mutable builder = HttpURI.build(request.getRequestURI());
+        HttpURI.Mutable builder = HttpURI.build();
+        builder.scheme(request.getScheme())
+            .authority(request.getServerName(), request.getServerPort());
+
         if (included)
             builder.path(addEncodedPaths(request.getContextPath(), encodePath(DefaultServlet.getIncludedPathInContext(request, includedServletPath, false))));
         else if (request.getDispatcherType() != DispatcherType.REQUEST)
             builder.path(addEncodedPaths(request.getContextPath(), encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()))));
+        else
+            builder.path(request.getRequestURI());
         builder.query(request.getQueryString());
         _uri = builder.asImmutable();
     }

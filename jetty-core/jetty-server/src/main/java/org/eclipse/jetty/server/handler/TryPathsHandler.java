@@ -82,6 +82,7 @@ public class TryPathsHandler extends Handler.Wrapper
     }
 
     /**
+     * Get the attribute name of the original request path.
      * @return the attribute name of the original request path
      */
     public String getOriginalPathAttribute()
@@ -102,6 +103,7 @@ public class TryPathsHandler extends Handler.Wrapper
     }
 
     /**
+     * Get the attribute name of the original request query.
      * @return the attribute name of the original request query
      */
     public String getOriginalQueryAttribute()

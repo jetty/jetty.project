@@ -33,7 +33,7 @@ public class quiche_h
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    private static final String EXPECTED_QUICHE_VERSION = "0.16.0";
+    private static final String EXPECTED_QUICHE_VERSION = "0.18.0";
 
     public static final byte C_FALSE = 0;
     public static final byte C_TRUE = 1;
@@ -308,6 +308,12 @@ public class quiche_h
         "quiche_conn_stream_send",
         "(Ljdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;JB)J",
         FunctionDescriptor.of(C_LONG, C_POINTER, C_LONG, C_POINTER, C_LONG, C_CHAR)
+    );
+
+    private static final MethodHandle quiche_conn_stream_writable$MH = downcallHandle(
+        "quiche_conn_stream_writable",
+        "(Ljdk/incubator/foreign/MemoryAddress;JJ)I",
+        FunctionDescriptor.of(C_INT, C_POINTER, C_LONG, C_LONG)
     );
 
     private static final MethodHandle quiche_conn_stream_recv$MH = downcallHandle(
@@ -663,6 +669,18 @@ public class quiche_h
         try
         {
             return (long) quiche_conn_stream_send$MH.invokeExact(conn, stream_id, buf, buf_len, fin);
+        }
+        catch (Throwable ex)
+        {
+            throw new AssertionError("should not reach here", ex);
+        }
+    }
+
+    public static int quiche_conn_stream_writable(MemoryAddress conn, long stream_id, long buf_len)
+    {
+        try
+        {
+            return (int) quiche_conn_stream_writable$MH.invokeExact(conn, stream_id, buf_len);
         }
         catch (Throwable ex)
         {

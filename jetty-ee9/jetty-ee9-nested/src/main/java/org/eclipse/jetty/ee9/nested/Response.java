@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.WriteThroughWriter;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
@@ -72,11 +73,18 @@ public class Response implements HttpServletResponse
     public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
     /**
-     * If this string is found within a cookie comment, then the cookie is HttpOnly
+     * String used in the {@code Comment} attribute of {@link Cookie}
+     * to support the {@code HttpOnly} attribute.
      **/
     private static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
     /**
-     * These strings are used by to check for a SameSite specifier in a cookie comment
+     * String used in the {@code Comment} attribute of {@link Cookie}
+     * to support the {@code Partitioned} attribute.
+     **/
+    private static final String PARTITIONED_COMMENT = "__PARTITIONED__";
+    /**
+     * The strings used in the {@code Comment} attribute of {@link Cookie}
+     * to support the {@code SameSite} attribute.
      **/
     private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
     private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
@@ -358,7 +366,7 @@ public class Response implements HttpServletResponse
             return null;
 
         // should not encode if cookies in evidence
-        if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingURLs())
+        if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingUriParameters())
         {
             int prefix = url.indexOf(sessionURLPrefix);
             if (prefix != -1)
@@ -867,15 +875,15 @@ public class Response implements HttpServletResponse
             String encoding = getCharacterEncoding(true);
             Locale locale = getLocale();
             if (_writer != null && _writer.isFor(locale, encoding))
+            {
                 _writer.reopen();
+            }
             else
             {
-                if (MimeTypes.ISO_8859_1.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out), locale, encoding);
-                else if (MimeTypes.UTF8.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Utf8HttpWriter(_out), locale, encoding);
-                else
-                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
+                // We must use an specialized Writer here as we rely on the non cached characters
+                // in the writer implementation for flush and completion operations.
+                WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(_out, encoding);
+                _writer = new ResponseWriter(outputStreamWriter, locale, encoding);
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
@@ -965,9 +973,8 @@ public class Response implements HttpServletResponse
     public void completeOutput(Callback callback)
     {
         if (_outputType == OutputType.WRITER)
-            _writer.complete(callback);
-        else
-            _out.complete(callback);
+            _writer.markAsClosed();
+        _out.complete(callback);
     }
 
     public long getLongContentLength()
@@ -1402,7 +1409,7 @@ public class Response implements HttpServletResponse
 
     public static void putHeaders(HttpServletResponse response, HttpContent content, long contentLength, boolean etag)
     {
-        long lml = content.getLastModified().getLongValue();
+        long lml = content.getResource().lastModified().toEpochMilli();
         if (lml >= 0)
             response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(), lml);
 
@@ -1480,16 +1487,16 @@ public class Response implements HttpServletResponse
         private final String _comment;
         private final boolean _httpOnly;
         private final SameSite _sameSite;
+        private final boolean _partitioned;
 
         public HttpCookieFacade(Cookie cookie)
         {
             _cookie = cookie;
-
             String comment = cookie.getComment();
-
-            // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+            // HttpOnly was supported as a comment in cookie flags before the Cookie implementation so need to check that.
             _httpOnly = cookie.isHttpOnly() || isHttpOnlyInComment(comment);
             _sameSite = getSameSiteFromComment(comment);
+            _partitioned = isPartitionedInComment(comment);
             _comment = getCommentWithoutAttributes(comment);
         }
 
@@ -1554,6 +1561,12 @@ public class Response implements HttpServletResponse
         }
 
         @Override
+        public boolean isPartitioned()
+        {
+            return _partitioned;
+        }
+
+        @Override
         public Map<String, String> getAttributes()
         {
             Map<String, String> attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -1568,6 +1581,8 @@ public class Response implements HttpServletResponse
                 attributes.put(SAME_SITE_ATTRIBUTE, _sameSite.getAttributeValue());
             if (isSecure())
                 attributes.put(SECURE_ATTRIBUTE, Boolean.TRUE.toString());
+            if (isPartitioned())
+                attributes.put(PARTITIONED_ATTRIBUTE, Boolean.TRUE.toString());
             return attributes;
         }
 
@@ -1589,47 +1604,43 @@ public class Response implements HttpServletResponse
             return HttpCookie.toString(this);
         }
 
-        static boolean isHttpOnlyInComment(String comment)
+        private static boolean isHttpOnlyInComment(String comment)
         {
             return comment != null && comment.contains(HTTP_ONLY_COMMENT);
         }
 
-        static SameSite getSameSiteFromComment(String comment)
+        private static boolean isPartitionedInComment(String comment)
         {
-            if (comment != null)
-            {
-                if (comment.contains(SAME_SITE_STRICT_COMMENT))
-                {
-                    return SameSite.STRICT;
-                }
-                if (comment.contains(SAME_SITE_LAX_COMMENT))
-                {
-                    return SameSite.LAX;
-                }
-                if (comment.contains(SAME_SITE_NONE_COMMENT))
-                {
-                    return SameSite.NONE;
-                }
-            }
+            return comment != null && comment.contains(PARTITIONED_COMMENT);
+        }
 
+        private static SameSite getSameSiteFromComment(String comment)
+        {
+            if (comment == null)
+                return null;
+            if (comment.contains(SAME_SITE_STRICT_COMMENT))
+                return SameSite.STRICT;
+            if (comment.contains(SAME_SITE_LAX_COMMENT))
+                return SameSite.LAX;
+            if (comment.contains(SAME_SITE_NONE_COMMENT))
+                return SameSite.NONE;
             return null;
         }
 
         private static String getCommentWithoutAttributes(String comment)
         {
             if (comment == null)
-            {
                 return null;
-            }
 
             String strippedComment = comment.trim();
 
             strippedComment = StringUtil.strip(strippedComment, HTTP_ONLY_COMMENT);
+            strippedComment = StringUtil.strip(strippedComment, PARTITIONED_COMMENT);
             strippedComment = StringUtil.strip(strippedComment, SAME_SITE_NONE_COMMENT);
             strippedComment = StringUtil.strip(strippedComment, SAME_SITE_LAX_COMMENT);
             strippedComment = StringUtil.strip(strippedComment, SAME_SITE_STRICT_COMMENT);
 
-            return strippedComment.length() == 0 ? null : strippedComment;
+            return strippedComment.isEmpty() ? null : strippedComment;
         }
     }
 }

@@ -19,6 +19,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * Simple, yet surprisingly common utility methods for identifying various file types commonly seen and worked with in a
@@ -26,6 +27,8 @@ import java.util.Locale;
  */
 public class FileID
 {
+    private static final Pattern NUMBER = Pattern.compile("[0-9]+");
+
     /**
      * Retrieve the basename of a path. This is the name of the
      * last segment of the path, with any dot suffix (e.g. ".war") removed
@@ -356,7 +359,7 @@ public class FileID
     }
 
     /**
-     * Predicate to select all class files
+     * Predicate to test for class files
      *
      * @param path the path to test
      * @return true if the filename ends with {@code .class}
@@ -369,7 +372,7 @@ public class FileID
         
         String filename = fileNamePath.toString();
         // has to end in ".class"
-        if (!filename.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+        if (!StringUtil.asciiEndsWithIgnoreCase(filename, ".class"))
             return false;
         // is it a valid class filename?
         int start = 0;
@@ -395,20 +398,16 @@ public class FileID
      * Predicate useful for {@code Stream<Path>} to exclude hidden paths following
      * filesystem rules for hidden directories and files.
      *
-     * @param base the base path to search from (anything above this path is not evaluated)
-     * @param path the path to evaluate
+     * @param path the possibly relative path to evaluate
      * @return true if hidden by FileSystem rules, false if not
      * @see Files#isHidden(Path)
      */
-    public static boolean isHidden(Path base, Path path)
+    public static boolean isHidden(Path path)
     {
-        // Work with the path in relative form, from the base onwards to the path
-        Path relative = base.relativize(path);
-
-        int count = relative.getNameCount();
+        int count = path.getNameCount();
         for (int i = 0; i < count; i++)
         {
-            Path segment = relative.getName(i);
+            Path segment = path.getName(i);
 
             String segmentName = segment.toString();
 
@@ -430,8 +429,22 @@ public class FileID
                 // ignore, if filesystem gives us an error, we cannot make the call on hidden status
             }
         }
-
         return false;
+    }
+
+    /**
+     * Predicate useful for {@code Stream<Path>} to exclude hidden paths following
+     * filesystem rules for hidden directories and files.
+     *
+     * @param base the base path to search from (anything above this path is not evaluated)
+     * @param path the path to evaluate
+     * @return true if hidden by FileSystem rules, false if not
+     * @see Files#isHidden(Path)
+     */
+    public static boolean isHidden(Path base, Path path)
+    {
+        // Work with the path in relative form, from the base onwards to the path
+        return isHidden(base.relativize(path));
     }
 
     /**
@@ -482,13 +495,13 @@ public class FileID
         if (path.getNameCount() < 3)
             return false;
 
-        Path path0 = path.getName(0);
-        Path path1 = path.getName(1);
-        Path path2 = path.getName(2);
+        if (!StringUtil.asciiEqualsIgnoreCase("META-INF", path.getName(0).toString()))
+            return false;
 
-        return (path0.toString().equals("META-INF") &&
-            path1.toString().equals("versions") &&
-            path2.getFileName().toString().matches("[0-9]+"));
+        if (!StringUtil.asciiEqualsIgnoreCase("versions", path.getName(1).toString()))
+            return false;
+
+        return NUMBER.matcher(path.getName(2).getFileName().toString()).matches();
     }
 
     /**
@@ -516,13 +529,28 @@ public class FileID
      * @param path the path to test
      * @return true if not a {@code module-info.class} file
      */
-    public static boolean isNotModuleInfoClass(Path path)
+    public static boolean isModuleInfoClass(Path path)
     {
         Path filenameSegment = path.getFileName();
         if (filenameSegment == null)
-            return true;
+            return false;
 
-        return !filenameSegment.toString().equalsIgnoreCase("module-info.class");
+        return filenameSegment.toString().equalsIgnoreCase("module-info.class");
+    }
+
+    /**
+     * Predicate to skip {@code module-info.class} files.
+     *
+     * <p>
+     * This is a simple test against the last path segment using {@link Path#getFileName()}
+     * </p>
+     *
+     * @param path the path to test
+     * @return true if not a {@code module-info.class} file
+     */
+    public static boolean isNotModuleInfoClass(Path path)
+    {
+        return !isModuleInfoClass(path);
     }
 
     /**

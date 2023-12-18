@@ -40,6 +40,7 @@ public class MetaDataBuilder
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
+    private long _beginNanoTime = Long.MIN_VALUE;
 
     /**
      * @param maxHeadersSize The maximum size of the headers, expressed as total name and value characters.
@@ -50,6 +51,7 @@ public class MetaDataBuilder
     }
 
     /**
+     * Get the maxSize.
      * @return the maxSize
      */
     public int getMaxSize()
@@ -60,6 +62,13 @@ public class MetaDataBuilder
     public void setMaxSize(int maxSize)
     {
         _maxSize = maxSize;
+    }
+
+    public void setBeginNanoTime(long beginNanoTime)
+    {
+        if (beginNanoTime == Long.MIN_VALUE)
+            beginNanoTime++;
+        _beginNanoTime = beginNanoTime;
     }
 
     /**
@@ -76,7 +85,7 @@ public class MetaDataBuilder
     {
         HttpHeader header = field.getHeader();
         String name = field.getName();
-        if (name == null || name.length() == 0)
+        if (name == null || name.isEmpty())
             throw new SessionException("Header size 0");
         String value = field.getValue();
         int fieldSize = name.length() + (value == null ? 0 : value.length());
@@ -147,7 +156,7 @@ public class MetaDataBuilder
                 case C_PATH:
                     if (checkPseudoHeader(header, _path))
                     {
-                        if (value != null && value.length() > 0)
+                        if (value != null && !value.isEmpty())
                             _path = value;
                         else
                             streamException("No Path");
@@ -249,13 +258,15 @@ public class MetaDataBuilder
                     if (_path == null)
                         throw new HpackException.StreamException("No Path");
                 }
+                long nanoTime = _beginNanoTime == Long.MIN_VALUE ? NanoTime.now() : _beginNanoTime;
+                _beginNanoTime = Long.MIN_VALUE;
                 if (isConnect)
-                    return new MetaData.ConnectRequest(NanoTime.now(), _scheme, _authority, _path, fields, _protocol); // TODO #9900 make beginNanoTime accurate
+                    return new MetaData.ConnectRequest(nanoTime, _scheme, _authority, _path, fields, _protocol);
                 else
                     return new MetaData.Request(
-                        NanoTime.now(), // TODO #9900 make beginNanoTime accurate
-                         _method,
-                        _scheme == null ? HttpScheme.HTTP.asString() : _scheme.asString(),
+                        nanoTime,
+                        _method,
+                        _scheme.asString(),
                         _authority,
                         _path,
                         HttpVersion.HTTP_2,

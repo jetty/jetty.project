@@ -83,6 +83,7 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     }
 
     /**
+     * Release an Entry.
      * @param entry returns this Object to the pool or calls {@link #end(Object)} if the pool is full.
      */
     public void release(Entry entry)
@@ -95,7 +96,7 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     {
         if (_capacity > 0)
         {
-            _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, _capacity, true);
+            _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, _capacity);
             addBean(_pool);
         }
         super.doStart();

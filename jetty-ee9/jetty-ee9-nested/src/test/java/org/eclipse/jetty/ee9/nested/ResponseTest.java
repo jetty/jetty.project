@@ -318,7 +318,7 @@ public class ResponseTest
         assertEquals("application/vnd.api+json", response.getContentType());
         response.getWriter();
         assertEquals("application/vnd.api+json", response.getContentType());
-        assertEquals("utf-8", response.getCharacterEncoding());
+        assertEquals("UTF-8", response.getCharacterEncoding());
     }
 
     @Test
@@ -461,7 +461,7 @@ public class ResponseTest
         Response response = getResponse();
 
         response.setContentType("text/html");
-        assertEquals("iso-8859-1", response.getCharacterEncoding());
+        assertEquals("ISO-8859-1", response.getCharacterEncoding());
 
         // setLocale should change character encoding based on
         // locale-encoding-mapping-list

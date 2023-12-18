@@ -127,6 +127,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
     }
 
     /**
+     * Get the out.
      * @return the out
      */
     public OutputStream getOutputStream()
@@ -135,6 +136,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
     }
 
     /**
+     * Set the out to set.
      * @param out the out to set
      */
     public void setOutputStream(OutputStream out)

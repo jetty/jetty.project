@@ -88,6 +88,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1328,7 +1329,7 @@ public class RequestTest
             "Connection: close\n" +
             "\n");
         assertThat(response, containsString(" 302 Found"));
-        assertThat(response, containsString("Location: http://myhost/foo"));
+        assertThat(response, containsString("Location: /foo"));
     }
 
     @Test
@@ -1776,7 +1777,7 @@ public class RequestTest
      * Test that multiple requests on the same connection with different cookies
      * do not bleed cookies.
      *
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testDifferentCookies() throws Exception
@@ -2262,7 +2263,7 @@ public class RequestTest
             try
             {
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 
                 String field1 = request.getParameter("field1");
                 assertNotNull(field1);
@@ -2318,7 +2319,7 @@ public class RequestTest
             try
             {
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.toString(), -1, -1, 2);
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 
                 //We should get an error when we getParams if there was a problem parsing the multipart
                 request.getPart("xxx");
@@ -2492,5 +2493,53 @@ public class RequestTest
                 assertThat(response, not(containsString(notContainsCookie)));
             }
         }
+    }
+
+    @Test
+    public void testGetCharacterEncoding() throws Exception
+    {
+        _handler._checker = (request, response) ->
+        {
+            // No character encoding specified
+            request.getReader();
+            // Try setting after read has been obtained
+            request.setCharacterEncoding("ISO-8859-2");
+            assertThat(request.getCharacterEncoding(), nullValue());
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET /test HTTP/1.1\r
+                Host: host\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    @Test
+    public void testUnknownCharacterEncoding() throws Exception
+    {
+        _handler._checker = (request, response) ->
+        {
+            assertThat(request.getCharacterEncoding(), is("Unknown"));
+            Assertions.assertThrows(UnsupportedEncodingException.class, request::getReader);
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            """
+                POST /test HTTP/1.1\r
+                Host: host\r
+                Content-Type:multipart/form-data; charset=Unknown\r
+                Content-Length: 10\r
+                Connection: close\r
+                \r
+                1234567890\r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 }

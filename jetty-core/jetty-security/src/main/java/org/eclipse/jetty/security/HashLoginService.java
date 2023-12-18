@@ -98,6 +98,7 @@ public class HashLoginService extends AbstractLoginService
     }
 
     /**
+     * Get the scan interval in seconds for reloading the property file..
      * @return the scan interval in seconds for reloading the property file.
      */
     public int getReloadInterval()

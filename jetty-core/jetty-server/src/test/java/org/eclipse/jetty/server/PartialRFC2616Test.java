@@ -406,7 +406,7 @@ public class PartialRFC2616Test
     }
 
     /**
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      * @see <a href="https://www.rfc-editor.org/rfc/rfc2616#section-5.2">RFC 2616 - Section 5.2 - The Resource Identified by a Request</a>
      */
     @Test

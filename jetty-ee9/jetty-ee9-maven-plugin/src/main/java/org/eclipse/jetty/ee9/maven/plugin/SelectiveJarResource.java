@@ -132,9 +132,21 @@ public class SelectiveJarResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r)
+    public boolean isContainedIn(Resource container)
     {
-        return _delegate.isContainedIn(r);
+        return _delegate.isContainedIn(container);
+    }
+
+    @Override
+    public boolean contains(Resource other)
+    {
+        return _delegate.contains(other);
+    }
+
+    @Override
+    public Path getPathTo(Resource other)
+    {
+        return _delegate.getPathTo(other);
     }
 
     @Override

@@ -76,7 +76,7 @@ public class HttpConfiguration implements Dumpable
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private boolean _notifyRemoteAsyncErrors = true;
-    private boolean _relativeRedirectAllowed;
+    private boolean _relativeRedirectAllowed = true;
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
@@ -180,6 +180,11 @@ public class HttpConfiguration implements Dumpable
                 return (T)c;
         }
         return null;
+    }
+
+    public boolean removeCustomizer(Customizer customizer)
+    {
+        return _customizers.remove(customizer);
     }
 
     @ManagedAttribute("The size in bytes of the output buffer used to aggregate HTTP output")
@@ -324,6 +329,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set if true, delays the application dispatch until content is available (defaults to true).
      * @param delay if true, delays the application dispatch until content is available (defaults to true)
      */
     public void setDelayDispatchUntilContent(boolean delay)
@@ -338,6 +344,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set whether to use direct ByteBuffers for reading.
      * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
      */
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
@@ -352,6 +359,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set whether to use direct ByteBuffers for writing.
      * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
      */
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
@@ -621,6 +629,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set whether remote errors, when detected, are notified to async applications.
      * @param notifyRemoteAsyncErrors whether remote errors, when detected, are notified to async applications
      */
     public void setNotifyRemoteAsyncErrors(boolean notifyRemoteAsyncErrors)

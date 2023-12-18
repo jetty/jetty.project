@@ -32,6 +32,7 @@ public interface ServerUpgradeResponse extends Response
     String getAcceptedSubProtocol();
 
     /**
+     * Set the negotiated sub-protocol.
      * @param protocol the negotiated sub-protocol
      */
     void setAcceptedSubProtocol(String protocol);
@@ -42,6 +43,7 @@ public interface ServerUpgradeResponse extends Response
     List<ExtensionConfig> getExtensions();
 
     /**
+     * Set the list of negotiated extensions.
      * @param configs the list of negotiated extensions
      */
     void setExtensions(List<ExtensionConfig> configs);

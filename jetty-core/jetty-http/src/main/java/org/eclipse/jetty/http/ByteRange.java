@@ -51,6 +51,7 @@ public record ByteRange(long first, long last)
     }
 
     /**
+     * Get the length of this byte range.
      * @return the length of this byte range
      */
     public long getLength()

@@ -20,6 +20,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,8 +39,10 @@ public class EvictionTest
     public void before()
     {
         _decoder = new QpackDecoder(_decoderHandler);
+        _decoder.setBeginNanoTimeSupplier(NanoTime::now);
         _decoder.setMaxHeadersSize(1024);
         _decoder.setMaxTableCapacity(4 * 1024);
+        _decoder.setBeginNanoTimeSupplier(NanoTime::now);
 
         _encoder = new QpackEncoder(_encoderHandler)
         {

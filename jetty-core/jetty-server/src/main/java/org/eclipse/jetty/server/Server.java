@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -69,6 +70,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ManagedObject
 public class Server extends Handler.Wrapper implements Attributes
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
@@ -173,7 +175,8 @@ public class Server extends Handler.Wrapper implements Attributes
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // Handle either with normal handler or default handler
-        return super.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
+        Handler next = getHandler();
+        return next != null && next.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
     }
 
     public String getServerInfo()
@@ -217,7 +220,7 @@ public class Server extends Handler.Wrapper implements Attributes
      * @see #getContext()
      * @see Context#getTempDirectory()
      */
-    @ManagedAttribute("temporary directory")
+    @ManagedAttribute(value = "The server temporary directory", readonly = true)
     public File getTempDirectory()
     {
         return _tempDirectory;
@@ -303,7 +306,7 @@ public class Server extends Handler.Wrapper implements Attributes
         _errorHandler = errorHandler;
     }
 
-    @ManagedAttribute("version of this server")
+    @ManagedAttribute("The version of this server")
     public static String getVersion()
     {
         return Jetty.VERSION;
@@ -424,17 +427,19 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return Returns the threadPool.
      */
-    @ManagedAttribute("the server thread pool")
+    @ManagedAttribute("The server Thread pool")
     public ThreadPool getThreadPool()
     {
         return _threadPool;
     }
 
+    @ManagedAttribute("The server Scheduler")
     public Scheduler getScheduler()
     {
         return _scheduler;
     }
 
+    @ManagedAttribute("The server ByteBuffer pool")
     public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
@@ -443,13 +448,14 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called after starting
      */
-    @ManagedAttribute("dump state to stderr after start")
+    @ManagedAttribute("Whether to dump the server to stderr after start")
     public boolean isDumpAfterStart()
     {
         return _dumpAfterStart;
     }
 
     /**
+     * Set true if {@link #dumpStdErr()} is called after starting.
      * @param dumpAfterStart true if {@link #dumpStdErr()} is called after starting
      */
     public void setDumpAfterStart(boolean dumpAfterStart)
@@ -460,13 +466,14 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called before stopping
      */
-    @ManagedAttribute("dump state to stderr before stop")
+    @ManagedAttribute("Whether to dump the server to stderr before stop")
     public boolean isDumpBeforeStop()
     {
         return _dumpBeforeStop;
     }
 
     /**
+     * Set true if {@link #dumpStdErr()} is called before stopping.
      * @param dumpBeforeStop true if {@link #dumpStdErr()} is called before stopping
      */
     public void setDumpBeforeStop(boolean dumpBeforeStop)

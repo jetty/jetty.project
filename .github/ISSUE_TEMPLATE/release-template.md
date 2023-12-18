@@ -25,6 +25,7 @@ This release process will produce releases:
   + [ ] Freeze the target [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects) by editing their names to "Jetty X.Y.Z FROZEN"
   + [ ] Review the issues/PRs assigned to the target [GitHub Project(s)](https://github.com/eclipse/jetty.project/projects).  Any tasks that are not-yet-started are moved to next releases.
 - [ ] Review dependabot status. [Manually](https://github.com/eclipse/jetty.project/network/updates) run dependabot if needed and review resulting PRs for inclusion.
+      Such updates should only be included in the week before a release if there is a compelling security or stability reason to do so.
 - [ ] Wait 24 hours from last change to the issues/PRs included in FROZEN GitHub Project(s).
 - [ ] Verify target [project(s)](https://github.com/eclipse/jetty.project/projects) are complete.
 - [ ] Verify that branch `jetty-10.0.x` is merged to branch `jetty-11.0.x`.

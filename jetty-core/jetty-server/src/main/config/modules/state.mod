@@ -9,6 +9,9 @@ start
 [depends]
 server
 
+[before]
+deploy
+
 [xml]
 etc/jetty-state.xml
 

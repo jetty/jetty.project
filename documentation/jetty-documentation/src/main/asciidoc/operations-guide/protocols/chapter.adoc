@@ -37,9 +37,10 @@ include::protocols-http2.adoc[]
 include::protocols-http2s.adoc[]
 include::protocols-http2c.adoc[]
 include::protocols-http3.adoc[]
+include::protocols-websocket.adoc[]
+include::protocols-fcgi.adoc[]
 include::protocols-ssl.adoc[]
 include::protocols-proxy.adoc[]
-include::protocols-websocket.adoc[]
 
 // TODO: old_docs/connectors/*.adoc
 

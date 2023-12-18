@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -42,9 +43,8 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            FutureResponseListener listener = new FutureResponseListener(request);
-            connection.send(request, listener);
-            ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send(connection);
+            ContentResponse response = completable.get(5, TimeUnit.SECONDS);
 
             assertNotNull(response);
             assertEquals(200, response.getStatus());
@@ -67,9 +67,8 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        connection.send(request, listener);
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send(connection);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
 
         assertEquals(200, response.getStatus());
 
@@ -105,9 +104,8 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         destination.newConnection(futureConnection);
         Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
 
-        FutureResponseListener listener = new FutureResponseListener(request);
-        connection.send(request, listener);
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send(connection);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));

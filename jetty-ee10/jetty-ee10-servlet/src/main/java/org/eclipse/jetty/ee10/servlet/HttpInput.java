@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -42,8 +41,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final ServletChannel _servletChannel;
     private final ServletChannelState _channelState;
     private final byte[] _oneByteBuffer = new byte[1];
-    private final BlockingContentProducer _blockingContentProducer;
-    private final AsyncContentProducer _asyncContentProducer;
+    final BlockingContentProducer _blockingContentProducer;
+    final AsyncContentProducer _asyncContentProducer;
     private final LongAdder _contentConsumed = new LongAdder();
     private volatile ContentProducer _contentProducer;
     private volatile boolean _consumedEof;
@@ -348,8 +347,6 @@ public class HttpInput extends ServletInputStream implements Runnable
             Throwable failure = chunk.getFailure();
             if (LOG.isDebugEnabled())
                 LOG.debug("running failure={} {}", failure, this);
-            // TODO is this necessary to add here?
-            _servletChannel.getServletContextResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
             _readListener.onError(failure);
         }
         else if (chunk.isLast() && !chunk.hasRemaining())

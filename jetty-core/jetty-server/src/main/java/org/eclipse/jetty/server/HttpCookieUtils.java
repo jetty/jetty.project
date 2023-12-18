@@ -14,18 +14,14 @@
 package org.eclipse.jetty.server;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.QuotedCSVParser;
 import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Index;
@@ -50,6 +46,7 @@ public final class HttpCookieUtils
         .with(HttpCookie.PATH_ATTRIBUTE)
         .with(HttpCookie.SAME_SITE_ATTRIBUTE)
         .with(HttpCookie.SECURE_ATTRIBUTE)
+        .with(HttpCookie.PARTITIONED_ATTRIBUTE)
         .build();
     // RFC 1123 format of epoch for the Expires attribute.
     private static final String EPOCH_EXPIRES = "Thu, 01 Jan 1970 00:00:00 GMT";
@@ -73,35 +70,6 @@ public final class HttpCookieUtils
             return cookie; //no default set
 
         return HttpCookie.from(cookie, HttpCookie.SAME_SITE_ATTRIBUTE, contextDefault.getAttributeValue());
-    }
-
-    /**
-     * Extract the bare minimum of info from a Set-Cookie header string.
-     *
-     * <p>
-     * Ideally this method should not be necessary, however as java.net.HttpCookie
-     * does not yet support generic attributes, we have to use it in a minimal
-     * fashion. When it supports attributes, we could look at reverting to a
-     * constructor on o.e.j.h.HttpCookie to take the set-cookie header string.
-     * </p>
-     *
-     * @param setCookieHeader the header as a string
-     * @return a map containing the name, value, domain, path. max-age of the set cookie header
-     */
-    public static Map<String, String> extractBasics(String setCookieHeader)
-    {
-        //Parse the bare minimum
-        List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
-        if (cookies.size() != 1)
-            return Collections.emptyMap();
-        java.net.HttpCookie cookie = cookies.get(0);
-        Map<String, String> fields = new HashMap<>();
-        fields.put("name", cookie.getName());
-        fields.put("value", cookie.getValue());
-        fields.put("domain", cookie.getDomain());
-        fields.put("path",  cookie.getPath());
-        fields.put("max-age", Long.toString(cookie.getMaxAge()));
-        return fields;
     }
 
     /**
@@ -220,6 +188,9 @@ public final class HttpCookieUtils
         if (httpCookie.isHttpOnly())
             builder.append(";HttpOnly");
 
+        if (httpCookie.isPartitioned())
+            builder.append(";Partitioned");
+
         HttpCookie.SameSite sameSite = httpCookie.getSameSite();
         if (sameSite != null)
             builder.append(";SameSite=").append(sameSite.getAttributeValue());
@@ -282,6 +253,8 @@ public final class HttpCookieUtils
             builder.append("; Secure");
         if (httpCookie.isHttpOnly())
             builder.append("; HttpOnly");
+        if (httpCookie.isPartitioned())
+            builder.append("; Partitioned");
 
         Map<String, String> attributes = httpCookie.getAttributes();
 
@@ -404,52 +377,6 @@ public final class HttpCookieUtils
             return newPath == null;
 
         return oldPath.equals(newPath);
-    }
-
-    /**
-     * Get a {@link HttpHeader#SET_COOKIE} field as a {@link HttpCookie}, either
-     * by optimally checking for a {@link SetCookieHttpField} or by parsing
-     * the value with {@link #parseSetCookie(String)}.
-     * @param field The field
-     * @return The field value as a {@link HttpCookie} or null if the field
-     *         is not a {@link HttpHeader#SET_COOKIE} or cannot be parsed.
-     */
-    public static HttpCookie getSetCookie(HttpField field)
-    {
-        if (field == null || field.getHeader() != HttpHeader.SET_COOKIE)
-            return null;
-        if (field instanceof SetCookieHttpField setCookieHttpField)
-            return setCookieHttpField.getHttpCookie();
-        return parseSetCookie(field.getValue());
-    }
-
-    public static HttpCookie parseSetCookie(String value)
-    {
-        AtomicReference<HttpCookie.Builder> builder = new AtomicReference<>();
-        new QuotedCSVParser(false)
-        {
-            @Override
-            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
-            {
-                String name = buffer.substring(paramName, paramValue - 1);
-                String value = buffer.substring(paramValue);
-                HttpCookie.Builder b = builder.get();
-                if (b == null)
-                {
-                    b = HttpCookie.build(name, value);
-                    builder.set(b);
-                }
-                else
-                {
-                    b.attribute(name, value);
-                }
-            }
-        }.addValue(value);
-
-        HttpCookie.Builder b = builder.get();
-        if (b == null)
-            return null;
-        return b.build();
     }
 
     private static void quoteIfNeededAndAppend(String text, StringBuilder builder)

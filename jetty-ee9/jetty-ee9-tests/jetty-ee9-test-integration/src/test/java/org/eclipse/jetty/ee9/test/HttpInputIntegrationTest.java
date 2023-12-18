@@ -34,38 +34,42 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.HttpChannelState;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled //TODO needs investigation
 public class HttpInputIntegrationTest
 {
     enum Mode
@@ -76,13 +80,15 @@ public class HttpInputIntegrationTest
     private static Server __server;
     private static HttpConfiguration __config;
     private static SslContextFactory.Server __sslContextFactory;
+    private static ArrayByteBufferPool.Tracking __bufferPool;
 
     @BeforeAll
     public static void beforeClass() throws Exception
     {
         __config = new HttpConfiguration();
 
-        __server = new Server();
+        __bufferPool = new ArrayByteBufferPool.Tracking();
+        __server = new Server(null, null, __bufferPool);
         LocalConnector local = new LocalConnector(__server, new HttpConnectionFactory(__config));
         local.setIdleTimeout(4000);
         __server.addConnector(local);
@@ -129,9 +135,16 @@ public class HttpInputIntegrationTest
     }
 
     @AfterAll
-    public static void afterClass() throws Exception
+    public static void afterClass()
     {
-        __server.stop();
+        try
+        {
+            assertThat("Server leaks: " + __bufferPool.dumpLeaks(), __bufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(__server);
+        }
     }
 
     interface TestClient
@@ -238,26 +251,23 @@ public class HttpInputIntegrationTest
             case ASYNC_OTHER_WAIT:
             {
                 CountDownLatch latch = new CountDownLatch(1);
-                /*                HttpChannel.State state = request.getHttpChannelState().getState();
+                HttpChannelState.State state = request.getHttpChannelState().getState();
                 new Thread(() ->
                 {
                     try
                     {
                         if (!latch.await(5, TimeUnit.SECONDS))
                             fail("latch expired");
-                
-                        // Spin until state change
-                        while (request.getHttpChannelState().getState() == state)
-                        {
-                            Thread.yield();
-                        }
+
+                        // Wait until the state changes.
+                        await().atMost(5, TimeUnit.SECONDS).until(request.getHttpChannelState()::getState, not(state));
                         test.run();
                     }
                     catch (Exception e)
                     {
                         e.printStackTrace();
                     }
-                }).start();*/
+                }).start();
                 // ensure other thread running before trying to return
                 latch.countDown();
                 break;
@@ -374,7 +384,7 @@ public class HttpInputIntegrationTest
                 catch (Exception e)
                 {
                     e.printStackTrace();
-                    resp.setStatus(500);
+                    resp.setStatus(599);
                     resp.getWriter().println("read=" + e);
                     resp.getWriter().println("sum=-1");
                 }
@@ -385,12 +395,11 @@ public class HttpInputIntegrationTest
                 AsyncContext context = req.startAsync();
                 context.setTimeout(10000);
                 ServletInputStream in = req.getInputStream();
-                //TODO
-                //Request request = Request.getBaseRequest(req);
+                Request request = (Request)req;
                 AtomicInteger read = new AtomicInteger(0);
                 AtomicInteger sum = new AtomicInteger(0);
 
-                runMode(mode, null /*request*/, () -> in.setReadListener(new ReadListener()
+                runMode(mode, request, () -> in.setReadListener(new ReadListener()
                 {
                     @Override
                     public void onError(Throwable t)
@@ -398,7 +407,7 @@ public class HttpInputIntegrationTest
                         t.printStackTrace();
                         try
                         {
-                            resp.sendError(500);
+                            resp.sendError(599);
                         }
                         catch (IOException e)
                         {
@@ -411,7 +420,7 @@ public class HttpInputIntegrationTest
                     @Override
                     public void onDataAvailable()
                     {
-                        runMode(mode, null/*request*/, () ->
+                        runMode(mode, request, () ->
                         {
                             while (in.isReady() && !in.isFinished())
                             {
@@ -422,12 +431,10 @@ public class HttpInputIntegrationTest
                                         return;
                                     sum.addAndGet(b);
                                     int i = read.getAndIncrement();
-                                    /*                                    if (b != expected.charAt(i))
+                                    if (b != expected.charAt(i))
                                     {
-                                        System.err.printf("XXX '%c'!='%c' at %d%n", expected.charAt(i), (char)b, i);
-                                        System.err.println("    " + request.getHttpChannel());
-                                        System.err.println("    " + request.getHttpChannel().getHttpTransport());
-                                    }*/
+                                        onError(new AssertionError("'%c'!='%c' at %d".formatted(expected.charAt(i), (char)b, i)));
+                                    }
                                 }
                                 catch (IOException e)
                                 {

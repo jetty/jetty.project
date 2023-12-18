@@ -19,10 +19,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.AbstractList;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -69,6 +70,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -81,6 +83,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
@@ -98,13 +101,15 @@ import org.slf4j.LoggerFactory;
 public class ServletApiRequest implements HttpServletRequest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
+    private static final SetCookieParser SET_COOKIE_PARSER = SetCookieParser.newInstance();
+
     private final ServletContextRequest _servletContextRequest;
     private final ServletChannel _servletChannel;
     private AsyncContextState _async;
-    private String _characterEncoding;
+    private Charset _charset;
+    private Charset _readerCharset;
     private int _inputState = ServletContextRequest.INPUT_NONE;
     private BufferedReader _reader;
-    private String _readerEncoding;
     private String _contentType;
     private boolean _contentParamsExtracted;
     private Fields _contentParameters;
@@ -157,9 +162,9 @@ public class ServletApiRequest implements HttpServletRequest
 
     /**
      * @return The core {@link Request} associated with the servlet API request. This may differ
-     *         from {@link ServletContextRequest} as wrapped by the {@link ServletContextHandler} as it
-     *         may have been further wrapped before being passed
-     *         to {@link ServletChannel#associate(Request, Response, Callback)}.
+     * from {@link ServletContextRequest} as wrapped by the {@link ServletContextHandler} as it
+     * may have been further wrapped before being passed
+     * to {@link ServletChannel#associate(Request, Response, Callback)}.
      * @see #getServletRequestInfo()
      * @see ServletChannel#associate(Request, Response, Callback)
      */
@@ -183,7 +188,11 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getProtocolRequestId()
     {
-        return getRequest().getId();
+        return switch (getRequest().getConnectionMetaData().getHttpVersion())
+        {
+            case HTTP_2, HTTP_3 -> getRequest().getId();
+            default -> "";
+        };
     }
 
     @Override
@@ -412,7 +421,14 @@ public class ServletApiRequest implements HttpServletRequest
     public boolean isRequestedSessionIdValid()
     {
         AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.session() != null;
+        HttpSession session = getSession(false);
+        SessionManager manager = getServletRequestInfo().getSessionManager();
+        return requestedSession != null &&
+            requestedSession.sessionId() != null &&
+            requestedSession.session() != null &&
+            requestedSession.session().isValid() &&
+            manager != null &&
+            manager.getSessionIdManager().getId(requestedSession.sessionId()).equals(session.getId());
     }
 
     @Override
@@ -615,32 +631,37 @@ public class ServletApiRequest implements HttpServletRequest
             referrer += "?" + query;
         pushHeaders.put(HttpHeader.REFERER, referrer);
 
-        // Any Set-Cookie in the response should be present in the push.
-        HttpFields.Mutable responseHeaders = _servletChannel.getResponse().getHeaders();
-        List<String> setCookies = new ArrayList<>(responseHeaders.getValuesList(HttpHeader.SET_COOKIE));
-        setCookies.addAll(responseHeaders.getValuesList(HttpHeader.SET_COOKIE2));
-        String cookies = pushHeaders.get(HttpHeader.COOKIE);
-        if (!setCookies.isEmpty())
+        StringBuilder cookieBuilder = new StringBuilder();
+        Cookie[] cookies = getCookies();
+        if (cookies != null)
         {
-            StringBuilder pushCookies = new StringBuilder();
-            if (cookies != null)
-                pushCookies.append(cookies);
-            for (String setCookie : setCookies)
+            for (Cookie cookie : cookies)
             {
-                Map<String, String> cookieFields = HttpCookieUtils.extractBasics(setCookie);
-                String cookieName = cookieFields.get("name");
-                String cookieValue = cookieFields.get("value");
-                String cookieMaxAge = cookieFields.get("max-age");
-                long maxAge = cookieMaxAge != null ? Long.parseLong(cookieMaxAge) : -1;
-                if (maxAge > 0)
-                {
-                    if (pushCookies.length() > 0)
-                        pushCookies.append("; ");
-                    pushCookies.append(cookieName).append("=").append(cookieValue);
-                }
+                if (!cookieBuilder.isEmpty())
+                    cookieBuilder.append("; ");
+                cookieBuilder.append(cookie.getName()).append("=").append(cookie.getValue());
             }
-            pushHeaders.put(HttpHeader.COOKIE, pushCookies.toString());
         }
+        // Any Set-Cookie in the response should be present in the push.
+        for (HttpField field : _servletContextRequest.getServletContextResponse().getHeaders())
+        {
+            HttpHeader header = field.getHeader();
+            if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)
+            {
+                HttpCookie httpCookie;
+                if (field instanceof HttpCookieUtils.SetCookieHttpField set)
+                    httpCookie = set.getHttpCookie();
+                else
+                    httpCookie = SET_COOKIE_PARSER.parse(field.getValue());
+                if (httpCookie == null || httpCookie.isExpired())
+                    continue;
+                if (!cookieBuilder.isEmpty())
+                    cookieBuilder.append("; ");
+                cookieBuilder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
+            }
+        }
+        if (!cookieBuilder.isEmpty())
+            pushHeaders.put(HttpHeader.COOKIE, cookieBuilder.toString());
 
         String sessionId;
         HttpSession httpSession = getSession(false);
@@ -710,24 +731,20 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getCharacterEncoding()
     {
-        if (_characterEncoding == null)
+        try
         {
-            if (getRequest().getContext() != null)
-                _characterEncoding = getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
-
-            if (_characterEncoding == null)
-            {
-                String contentType = getContentType();
-                if (contentType != null)
-                {
-                    MimeTypes.Type mime = MimeTypes.CACHE.get(contentType);
-                    String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
-                    if (charset != null)
-                        _characterEncoding = charset;
-                }
-            }
+            if (_charset == null)
+                _charset = Request.getCharset(getRequest());
         }
-        return _characterEncoding;
+        catch (IllegalCharsetNameException | UnsupportedCharsetException e)
+        {
+            return MimeTypes.getCharsetFromContentType(getRequest().getHeaders().get(HttpHeader.CONTENT_TYPE));
+        }
+
+        if (_charset == null)
+            return getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
+
+        return _charset.name();
     }
 
     @Override
@@ -735,8 +752,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (_inputState != ServletContextRequest.INPUT_NONE)
             return;
-        MimeTypes.getKnownCharset(encoding);
-        _characterEncoding = encoding;
+        _charset = MimeTypes.getKnownCharset(encoding);
     }
 
     @Override
@@ -774,10 +790,8 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = ServletContextRequest.INPUT_STREAM;
-
-        if (getServletRequestInfo().getServletChannel().isExpecting100Continue())
-            getServletRequestInfo().getServletChannel().continue100(getServletRequestInfo().getHttpInput().available());
-
+        // Try to write a 100 continue, ignoring failure result if it was not necessary.
+        _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return getServletRequestInfo().getHttpInput();
     }
 
@@ -1032,15 +1046,42 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState == ServletContextRequest.INPUT_READER)
             return _reader;
 
-        String encoding = getCharacterEncoding();
-        if (encoding == null)
-            encoding = MimeTypes.ISO_8859_1;
+        Charset charset = _charset;
+        try
+        {
+            if (charset == null)
+            {
+                charset = _charset = Request.getCharset(getRequest());
+                if (charset == null)
+                    charset = StandardCharsets.ISO_8859_1;
+            }
+        }
+        catch (IllegalCharsetNameException | UnsupportedCharsetException e)
+        {
+            throw new UnsupportedEncodingException(e.getMessage())
+            {
+                {
+                    initCause(e);
+                }
 
-        if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
+                @Override
+                public String toString()
+                {
+                    return "%s@%x:%s".formatted(UnsupportedEncodingException.class.getName(), hashCode(), getMessage());
+                }
+            };
+        }
+
+        if (_reader != null && charset.equals(_readerCharset))
+        {
+            // Try to write a 100 continue, ignoring failure result if it was not necessary.
+            _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+        }
+        else
         {
             ServletInputStream in = getInputStream();
-            _readerEncoding = encoding;
-            _reader = new BufferedReader(new InputStreamReader(in, encoding))
+            _readerCharset = charset;
+            _reader = new BufferedReader(new InputStreamReader(in, charset))
             {
                 @Override
                 public void close() throws IOException
@@ -1050,10 +1091,6 @@ public class ServletApiRequest implements HttpServletRequest
                     in.close();
                 }
             };
-        }
-        else if (getServletRequestInfo().getServletChannel().isExpecting100Continue())
-        {
-            getServletRequestInfo().getServletChannel().continue100(getServletRequestInfo().getHttpInput().available());
         }
         _inputState = ServletContextRequest.INPUT_READER;
         return _reader;
@@ -1125,7 +1162,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isSecure()
     {
-        return getRequest().getConnectionMetaData().isSecure();
+        return getRequest().isSecure();
     }
 
     @Override
@@ -1303,7 +1340,9 @@ public class ServletApiRequest implements HttpServletRequest
             _cookies = new Cookie[_httpCookies.size()];
             int i = 0;
             for (HttpCookie httpCookie : _httpCookies)
+            {
                 _cookies[i++] = convertCookie(httpCookie, compliance);
+            }
         }
 
         @Override

@@ -20,9 +20,6 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -65,7 +62,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private Content.Chunk _trailer;
     private boolean committed;
     private boolean _demand;
-    private boolean _expects100Continue;
 
     public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, HTTP2Stream stream)
     {
@@ -97,8 +93,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
 
             HttpFields fields = _requestMetaData.getHttpFields();
-
-            _expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
             if (_requestMetaData instanceof MetaData.ConnectRequest)
                 tunnelSupport = new TunnelSupportOverHTTP2(_requestMetaData.getProtocol());
@@ -185,12 +179,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         // the two actions cancel each other, no need to further retain or release.
         chunk = createChunk(data);
 
-        // Some content is read, but the 100 Continue interim
-        // response has not been sent yet, then don't bother
-        // sending it later, as the client already sent the content.
-        if (_expects100Continue && chunk.hasRemaining())
-            _expects100Continue = false;
-
         try (AutoLock ignored = lock.lock())
         {
             _chunk = Content.Chunk.next(chunk);
@@ -218,11 +206,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         else if (demand)
         {
-            if (_expects100Continue)
-            {
-                _expects100Continue = false;
-                send(_requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
-            }
             _stream.demand();
         }
     }
@@ -311,9 +294,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-
-            if (_expects100Continue && response.getStatus() == HttpStatus.CONTINUE_100)
-                _expects100Continue = false;
 
             headersFrame = new HeadersFrame(streamId, response, null, false);
         }
@@ -571,7 +551,15 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         if (tunnelSupport != null)
             return null;
-        return HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
+        Throwable result = HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
+        if (result != null)
+        {
+            _trailer = null;
+            if (_chunk != null)
+                _chunk.release();
+            _chunk = Content.Chunk.from(result, true);
+        }
+        return result;
     }
 
     @Override
@@ -621,18 +609,20 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 // Send a reset to the other end so that it stops sending data.
                 if (LOG.isDebugEnabled())
                     LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
-                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.NO_ERROR.code), Callback.NOOP);
             }
         }
         _httpChannel.recycle();
+        _connection.offerHttpChannel(_httpChannel);
     }
 
     @Override
     public void failed(Throwable x)
     {
+        ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? ErrorCode.NO_ERROR : ErrorCode.CANCEL_STREAM_ERROR;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 response #{}/{} aborted", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
-        _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            LOG.debug("HTTP2 response #{}/{} failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
+        _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
     }
 
     private class SendTrailers extends Callback.Nested

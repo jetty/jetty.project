@@ -44,15 +44,15 @@
   <!--
     UNCOMMENT TO ACTIVATE 
     <context-param> 
-      <param-name>org.eclipse.jetty.ee8.servlet.SessionDomain</param-name>
+      <param-name>org.eclipse.jetty.session.SessionDomain</param-name>
       <param-value>127.0.0.1</param-value> 
     </context-param> 
     <context-param>
-      <param-name>org.eclipse.jetty.ee8.servlet.SessionPath</param-name>
+      <param-name>org.eclipse.jetty.session.SessionPath</param-name>
       <param-value>/</param-value>
     </context-param>
     <context-param>
-      <param-name>org.eclipse.jetty.ee8.servlet.MaxAge</param-name>
+      <param-name>org.eclipse.jetty.session.MaxAge</param-name>
       <param-value>-1</param-value>
     </context-param>
   -->

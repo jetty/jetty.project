@@ -125,6 +125,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     }
 
     /**
+     * Set encoded URI.
      * @param path encoded URI
      */
     public void setDispatchPath(String path)

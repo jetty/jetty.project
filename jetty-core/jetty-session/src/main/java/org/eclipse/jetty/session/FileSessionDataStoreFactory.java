@@ -32,6 +32,7 @@ public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     }
 
     /**
+     * Set the deleteUnrestorableFiles to set.
      * @param deleteUnrestorableFiles the deleteUnrestorableFiles to set
      */
     public void setDeleteUnrestorableFiles(boolean deleteUnrestorableFiles)
@@ -40,6 +41,7 @@ public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     }
 
     /**
+     * Get the storeDir.
      * @return the storeDir
      */
     public File getStoreDir()
@@ -48,6 +50,7 @@ public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     }
 
     /**
+     * Set the storeDir to set.
      * @param storeDir the storeDir to set
      */
     public void setStoreDir(File storeDir)

@@ -101,6 +101,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     /**
+     * Get the proxy-to-server {@code Host} header value.
      * @return the proxy-to-server {@code Host} header value
      */
     public String getProxyToServerHost()
@@ -120,6 +121,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     /**
+     * Get the value to use for the {@code Via} header.
      * @return the value to use for the {@code Via} header
      */
     public String getViaHost()

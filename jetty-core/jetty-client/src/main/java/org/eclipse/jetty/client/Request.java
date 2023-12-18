@@ -49,6 +49,22 @@ import org.eclipse.jetty.util.Fields;
 public interface Request
 {
     /**
+     * <p>Returns the connection associated with this request.</p>
+     * <p>The connection is available only starting from the
+     * {@link #onRequestBegin(BeginListener) request begin} event,
+     * when a connection is associated with the request to be sent,
+     * otherwise {@code null} is returned.</p>
+     *
+     * @return the connection associated with this request,
+     * or {@code null} if there is no connection associated
+     * with this request
+     */
+    default Connection getConnection()
+    {
+        return null;
+    }
+
+    /**
      * @return the URI scheme of this request, such as "http" or "https"
      */
     String getScheme();

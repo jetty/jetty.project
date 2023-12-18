@@ -19,16 +19,6 @@
   </listener>
 
   <filter>
-    <filter-name>PushFilter</filter-name>
-    <filter-class>org.eclipse.jetty.ee10.servlets.PushCacheFilter</filter-class>
-    <async-supported>true</async-supported>
-  </filter>  
-  <filter-mapping>
-    <filter-name>PushFilter</filter-name>
-    <url-pattern>/*</url-pattern>
-  </filter-mapping>
-
-  <filter>
     <filter-name>QoSFilter</filter-name>
     <filter-class>org.eclipse.jetty.ee10.servlets.QoSFilter</filter-class>
     <async-supported>true</async-supported>

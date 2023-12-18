@@ -18,7 +18,7 @@ Jetty can store http session information into GCloud by enabling the `session-st
 
 ===== Preparation
 
-You will first need to create a project and enable the Google Cloud api: link:https://cloud.google.com/docs/authentication#preparation[].
+You will first need to create a project and enable the Google Cloud API: link:https://cloud.google.com/docs/authentication#preparation[].
 Take note of the project id that you create in this step as you need to supply it in later steps.
 
 ===== Communicating with GCloudDataStore
@@ -30,7 +30,7 @@ Before running Jetty, you will need to choose one of the following methods to se
 1. Using the GCloud SDK:
   * Ensure you have the GCloud SDK installed: link:https://cloud.google.com/sdk/?hl=en[]
   * Use the GCloud tool to set up the project you created in the preparation step: `gcloud config set project PROJECT_ID`
-  * Use the GCloud tool to authenticate a google account associated with the project created in the preparation step: `gcloud auth login ACCOUNT`
+  * Use the GCloud tool to authenticate a Google account associated with the project created in the preparation step: `gcloud auth login ACCOUNT`
 
 2. Using environment variables
   * Define the environment variable `GCLOUD_PROJECT` with the project id you created in the preparation step.
@@ -63,7 +63,7 @@ The `session-store-gcloud` module provides GCloud support for storing session da
 Because the Google Cloud DataStore is not a technology provided by the Eclipse Foundation, when enabling the module you will be prompted to assent to the licenses of the external vendor.
 
 As GCloud requires certain Java Commons Logging features to work correctly, Jetty routes these through SLF4J.
-By default Jetty implements the SLF4J api, but you can choose a different logging implementation by following the instructions xref:og-server-logging[here]
+By default, Jetty implements the SLF4J api, but you can choose a different logging implementation by following the instructions xref:og-server-logging[here]
 
 IMPORTANT: If you want to use updated versions of the jar files automatically downloaded during the module enablement, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 

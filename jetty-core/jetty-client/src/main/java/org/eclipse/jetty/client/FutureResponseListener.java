@@ -35,7 +35,10 @@ import org.eclipse.jetty.client.internal.HttpContentResponse;
  * request.send(listener); // Asynchronous send
  * ContentResponse response = listener.get(5, TimeUnit.SECONDS); // Timed block
  * </pre>
+ *
+ * @deprecated Use {@link CompletableResponseListener} instead
  */
+@Deprecated
 public class FutureResponseListener extends BufferingResponseListener implements Future<ContentResponse>
 {
     private final AtomicBoolean cancelled = new AtomicBoolean();

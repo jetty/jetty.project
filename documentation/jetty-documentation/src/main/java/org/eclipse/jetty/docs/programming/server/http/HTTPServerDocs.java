@@ -16,6 +16,8 @@ package org.eclipse.jetty.docs.programming.server.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.security.Security;
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.TimeZone;
@@ -26,6 +28,7 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
@@ -71,6 +74,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
+import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -431,10 +435,28 @@ public class HTTPServerDocs
         // Create and configure the HTTP/3 connector.
         HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(httpConfig));
         connector.setPort(843);
+
+        // It is mandatory to set the PEM directory.
+        connector.getQuicConfiguration().setPemWorkDirectory(Path.of("/path/to/pem/dir"));
+
         server.addConnector(connector);
 
         server.start();
         // end::h3[]
+    }
+
+    public void conscrypt()
+    {
+        // tag::conscrypt[]
+        // Configure the JDK with the Conscrypt provider.
+        Security.addProvider(new OpenSSLProvider());
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+        // Configure Jetty's SslContextFactory to use Conscrypt.
+        sslContextFactory.setProvider("Conscrypt");
+        // end::conscrypt[]
     }
 
     public void handlerTree()
@@ -787,7 +809,7 @@ public class HTTPServerDocs
                 if (requestHeaders.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
                 {
                     // Analyze the request and decide whether to receive the content.
-                    long contentLength = requestHeaders.getLongField(HttpHeader.CONTENT_LENGTH);
+                    long contentLength = request.getLength();
                     if (contentLength > 0 && contentLength < 1024)
                     {
                         // Small request content, ask to send it by
@@ -1259,6 +1281,76 @@ public class HTTPServerDocs
 
         server.start();
         // end::eventsHandler[]
+    }
+
+    public void simpleQoSHandler() throws Exception
+    {
+        // tag::simpleQoSHandler[]
+        class ShopHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the shop, remembering to complete the callback.
+                callback.succeeded();
+                return true;
+            }
+        }
+
+        int maxThreads = 256;
+        QueuedThreadPool serverThreads = new QueuedThreadPool(maxThreads);
+        Server server = new Server(serverThreads);
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create and configure QoSHandler.
+        QoSHandler qosHandler = new QoSHandler();
+        // Set the max number of concurrent requests,
+        // for example in relation to the thread pool.
+        qosHandler.setMaxRequestCount(maxThreads / 2);
+        // A suspended request may stay suspended for at most 15 seconds.
+        qosHandler.setMaxSuspend(Duration.ofSeconds(15));
+        server.setHandler(qosHandler);
+
+        // Provide quality of service to the shop
+        // application by wrapping ShopHandler with QoSHandler.
+        qosHandler.setHandler(new ShopHandler());
+
+        server.start();
+        // end::simpleQoSHandler[]
+    }
+
+    public void advancedQoSHandler()
+    {
+        // tag::advancedQoSHandler[]
+        class PriorityQoSHandler extends QoSHandler
+        {
+            @Override
+            protected int getPriority(Request request)
+            {
+                String pathInContext = Request.getPathInContext(request);
+
+                // Payment requests have the highest priority.
+                if (pathInContext.startsWith("/payment/"))
+                    return 3;
+
+                // Login, checkout and admin requests.
+                if (pathInContext.startsWith("/login/"))
+                    return 2;
+                if (pathInContext.startsWith("/checkout/"))
+                    return 2;
+                if (pathInContext.startsWith("/admin/"))
+                    return 2;
+
+                // Health-check requests from the load balancer.
+                if (pathInContext.equals("/health-check"))
+                    return 1;
+
+                // Other requests have the lowest priority.
+                return 0;
+            }
+        }
+        // end::advancedQoSHandler[]
     }
 
     public void securedHandler() throws Exception

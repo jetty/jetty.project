@@ -422,15 +422,24 @@ public class LocalConnector extends AbstractConnector
                     // read a chunk of response
                     ByteBuffer chunk;
                     if (BufferUtil.hasContent(_responseData))
+                    {
                         chunk = _responseData;
+                    }
                     else
                     {
                         chunk = waitForOutput(time, unit);
-                        if (BufferUtil.isEmpty(chunk) && (!isOpen() || isOutputShutdown() || isShutdown()))
+                        if (BufferUtil.isEmpty(chunk))
                         {
-                            parser.atEOF();
-                            parser.parseNext(BufferUtil.EMPTY_BUFFER);
-                            break;
+                            if (!isOpen() || isOutputShutdown() || isShutdown())
+                            {
+                                parser.atEOF();
+                                parser.parseNext(BufferUtil.EMPTY_BUFFER);
+                                break;
+                            }
+                            else
+                            {
+                                return null;
+                            }
                         }
                     }
 

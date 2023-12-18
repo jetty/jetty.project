@@ -16,8 +16,8 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -122,6 +122,12 @@ public interface Attributes
             removeAttribute(name);
     }
 
+    @Override
+    int hashCode();
+
+    @Override
+    boolean equals(Object o);
+
     /** Unwrap all  {@link Wrapper}s of the attributes
      * @param attributes The attributes to unwrap, which may be a  {@link Wrapper}.
      * @return The core attributes
@@ -134,6 +140,34 @@ public interface Attributes
         }
         return attributes;
     }
+
+    static int hashCode(Attributes attributes)
+    {
+        int hash = 0;
+        for (String name : attributes.getAttributeNameSet())
+            hash = hash * 31 + Objects.hash(name, attributes.getAttribute(name));
+        return hash;
+    }
+
+    static boolean equals(Attributes attributes, Object o)
+    {
+        if (o instanceof Attributes a)
+        {
+            Set<String> ours = attributes.getAttributeNameSet();
+            Set<String> theirs = a.getAttributeNameSet();
+            if (!ours.equals(theirs))
+                return false;
+
+            for (String s : ours)
+            {
+                if (!Objects.equals(attributes.getAttribute(s), a.getAttribute(s)))
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
 
     /** Unwrap attributes to a specific attribute  {@link Wrapper}.
      * @param attributes The attributes to unwrap, which may be a {@link Wrapper}
@@ -203,20 +237,17 @@ public interface Attributes
             getWrapped().clearAttributes();
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
-            return getWrapped().hashCode();
+            return Attributes.hashCode(this);
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
-        public boolean equals(Object obj)
+        public boolean equals(Object o)
         {
-            return getWrapped().equals(obj);
+            return o instanceof Attributes && Attributes.equals(this, o);
         }
-
     }
 
     /**
@@ -240,8 +271,7 @@ public interface Attributes
 
         public Mapped(Mapped attributes)
         {
-            this();
-            _map.putAll(attributes._map);
+            this(new ConcurrentHashMap<>(attributes._map));
         }
 
         @Override
@@ -300,33 +330,16 @@ public interface Attributes
                 setAttribute(name, attributes.getAttribute(name));
         }
 
-        public Set<Map.Entry<String, Object>> getAttributeEntrySet()
-        {
-            return _map.entrySet();
-        }
-
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
-            return _map.hashCode();
+            return Attributes.hashCode(this);
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public boolean equals(Object o)
         {
-            if (o instanceof Attributes)
-            {
-                Attributes a = (Attributes)o;
-                for (Map.Entry<String, Object> e : _map.entrySet())
-                {
-                    if (!Objects.equals(e.getValue(), a.getAttribute(e.getKey())))
-                        return false;
-                }
-                return true;
-            }
-            return false;
+            return o instanceof Attributes && Attributes.equals(this, o);
         }
     }
 
@@ -387,11 +400,6 @@ public interface Attributes
             return map == null ? null : map.get(name);
         }
 
-        public Collection<Object> getAttributeEntriesSet()
-        {
-            return map().values();
-        }
-
         @Override
         public Set<String> getAttributeNameSet()
         {
@@ -442,14 +450,25 @@ public interface Attributes
         {
             Dumpable.dumpObjects(out, indent, String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), map());
         }
+
+        @Override
+        public int hashCode()
+        {
+            return Attributes.hashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            return o instanceof Attributes && Attributes.equals(this, o);
+        }
     }
 
     /**
      * An {@link Attributes} implementation backed by another {@link Attributes} instance, which is treated as immutable, but with a
      * ConcurrentHashMap used as a mutable layer over it.
-     * // TODO: can we extend Wrapper with a contains wrapped?
      */
-    class Layer implements Attributes
+    class Layer extends Wrapper
     {
         private static final Object REMOVED = new Object()
         {
@@ -460,7 +479,6 @@ public interface Attributes
             }
         };
 
-        private final Attributes _persistent;
         private final Attributes _layer;
 
         public Layer(Attributes persistent)
@@ -470,19 +488,19 @@ public interface Attributes
 
         public Layer(Attributes persistent, Attributes layer)
         {
-            _persistent = persistent;
+            super(persistent);
             _layer = layer;
         }
 
         public Attributes getPersistentAttributes()
         {
-            return _persistent;
+            return getWrapped();
         }
 
         @Override
         public Object removeAttribute(String name)
         {
-            Object p = _persistent.getAttribute(name);
+            Object p = super.getAttribute(name);
             try
             {
                 Object v = _layer.setAttribute(name, REMOVED);
@@ -514,13 +532,13 @@ public interface Attributes
             Object v = _layer.getAttribute(name);
             if (v != null)
                 return v == REMOVED ? null : v;
-            return _persistent.getAttribute(name);
+            return super.getAttribute(name);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
-            Set<String> names = new HashSet<>(_persistent.getAttributeNameSet());
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
 
             for (String name : _layer.getAttributeNameSet())
             {
@@ -536,40 +554,167 @@ public interface Attributes
         public void clearAttributes()
         {
             _layer.clearAttributes();
-            for (String name : _persistent.getAttributeNameSet())
+            for (String name : super.getAttributeNameSet())
                 _layer.setAttribute(name, REMOVED);
         }
+    }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
-        @Override
-        public int hashCode()
+    /**
+     * An abstract implementation of {@link Attributes.Wrapper} that provides a mechanism
+     * for synthetic attributes that can be modified or deleted.  A synthetic attribute
+     * is one whose value is not stored in the normal map backing the {@link Attributes} instance,
+     * but is instead calculated as needed. Modifications to synthetic attributes are maintained
+     * in a separate layer and no modifications are made to the backing {@link Attributes}.
+     * <p>
+     * Non synthetic attributes are handled normally by the backing {@link Attributes}
+     * <p>
+     * Uses of this class must provide implementations for
+     * {@link #getSyntheticNameSet()} amd {@link #getSyntheticAttribute(String)}.
+     */
+    abstract class Synthetic extends Wrapper
+    {
+        private static final Object REMOVED = new Object()
         {
-            int hash = 0;
-            for (String name : getAttributeNameSet())
-                hash += name.hashCode() ^ getAttribute(name).hashCode();
-            return hash;
+            @Override
+            public String toString()
+            {
+                return "REMOVED";
+            }
+        };
+
+        private final AtomicReference<Map<String, Object>> _layer = new AtomicReference<>();
+
+        protected Synthetic(Attributes base)
+        {
+            super(base);
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
-        @Override
-        public boolean equals(Object o)
-        {
-            if (o instanceof Attributes)
-            {
-                Attributes a = (Attributes)o;
-                Set<String> ours = getAttributeNameSet();
-                Set<String> theirs = getAttributeNameSet();
-                if (!ours.equals(theirs))
-                    return false;
+        /**
+         * Get the value of a specific synthetic attribute.
+         * @param name The name of the attribute
+         * @return The value for the attribute, which may be computed on request, or {@code null}
+         */
+        protected abstract Object getSyntheticAttribute(String name);
 
-                for (String s : ours)
-                {
-                    if (!Objects.equals(getAttribute(s), a.getAttribute(s)))
-                        return false;
-                }
-                return true;
+        /**
+         * Get the list of known synthetic attribute names, including those
+         * that currently have a null value.
+         * @return A {@link Set} of known synthetic attributes names.
+         */
+        protected abstract Set<String> getSyntheticNameSet();
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            // Has the attribute been modified in the layer?
+            Map<String, Object> layer = _layer.get();
+            if (layer != null)
+            {
+                // Only synthetic attributes can be in the layer.
+                Object l = layer.get(name);
+                // Has it been removed?
+                if (l == REMOVED)
+                    return null;
+                // or has it been replaced?
+                if (l != null)
+                    return l;
             }
-            return false;
+
+            // Is there a synthetic value for the attribute? We just as for the value rather than checking the name.
+            Object s = getSyntheticAttribute(name);
+            if (s != null)
+                return s;
+
+            // otherwise get the attribute normally.
+            return super.getAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object value)
+        {
+            // setting a null value is equivalent to removal
+            if (value == null)
+                return removeAttribute(name);
+
+            // is the attribute known to be synthetic?
+            if (getSyntheticNameSet().contains(name))
+            {
+                // We will need a layer to record modifications to a synthetic attribute
+                Map<String, Object> layer = _layer.updateAndGet(m -> m == null ? new HashMap<>() : m);
+
+                // update the attribute in the layer
+                Object old = layer.put(name, value);
+                // return the old value, which if not remove and not in the layer, is the synthetic attribute itself
+                return old == REMOVED ? null : old != null ? old : getSyntheticAttribute(name);
+            }
+
+            // handle non-synthetic attribute
+            return super.setAttribute(name, value);
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            // is the attribute known to be synthetic?
+            if (getSyntheticNameSet().contains(name))
+            {
+                // We will need a layer to record modifications to a synthetic attribute
+                Map<String, Object> layer = _layer.updateAndGet(m -> m == null ? new HashMap<>() : m);
+
+                // Mark the attribute as removed in the layer
+                Object old = layer.put(name, REMOVED);
+                // return the old value, which if not removed and not in the layer, is the synthetic attribute itself
+                return old == REMOVED ? null : old != null ? old : getSyntheticAttribute(name);
+            }
+
+            // handle non-synthetic attribute
+            return super.removeAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            // Get the non-synthetic attribute names
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
+
+            // Have there been any modifications to the synthetic attributes
+            Map<String, Object> layer = _layer.get();
+            if (layer == null)
+            {
+                // no, so we just add the names for which there are values
+                for (String s : getSyntheticNameSet())
+                    if (getSyntheticAttribute(s) != null)
+                        names.add(s);
+            }
+            else
+            {
+                // otherwise for each known synthetic name
+                for (String s : getSyntheticNameSet())
+                {
+                    // has the attribute been modified in the layer?
+                    Object l = layer.get(s);
+                    if (l == REMOVED)
+                        // it has been removed
+                        names.remove(s);
+                    else if (l != null || getSyntheticAttribute(s) != null)
+                        // else it was modified or has an original value
+                        names.add(s);
+                }
+            }
+
+            return Collections.unmodifiableSet(names);
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            // Clear the base attributes
+            super.clearAttributes();
+            // We will need a layer to remove the synthetic attributes
+            Map<String, Object> layer = _layer.updateAndGet(m -> m == null ? new HashMap<>() : m);
+            // remove all known synthetic attributes
+            for (String s : getSyntheticNameSet())
+                layer.put(s, REMOVED);
         }
     }
 
@@ -608,6 +753,18 @@ public interface Attributes
         public Map<String, Object> asAttributeMap()
         {
             return Collections.emptyMap();
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Attributes.hashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            return o instanceof Attributes && Attributes.equals(this, o);
         }
     };
 }

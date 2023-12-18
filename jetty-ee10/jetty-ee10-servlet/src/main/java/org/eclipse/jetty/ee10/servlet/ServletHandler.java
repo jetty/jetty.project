@@ -452,16 +452,21 @@ public class ServletHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        // We will always have a ServletContextRequest as we must be within a ServletContextHandler
+        // We have a ServletContextRequest only when an enclosing ServletContextHandler matched a Servlet
         ServletChannel servletChannel = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletChannel);
+        if (servletChannel != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("handle {} {} {} {} {}", this, servletChannel, request, response, callback);
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("handle {} {} {} {}", this, request, response, callback);
+            // But request, response and/or callback may have been wrapped after the ServletContextHandler, so update the channel.
+            servletChannel.associate(request, response, callback);
+            servletChannel.handle();
+            return true;
+        }
 
-        // But request, response and/or callback may have been wrapped after the ServletContextHandler, so update the channel.
-        servletChannel.associate(request, response, callback);
-        servletChannel.handle();
-        return true;
+        // Otherwise, there is no matching servlet so we pass to our next handler (if any)
+        return super.handle(request, response, callback);
     }
 
     /**
@@ -619,6 +624,7 @@ public class ServletHandler extends Handler.Wrapper
     }
 
     /**
+     * Set the allowDuplicateMappings to set.
      * @param allowDuplicateMappings the allowDuplicateMappings to set
      */
     public void setAllowDuplicateMappings(boolean allowDuplicateMappings)

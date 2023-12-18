@@ -33,8 +33,6 @@ import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
-import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallback;
-import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
@@ -57,6 +55,8 @@ import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
+import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.AttributeNormalizer;
@@ -110,6 +110,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     }
 
     /**
+     * Get the originAttribute.
      * @return the originAttribute
      */
     public String getOriginAttribute()

@@ -18,7 +18,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -43,7 +45,6 @@ import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -61,12 +62,17 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerConnection.class);
 
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
+    // This unbounded queue will always be limited by the max number of concurrent streams per connection.
+    private final Queue<HttpChannel> httpChannels = new ConcurrentLinkedQueue<>();
     private final Attributes attributes = new Lazy();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final Connector connector;
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
     private final String id;
+    private final SocketAddress localSocketAddress;
+    private final SocketAddress remoteSocketAddress;
+    private boolean recycleHttpChannels;
 
     public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -75,6 +81,19 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         this.listener = listener;
         this.httpConfig = httpConfig;
         this.id = StringUtil.randomAlphaNumeric(16);
+        localSocketAddress = httpConfig.getLocalAddress() != null ? httpConfig.getLocalAddress() : endPoint.getLocalSocketAddress();
+        remoteSocketAddress = endPoint.getRemoteSocketAddress();
+        setRecycleHttpChannels(true);
+    }
+
+    public boolean isRecycleHttpChannels()
+    {
+        return recycleHttpChannels;
+    }
+
+    public void setRecycleHttpChannels(boolean recycleHttpChannels)
+    {
+        this.recycleHttpChannels = recycleHttpChannels;
     }
 
     @Override
@@ -119,7 +138,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
 
-        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
+        HttpChannel httpChannel = pollHttpChannel();
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
@@ -224,7 +243,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
 
-        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
+        HttpChannel httpChannel = pollHttpChannel();
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         Runnable task = httpStream.onPushRequest(request);
@@ -232,75 +251,21 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             offerTask(task, true);
     }
 
-/*
-    // TODO: re-instate recycle channel functionality, but using Pool.
-    private final AutoLock lock = new AutoLock();
-    private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
-    private boolean recycleHttpChannels = true;
-
-    public boolean isRecycleHttpChannels()
+    private HttpChannel pollHttpChannel()
     {
-        return recycleHttpChannels;
+        HttpChannel httpChannel = null;
+        if (isRecycleHttpChannels())
+            httpChannel = httpChannels.poll();
+        if (httpChannel == null)
+            httpChannel = httpChannelFactory.newHttpChannel(this);
+        return httpChannel;
     }
 
-    public void setRecycleHttpChannels(boolean recycleHttpChannels)
-    {
-        this.recycleHttpChannels = recycleHttpChannels;
-    }
-
-    private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
-    {
-        HttpChannelOverHTTP2 channel = pollHttpChannel();
-        if (channel != null)
-        {
-            channel.getHttpTransport().setStream(stream);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Recycling channel {} for {}", channel, this);
-        }
-        else
-        {
-            HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, this);
-            transport.setStream(stream);
-            channel = newServerHttpChannelOverHTTP2(connector, httpConfig, transport);
-            channel.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("Creating channel {} for {}", channel, this);
-        }
-        stream.setAttachment(channel);
-        return channel;
-    }
-
-    protected ServerHttpChannelOverHTTP2 newServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration httpConfig, HttpTransportOverHTTP2 transport)
-    {
-        return new ServerHttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), transport);
-    }
-
-    private void offerHttpChannel(HttpChannelOverHTTP2 channel)
+    void offerHttpChannel(HttpChannel channel)
     {
         if (isRecycleHttpChannels())
-        {
-            try (AutoLock l = lock.lock())
-            {
-                channels.offer(channel);
-            }
-        }
+            httpChannels.offer(channel);
     }
-
-    private HttpChannelOverHTTP2 pollHttpChannel()
-    {
-        if (isRecycleHttpChannels())
-        {
-            try (AutoLock l = lock.lock())
-            {
-                return channels.poll();
-            }
-        }
-        else
-        {
-            return null;
-        }
-    }
-*/
 
     public boolean upgrade(Request request, HttpFields.Mutable responseFields)
     {
@@ -393,12 +358,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
     @Override
-    public boolean isSecure()
-    {
-        return getEndPoint() instanceof SslConnection.SslEndPoint;
-    }
-
-    @Override
     public boolean isPushSupported()
     {
         return getSession().isPushEnabled();
@@ -407,13 +366,13 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
-        return getEndPoint().getRemoteSocketAddress();
+        return remoteSocketAddress;
     }
 
     @Override
     public SocketAddress getLocalSocketAddress()
     {
-        return getEndPoint().getLocalSocketAddress();
+        return localSocketAddress;
     }
 
     @Override

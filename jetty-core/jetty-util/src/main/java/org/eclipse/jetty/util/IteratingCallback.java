@@ -99,7 +99,13 @@ public abstract class IteratingCallback implements Callback
          * This callback has been {@link #close() closed} and
          * cannot be {@link #reset() reset}.
          */
-        CLOSED
+        CLOSED,
+
+        /**
+         * This callback has been {@link #abort(Throwable) aborted},
+         * and cannot be {@link #reset() reset}.
+         */
+        ABORTED
     }
 
     /**
@@ -216,6 +222,7 @@ public abstract class IteratingCallback implements Callback
                     break;
 
                 case CLOSED:
+                case ABORTED:
                 default:
                     throw new IllegalStateException(toString());
             }
@@ -307,8 +314,8 @@ public abstract class IteratingCallback implements Callback
 
                     case FAILED:
                     case CLOSED:
+                    case ABORTED:
                         notifyCompleteFailure = _failure;
-                        _failure = null;
                         break processing;
 
                     case SUCCEEDED:
@@ -353,8 +360,9 @@ public abstract class IteratingCallback implements Callback
                     process = true;
                     break;
                 }
-                case CLOSED:
                 case FAILED:
+                case CLOSED:
+                case ABORTED:
                 {
                     // Too late!
                     break;
@@ -391,12 +399,12 @@ public abstract class IteratingCallback implements Callback
         {
             switch (_state)
             {
+                case CALLED:
                 case SUCCEEDED:
                 case FAILED:
-                case IDLE:
                 case CLOSED:
-                case CALLED:
-                    // too late!.
+                case ABORTED:
+                    // Too late!
                     break;
                 case PENDING:
                 {
@@ -446,6 +454,7 @@ public abstract class IteratingCallback implements Callback
                     break;
 
                 case CLOSED:
+                case ABORTED:
                     break;
 
                 default:
@@ -457,6 +466,57 @@ public abstract class IteratingCallback implements Callback
 
         if (failure != null)
             onCompleteFailure(new IOException(failure));
+    }
+
+    /**
+     * <p>Method to invoke to stop further processing iterations.</p>
+     * <p>This method causes {@link #onCompleteFailure(Throwable)} to
+     * ultimately be invoked, either during this call or later after
+     * any call to {@link #process()} has returned.</p>
+     *
+     * @param failure the cause of the abort
+     * @see #isAborted()
+     */
+    public void abort(Throwable failure)
+    {
+        boolean abort = false;
+        try (AutoLock ignored = _lock.lock())
+        {
+            switch (_state)
+            {
+                case SUCCEEDED:
+                case FAILED:
+                case CLOSED:
+                case ABORTED:
+                {
+                    // Too late.
+                    break;
+                }
+
+                case IDLE:
+                case PENDING:
+                {
+                    _failure = failure;
+                    _state = State.ABORTED;
+                    abort = true;
+                    break;
+                }
+
+                case PROCESSING:
+                case CALLED:
+                {
+                    _failure = failure;
+                    _state = State.ABORTED;
+                    break;
+                }
+
+                default:
+                    throw new IllegalStateException(toString());
+            }
+        }
+
+        if (abort)
+            onCompleteFailure(failure);
     }
 
     /**
@@ -502,6 +562,17 @@ public abstract class IteratingCallback implements Callback
         try (AutoLock ignored = _lock.lock())
         {
             return _state == State.SUCCEEDED;
+        }
+    }
+
+    /**
+     * @return whether this callback has been {@link #abort(Throwable) aborted}
+     */
+    public boolean isAborted()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _state == State.ABORTED;
         }
     }
 

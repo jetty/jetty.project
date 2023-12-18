@@ -47,25 +47,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DynamicServerConfigurationTest
 {
-    private Server server;
+    private final Server server = new Server();
     private HttpClient httpClient;
     private WebSocketClient wsClient;
 
     public void start(Handler handler) throws Exception
     {
-        server = new Server();
-
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ContextHandler context = new ContextHandler("/ctx");
-
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-
-        wsHandler.setHandler(handler);
-
-        server.setHandler(context);
+        server.setHandler(handler);
         server.start();
 
         httpClient = new HttpClient();
@@ -81,32 +72,37 @@ public class DynamicServerConfigurationTest
     }
 
     @Test
-    public void testDynamicConfiguration() throws Exception
+    public void testDynamicConfigurationWithServer() throws Exception
     {
-        start(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, org.eclipse.jetty.util.Callback callback) throws Exception
-            {
-                String pathInContext = Request.getPathInContext(request);
-                if ("/config".equals(pathInContext))
-                {
-                    ServerWebSocketContainer container = (ServerWebSocketContainer)request.getContext().getAttribute(WebSocketContainer.class.getName());
-                    container.addMapping("/ws", (rq, rs, cb) -> new EchoSocket());
-                }
-                callback.succeeded();
-                return true;
-            }
-        });
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
+        wsHandler.setHandler(new DynamicConfigurationHandler());
+        start(wsHandler);
 
+        testDynamicConfiguration("");
+    }
+
+    @Test
+    public void testDynamicConfigurationWithContextHandler() throws Exception
+    {
+        ContextHandler context = new ContextHandler("/ctx");
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
+        context.setHandler(wsHandler);
+        wsHandler.setHandler(new DynamicConfigurationHandler());
+        start(context);
+
+        testDynamicConfiguration("/ctx");
+    }
+
+    private void testDynamicConfiguration(String contextPath) throws Exception
+    {
         // There are not yet any configured WebSocket mapping, so the connect() must fail.
-        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ctx/ws"));
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve(contextPath + "/ws"));
         Future<Session> future = wsClient.connect(new EventSocket(), wsUri);
         ExecutionException x = assertThrows(ExecutionException.class, future::get);
         assertInstanceOf(UpgradeException.class, x.getCause());
 
         // Make one HTTP request to dynamically configure.
-        ContentResponse response = httpClient.GET(server.getURI().resolve("/ctx/config"));
+        ContentResponse response = httpClient.GET(server.getURI().resolve(contextPath + "/config"));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // Try again WebSocket, must succeed.
@@ -118,6 +114,22 @@ public class DynamicServerConfigurationTest
 
             String reply = clientEndPoint.textMessages.poll(5, SECONDS);
             assertEquals("OK", reply);
+        }
+    }
+
+    private static class DynamicConfigurationHandler extends Handler.Abstract
+    {
+        @Override
+        public boolean handle(Request request, Response response, org.eclipse.jetty.util.Callback callback)
+        {
+            String pathInContext = Request.getPathInContext(request);
+            if ("/config".equals(pathInContext))
+            {
+                ServerWebSocketContainer container = (ServerWebSocketContainer)request.getContext().getAttribute(WebSocketContainer.class.getName());
+                container.addMapping("/ws", (rq, rs, cb) -> new EchoSocket());
+            }
+            callback.succeeded();
+            return true;
         }
     }
 }

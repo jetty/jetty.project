@@ -29,30 +29,34 @@ public abstract class Rule
     private boolean _terminating;
 
     /**
-     * <p>Tests whether the given {@code Request} should apply, and if so the rule logic is triggered.</p>
+     * <p>Tests whether the given input {@code Handler} (which wraps a
+     * {@code Request}) matches the rule, and if so returns an output
+     * {@code Handler} that applies the rule logic.</p>
+     * <p>If the input does not match, {@code null} is returned.</p>
      *
-     * @param input the input {@code Request} and {@code Handler}
-     * @return the possibly wrapped {@code Request} and {@code Handler}, or {@code null} if the rule did not match
-     * @throws IOException if applying the rule failed
+     * @param input the input {@code Handler} that wraps the {@code Request}
+     * @return an output {@code Handler} that wraps the input {@code Handler},
+     * or {@code null} if the rule does not match
+     * @throws IOException if applying the rule fails
      */
     public abstract Handler matchAndApply(Handler input) throws IOException;
 
     /**
-     * @return when {@code true}, rules after this one are not invoked
+     * @return whether rules after this one are not invoked
      */
     public boolean isTerminating()
     {
         return _terminating;
     }
 
+    /**
+     * @param value whether rules after this one are not invoked
+     */
     public void setTerminating(boolean value)
     {
         _terminating = value;
     }
 
-    /**
-     * Returns the handling and terminating flag values.
-     */
     @Override
     public String toString()
     {
@@ -60,63 +64,61 @@ public abstract class Rule
     }
 
     /**
-     * <p>A {@link Request.Wrapper} that is also a {@link Handler},
-     * used to chain a sequence of {@link Rule}s together.
-     * The rule handler is initialized with the initial request, then it is
-     * passed to a chain of rules before the child {@code Handler} is
-     * passed in {@link #setHandler(Handler)}. Finally, the response
-     * and callback are provided in a call to {@link #handle(Request, Response, Callback)},
-     * which calls the {@link #handle(Response, Callback)}.</p>
+     * <p>A {@link Request.Wrapper} used to chain a sequence of {@link Rule}s together.</p>
+     * <p>The first {@link Rule.Handler} is initialized with the initial {@link Request},
+     * then it is passed to a chain of {@link Rule}s, which in turn chain {@link Rule.Handler}s
+     * together.
+     * At the end of the {@link Rule} applications, {@link Rule.Handler}s are chained so that
+     * so that the first rule produces the innermost {@code Handler} and the last rule produces
+     * the outermost {@code Handler} in this way: {@code RH3(RH2(RH1(Req)))}.</p>
+     * <p>After the {@link Rule} applications, the {@link Rule.Handler}s are then called in
+     * sequence, starting from the innermost and moving outwards with respect to the wrapping,
+     * until finally the {@link org.eclipse.jetty.server.Handler#handle(Request, Response, Callback)}
+     * method of the child {@code Handler} of {@link RewriteHandler} is invoked.</p>
      */
-    public static class Handler extends Request.Wrapper implements Request.Handler
+    public static class Handler extends Request.Wrapper
     {
-        private volatile Handler _handler;
+        private Rule.Handler _nextRuleHandler;
 
-        public Handler(Request request)
+        protected Handler(Request request)
         {
             super(request);
         }
 
-        @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        public Handler(Rule.Handler handler)
         {
-            return handle(response, callback);
+            super(handler);
+            handler._nextRuleHandler = this;
         }
 
         /**
-         * <p>Handles this wrapped request together with the passed response and
-         * callback, using the handler set in {@link #setHandler(Handler)}.
-         * This method should be extended if additional handling of the wrapped
-         * request is required.</p>
-         * @param response The response
-         * @param callback The callback
-         * @throws Exception If there is a problem handling
-         * @see #setHandler(Handler)
+         * <p>Handles this wrapped request together with the passed response and callback.</p>
+         * <p>This method should be overridden only if the rule applies to the response,
+         * or the rule completes the callback.
+         * By default this method forwards the handling to the next {@link Rule.Handler}.
+         * If a rule that overrides this method is non-{@link #isTerminating() terminating},
+         * it should call the {@code super} implementation to chain the rules.</p>
+         *
+         * @param response the {@link Response}
+         * @param callback the {@link Callback}
+         * @throws Exception if there is a failure while handling the rules
          */
         protected boolean handle(Response response, Callback callback) throws Exception
         {
-            Handler handler = _handler;
-            return handler != null && handler.handle(this, response, callback);
-        }
-
-        /**
-         * <p>Wraps the given {@code Handler} within this instance and returns this instance.</p>
-         *
-         * @param handler the {@code Handler} to wrap
-         */
-        public void setHandler(Handler handler)
-        {
-            _handler = handler;
+            return _nextRuleHandler.handle(response, callback);
         }
     }
 
+    /**
+     * <p>A {@link Rule.Handler} that wraps a {@link Request} to return a different {@link HttpURI}.</p>
+     */
     public static class HttpURIHandler extends Handler
     {
         private final HttpURI _uri;
 
-        public HttpURIHandler(Request request, HttpURI uri)
+        public HttpURIHandler(Rule.Handler handler, HttpURI uri)
         {
-            super(request);
+            super(handler);
             _uri = uri;
         }
 

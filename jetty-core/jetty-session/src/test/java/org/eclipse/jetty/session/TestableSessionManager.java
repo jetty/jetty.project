@@ -183,7 +183,7 @@ public class TestableSessionManager extends AbstractSessionManager
         if (StringUtil.isNotBlank(path))
             setSessionPath(path);
 
-        String checkEncoding = _cookieConfig.get(__CheckRemoteSessionEncoding);
+        String checkEncoding = _cookieConfig.get(__CheckRemoteSessionEncodingProperty);
         if (StringUtil.isNotBlank(checkEncoding))
             setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(checkEncoding));
     }

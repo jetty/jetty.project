@@ -18,9 +18,6 @@ etc/jetty-gzip.xml
 ## Minimum content length after which gzip is enabled
 # jetty.gzip.minGzipSize=32
 
-## Check whether a file with *.gz extension exists
-# jetty.gzip.checkGzExists=false
-
 ## Inflate request buffer size, or 0 for no request inflation
 # jetty.gzip.inflateBufferSize=0
 
@@ -41,9 +38,6 @@ etc/jetty-gzip.xml
 
 ## Set the {@link Deflater} flush mode to use.
 # jetty.gzip.syncFlush=false
-
-## The set of DispatcherType that this filter will operate on
-# jetty.gzip.dispatcherTypes=REQUEST
 
 ## Comma separated list of included HTTP methods
 # jetty.gzip.includedMethodList=GET,POST
