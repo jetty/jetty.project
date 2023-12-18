@@ -182,6 +182,8 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     @Override
     public void onFillable()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug(">>onFillable enter {} {} {}", this, stream, networkBuffer);
         acquireInputBuffer();
         try
         {
@@ -217,6 +219,11 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             releaseInputBuffer();
             // TODO: fail and close ?
         }
+        finally
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("<<onFillable exit {} {} {}", this, stream, networkBuffer);
+        }
     }
 
     /**
@@ -234,11 +241,15 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (parse(networkBuffer.getByteBuffer()))
                 return;
+
             // Check if the request was completed by the parsing.
-            if (stream == null)
-                return;
-            if (fillInputBuffer() <= 0)
+            if (stream == null || fillInputBuffer() <= 0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("parseAndFill completed the request by parsing {}", this);
+                releaseInputBuffer();
                 break;
+            }
         }
     }
 
