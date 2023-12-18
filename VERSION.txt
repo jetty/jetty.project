@@ -1,4 +1,22 @@
-jetty-12.0.5-SNAPSHOT
+jetty-12.0.5 - 18 December 2023
+ + 10277 Review read failures impacting writes 
+ + 10852 `ResourceHandler` could use a `.setUseFileMapping(boolean)` option
+ + 10933 Review ServletChannelState.asyncError()
+ + 10956 100 Continue handling
+ + 11009 Add deployment exception for non Jakarta WebSocket endpoints used
+   in ServerEndpointConfig
+ + 11014 RedirectRegexRule and RewritePatternRule should consider
+   relativeRedirectAllowed
+ + 11016 IllegalStateException when stopping Server with pending
+   requests
+ + 11021 Do not call afterResponse() in case of failures
+ + 11024 Properly scope jetty-security optional / test dependencies
+ + 11031 HttpClient should expose Connection/EndPoint used by HTTP requests
+ + 11037 Serialize HttpClient request failures
+ + 11039 Memory leak and multiple (Http|Servlet)*Listener invokations after
+   restart
+ + 11040 "not an allowed scheme" for GraalVM Native-Image resource:-URIs
+ + 11064 NPE if MultiPartFormData.setFilesDirectory() is not called
 
 jetty-12.0.4 - 30 November 2023
  + 9502 Produce SBOM and deploy to Maven Central
