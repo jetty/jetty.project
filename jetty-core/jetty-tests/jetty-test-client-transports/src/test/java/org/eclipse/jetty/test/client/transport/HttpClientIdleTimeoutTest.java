@@ -37,7 +37,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testClientIdleTimeout(Transport transport) throws Exception
     {
-        long serverIdleTimeout = idleTimeout * 3;
+        long serverIdleTimeout = idleTimeout * 2;
         CountDownLatch serverIdleTimeoutLatch = new CountDownLatch(1);
         start(transport, new Handler.Abstract()
         {
@@ -82,7 +82,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestIdleTimeout(Transport transport) throws Exception
     {
-        long serverIdleTimeout = idleTimeout * 3;
+        long serverIdleTimeout = idleTimeout * 2;
         CountDownLatch serverIdleTimeoutLatch = new CountDownLatch(1);
         start(transport, new Handler.Abstract()
         {
