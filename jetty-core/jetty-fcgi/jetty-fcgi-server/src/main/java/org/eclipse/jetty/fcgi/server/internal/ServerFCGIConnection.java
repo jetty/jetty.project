@@ -227,20 +227,15 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (parse(networkBuffer.getByteBuffer()))
                 return;
+
             // Check if the request was completed by the parsing.
-            if (stream == null)
+            if (stream == null || fillInputBuffer() <= 0)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("parseAndFill completed the request by parsing {}", this);
                 releaseInputBuffer();
                 break;
             }
-            int filled = fillInputBuffer();
-            if (filled < 0)
-            {
-                releaseInputBuffer();
-                break;
-            }
-            if (filled == 0)
-                break;
         }
     }
 

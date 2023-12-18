@@ -56,7 +56,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         parser.init(MessageListener::new);
     }
 
-    public void onFailure(long error, Throwable failure)
+    public void onFailure(Throwable failure)
     {
         if (networkBuffer != null)
         {
