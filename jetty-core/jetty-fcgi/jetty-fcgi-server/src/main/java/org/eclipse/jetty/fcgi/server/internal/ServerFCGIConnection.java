@@ -221,6 +221,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parseAndFill {}", this);
+        acquireInputBuffer();
         // This loop must run only until the request is completed.
         // See also HttpConnection.parseAndFillForContent().
         while (stream != null)
