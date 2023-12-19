@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -934,6 +936,48 @@ public class MultiPartFormDataTest
         assertInstanceOf(IllegalArgumentException.class, cause);
     }
 
+    @Test
+    public void testNonRetainableContent() throws Exception
+    {
+        String body = """
+            --AaB03x\r
+            content-disposition: form-data; name="field1"\r
+            \r
+            Joe Blow\r
+            --AaB03x\r
+            content-disposition: form-data; name="stuff"; filename="foo.txt"\r
+            Content-Type: text/plain\r
+            \r
+            aaaabbbbb\r
+            --AaB03x--\r
+            """;
+
+        Content.Source source = new InputStreamContentSource(new ByteArrayInputStream(body.getBytes(ISO_8859_1)))
+        {
+            @Override
+            public Content.Chunk read()
+            {
+                Content.Chunk chunk = super.read();
+                return new NonRetainableChunk(chunk);
+            }
+        };
+
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(2));
+            MultiPart.Part part1 = parts.getFirst("field1");
+            assertThat(part1, notNullValue());
+            Content.Source partContent = part1.getContentSource();
+            assertThat(Content.Source.asString(partContent), is("Joe Blow"));
+            MultiPart.Part part2 = parts.getFirst("stuff");
+            assertThat(part2, notNullValue());
+            partContent = part2.getContentSource();
+            assertThat(Content.Source.asString(partContent), is("aaaabbbbb"));
+        }
+    }
+
     private class TestContent extends AsyncContent
     {
         @Override
@@ -943,6 +987,45 @@ public class MultiPartFormDataTest
             if (chunk != null && chunk.canRetain())
                 _allocatedChunks.add(chunk);
             return chunk;
+        }
+    }
+
+    private static class NonRetainableChunk implements Content.Chunk
+    {
+        private final ByteBuffer _content;
+        private final boolean _isLast;
+        private final Throwable _failure;
+
+        public NonRetainableChunk(Content.Chunk chunk)
+        {
+            _content = BufferUtil.copy(chunk.getByteBuffer());
+            _isLast = chunk.isLast();
+            _failure = chunk.getFailure();
+            chunk.release();
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return _content;
+        }
+
+        @Override
+        public boolean isLast()
+        {
+            return _isLast;
+        }
+
+        @Override
+        public Throwable getFailure()
+        {
+            return _failure;
+        }
+
+        @Override
+        public void retain()
+        {
+            throw new UnsupportedOperationException();
         }
     }
 }
