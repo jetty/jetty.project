@@ -17,7 +17,7 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true", "maven3")
+              mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Dcompiler.release=21", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), javaDoc()],
                             skipPublishingChecks: true, blameDisabled: true
