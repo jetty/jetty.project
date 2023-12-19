@@ -55,12 +55,14 @@ import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLogWriter;
@@ -84,6 +86,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -255,6 +258,65 @@ public class HTTPServerDocs
 
         server.start();
         // end::configureConnectors[]
+    }
+
+    public void sameRandomPort() throws Exception
+    {
+        // tag::sameRandomPort[]
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        Server server = new Server();
+
+        // The plain HTTP configuration.
+        HttpConfiguration plainConfig = new HttpConfiguration();
+
+        // The secure HTTP configuration.
+        HttpConfiguration secureConfig = new HttpConfiguration(plainConfig);
+        secureConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // First, create the secure connector for HTTPS and HTTP/2.
+        HttpConnectionFactory https = new HttpConnectionFactory(secureConfig);
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(secureConfig);
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(https.getProtocol());
+        ConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, https.getProtocol());
+        ServerConnector secureConnector = new ServerConnector(server, 1, 1, ssl, alpn, http2, https);
+        server.addConnector(secureConnector);
+
+        // Second, create the plain connector for HTTP.
+        HttpConnectionFactory http = new HttpConnectionFactory(plainConfig);
+        ServerConnector plainConnector = new ServerConnector(server, 1, 1, http);
+        server.addConnector(plainConnector);
+
+        // Third, create the connector for HTTP/3.
+        HTTP3ServerConnectionFactory http3 = new HTTP3ServerConnectionFactory(secureConfig);
+        HTTP3ServerConnector http3Connector = new HTTP3ServerConnector(server, sslContextFactory, http3);
+        server.addConnector(http3Connector);
+
+        // Set up a listener so that when the secure connector starts,
+        // it configures the other connectors that have not started yet.
+        secureConnector.addEventListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStarted(LifeCycle lifeCycle)
+            {
+                if (lifeCycle instanceof NetworkConnector networkConnector)
+                {
+                    int port = networkConnector.getLocalPort();
+
+                    // Configure the plain connector for secure redirects from http to https.
+                    plainConfig.setSecurePort(port);
+
+                    // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
+                    http3Connector.setPort(port);
+                }
+            }
+        });
+
+        server.start();
+        // end::sameRandomPort[]
     }
 
     public void http11() throws Exception
