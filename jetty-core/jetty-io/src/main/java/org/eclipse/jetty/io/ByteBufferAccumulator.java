@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * The buffer list automatically grows as data is written to it, the buffers are taken from the
  * supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.
  * <p>
- * The method {@link #ensureBuffer(int, int)} can be used access a buffer that can be written to directly as the last buffer list,
+ * The method {@link #accessInternalBuffer(int, int)} can be used access a buffer that can be written to directly as the last buffer list,
  * if there is less than a certain amount of space available in that buffer then a new one will be allocated and returned instead.
  */
 public class ByteBufferAccumulator implements AutoCloseable
@@ -70,10 +70,25 @@ public class ByteBufferAccumulator implements AutoCloseable
      * Get the last buffer of the accumulator, this can be written to directly to avoid copying into the accumulator.
      * @param minAllocationSize new buffers will be allocated to have at least this size.
      * @return a buffer with at least {@code minSize} space to write into.
+     * @deprecated Use {@link #copyBuffer(ByteBuffer)}, {@link #copyBytes(byte[], int, int)} or {@link #addBuffer(RetainableByteBuffer)}
      */
+    @Deprecated
     public RetainableByteBuffer ensureBuffer(int minAllocationSize)
     {
-        return ensureBuffer(1, minAllocationSize);
+        return accessInternalBuffer(1, minAllocationSize);
+    }
+
+    /**
+     * Get the last buffer of the accumulator, this can be written to directly to avoid copying into the accumulator.
+     * @param minSize the smallest amount of remaining space before a new buffer is allocated.
+     * @param minAllocationSize new buffers will be allocated to have at least this size.
+     * @return a buffer with at least {@code minSize} space to write into.
+     * @deprecated Use {@link #copyBuffer(ByteBuffer)}, {@link #copyBytes(byte[], int, int)} or {@link #addBuffer(RetainableByteBuffer)}
+     */
+    @Deprecated
+    public RetainableByteBuffer ensureBuffer(int minSize, int minAllocationSize)
+    {
+        return accessInternalBuffer(minSize, minAllocationSize);
     }
 
     /**
@@ -82,7 +97,7 @@ public class ByteBufferAccumulator implements AutoCloseable
      * @param minAllocationSize new buffers will be allocated to have at least this size.
      * @return a buffer with at least {@code minSize} space to write into.
      */
-    public RetainableByteBuffer ensureBuffer(int minSize, int minAllocationSize)
+    RetainableByteBuffer accessInternalBuffer(int minSize, int minAllocationSize)
     {
         RetainableByteBuffer buffer = _buffers.isEmpty() ? null : _buffers.get(_buffers.size() - 1);
         if (buffer == null || BufferUtil.space(buffer.getByteBuffer()) < minSize)
@@ -112,7 +127,7 @@ public class ByteBufferAccumulator implements AutoCloseable
             throw new IllegalArgumentException("maxLength exceeded");
         while (source.hasRemaining())
         {
-            RetainableByteBuffer buffer = ensureBuffer(source.remaining());
+            RetainableByteBuffer buffer = accessInternalBuffer(1, source.remaining());
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             int pos = BufferUtil.flipToFill(byteBuffer);
             BufferUtil.put(source, byteBuffer);

@@ -51,19 +51,19 @@ public class ByteBufferAccumulatorTest
         ByteBuffer slice = content.slice();
 
         // We completely fill up the internal buffer with the first write.
-        RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+        RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
         ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
         assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(allocationSize));
         writeInFlushMode(slice, byteBuffer);
         assertThat(BufferUtil.space(byteBuffer), is(0));
 
         // If we ask for min size of 0 we get the same buffer which is full.
-        internalBuffer = accumulator.ensureBuffer(0, allocationSize);
+        internalBuffer = accumulator.accessInternalBuffer(0, allocationSize);
         byteBuffer = internalBuffer.getByteBuffer();
         assertThat(BufferUtil.space(byteBuffer), is(0));
 
         // If we need at least 1 minSpace we must allocate a new buffer.
-        internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+        internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
         byteBuffer = internalBuffer.getByteBuffer();
         assertThat(BufferUtil.space(byteBuffer), greaterThan(0));
         assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(allocationSize));
@@ -79,20 +79,20 @@ public class ByteBufferAccumulatorTest
         // If we request anything under the amount remaining we get back the same buffer.
         for (int i = 0; i <= 13; i++)
         {
-            internalBuffer = accumulator.ensureBuffer(i, allocationSize);
+            internalBuffer = accumulator.accessInternalBuffer(i, allocationSize);
             byteBuffer = internalBuffer.getByteBuffer();
             assertThat(BufferUtil.space(byteBuffer), is(13));
         }
 
         // If we request over 13 then we get a new buffer.
-        internalBuffer = accumulator.ensureBuffer(14, allocationSize);
+        internalBuffer = accumulator.accessInternalBuffer(14, allocationSize);
         byteBuffer = internalBuffer.getByteBuffer();
         assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1024));
 
         // Copy the rest of the content.
         while (slice.hasRemaining())
         {
-            internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
             byteBuffer = internalBuffer.getByteBuffer();
             assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1));
             writeInFlushMode(slice, byteBuffer);
@@ -122,7 +122,7 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
             ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
             assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1));
             writeInFlushMode(slice, byteBuffer);
@@ -154,7 +154,7 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
             ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
             writeInFlushMode(slice, byteBuffer);
         }
@@ -204,7 +204,7 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
             ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
             writeInFlushMode(slice, byteBuffer);
         }
@@ -233,7 +233,7 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
+            RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
             ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
             writeInFlushMode(slice, byteBuffer);
         }
