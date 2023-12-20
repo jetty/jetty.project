@@ -38,9 +38,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
         // The javax layer instead uses decoders for whole byte array messages instead of this message sink.
         MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
         if (methodHandle.type().changeReturnType(void.class) != onMessageType.changeReturnType(void.class))
-        {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
     }
 
     @Override
@@ -56,8 +54,9 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                     String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d", size, maxBinaryMessageSize));
             }
 
-            // If we are fin and no OutputStream has been created we don't need to aggregate.
-            if (frame.isFin() && (out == null))
+            // If the frame is fin and no accumulator has
+            // been created, then we don't need to aggregate.
+            if (frame.isFin() && out == null)
             {
                 if (frame.hasPayload())
                 {
@@ -65,7 +64,11 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                     methodHandle.invoke(buf, 0, buf.length);
                 }
                 else
+                {
                     methodHandle.invoke(EMPTY_BUFFER, 0, 0);
+                }
+
+                reset();
 
                 callback.succeeded();
                 session.demand(1);
@@ -79,31 +82,25 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 if (out == null)
                     out = new ByteBufferCallbackAccumulator();
                 out.addEntry(payload, callback);
+                // The callback is now stored in the accumulator, so if
+                // the methodHandle throws, don't fail the callback twice.
+                callback = Callback.NOOP;
             }
 
-            // If the methodHandle throws we don't want to fail callback twice.
-            callback = Callback.NOOP;
             if (frame.isFin())
             {
                 byte[] buf = out.takeByteArray();
                 methodHandle.invoke(buf, 0, buf.length);
+                reset();
             }
 
+            callback.succeeded();
             session.demand(1);
         }
         catch (Throwable t)
         {
-            if (out != null)
-                out.fail(t);
+            fail(t);
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-            {
-                // reset
-                out = null;
-            }
         }
     }
 
@@ -112,5 +109,11 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         if (out != null)
             out.fail(failure);
+        reset();
+    }
+
+    private void reset()
+    {
+        out = null;
     }
 }

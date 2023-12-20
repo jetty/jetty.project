@@ -39,9 +39,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         Objects.requireNonNull(methodHandle, "MethodHandle");
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
         if (methodHandle.type() != onMessageType)
-        {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
     }
 
     @Override
@@ -57,13 +55,16 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                     size, maxBinaryMessageSize));
             }
 
-            // If we are fin and no OutputStream has been created we don't need to aggregate.
-            if (frame.isFin() && (out == null))
+            // If the frame is fin and no accumulator has
+            // been created, then we don't need to aggregate.
+            if (frame.isFin() && out == null)
             {
                 if (frame.hasPayload())
                     methodHandle.invoke(frame.getPayload());
                 else
                     methodHandle.invoke(BufferUtil.EMPTY_BUFFER);
+
+                reset();
 
                 callback.succeeded();
                 session.demand(1);
@@ -77,10 +78,11 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 if (out == null)
                     out = new ByteBufferCallbackAccumulator();
                 out.addEntry(payload, callback);
+                // The callback is now stored in the accumulator, so if
+                // the methodHandle throws, don't fail the callback twice.
+                callback = Callback.NOOP;
             }
 
-            // If the methodHandle throws we don't want to fail callback twice.
-            callback = Callback.NOOP;
             if (frame.isFin())
             {
                 ByteBufferPool bufferPool = session.getByteBufferPool();
@@ -90,6 +92,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 try
                 {
                     methodHandle.invoke(buffer);
+                    reset();
                 }
                 finally
                 {
@@ -97,20 +100,13 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 }
             }
 
+            callback.succeeded();
             session.demand(1);
         }
         catch (Throwable t)
         {
-            if (out != null)
-                out.fail(t);
+            fail(t);
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-            {
-                out = null;
-            }
         }
     }
 
@@ -119,5 +115,11 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     {
         if (out != null)
             out.fail(failure);
+        reset();
+    }
+
+    private void reset()
+    {
+        out = null;
     }
 }
