@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.internal.messages;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -34,9 +33,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
-
-        // Validate onMessageMethod
-        Objects.requireNonNull(methodHandle, "MethodHandle");
+        // Validate onMessage method signature.
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
         if (methodHandle.type() != onMessageType)
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
@@ -57,14 +54,12 @@ public class ByteBufferMessageSink extends AbstractMessageSink
 
             // If the frame is fin and no accumulator has
             // been created, then we don't need to aggregate.
-            if (frame.isFin() && out == null)
+            if (frame.isFin() && (out == null || out.getLength() == 0))
             {
                 if (frame.hasPayload())
                     methodHandle.invoke(frame.getPayload());
                 else
                     methodHandle.invoke(BufferUtil.EMPTY_BUFFER);
-
-                reset();
 
                 callback.succeeded();
                 session.demand(1);
@@ -92,7 +87,6 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 try
                 {
                     methodHandle.invoke(buffer);
-                    reset();
                 }
                 finally
                 {
@@ -115,11 +109,5 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     {
         if (out != null)
             out.fail(failure);
-        reset();
-    }
-
-    private void reset()
-    {
-        out = null;
     }
 }

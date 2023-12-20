@@ -23,12 +23,13 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
 public class StringMessageSink extends AbstractMessageSink
 {
-    private Utf8StringBuilder out;
+    private final Utf8StringBuilder out;
     private int size;
 
     public StringMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
+        this.out = new Utf8StringBuilder(session.getInputBufferSize());
         this.size = 0;
     }
 
@@ -45,8 +46,6 @@ public class StringMessageSink extends AbstractMessageSink
                     size, maxTextMessageSize));
             }
 
-            if (out == null)
-                out = new Utf8StringBuilder(session.getInputBufferSize());
             out.append(frame.getPayload());
 
             if (frame.isFin())
@@ -74,6 +73,6 @@ public class StringMessageSink extends AbstractMessageSink
     private void reset()
     {
         size = 0;
-        out = null;
+        out.reset();
     }
 }

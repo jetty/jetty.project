@@ -33,7 +33,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
-
         // This uses the offset length byte array signature not supported by javax websocket.
         // The javax layer instead uses decoders for whole byte array messages instead of this message sink.
         MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
@@ -56,7 +55,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
 
             // If the frame is fin and no accumulator has
             // been created, then we don't need to aggregate.
-            if (frame.isFin() && out == null)
+            if (frame.isFin() && (out == null || out.getLength() == 0))
             {
                 if (frame.hasPayload())
                 {
@@ -67,8 +66,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 {
                     methodHandle.invoke(EMPTY_BUFFER, 0, 0);
                 }
-
-                reset();
 
                 callback.succeeded();
                 session.demand(1);
@@ -91,7 +88,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 byte[] buf = out.takeByteArray();
                 methodHandle.invoke(buf, 0, buf.length);
-                reset();
             }
 
             callback.succeeded();
@@ -109,11 +105,5 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         if (out != null)
             out.fail(failure);
-        reset();
-    }
-
-    private void reset()
-    {
-        out = null;
     }
 }
