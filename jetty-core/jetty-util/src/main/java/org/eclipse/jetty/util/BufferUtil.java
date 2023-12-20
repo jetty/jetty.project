@@ -428,7 +428,7 @@ public class BufferUtil
     /**
      * Put data from one buffer into another, avoiding over/under flows
      *
-     * @param from Buffer to take bytes from in flush mode
+     * @param from Buffer to take bytes from in flush mode, whose position is modified with the bytes taken.
      * @param to Buffer to put bytes to in fill mode.
      * @return number of bytes moved
      */

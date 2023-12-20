@@ -25,7 +25,9 @@ import org.eclipse.jetty.util.Callback;
  * these into a single {@link ByteBuffer} or byte array and succeed the callbacks.</p>
  *
  * <p>This class is not thread safe and callers must do mutual exclusion.</p>
+ * @deprecated use {@link ByteBufferAccumulator}
  */
+@Deprecated
 public class ByteBufferCallbackAccumulator
 {
     private final List<Entry> _entries = new ArrayList<>();

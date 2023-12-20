@@ -17,7 +17,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
  */
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
-    private ByteBufferCallbackAccumulator accumulator;
+    private ByteBufferAccumulator accumulator;
 
     /**
      * Creates a new {@link ByteBufferMessageSink}.
@@ -64,7 +64,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     {
         try
         {
-            long size = (accumulator == null ? 0 : accumulator.getLength()) + frame.getPayloadLength();
+            int size = Math.addExact(accumulator == null ? 0 : Math.toIntExact(accumulator.getLength()), frame.getPayloadLength());
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
             {
@@ -87,13 +87,13 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             }
 
             if (accumulator == null)
-                accumulator = new ByteBufferCallbackAccumulator();
-            accumulator.addEntry(frame.getPayload(), callback);
+                accumulator = new ByteBufferAccumulator();
+            accumulator.addBuffer(frame.getPayload(), callback);
 
             if (frame.isFin())
             {
                 ByteBufferPool bufferPool = getCoreSession().getByteBufferPool();
-                RetainableByteBuffer buffer = bufferPool.acquire(accumulator.getLength(), false);
+                RetainableByteBuffer buffer = bufferPool.acquire(size, false);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 accumulator.writeTo(byteBuffer);
                 callback = Callback.from(buffer::release);

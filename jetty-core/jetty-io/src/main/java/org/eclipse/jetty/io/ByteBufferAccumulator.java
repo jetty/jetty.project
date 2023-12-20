@@ -18,8 +18,10 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Accumulates data into a list of ByteBuffers which can then be combined into a single buffer or written to an OutputStream.
@@ -116,25 +118,45 @@ public class ByteBufferAccumulator implements AutoCloseable
         return length > _maxLength;
     }
 
+    /**
+     * Copy bytes from an array into this accumulator
+     * @param buf The byte array to copy from
+     * @param offset The offset into the array to start copying from
+     * @param length The number of bytes to copy
+     * @throws IllegalArgumentException if the max length is exceeded.
+     */
     public void copyBytes(byte[] buf, int offset, int length)
+        throws IllegalArgumentException
     {
         copyBuffer(BufferUtil.toBuffer(buf, offset, length));
     }
 
-    public void copyBuffer(ByteBuffer source)
+    /**
+     * Copy bytes from a {@link ByteBuffer} into this accumulator
+     * @param buffer The {@code ByteBuffer} to copy from, whose position is updated.
+     * @throws IllegalArgumentException if the max length is exceeded.
+     */
+    public void copyBuffer(ByteBuffer buffer)
+        throws IllegalArgumentException
     {
-        if (maxLengthExceeded(source.remaining()))
+        if (maxLengthExceeded(buffer.remaining()))
             throw new IllegalArgumentException("maxLength exceeded");
-        while (source.hasRemaining())
+        while (buffer.hasRemaining())
         {
-            RetainableByteBuffer buffer = accessInternalBuffer(1, source.remaining());
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
+            RetainableByteBuffer target = accessInternalBuffer(1, buffer.remaining());
+            ByteBuffer byteBuffer = target.getByteBuffer();
             int pos = BufferUtil.flipToFill(byteBuffer);
-            BufferUtil.put(source, byteBuffer);
+            BufferUtil.put(buffer, byteBuffer);
             BufferUtil.flipToFlush(byteBuffer, pos);
         }
     }
 
+    /**
+     * Add (without copying if possible) a {@link RetainableByteBuffer}
+     * @param buffer The {@code RetainableByteBuffer} to add to the accumulator, which will either be
+     *               {@link Retainable#retain() retained} or copied if it {@link Retainable#canRetain() cannot be retained}.
+     *               The buffers position will not be updated.
+     */
     public void addBuffer(RetainableByteBuffer buffer)
     {
         if (buffer != null && buffer.hasRemaining())
@@ -149,8 +171,26 @@ public class ByteBufferAccumulator implements AutoCloseable
             }
             else
             {
-                copyBuffer(buffer.getByteBuffer());
+                copyBuffer(buffer.getByteBuffer().slice());
             }
+        }
+    }
+
+    /**
+     * Add without copying a {@link ByteBuffer}.
+     * @param buffer The {@code ByteBuffer} to add.
+     * @param releaseCallback A callback that is {@link Callback#succeeded() succeeded} when the buffer is no longer held,
+     *                        or {@link Callback#failed(Throwable) failed} if the {@link #fail(Throwable)} method is called.
+     */
+    public void addBuffer(ByteBuffer buffer, Callback releaseCallback)
+    {
+        if (BufferUtil.isEmpty(buffer))
+        {
+            releaseCallback.succeeded();
+        }
+        else
+        {
+            _buffers.add(new FailableRetainableByteBuffer(buffer, releaseCallback));
         }
     }
 
@@ -299,6 +339,13 @@ public class ByteBufferAccumulator implements AutoCloseable
         return bytes;
     }
 
+    public byte[] takeByteArray()
+    {
+        byte[] out = toByteArray();
+        close();
+        return out;
+    }
+
     public void writeTo(ByteBuffer byteBuffer)
     {
         int pos = BufferUtil.flipToFill(byteBuffer);
@@ -320,5 +367,52 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         _buffers.forEach(RetainableByteBuffer::release);
         _buffers.clear();
+    }
+
+    public void fail(Throwable cause)
+    {
+        _buffers.forEach(r ->
+        {
+            if (r instanceof FailableRetainableByteBuffer frbb)
+                frbb.fail(cause);
+            else
+                r.release();
+        });
+        _buffers.clear();
+    }
+
+    private static class FailableRetainableByteBuffer implements RetainableByteBuffer
+    {
+        private final ByteBuffer _buffer;
+        private final AtomicReference<Callback> _callback;
+
+        private FailableRetainableByteBuffer(ByteBuffer buffer, Callback callback)
+        {
+            _buffer = buffer;
+            _callback = new AtomicReference<>(callback);
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return _buffer;
+        }
+
+        @Override
+        public boolean release()
+        {
+            Callback callback = _callback.getAndSet(null);
+            if (callback == null)
+                return false;
+            callback.succeeded();
+            return true;
+        }
+
+        public void fail(Throwable cause)
+        {
+            Callback callback = _callback.getAndSet(null);
+            if (callback != null)
+                callback.failed(cause);
+        }
     }
 }

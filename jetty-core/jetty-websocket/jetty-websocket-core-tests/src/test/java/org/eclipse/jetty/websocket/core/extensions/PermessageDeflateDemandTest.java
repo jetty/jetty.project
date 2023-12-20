@@ -19,7 +19,7 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -113,7 +113,7 @@ public class PermessageDeflateDemandTest
         public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
         public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
         private StringBuilder _stringBuilder = new StringBuilder();
-        private ByteBufferCallbackAccumulator _byteBuilder = new ByteBufferCallbackAccumulator();
+        private ByteBufferAccumulator _byteBuilder = new ByteBufferAccumulator();
 
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
@@ -154,11 +154,11 @@ public class PermessageDeflateDemandTest
                         }
                         break;
                     case OpCode.BINARY:
-                        _byteBuilder.addEntry(frame.getPayload(), callback);
+                        _byteBuilder.addBuffer(frame.getPayload(), callback);
                         if (frame.isFin())
                         {
                             binaryMessages.add(BufferUtil.toBuffer(_byteBuilder.takeByteArray()));
-                            _byteBuilder = new ByteBufferCallbackAccumulator();
+                            _byteBuilder = new ByteBufferAccumulator();
                         }
                         break;
                     default:
