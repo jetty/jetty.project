@@ -18,7 +18,6 @@ import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferAccumulator;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -92,12 +91,9 @@ public class ByteBufferMessageSink extends AbstractMessageSink
 
             if (frame.isFin())
             {
-                ByteBufferPool bufferPool = getCoreSession().getByteBufferPool();
-                RetainableByteBuffer buffer = bufferPool.acquire(size, false);
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                accumulator.writeTo(byteBuffer);
+                RetainableByteBuffer buffer = accumulator.toRetainableByteBuffer();
                 callback = Callback.from(buffer::release);
-                invoke(getMethodHandle(), byteBuffer, callback);
+                invoke(getMethodHandle(), buffer.getByteBuffer(), callback);
                 autoDemand();
             }
             else

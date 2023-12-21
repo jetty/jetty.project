@@ -95,6 +95,7 @@ public class ByteBufferAccumulator implements AutoCloseable
 
     /**
      * Get the last buffer of the accumulator, this can be written to directly to avoid copying into the accumulator.
+     * Used internally and for testing.
      * @param minSize the smallest amount of remaining space before a new buffer is allocated.
      * @param minAllocationSize new buffers will be allocated to have at least this size.
      * @return a buffer with at least {@code minSize} space to write into.
