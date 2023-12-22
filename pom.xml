@@ -249,6 +249,7 @@
     <module>jetty-keystore</module>
     <module>jetty-unixdomain-server</module>
     <module>javadoc</module>
+    <module>jetty-osgi-repository</module>
   </modules>
 
   <build>

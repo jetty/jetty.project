@@ -1,0 +1,33 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.eclipse.jetty</groupId>
+		<artifactId>jetty-project</artifactId>
+		<version>10.0.16-SNAPSHOT</version>
+	</parent>
+	<artifactId>jetty-osgi-repository</artifactId>
+	<name>Jetty OSGi Repository</name>
+	<description>Provides a OSGi Repository for all Jetty</description>
+	<packaging>repository</packaging>
+	<properties>
+		<tycho-version>4.0.1-SNAPSHOT</tycho-version>
+	</properties>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>tycho-snapshots</id>
+			<url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</url>
+		</pluginRepository>
+	</pluginRepositories>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-repository-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<extensions>true</extensions>
+			</plugin>
+		</plugins>
+	</build>
+</project>
