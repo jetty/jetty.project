@@ -15,15 +15,12 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritePendingException;
 
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +45,7 @@ public class BufferedContentSink implements Content.Sink
     private final boolean _direct;
     private final int _maxBufferSize;
     private final int _maxAggregationSize;
-    private final Flusher _flusher;
-    private ByteBufferAccumulator _accumulator;
+    private RetainableByteBuffer _accumulator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
@@ -66,7 +62,6 @@ public class BufferedContentSink implements Content.Sink
         _direct = direct;
         _maxBufferSize = maxBufferSize;
         _maxAggregationSize = maxAggregationSize;
-        _flusher = new Flusher(delegate);
     }
 
     @Override
@@ -97,7 +92,7 @@ public class BufferedContentSink implements Content.Sink
         {
             // current buffer can be aggregated
             if (_accumulator == null)
-                _accumulator = new ByteBufferAccumulator(_bufferPool, _direct, _maxBufferSize);
+                _accumulator = RetainableByteBuffer.newAccumulator(_bufferPool, _direct, _maxBufferSize);
             aggregateAndFlush(last, current, callback);
         }
         else
@@ -125,18 +120,18 @@ public class BufferedContentSink implements Content.Sink
         if (LOG.isDebugEnabled())
             LOG.debug("given buffer is greater than _maxBufferSize");
 
-        RetainableByteBuffer aggregatedBuffer = _accumulator == null ? null : _accumulator.takeRetainableByteBuffer();
-        if (aggregatedBuffer == null)
+        if (_accumulator == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("nothing aggregated, flushing current buffer {}", currentBuffer);
-            _flusher.offer(last, currentBuffer, callback);
+            _delegate.write(last, currentBuffer, callback);
         }
         else if (BufferUtil.hasContent(currentBuffer))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("flushing aggregated buffer {}", aggregatedBuffer);
-            _flusher.offer(false, aggregatedBuffer.getByteBuffer(), new Callback.Nested(Callback.from(aggregatedBuffer::release))
+                LOG.debug("flushing aggregated buffer {}", _accumulator);
+
+            _accumulator.writeTo(_delegate, false, new Callback.Nested(Callback.from(_accumulator::release))
             {
                 @Override
                 public void succeeded()
@@ -144,7 +139,7 @@ public class BufferedContentSink implements Content.Sink
                     super.succeeded();
                     if (LOG.isDebugEnabled())
                         LOG.debug("succeeded writing aggregated buffer, flushing current buffer {}", currentBuffer);
-                    _flusher.offer(last, currentBuffer, callback);
+                    _delegate.write(last, currentBuffer, callback);
                 }
 
                 @Override
@@ -159,7 +154,7 @@ public class BufferedContentSink implements Content.Sink
         }
         else
         {
-            _flusher.offer(false, aggregatedBuffer.getByteBuffer(), Callback.from(aggregatedBuffer::release, callback));
+            _accumulator.writeTo(_delegate, last, Callback.from(_accumulator::release, callback));
         }
     }
 
@@ -168,7 +163,8 @@ public class BufferedContentSink implements Content.Sink
      */
     private void aggregateAndFlush(boolean last, ByteBuffer currentBuffer, Callback callback)
     {
-        boolean full = _accumulator.aggregate(currentBuffer);
+        _accumulator.append(currentBuffer);
+        boolean full = _accumulator.isFull();
         boolean empty = !currentBuffer.hasRemaining();
         boolean flush = full || currentBuffer == FLUSH_BUFFER;
         boolean complete = last && empty;
@@ -176,29 +172,27 @@ public class BufferedContentSink implements Content.Sink
             LOG.debug("aggregated current buffer, full={}, complete={}, bytes left={}, aggregator={}", full, complete, currentBuffer.remaining(), _accumulator);
         if (complete)
         {
-            RetainableByteBuffer aggregatedBuffer = _accumulator.takeRetainableByteBuffer();
-            if (aggregatedBuffer != null)
+            if (_accumulator != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("complete; writing aggregated buffer as the last one: {} bytes", aggregatedBuffer.remaining());
-                _flusher.offer(true, aggregatedBuffer.getByteBuffer(), Callback.from(callback, aggregatedBuffer::release));
+                    LOG.debug("complete; writing aggregated buffer as the last one: {} bytes", _accumulator.remaining());
+                _accumulator.writeTo(_delegate, true, Callback.from(callback, _accumulator::release));
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("complete; no aggregated buffer, writing last empty buffer");
-                _flusher.offer(true, BufferUtil.EMPTY_BUFFER, callback);
+                _delegate.write(true, BufferUtil.EMPTY_BUFFER, callback);
             }
         }
         else if (flush)
         {
-            RetainableByteBuffer aggregatedBuffer = _accumulator.takeRetainableByteBuffer();
             if (LOG.isDebugEnabled())
-                LOG.debug("writing aggregated buffer: {} bytes, then {}", aggregatedBuffer.remaining(), currentBuffer.remaining());
+                LOG.debug("writing aggregated buffer: {} bytes, then {}", _accumulator.remaining(), currentBuffer.remaining());
 
             if (BufferUtil.hasContent(currentBuffer))
             {
-                _flusher.offer(false, aggregatedBuffer.getByteBuffer(), new Callback.Nested(Callback.from(aggregatedBuffer::release))
+                _accumulator.writeTo(_delegate, false, new Callback.Nested(Callback.from(_accumulator::release))
                 {
                     @Override
                     public void succeeded()
@@ -207,7 +201,7 @@ public class BufferedContentSink implements Content.Sink
                         if (LOG.isDebugEnabled())
                             LOG.debug("written aggregated buffer, writing remaining of current: {} bytes{}", currentBuffer.remaining(), (last ? " (last write)" : ""));
                         if (last)
-                            _flusher.offer(true, currentBuffer, callback);
+                            _delegate.write(true, currentBuffer, callback);
                         else
                             aggregateAndFlush(false, currentBuffer, callback);
                     }
@@ -224,81 +218,14 @@ public class BufferedContentSink implements Content.Sink
             }
             else
             {
-                _flusher.offer(false, aggregatedBuffer.getByteBuffer(), Callback.from(aggregatedBuffer::release, callback));
+                _accumulator.writeTo(_delegate, last, Callback.from(_accumulator::release, callback));
             }
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("buffer fully aggregated, delaying writing - aggregator: {}", _accumulator);
-            _flusher.offer(callback);
-        }
-    }
-
-    private static class Flusher extends IteratingCallback
-    {
-        private static final ByteBuffer COMPLETE_CALLBACK = BufferUtil.allocate(0);
-
-        private final Content.Sink _sink;
-        private boolean _last;
-        private ByteBuffer _buffer;
-        private Callback _callback;
-        private boolean _lastWritten;
-
-        Flusher(Content.Sink sink)
-        {
-            _sink = sink;
-        }
-
-        void offer(Callback callback)
-        {
-            offer(false, COMPLETE_CALLBACK, callback);
-        }
-
-        void offer(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            if (_callback != null)
-                throw new WritePendingException();
-            _last = last;
-            _buffer = byteBuffer;
-            _callback = callback;
-            iterate();
-        }
-
-        @Override
-        protected Action process()
-        {
-            if (_lastWritten)
-                return Action.SUCCEEDED;
-            if (_callback == null)
-                return Action.IDLE;
-            if (_buffer != COMPLETE_CALLBACK)
-            {
-                _lastWritten = _last;
-                _sink.write(_last, _buffer, this);
-            }
-            else
-            {
-                succeeded();
-            }
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            _buffer = null;
-            Callback callback = _callback;
-            _callback = null;
             callback.succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            _buffer = null;
-            _callback.failed(cause);
         }
     }
 }

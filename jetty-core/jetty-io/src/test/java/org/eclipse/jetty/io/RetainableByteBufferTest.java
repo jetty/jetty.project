@@ -46,10 +46,10 @@ public class RetainableByteBufferTest
         return Stream.of(
             Arguments.of(_pool.acquire(MIN_CAPACITY, true)),
             Arguments.of(_pool.acquire(MIN_CAPACITY, false)),
-            Arguments.of(new RetainableByteBuffer.Aggregator(_pool, true, MIN_CAPACITY, MIN_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Aggregator(_pool, false, MIN_CAPACITY, MIN_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Accumulator(_pool, true, MIN_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Accumulator(_pool, false, MIN_CAPACITY))
+            Arguments.of(RetainableByteBuffer.newAggregator(_pool, true, MIN_CAPACITY, MIN_CAPACITY)),
+            Arguments.of(RetainableByteBuffer.newAggregator(_pool, false, MIN_CAPACITY, MIN_CAPACITY)),
+            Arguments.of(RetainableByteBuffer.newAccumulator(_pool, true, MIN_CAPACITY)),
+            Arguments.of(RetainableByteBuffer.newAccumulator(_pool, false, MIN_CAPACITY))
         );
     }
 

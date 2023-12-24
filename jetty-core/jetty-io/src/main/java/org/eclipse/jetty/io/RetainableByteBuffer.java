@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 
 /**
  * <p>A pooled {@link ByteBuffer} which maintains a reference count that is
@@ -237,6 +238,11 @@ public interface RetainableByteBuffer extends Retainable
         sink.write(last, getByteBuffer(), callback);
     }
 
+    static RetainableByteBuffer newAggregator(ByteBufferPool pool, boolean direct, int growBy, int maxCapacity)
+    {
+        return new Aggregator(pool, direct, growBy, maxCapacity);
+    }
+
     class Aggregator implements RetainableByteBuffer
     {
         private final ByteBufferPool _pool;
@@ -245,7 +251,7 @@ public interface RetainableByteBuffer extends Retainable
         private final int _maxCapacity;
         private RetainableByteBuffer _buffer;
 
-        public Aggregator(ByteBufferPool pool, boolean direct, int growBy, int maxCapacity)
+        private Aggregator(ByteBufferPool pool, boolean direct, int growBy, int maxCapacity)
         {
             if (growBy < 0)
                 throw new IllegalArgumentException("growBy must be > 0");
@@ -321,6 +327,11 @@ public interface RetainableByteBuffer extends Retainable
         }
     }
 
+    static RetainableByteBuffer newAccumulator(ByteBufferPool bufferPool, boolean direct, int maxLength)
+    {
+        return new Accumulator(bufferPool, direct, maxLength);
+    }
+
     class Accumulator implements RetainableByteBuffer
     {
         private final ByteBufferPool _pool;
@@ -329,7 +340,7 @@ public interface RetainableByteBuffer extends Retainable
         private final List<RetainableByteBuffer> _buffers = new ArrayList<>();
         private boolean _lastAcquiredByUs;
 
-        public Accumulator(ByteBufferPool pool, boolean direct, long maxLength)
+        private Accumulator(ByteBufferPool pool, boolean direct, long maxLength)
         {
             _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
             _direct = direct;
@@ -499,25 +510,47 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean writeTo(ByteBuffer to)
         {
+            // TODO
             return RetainableByteBuffer.super.writeTo(to);
         }
 
         @Override
         public boolean writeTo(RetainableByteBuffer to)
         {
+            // TODO
             return RetainableByteBuffer.super.writeTo(to);
         }
 
         @Override
         public void writeTo(OutputStream out) throws IOException
         {
+            // TODO
             RetainableByteBuffer.super.writeTo(out);
         }
 
         @Override
         public void writeTo(Content.Sink sink, boolean last, Callback callback)
         {
-            RetainableByteBuffer.super.writeTo(sink, last, callback);
+            switch (_buffers.size())
+            {
+                case 0 -> callback.succeeded();
+                case 1 -> _buffers.get(0).writeTo(sink, last, callback);
+                default -> new IteratingCallback()
+                {
+                    private int i = 0;
+
+                    @Override
+                    protected Action process()
+                    {
+                        if (i < _buffers.size())
+                        {
+                            _buffers.get(i).writeTo(sink, ++i == _buffers.size() || !last, this);
+                            return Action.SCHEDULED;
+                        }
+                        return Action.SUCCEEDED;
+                    }
+                }.iterate();
+            }
         }
 
         private int ensureMaxLength(int increment)
