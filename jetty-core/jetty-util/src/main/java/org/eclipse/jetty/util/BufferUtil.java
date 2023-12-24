@@ -434,35 +434,31 @@ public class BufferUtil
      */
     public static int put(ByteBuffer from, ByteBuffer to)
     {
-        int put;
-        int remaining = from.remaining();
-        if (remaining > 0)
+        int length = from.remaining();
+        if (length == 0)
+            return 0;
+
+        int space = to.remaining();
+        if (space >= length)
         {
-            if (remaining <= to.remaining())
-            {
-                to.put(from);
-                put = remaining;
-                from.position(from.limit());
-            }
-            else if (from.hasArray())
-            {
-                put = to.remaining();
-                to.put(from.array(), from.arrayOffset() + from.position(), put);
-                from.position(from.position() + put);
-            }
-            else
-            {
-                put = to.remaining();
-                ByteBuffer slice = from.slice();
-                slice.limit(put);
-                to.put(slice);
-                from.position(from.position() + put);
-            }
+            to.put(from);
+            return length;
+        }
+
+        if (to.hasArray())
+        {
+            to.put(from.array(), from.arrayOffset() + from.position(), space);
+            from.position(from.position() + space);
         }
         else
-            put = 0;
+        {
+            ByteBuffer slice = from.slice();
+            slice.limit(slice.position() + space);
+            to.put(slice);
+            from.position(from.position() + space);
+        }
 
-        return put;
+        return space;
     }
 
     /**
@@ -535,9 +531,9 @@ public class BufferUtil
     /**
      * Appends a buffer to a buffer
      *
-     * @param to Buffer is flush mode
-     * @param b buffer to append
-     * @return The position of the valid data before the flipped position.
+     * @param to Buffer in flush mode, whose position will be incremented by the number of bytes appended
+     * @param b buffer to append to in flush mode, whose limit will be incremented by the number of bytes appended.
+     * @return The number of bytes appended.
      */
     public static int append(ByteBuffer to, ByteBuffer b)
     {
