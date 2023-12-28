@@ -53,8 +53,8 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                     String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d", size, maxBinaryMessageSize));
             }
 
-            // If the frame is fin and no accumulator has
-            // been created, then we don't need to aggregate.
+            // If the frame is fin and no accumulator has been
+            // created or used, then we don't need to aggregate.
             if (frame.isFin() && (out == null || out.getLength() == 0))
             {
                 if (frame.hasPayload())
