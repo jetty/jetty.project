@@ -316,6 +316,8 @@ public class CrossOriginHandler extends Handler.Wrapper
     {
         if (anyOriginAllowed)
             return true;
+        if (allowedOriginPatterns.isEmpty())
+            return false;
         return originMatches(origins, allowedOriginPatterns);
     }
 
@@ -323,6 +325,8 @@ public class CrossOriginHandler extends Handler.Wrapper
     {
         if (anyTimingOriginAllowed)
             return true;
+        if (allowedTimingOriginPatterns.isEmpty())
+            return false;
         return originMatches(origins, allowedTimingOriginPatterns);
     }
 
