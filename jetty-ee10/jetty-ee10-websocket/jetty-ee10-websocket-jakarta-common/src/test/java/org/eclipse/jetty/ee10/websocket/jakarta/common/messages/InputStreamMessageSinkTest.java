@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -46,7 +47,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = BufferUtil.toBuffer("Hello World", UTF_8);
@@ -64,7 +65,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
 
         FutureCallback fin1Callback = new FutureCallback();
         ByteBuffer data1 = BufferUtil.toBuffer("Hello World", UTF_8);
@@ -95,7 +96,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();
@@ -120,7 +121,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
                 String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new StringMessageSink(this, wholeTextHandle, true);
+                messageSink = new StringMessageSink(this, MethodHolder.from(wholeTextHandle), true);
                 break;
             }
             case OpCode.BINARY:
@@ -104,7 +105,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
                 String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
-                messageSink = new ByteBufferMessageSink(this, wholeBinaryHandle, true);
+                messageSink = new ByteBufferMessageSink(this, MethodHolder.from(wholeBinaryHandle), true);
                 break;
             }
             case OpCode.CONTINUATION:

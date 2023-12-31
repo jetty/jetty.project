@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 /**
  * <p>A {@link MessageSink} implementation that delivers BINARY frames
@@ -31,12 +32,12 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
      * Creates a new {@link PartialByteBufferMessageSink}.
      *
      * @param session the WebSocket session
-     * @param methodHandle the application function to invoke when a new frame has arrived
+     * @param methodHolder the application function to invoke when a new frame has arrived
      * @param autoDemand whether this {@link MessageSink} manages demand automatically
      */
-    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public PartialByteBufferMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHandle, autoDemand);
+        super(session, methodHolder, autoDemand);
     }
 
     @Override
@@ -46,7 +47,7 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         {
             if (frame.hasPayload() || frame.isFin())
             {
-                invoke(getMethodHandle(), frame.getPayload(), frame.isFin(), callback);
+                invoke(getMethodHolder(), frame.getPayload(), frame.isFin(), callback);
                 autoDemand();
             }
             else
@@ -61,9 +62,9 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         }
     }
 
-    protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, boolean fin, Callback callback) throws Throwable
+    protected void invoke(MethodHolder methodHolder, ByteBuffer byteBuffer, boolean fin, Callback callback) throws Throwable
     {
-        methodHandle.invoke(byteBuffer, fin);
+        methodHolder.invoke(byteBuffer, fin);
         callback.succeeded();
     }
 }

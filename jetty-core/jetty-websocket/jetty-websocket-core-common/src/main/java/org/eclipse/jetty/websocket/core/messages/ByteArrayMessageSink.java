@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
@@ -22,8 +20,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 /**
  * <p>A {@link MessageSink} implementation that accumulates BINARY frames
@@ -38,18 +36,12 @@ public class ByteArrayMessageSink extends AbstractMessageSink
      * Creates a new {@link ByteArrayMessageSink}.
      *
      * @param session the WebSocket session
-     * @param methodHandle the application function to invoke when a new message has been assembled
+     * @param methodHolder the application function to invoke when a new message has been assembled
      * @param autoDemand whether this {@link MessageSink} manages demand automatically
      */
-    public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public ByteArrayMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHandle, autoDemand);
-
-        // This uses the offset length byte array signature not supported by jakarta websocket.
-        // The jakarta layer instead uses decoders for whole byte array messages instead of this message sink.
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
-        if (methodHandle.type().changeReturnType(void.class) != onMessageType.changeReturnType(void.class))
-            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
+        super(session, methodHolder, autoDemand);
     }
 
     @Override
@@ -69,7 +61,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             if (frame.isFin() && accumulator == null)
             {
                 byte[] buf = BufferUtil.toArray(payload);
-                getMethodHandle().invoke(buf, 0, buf.length);
+                getMethodHolder().invoke(buf, 0, buf.length);
                 callback.succeeded();
                 autoDemand();
                 return;
@@ -91,7 +83,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 // Do not complete twice the callback if the invocation fails.
                 callback = Callback.NOOP;
                 byte[] buf = accumulator.takeByteArray();
-                getMethodHandle().invoke(buf, 0, buf.length);
+                getMethodHolder().invoke(buf, 0, buf.length);
                 autoDemand();
             }
             else

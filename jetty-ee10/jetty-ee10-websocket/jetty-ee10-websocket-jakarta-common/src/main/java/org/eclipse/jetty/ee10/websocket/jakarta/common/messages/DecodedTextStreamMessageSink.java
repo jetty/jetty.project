@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.lang.invoke.WrongMethodTypeException;
 import java.util.List;
 
 import jakarta.websocket.CloseReason;
@@ -28,21 +29,27 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.Stream<Decoder.TextStream<T>>
 {
-    public DecodedTextStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
+    public DecodedTextStreamMessageSink(CoreSession session, MethodHolder methodHolder, List<RegisteredDecoder> decoders)
     {
-        super(session, methodHandle, decoders);
+        super(session, methodHolder, decoders);
     }
 
     @Override
-    MessageSink newMessageSink(CoreSession coreSession) throws Exception
+    MessageSink newMessageSink(CoreSession coreSession)
     {
-        MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
-            .findVirtual(DecodedTextStreamMessageSink.class, "onStreamStart", MethodType.methodType(void.class, Reader.class))
-            .bindTo(this);
-        return new ReaderMessageSink(coreSession, methodHandle, true);
+        MethodHolder methodHolder = args ->
+        {
+            if (args.length != 1)
+                throw new WrongMethodTypeException(String.format("Expected %s params but had %s", 1, args.length));
+            onStreamStart((Reader)args[0]);
+            return null;
+        };
+
+        return new ReaderMessageSink(coreSession, methodHolder, true);
     }
 
     public void onStreamStart(Reader reader)

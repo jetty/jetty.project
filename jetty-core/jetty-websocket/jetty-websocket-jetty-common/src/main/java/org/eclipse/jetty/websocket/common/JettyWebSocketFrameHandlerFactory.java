@@ -46,6 +46,7 @@ import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 /**

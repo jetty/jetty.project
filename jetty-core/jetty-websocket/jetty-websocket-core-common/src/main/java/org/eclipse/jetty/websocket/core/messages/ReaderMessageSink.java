@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 public class ReaderMessageSink extends DispatchedMessageSink
 {
-    public ReaderMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public ReaderMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHandle, autoDemand);
+        super(session, methodHolder, autoDemand);
     }
 
     @Override
