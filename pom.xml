@@ -28,7 +28,7 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.13</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.14</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.6</asciidoctorj.version>
     <mina.core.version>2.2.3</mina.core.version>
     <asm.version>9.6</asm.version>
