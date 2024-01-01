@@ -91,7 +91,7 @@
     <jmh.version>1.37</jmh.version>
     <jna.version>5.12.1</jna.version>
     <jnr-constants.version>0.10.4</jnr-constants.version>
-    <jnr-enxio.version>0.32.13</jnr-enxio.version>
+    <jnr-enxio.version>0.32.16</jnr-enxio.version>
     <jnr-ffi.version>2.2.12</jnr-ffi.version>
     <jnr-posix.version>3.1.15</jnr-posix.version>
     <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
