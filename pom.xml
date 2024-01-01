@@ -103,7 +103,7 @@
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.22.0</log4j2.version>
     <logback.version>1.3.13</logback.version>
-    <mariadb.version>3.0.8</mariadb.version>
+    <mariadb.version>3.3.2</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.resolver.version>1.9.18</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
