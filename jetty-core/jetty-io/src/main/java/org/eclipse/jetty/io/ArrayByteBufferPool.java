@@ -409,18 +409,25 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 if (oldestEntry == null)
                     continue;
 
-                if (oldestEntry.remove())
-                {
-                    RetainableByteBuffer buffer = oldestEntry.getPooled();
-                    int clearedCapacity = buffer.capacity();
-                    if (direct)
-                        _currentDirectMemory.addAndGet(-clearedCapacity);
-                    else
-                        _currentHeapMemory.addAndGet(-clearedCapacity);
-                    totalClearedCapacity += clearedCapacity;
-                    removed(buffer);
-                }
-                // else a concurrent thread evicted the same entry -> do not account for its capacity.
+                // A concurrent thread evicted the same entry.
+                // Get the pooled buffer now in case we can evict below.
+                RetainableByteBuffer buffer = oldestEntry.getPooled();
+                if (buffer == null)
+                    continue;
+
+                // A concurrent thread evicted the same entry.
+                // A successful Entry.remove() call may null-out the pooled buffer.
+                if (!oldestEntry.remove())
+                    continue;
+
+                // We can evict, clear the buffer capacity.
+                int clearedCapacity = buffer.capacity();
+                if (direct)
+                    _currentDirectMemory.addAndGet(-clearedCapacity);
+                else
+                    _currentHeapMemory.addAndGet(-clearedCapacity);
+                totalClearedCapacity += clearedCapacity;
+                removed(buffer);
             }
         }
 
