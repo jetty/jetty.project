@@ -57,15 +57,15 @@ public class JspAndDefaultWithAliasesTest
     {
         List<Arguments> data = new ArrayList<>();
 
-        data.add(Arguments.of("false", "/dump.jsp"));
-        data.add(Arguments.of("false", "/dump.jsp/"));
-        data.add(Arguments.of("true", "/dump.jsp%00"));
-        data.add(Arguments.of("false", "/dump.jsp%00/"));
-        data.add(Arguments.of("false", "/dump.jsp%00x/dump.jsp"));
-        data.add(Arguments.of("false", "/dump.jsp%00/dump.jsp"));
-        data.add(Arguments.of("false", "/dump.jsp%00x"));
-        data.add(Arguments.of("false", "/dump.jsp%00x/"));
-        data.add(Arguments.of("false", "/dump.jsp%00/index.html"));
+        data.add(Arguments.of("/dump.jsp", 200, false));
+        data.add(Arguments.of("/dump.jsp/", 200, false));
+        data.add(Arguments.of("/dump.jsp%00", 400, true));
+        data.add(Arguments.of("/dump.jsp%00/", 400, false));
+        data.add(Arguments.of("/dump.jsp%00x/dump.jsp", 400, false));
+        data.add(Arguments.of("/dump.jsp%00/dump.jsp", 400, false));
+        data.add(Arguments.of("/dump.jsp%00x", 400, false));
+        data.add(Arguments.of("/dump.jsp%00x/", 400, false));
+        data.add(Arguments.of("/dump.jsp%00/index.html", 400, false));
 
         return data.stream();
     }
@@ -129,7 +129,7 @@ public class JspAndDefaultWithAliasesTest
         }
     }
 
-    private void assertResponse(HttpURLConnection conn, String path, boolean knownBypass) throws IOException
+    private void assertResponse(HttpURLConnection conn, String path, int expectedStatus, boolean knownBypass) throws IOException
     {
         if (conn.getResponseCode() == 200)
         {
@@ -138,16 +138,12 @@ public class JspAndDefaultWithAliasesTest
             return;
         }
 
-        if (conn.getResponseCode() != 404)
-            System.err.println(conn.getResponseMessage());
-
-        // Of other possible paths, only 404 Not Found is expected
-        assertThat("Response Code", conn.getResponseCode(), is(404));
+        assertThat("Response Code", conn.getResponseCode(), is(expectedStatus));
     }
 
     @ParameterizedTest
     @MethodSource("aliases")
-    public void testGetReference(String path, boolean knownBypass) throws Exception
+    public void testGetReference(String path, int expectedStatus, boolean knownBypass) throws Exception
     {
         URI uri = serverURI.resolve(path);
 
@@ -157,7 +153,7 @@ public class JspAndDefaultWithAliasesTest
             conn = (HttpURLConnection)uri.toURL().openConnection();
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
-            assertResponse(conn, path, knownBypass);
+            assertResponse(conn, path, expectedStatus, knownBypass);
         }
         finally
         {
