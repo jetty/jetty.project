@@ -93,7 +93,7 @@
     <jnr-constants.version>0.10.4</jnr-constants.version>
     <jnr-enxio.version>0.32.13</jnr-enxio.version>
     <jnr-ffi.version>2.2.12</jnr-ffi.version>
-    <jnr-posix.version>3.1.15</jnr-posix.version>
+    <jnr-posix.version>3.1.18</jnr-posix.version>
     <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
     <jolokia.version>1.7.1</jolokia.version>
     <json-simple.version>1.1.1</json-simple.version>
