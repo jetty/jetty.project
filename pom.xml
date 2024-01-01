@@ -31,7 +31,7 @@
     <asm.version>9.6</asm.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.12.7</checkstyle.version>
+    <checkstyle.version>9.3</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons.compress.version>1.25.0</commons.compress.version>
     <commons.io.version>2.15.1</commons.io.version>
