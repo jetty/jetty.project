@@ -70,15 +70,14 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
 
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
     private final CRC32 _crc = new CRC32();
-
     private final Callback _callback;
     private final GzipFactory _factory;
     private final HttpField _vary;
     private final int _bufferSize;
     private final boolean _syncFlush;
-
     private DeflaterPool.Entry _deflaterEntry;
     private RetainableByteBuffer _buffer;
+    private boolean _last;
 
     public GzipResponseAndCallback(GzipHandler handler, Request request, Response response, Callback callback)
     {
@@ -95,10 +94,12 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     {
         try
         {
-            // We need to write nothing here to intercept the committing of the response
-            // and possibly change headers in case write is never called.
-            write(true, null, Callback.NOOP);
-            _callback.succeeded();
+            // We need to write nothing here to intercept the committing of the
+            // response and possibly change headers in case write is never called.
+            if (_last)
+                _callback.succeeded();
+            else
+                write(true, null, _callback);
         }
         finally
         {
@@ -130,6 +131,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
+        _last = last;
         switch (_state.get())
         {
             case MIGHT_COMPRESS -> commit(last, callback, content);
@@ -167,10 +169,11 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         if (LOG.isDebugEnabled())
             LOG.debug("commit(last={}, callback={}, content={})", last, callback, BufferUtil.toDetailString(content));
 
-        // Are we excluding because of status?
         Request request = getRequest();
         Response response = this;
+        HttpFields.Mutable fields = response.getHeaders();
 
+        // Are we excluding because of status?
         int sc = response.getStatus();
         if (sc > 0 && (sc < 200 || sc == 204 || sc == 205 || sc >= 300))
         {
@@ -180,14 +183,14 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             if (sc == HttpStatus.NOT_MODIFIED_304)
             {
                 String requestEtags = (String)request.getAttribute(GzipHandler.GZIP_HANDLER_ETAGS);
-                String responseEtag = response.getHeaders().get(HttpHeader.ETAG);
+                String responseEtag = fields.get(HttpHeader.ETAG);
                 if (requestEtags != null && responseEtag != null)
                 {
                     String responseEtagGzip = etagGzip(responseEtag);
                     if (requestEtags.contains(responseEtagGzip))
-                        response.getHeaders().put(HttpHeader.ETAG, responseEtagGzip);
+                        fields.put(HttpHeader.ETAG, responseEtagGzip);
                     if (_vary != null)
-                        response.getHeaders().ensureField(_vary);
+                        fields.ensureField(_vary);
                 }
             }
 
@@ -196,7 +199,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
 
         // Are we excluding because of mime-type?
-        String ct = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
+        String ct = fields.get(HttpHeader.CONTENT_TYPE);
         if (ct != null)
         {
             String baseType = HttpField.getValueParameters(ct, null);
@@ -210,7 +213,6 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
 
         // Has the Content-Encoding header already been set?
-        HttpFields.Mutable fields = response.getHeaders();
         String ce = fields.get(HttpHeader.CONTENT_ENCODING);
         if (ce != null)
         {
@@ -220,14 +222,23 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             return;
         }
 
+        // We are varying the response due to accept encoding header.
+        if (_vary != null)
+            fields.ensureField(_vary);
+
+        // If there is nothing to write, don't compress.
+        if (last && BufferUtil.isEmpty(content))
+        {
+            LOG.debug("{} exclude by nothing to write", this);
+            noCompression();
+            super.write(true, content, callback);
+            return;
+        }
+
         // Are we the thread that commits?
         if (_state.compareAndSet(GZState.MIGHT_COMPRESS, GZState.COMMITTING))
         {
-            // We are varying the response due to accept encoding header.
-            if (_vary != null)
-                fields.ensureField(_vary);
-
-            long contentLength = response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+            long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             if (contentLength < 0 && last)
                 contentLength = BufferUtil.length(content);
 
@@ -244,7 +255,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             _crc.reset();
 
             // Adjust headers
-            response.getHeaders().remove(HttpHeader.CONTENT_LENGTH);
+            fields.remove(HttpHeader.CONTENT_LENGTH);
             String etag = fields.get(HttpHeader.ETAG);
             if (etag != null)
                 fields.put(HttpHeader.ETAG, etagGzip(etag));

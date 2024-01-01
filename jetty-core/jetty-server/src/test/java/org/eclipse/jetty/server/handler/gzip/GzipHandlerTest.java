@@ -547,7 +547,7 @@ public class GzipHandlerTest
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        assertThat(response.get("Content-Encoding"), nullValue());
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
     }
 

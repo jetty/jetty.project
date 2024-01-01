@@ -209,7 +209,7 @@ public class ServletChannel
         return _state;
     }
 
-    public long getBytesWritten()
+    private long getBytesWritten()
     {
         return Response.getContentBytesWritten(getServletContextResponse());
     }
@@ -544,14 +544,16 @@ public class ServletChannel
                         // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.
                         if (!_servletContextRequest.isHead() && getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304)
                         {
-                            long written = getBytesWritten();
-                            if (getServletContextResponse().isContentIncomplete(written) && sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, getServletContextResponse().getContentLength())))
+                            long written = getHttpOutput().getWritten();
+                            if (getServletContextResponse().isContentIncomplete(written))
+                            {
+                                sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, getServletContextResponse().getContentLength()));
                                 break;
+                            }
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
                         getServletContextResponse().completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
-
                         break;
                     }
 
@@ -726,7 +728,7 @@ public class ServletChannel
     {
         ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
         if (LOG.isDebugEnabled())
-            LOG.debug("onCompleted for {} written={}", apiRequest.getRequestURI(), getBytesWritten());
+            LOG.debug("onCompleted for {} written app={} net={}", apiRequest.getRequestURI(), getHttpOutput().getWritten(), getBytesWritten());
 
         if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
