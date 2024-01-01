@@ -49,7 +49,7 @@
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.18.Final</infinispan.version>
     <jackson.annotations.version>2.14.2</jackson.annotations.version>
-    <jackson.core.version>2.14.2</jackson.core.version>
+    <jackson.core.version>2.16.1</jackson.core.version>
     <jackson.databind.version>2.14.2</jackson.databind.version>
     <jamon.version>2.82</jamon.version>
     <javax.activation.version>1.1.0.v201105071233</javax.activation.version>
