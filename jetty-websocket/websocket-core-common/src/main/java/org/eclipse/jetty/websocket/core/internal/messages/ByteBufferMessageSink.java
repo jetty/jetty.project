@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.internal.messages;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -34,14 +33,10 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
-
-        // Validate onMessageMethod
-        Objects.requireNonNull(methodHandle, "MethodHandle");
+        // Validate onMessage method signature.
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
         if (methodHandle.type() != onMessageType)
-        {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
     }
 
     @Override
@@ -57,8 +52,9 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                     size, maxBinaryMessageSize));
             }
 
-            // If we are fin and no OutputStream has been created we don't need to aggregate.
-            if (frame.isFin() && (out == null))
+            // If the frame is fin and no accumulator has been
+            // created or used, then we don't need to aggregate.
+            if (frame.isFin() && (out == null || out.getLength() == 0))
             {
                 if (frame.hasPayload())
                     methodHandle.invoke(frame.getPayload());
@@ -77,10 +73,11 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 if (out == null)
                     out = new ByteBufferCallbackAccumulator();
                 out.addEntry(payload, callback);
+                // The callback is now stored in the accumulator, so if
+                // the methodHandle throws, don't fail the callback twice.
+                callback = Callback.NOOP;
             }
 
-            // If the methodHandle throws we don't want to fail callback twice.
-            callback = Callback.NOOP;
             if (frame.isFin())
             {
                 ByteBufferPool bufferPool = session.getByteBufferPool();
@@ -97,20 +94,13 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 }
             }
 
+            callback.succeeded();
             session.demand(1);
         }
         catch (Throwable t)
         {
-            if (out != null)
-                out.fail(t);
+            fail(t);
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-            {
-                out = null;
-            }
         }
     }
 
