@@ -1985,7 +1985,7 @@
         </os>
       </activation>
       <properties>
-        <jetty.unixdomain.dir>${user.home}</jetty.unixdomain.dir>
+        <jetty.unixdomain.dir>${java.io.tmpdir}</jetty.unixdomain.dir>
       </properties>
     </profile>
     <profile>
