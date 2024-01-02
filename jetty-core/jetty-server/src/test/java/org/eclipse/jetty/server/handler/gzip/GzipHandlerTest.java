@@ -90,6 +90,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
@@ -291,7 +292,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
         assertThat(response.get("ETag"), is(CONTENT_ETAG_GZIP));
-        assertThat(response.getCSV("Vary", false), contains("Accept-Encoding", "Other"));
+        assertThat(response.getCSV("Vary", false), hasItems("Accept-Encoding", "Other"));
 
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
@@ -580,7 +581,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat("Should not be compressed with gzip", response.get("Content-Encoding"), nullValue());
         assertThat(response.get("ETag"), nullValue());
-        assertThat(response.get("Vary"), nullValue());
+        assertThat(response.get("Vary"), containsString("Accept-Encoding"));
 
         // Request something that is present on MimeTypes and is also compressible
         // by the GzipHandler configuration
@@ -776,7 +777,7 @@ public class GzipHandlerTest
         assertThat("Response[Content-Type]", response.get("Content-Type"), containsString("text/wibble"));
         assertThat("Response[Content-Type]", response.get("Content-Type"), containsString("charset=utf-8"));
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
-        assertThat("Response[Vary]", response.get("Vary"), is(nullValue()));
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
@@ -1473,7 +1474,7 @@ public class GzipHandlerTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
         assertThat("Response[ETag]", response.get("ETag"), nullValue());
-        assertThat("Response[Vary]", response.get("Vary"), nullValue());
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
     }
 
     /**
@@ -1555,7 +1556,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
         assertThat(response.get("ETag"), is(CONTENT_ETAG_GZIP));
-        assertThat(response.getCSV("Vary", false), contains("Accept-Encoding", "Other"));
+        assertThat(response.getCSV("Vary", false), hasItems("Accept-Encoding", "Other"));
 
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
