@@ -33,7 +33,7 @@
     <mina.core.version>2.2.3</mina.core.version>
     <asm.version>9.6</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>6.3.1</bndlib.version>
+    <bndlib.version>6.4.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.12.7</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
