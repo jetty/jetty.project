@@ -1,78 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
     <version>10.0.20-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-project</artifactId>
-  <name>Jetty :: OSGi</name>
   <packaging>pom</packaging>
-
-  <properties>
-    <osgi-version>3.18.600</osgi-version>
-    <osgi-services-version>3.11.200</osgi-services-version>
-    <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
-    <osgi-service-component-version>1.5.1</osgi-service-component-version>
-    <osgi-service-event-version>1.4.1</osgi-service-event-version>
-    <osgi-util-version>3.7.300</osgi-util-version>
-    <osgi-util-function-version>1.2.0</osgi-util-function-version>
-    <osgi-util-promise-version>1.3.0</osgi-util-promise-version>
-    <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
-    <osgi-util-position-version>1.0.1</osgi-util-position-version>
-    <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
-    <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
-    <jacoco.skip>true</jacoco.skip>
-  </properties>
+  <name>Jetty :: OSGi</name>
 
   <modules>
+    <module>jetty-osgi-alpn</module>
     <module>jetty-osgi-boot</module>
     <module>jetty-osgi-boot-jsp</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
-    <module>test-jetty-osgi-webapp</module>
-    <module>test-jetty-osgi-webapp-resources</module>
+    <module>test-jetty-osgi</module>
     <module>test-jetty-osgi-context</module>
     <module>test-jetty-osgi-fragment</module>
     <module>test-jetty-osgi-server</module>
-    <module>jetty-osgi-alpn</module>
-    <module>test-jetty-osgi</module>
+    <module>test-jetty-osgi-webapp</module>
+    <module>test-jetty-osgi-webapp-resources</module>
   </modules>
 
-  <build>
-    <resources>
-      <resource>
-        <directory>META-INF/..</directory>
-        <filtering>true</filtering>
-        <excludes>
-          <exclude>**/.*</exclude>
-          <exclude>**/*.jar</exclude>
-          <exclude>.settings/**/*</exclude>
-          <exclude>pom.xml</exclude>
-          <!-- exclude>META-INF/**/*</exclude -->
-          <exclude>jettyhome/**/*</exclude>
-          <exclude>src/**/*</exclude>
-          <exclude>target/**/*</exclude>
-          <exclude>build.properties</exclude>
-        </excludes>
-        <includes>
-          <include>META-INF/**/*</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>src/main/java</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </resource>
-    </resources>
-  </build>
+  <properties>
+    <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
+    <jacoco.skip>true</jacoco.skip>
+    <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
+    <osgi-service-component-version>1.5.1</osgi-service-component-version>
+    <osgi-service-event-version>1.4.1</osgi-service-event-version>
+    <osgi-services-version>3.11.200</osgi-services-version>
+    <osgi-util-function-version>1.2.0</osgi-util-function-version>
+    <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
+    <osgi-util-position-version>1.0.1</osgi-util-position-version>
+    <osgi-util-promise-version>1.3.0</osgi-util-promise-version>
+    <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
+    <osgi-util-version>3.7.300</osgi-util-version>
+    <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
+    <osgi-version>3.18.600</osgi-version>
+  </properties>
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.eclipse.equinox.http</groupId>
+        <artifactId>servlet</artifactId>
+        <version>${equinox-http-servlet-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.osgi</artifactId>
+        <version>${osgi-version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
@@ -89,11 +71,6 @@
             <artifactId>org.osgi.foundation</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.platform</groupId>
-        <artifactId>org.eclipse.osgi</artifactId>
-        <version>${osgi-version}</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
@@ -115,12 +92,36 @@
         <artifactId>org.osgi.util.tracker</artifactId>
         <version>${osgi-util-tracker-version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.eclipse.equinox.http</groupId>
-        <artifactId>servlet</artifactId>
-        <version>${equinox-http-servlet-version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <build>
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>META-INF/..</directory>
+        <includes>
+          <include>META-INF/**/*</include>
+        </includes>
+        <excludes>
+          <exclude>**/.*</exclude>
+          <exclude>**/*.jar</exclude>
+          <exclude>.settings/**/*</exclude>
+          <exclude>pom.xml</exclude>
+          <!-- exclude>META-INF/**/*</exclude -->
+          <exclude>jettyhome/**/*</exclude>
+          <exclude>src/**/*</exclude>
+          <exclude>target/**/*</exclude>
+          <exclude>build.properties</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>src/main/java</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </resource>
+    </resources>
+  </build>
 
 </project>

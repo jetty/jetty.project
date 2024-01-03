@@ -1,40 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
     <version>10.0.20-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>test-owb-cdi-webapp</artifactId>
-  <name>Test :: CDI On Jetty :: OWB Demo Webapp</name>
   <packaging>war</packaging>
+  <name>Test :: CDI On Jetty :: OWB Demo Webapp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi.owb</bundle-symbolic-name>
     <openwebbeans.version>2.0.27</openwebbeans.version>
   </properties>
 
-  <build>
-    <finalName>owb-cdi-demo</finalName>
-  </build>
-
   <dependencies>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-cdi-common-webapp</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
-      <scope>runtime</scope>
-    </dependency>
 
     <!-- included in webapp -->
     <dependency>
@@ -55,13 +37,31 @@
     </dependency>
     <dependency>
       <groupId>org.apache.openwebbeans</groupId>
-      <artifactId>openwebbeans-web</artifactId>
+      <artifactId>openwebbeans-jetty9</artifactId>
       <version>${openwebbeans.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.openwebbeans</groupId>
-      <artifactId>openwebbeans-jetty9</artifactId>
+      <artifactId>openwebbeans-web</artifactId>
       <version>${openwebbeans.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-cdi-common-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
+
+  <build>
+    <finalName>owb-cdi-demo</finalName>
+  </build>
 </project>

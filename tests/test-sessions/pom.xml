@@ -7,16 +7,16 @@
     <version>10.0.20-SNAPSHOT</version>
   </parent>
   <artifactId>test-sessions-parent</artifactId>
-  <name>Jetty Tests :: Sessions :: Parent</name>
   <packaging>pom</packaging>
+  <name>Jetty Tests :: Sessions :: Parent</name>
   <modules>
-    <module>test-sessions-common</module>
     <module>test-file-sessions</module>
-    <module>test-jdbc-sessions</module>
-    <module>test-mongodb-sessions</module>
-    <module>test-infinispan-sessions</module>
     <module>test-gcloud-sessions</module>
-    <module>test-memcached-sessions</module>
     <module>test-hazelcast-sessions</module>
+    <module>test-infinispan-sessions</module>
+    <module>test-jdbc-sessions</module>
+    <module>test-memcached-sessions</module>
+    <module>test-mongodb-sessions</module>
+    <module>test-sessions-common</module>
   </modules>
 </project>

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <parent>
-    <artifactId>jetty-project</artifactId>
-    <groupId>org.eclipse.jetty</groupId>
-    <version>10.0.20-SNAPSHOT</version>
-  </parent>
 
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
+    <version>10.0.20-SNAPSHOT</version>
+  </parent>
   <artifactId>jetty-servlets</artifactId>
   <name>Jetty :: Utility Servlets and Filters</name>
   <description>Utility Servlets from Jetty</description>
@@ -16,28 +16,6 @@
     <spotbugs.onlyAnalyze>org.eclipse.jetty.servlets.*</spotbugs.onlyAnalyze>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine}
-            --add-modules jetty.servlet.api
-            --add-modules org.eclipse.jetty.util
-            --add-modules org.eclipse.jetty.io
-            --add-modules org.eclipse.jetty.http
-            --add-modules org.eclipse.jetty.server
-            --add-modules org.eclipse.jetty.jmx
-            --add-reads org.eclipse.jetty.servlets=java.management
-            --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
-            --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.logging
-          </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -45,12 +23,20 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
-      <scope>provided</scope>
+      <artifactId>jetty-io</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -59,21 +45,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <artifactId>jetty-jmx</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -87,5 +65,25 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} ${jetty.surefire.argLine}
+            --add-modules jetty.servlet.api
+            --add-modules org.eclipse.jetty.util
+            --add-modules org.eclipse.jetty.io
+            --add-modules org.eclipse.jetty.http
+            --add-modules org.eclipse.jetty.server
+            --add-modules org.eclipse.jetty.jmx
+            --add-reads org.eclipse.jetty.servlets=java.management
+            --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.jmx
+            --add-reads org.eclipse.jetty.servlets=org.eclipse.jetty.logging</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

@@ -6,13 +6,13 @@
     <artifactId>demos-parent</artifactId>
     <version>10.0.20-SNAPSHOT</version>
   </parent>
-  <name>Demo :: Servlet Spec</name>
   <artifactId>demo-spec</artifactId>
   <packaging>pom</packaging>
+  <name>Demo :: Servlet Spec</name>
 
   <modules>
-    <module>demo-spec-webapp</module>
     <module>demo-container-initializer</module>
+    <module>demo-spec-webapp</module>
     <module>demo-web-fragment</module>
   </modules>
 </project>

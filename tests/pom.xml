@@ -9,29 +9,29 @@
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests-parent</artifactId>
-  <name>Jetty Tests :: Parent</name>
   <packaging>pom</packaging>
-  <properties>
-    <spotbugs.skip>true</spotbugs.skip>
-    <maven.javadoc.skip>true</maven.javadoc.skip>
-    <maven.deploy.skip>true</maven.deploy.skip>
-    <maven.source.skip>true</maven.source.skip>
-  </properties>
+  <name>Jetty Tests :: Parent</name>
   <modules>
-    <module>jetty-jmh</module>
-    <module>jetty-http-tools</module>
     <module>jetty-home-tester</module>
-    <module>test-webapps</module>
-    <module>test-sessions</module>
-    <module>test-loginservice</module>
-    <module>test-integration</module>
-    <module>test-quickstart</module>
-    <module>test-jmx</module>
-    <module>test-http-client-transport</module>
-    <module>test-distribution</module>
+    <module>jetty-http-tools</module>
+    <module>jetty-jmh</module>
     <module>test-cdi</module>
+    <module>test-distribution</module>
+    <module>test-http-client-transport</module>
+    <module>test-integration</module>
+    <module>test-jmx</module>
     <module>test-jpms</module>
+    <module>test-loginservice</module>
+    <module>test-quickstart</module>
+    <module>test-sessions</module>
+    <module>test-webapps</module>
     <module>test-websocket-autobahn</module>
   </modules>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+    <maven.source.skip>true</maven.source.skip>
+    <spotbugs.skip>true</spotbugs.skip>
+  </properties>
 
 </project>
