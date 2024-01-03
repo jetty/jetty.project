@@ -12,22 +12,22 @@
   <packaging>pom</packaging>
   <name>Jetty :: Websocket :: Parent</name>
   <modules>
+    <module>websocket-core-client</module>
     <!-- WebSocket Core Implementation -->
     <module>websocket-core-common</module>
-    <module>websocket-core-client</module>
     <module>websocket-core-server</module>
     <module>websocket-core-tests</module>
-    <!-- Jetty WebSocket Implementation -->
-    <module>websocket-jetty-api</module>
-    <module>websocket-jetty-common</module>
-    <module>websocket-jetty-client</module>
-    <module>websocket-jetty-server</module>
-    <module>websocket-jetty-tests</module>
+    <module>websocket-javax-client</module>
     <!-- Javax WebSocket Implementation -->
     <module>websocket-javax-common</module>
-    <module>websocket-javax-client</module>
     <module>websocket-javax-server</module>
     <module>websocket-javax-tests</module>
+    <!-- Jetty WebSocket Implementation -->
+    <module>websocket-jetty-api</module>
+    <module>websocket-jetty-client</module>
+    <module>websocket-jetty-common</module>
+    <module>websocket-jetty-server</module>
+    <module>websocket-jetty-tests</module>
     <!-- Common Servlet WebSocket Implementation -->
     <module>websocket-servlet</module>
   </modules>

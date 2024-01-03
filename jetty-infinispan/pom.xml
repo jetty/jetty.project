@@ -14,8 +14,8 @@
   <modules>
     <module>infinispan-common</module>
     <module>infinispan-embedded</module>
-    <module>infinispan-remote</module>
     <module>infinispan-embedded-query</module>
+    <module>infinispan-remote</module>
     <module>infinispan-remote-query</module>
   </modules>
 

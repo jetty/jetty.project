@@ -13,8 +13,8 @@
 
   <modules>
     <module>demo-async-rest-jar</module>
-    <module>demo-async-rest-webapp</module>
     <module>demo-async-rest-server</module>
+    <module>demo-async-rest-webapp</module>
   </modules>
 
 </project>

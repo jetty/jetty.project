@@ -15,12 +15,12 @@
   <modules>
     <module>demo-async-rest</module>
     <module>demo-jaas-webapp</module>
-    <module>demo-jndi-webapp</module>
     <module>demo-jetty-webapp</module>
-    <module>demo-proxy-webapp</module>
-    <module>demo-simple-webapp</module>
+    <module>demo-jndi-webapp</module>
     <module>demo-jsp-webapp</module>
     <module>demo-mock-resources</module>
+    <module>demo-proxy-webapp</module>
+    <module>demo-simple-webapp</module>
     <module>demo-spec</module>
     <module>embedded</module>
   </modules>

@@ -13,10 +13,10 @@
   <name>Jetty :: QUIC</name>
 
   <modules>
-    <module>quic-quiche</module>
-    <module>quic-common</module>
-    <module>quic-server</module>
     <module>quic-client</module>
+    <module>quic-common</module>
+    <module>quic-quiche</module>
+    <module>quic-server</module>
   </modules>
 
 </project>
