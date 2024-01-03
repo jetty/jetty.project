@@ -665,6 +665,10 @@
             <artifactId>jsr305</artifactId>
           </exclusion>
           <exclusion>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+          </exclusion>
+          <exclusion>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
           </exclusion>
