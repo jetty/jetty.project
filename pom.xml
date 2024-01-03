@@ -275,7 +275,7 @@
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx4g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
-    <jetty.test.version>6.0</jetty.test.version>
+    <jetty.test.version>6.2</jetty.test.version>
     <jetty.testtracker.log>false</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <jetty.url>https://eclipse.dev/jetty/</jetty.url>
