@@ -193,15 +193,11 @@
   </distributionManagement>
 
   <properties>
-
-    <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.14</ant.version>
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-
-    <!-- some maven plugins versions -->
     <asciidoctor.maven.plugin.version>2.2.4</asciidoctor.maven.plugin.version>
     <asciidoctorj-diagram.version>2.2.14</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.11</asciidoctorj.version>
@@ -217,7 +213,6 @@
     <commons.compress.version>1.25.0</commons.compress.version>
     <commons.io.version>2.15.1</commons.io.version>
     <compiler.release>11</compiler.release>
-    <!-- build -->
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
     <conscrypt.version>2.5.2</conscrypt.version>
@@ -238,8 +233,6 @@
     <hazelcast.version>5.2.1</hazelcast.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
     <infinispan.version>11.0.18.Final</infinispan.version>
-
-    <!-- testing -->
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
     <jackson.version>2.16.1</jackson.version>
@@ -1857,7 +1850,7 @@
               <!-- Sort properties -->
               <sortProperties>true</sortProperties>
               <!-- Sort modules -->
-              <!--              <sortModules>true</sortModules>-->
+              <sortModules>true</sortModules>
               <!-- Sort plugin executions -->
               <sortExecutions>true</sortExecutions>
               <!-- Sort dependencies see https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
