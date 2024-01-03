@@ -33,6 +33,15 @@
       <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
+      <exclusions>
+        <!-- Introduces test scope dependencies that shouldn't be present during testing.
+             Such as: older slf4j-api classes,
+                      or a slf4j-impl (in wildfly-elytron-2.2.2.Final.jar!/org/slf4j/ILoggerFactory.class) -->
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>infinispan-remote-query</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
