@@ -207,23 +207,23 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     if (!reservedEntry.release())
                         reservedEntry.remove();
                 });
-                reservedEntry.enable(buffer, true);
-                if (direct)
-                    _currentDirectMemory.addAndGet(buffer.capacity());
-                else
-                    _currentHeapMemory.addAndGet(buffer.capacity());
-                releaseExcessMemory(direct);
+
+                // A reserved entry may become old and be evicted before it is enabled.
+                if (reservedEntry.enable(buffer, true))
+                {
+                    if (direct)
+                        _currentDirectMemory.addAndGet(buffer.capacity());
+                    else
+                        _currentHeapMemory.addAndGet(buffer.capacity());
+                    releaseExcessMemory(direct);
+                    return buffer;
+                }
             }
-            else
-            {
-                buffer = newRetainableByteBuffer(size, direct, this::removed);
-            }
+            return newRetainableByteBuffer(size, direct, this::removed);
         }
-        else
-        {
-            buffer = entry.getPooled();
-            ((Buffer)buffer).acquire();
-        }
+
+        buffer = entry.getPooled();
+        ((Buffer)buffer).acquire();
         return buffer;
     }
 
@@ -409,8 +409,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 if (oldestEntry == null)
                     continue;
 
-                // A concurrent thread evicted the same entry.
                 // Get the pooled buffer now in case we can evict below.
+                // The buffer may be null if the entry has been reserved but
+                // not yet enabled, or the entry has been removed by a concurrent
+                // thread, that may also have nulled-out the pooled buffer.
                 RetainableByteBuffer buffer = oldestEntry.getPooled();
                 if (buffer == null)
                     continue;
