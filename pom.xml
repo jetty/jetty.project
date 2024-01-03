@@ -203,7 +203,7 @@
     <asciidoctorj.version>2.5.11</asciidoctorj.version>
     <asm.version>9.6</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>6.3.1</bndlib.version>
+    <bndlib.version>6.4.1</bndlib.version>
     <build-helper.maven.plugin.version>3.5.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>

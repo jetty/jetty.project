@@ -47,33 +47,33 @@ public class StringMessageSink extends AbstractMessageSink
 
             if (out == null)
                 out = new Utf8StringBuilder(session.getInputBufferSize());
-
             out.append(frame.getPayload());
+
             if (frame.isFin())
+            {
                 methodHandle.invoke(out.toString());
+                reset();
+            }
 
             callback.succeeded();
             session.demand(1);
         }
         catch (Throwable t)
         {
+            reset();
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-            {
-                // reset
-                size = 0;
-                out = null;
-            }
         }
     }
 
     @Override
     public void fail(Throwable failure)
     {
-        if (out != null)
-            out.reset();
+        reset();
+    }
+
+    private void reset()
+    {
+        out = null;
+        size = 0;
     }
 }
