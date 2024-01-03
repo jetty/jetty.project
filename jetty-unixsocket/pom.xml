@@ -14,8 +14,8 @@
   <description>Jetty UnixSocket Parent</description>
 
   <modules>
-    <module>jetty-unixsocket-common</module>
     <module>jetty-unixsocket-client</module>
+    <module>jetty-unixsocket-common</module>
     <module>jetty-unixsocket-server</module>
   </modules>
 

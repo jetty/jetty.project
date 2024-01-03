@@ -11,8 +11,8 @@
   <name>Demo :: Servlet Spec</name>
 
   <modules>
-    <module>demo-spec-webapp</module>
     <module>demo-container-initializer</module>
+    <module>demo-spec-webapp</module>
     <module>demo-web-fragment</module>
   </modules>
 </project>
