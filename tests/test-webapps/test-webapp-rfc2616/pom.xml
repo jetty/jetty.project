@@ -7,28 +7,11 @@
     <version>11.0.20-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapp-rfc2616</artifactId>
-  <name>Jetty Tests :: WebApp :: RFC2616</name>
   <packaging>war</packaging>
+  <name>Jetty Tests :: WebApp :: RFC2616</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.rfc2616</bundle-symbolic-name>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
-        <version>${project.version}</version>
-        <configuration>
-          <stopPort>8087</stopPort>
-          <stopKey>foo</stopKey>
-          <scan>1</scan>
-          <systemProperties>
-              <fooprop>222</fooprop>
-          </systemProperties>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -40,4 +23,21 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <version>${project.version}</version>
+        <configuration>
+          <stopPort>8087</stopPort>
+          <stopKey>foo</stopKey>
+          <scan>1</scan>
+          <systemProperties>
+            <fooprop>222</fooprop>
+          </systemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
