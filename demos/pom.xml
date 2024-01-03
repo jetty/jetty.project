@@ -1,16 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
     <version>10.0.20-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.demos</groupId>
   <artifactId>demos-parent</artifactId>
-  <name>Demos :: Parent</name>
   <packaging>pom</packaging>
+  <name>Demos :: Parent</name>
+
+  <modules>
+    <module>demo-async-rest</module>
+    <module>demo-jaas-webapp</module>
+    <module>demo-jndi-webapp</module>
+    <module>demo-jetty-webapp</module>
+    <module>demo-proxy-webapp</module>
+    <module>demo-simple-webapp</module>
+    <module>demo-jsp-webapp</module>
+    <module>demo-mock-resources</module>
+    <module>demo-spec</module>
+    <module>embedded</module>
+  </modules>
 
   <properties>
     <sonar.skip>true</sonar.skip>
@@ -28,17 +41,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <modules>
-    <module>demo-async-rest</module>
-    <module>demo-jaas-webapp</module>
-    <module>demo-jndi-webapp</module>
-    <module>demo-jetty-webapp</module>
-    <module>demo-proxy-webapp</module>
-    <module>demo-simple-webapp</module>
-    <module>demo-jsp-webapp</module>
-    <module>demo-mock-resources</module>
-    <module>demo-spec</module>
-    <module>embedded</module>
-  </modules>
 </project>
