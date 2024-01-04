@@ -137,6 +137,17 @@ public class ContextHandlerTest
     }
 
     @Test
+    public void testToString()
+    {
+        ContextHandler contextHandler = new ContextHandler();
+        // should not cause an NPE
+        assertNotNull(contextHandler.toString());
+
+        assertThat(contextHandler.toString(), containsString("ContextHandler"));
+        assertThat(contextHandler.toString(), containsString("{ROOT,/,b=null,a=STOPPED}"));
+    }
+
+    @Test
     public void testMiss() throws Exception
     {
         HelloHandler helloHandler = new HelloHandler();
