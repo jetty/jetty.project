@@ -692,7 +692,14 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         public Wrapper(boolean dynamic, Handler handler)
         {
             super(dynamic);
-            _handler = handler == null ? null : Singleton.updateHandler(this, handler);
+            _handler = handler;
+        }
+
+        @Override
+        protected void doStart() throws Exception
+        {
+            Singleton.updateHandler(this, _handler);
+            super.doStart();
         }
 
         @Override
