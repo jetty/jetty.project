@@ -33,6 +33,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.URIUtil;
 
 public class HttpSenderOverHTTP3 extends HttpSender
 {
@@ -63,7 +64,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
             else
             {
                 HostPortHttpField authority = new HostPortHttpField(request.getHost(), request.getPort());
-                metaData = new MetaData.ConnectRequest(request.getScheme(), authority, request.getPath(), request.getHeaders(), upgradeProtocol);
+                String pathQuery = URIUtil.addPathQuery(request.getPath(), request.getQuery());
+                metaData = new MetaData.ConnectRequest(request.getScheme(), authority, pathQuery, request.getHeaders(), upgradeProtocol);
             }
         }
         else
