@@ -16,7 +16,7 @@
     <module>jetty-test-session-common</module>
     <module>test-distribution</module>
     <module>test-integration</module>
-    <!--<module>test-jpms</module>-->
+    <module>test-jpms</module>
   </modules>
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>

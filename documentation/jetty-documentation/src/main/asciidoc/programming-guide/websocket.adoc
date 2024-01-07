@@ -59,6 +59,9 @@ xref:pg-websocket-endpoints-listener[Listener endpoints] are notified of events 
 
 xref:pg-websocket-endpoints-annotated[Annotated endpoints] are notified of events by invoking the correspondent method annotated with the correspondent annotation from the `+org.eclipse.jetty.websocket.api.annotations.*+` package.
 
+Jetty uses ``MethodHandle``s to instantiate WebSocket endpoints and invoke WebSocket event methods, so WebSocket endpoint classes and WebSocket event methods must be `public`.
+This guarantees that WebSocket endpoints can be accessed by the Jetty implementation without additional configuration also when your application uses the Java Module System (JPMS).
+
 For both types of WebSocket endpoints, only one thread at a time will be delivering frame or message events to the corresponding methods; the next frame or message event will not be delivered until the previous call to the corresponding method has exited, and if there is xref:pg-websocket-endpoints-demand[demand] for it.
 Endpoints will always be notified of message events in the same order they were received over the network.
 
@@ -151,29 +154,6 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=s
 ===== Annotated Endpoints
 
 A WebSocket endpoint may annotate methods with `+org.eclipse.jetty.websocket.api.annotations.*+` annotations to receive WebSocket events.
-
-Jetty uses ``MethodHandle``s to instantiate WebSocket endpoints and invoke WebSocket event methods, so WebSocket endpoint classes and WebSocket event methods must be `public`.
-
-When using JPMS, you must ensure that the Jetty JPMS module `org.eclipse.jetty.websocket.common` can _read_ (in JPMS terms) the WebSocket endpoint classes in your JPMS module.
-
-For example, your application may use the Jetty WebSocket client so that the JPMS module that contains your WebSocket endpoint classes looks like this:
-
-[source,java]
-.module-info.java
-----
-module com.acme.websocket
-{
-    // The Jetty WebSocket client dependency.
-    requires org.eclipse.jetty.websocket.client;
-}
-----
-
-To ensure that Jetty _reads_ your JPMS module, you must start the JVM with the following option:
-
-[source]
-----
-$ java --add-reads org.eclipse.jetty.websocket.common=com.acme.websocket ...
-----
 
 Each annotated event method may take an optional `Session` argument as its first parameter:
 
