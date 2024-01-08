@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -28,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.ComplianceViolations;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
@@ -165,7 +164,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
     {
-        HttpParser parser = new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance);
+        ComplianceViolations complianceViolations = getHttpChannel().getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
+        HttpParser parser = new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance, complianceViolations);
         parser.setHeaderCacheSize(getHttpConfiguration().getHeaderCacheSize());
         parser.setHeaderCacheCaseSensitive(getHttpConfiguration().isHeaderCacheCaseSensitive());
         return parser;
@@ -303,30 +303,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         // TODO why is this not on HttpConfiguration?
         _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
-    }
-
-    protected void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
-    {
-        //TODO configure this somewhere else
-        //TODO what about cookie compliance
-        //TODO what about http2 & 3
-        //TODO test this in core
-        if (isRecordHttpComplianceViolations())
-        {
-            HttpStreamOverHTTP1 stream = _stream.get();
-            if (stream != null)
-            {
-                if (stream._complianceViolations == null)
-                {
-                    stream._complianceViolations = new ArrayList<>();
-                }
-                String record = String.format("%s (see %s) in mode %s for %s in %s",
-                    violation.getDescription(), violation.getURL(), mode, details, HttpConnection.this);
-                stream._complianceViolations.add(record);
-                if (LOG.isDebugEnabled())
-                    LOG.debug(record);
-            }
-        }
     }
 
     @Override
@@ -933,7 +909,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
     }
 
-    protected class RequestHandler implements HttpParser.RequestHandler, ComplianceViolation.Listener
+    protected class RequestHandler implements HttpParser.RequestHandler
     {
         private Throwable _failure;
 
@@ -1070,12 +1046,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     getServer().getThreadPool().execute(todo);
             }
         }
-
-        @Override
-        public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
-        {
-            HttpConnection.this.onComplianceViolation(mode, violation, details);
-        }
     }
 
     protected class HttpStreamOverHTTP1 implements HttpStream
@@ -1184,7 +1154,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_uri.hasViolations())
             {
                 compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri);
+                ComplianceViolations complianceViolations = getHttpChannel().getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
+                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, complianceViolations);
                 if (badMessage != null)
                     throw new BadMessageException(badMessage);
             }
@@ -1198,7 +1169,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     {
                         HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
-                            onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString());
+                        {
+                            ComplianceViolations complianceViolations = getHttpChannel().getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
+                            if (complianceViolations != null)
+                                complianceViolations.onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString());
+                        }
                         else
                             throw new BadMessageException("Authority!=Host");
                     }

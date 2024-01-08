@@ -20,6 +20,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceViolationException;
+import org.eclipse.jetty.http.ComplianceViolations;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
@@ -378,7 +380,16 @@ public interface Response extends Content.Sink
 
         Request request = response.getRequest();
         CookieCompliance compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
-        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
+        try
+        {
+            response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
+        }
+        catch (ComplianceViolationException e)
+        {
+            ComplianceViolations complianceViolations = request.getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
+            complianceViolations.onComplianceViolation(e.getEvent());
+            throw e;
+        }
 
         // Expire responses with set-cookie headers, so they do not get cached.
         if (!response.getHeaders().contains(HttpHeader.EXPIRES))
@@ -402,7 +413,18 @@ public interface Response extends Content.Sink
         Request request = response.getRequest();
         HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
         CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
-        HttpField setCookie = new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
+
+        HttpField setCookie;
+        try
+        {
+            setCookie = new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
+        }
+        catch (ComplianceViolationException e)
+        {
+            ComplianceViolations complianceViolations = request.getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
+            complianceViolations.onComplianceViolation(e.getEvent());
+            throw e;
+        }
 
         boolean expires = false;
 

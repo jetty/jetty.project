@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.ComplianceViolations;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieParser;
 import org.eclipse.jetty.http.HttpCookie;
@@ -63,6 +64,7 @@ public class ServerHttpCookieTest
                 Fields.Field setCookie = parameters.get("SetCookie");
                 if (setCookie != null)
                 {
+                    ComplianceViolations complianceViolations = request.getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
                     CookieParser parser = CookieParser.newParser(new CookieParser.Handler()
                     {
                         @Override
@@ -70,7 +72,7 @@ public class ServerHttpCookieTest
                         {
                             Response.addCookie(response, HttpCookie.build(name, value, version).domain(domain).path(path).comment(comment).build());
                         }
-                    }, RFC2965, null);
+                    }, RFC2965, complianceViolations);
                     parser.parseField(setCookie.getValue());
                 }
 
@@ -82,7 +84,9 @@ public class ServerHttpCookieTest
                 return true;
             }
         });
-        _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
+        HttpConnectionFactory httpConnectionFactory = _connector.getConnectionFactory(HttpConnectionFactory.class);
+        httpConnectionFactory.setRecordHttpComplianceViolations(true);
+        _httpConfiguration = httpConnectionFactory.getHttpConfiguration();
         _server.start();
     }
 

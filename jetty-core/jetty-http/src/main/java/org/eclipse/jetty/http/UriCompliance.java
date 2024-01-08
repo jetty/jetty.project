@@ -360,12 +360,14 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
-    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri)
+    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
     {
         for (UriCompliance.Violation violation : UriCompliance.Violation.values())
         {
             if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(violation)))
                 return violation.getDescription();
+            else if (listener != null)
+                listener.onComplianceViolation(compliance, violation, uri.toString());
         }
         return null;
     }

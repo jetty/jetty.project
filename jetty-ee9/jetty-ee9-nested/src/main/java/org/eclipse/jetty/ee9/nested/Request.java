@@ -65,9 +65,9 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.ComplianceViolations;
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.CookieCompliance;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -83,6 +83,7 @@ import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
@@ -533,19 +534,13 @@ public class Request implements HttpServletRequest
         return _channel.getState();
     }
 
+    /**
+     * @deprecated use core level ComplianceViolation.Listener instead. - will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public ComplianceViolation.Listener getComplianceViolationListener()
     {
-        if (_channel instanceof ComplianceViolation.Listener)
-        {
-            return (ComplianceViolation.Listener)_channel;
-        }
-
-        ComplianceViolation.Listener listener = _channel.getConnector().getBean(ComplianceViolation.Listener.class);
-        if (listener == null)
-        {
-            listener = _channel.getServer().getBean(ComplianceViolation.Listener.class);
-        }
-        return listener;
+        return null;
     }
 
     /**
@@ -1925,7 +1920,7 @@ public class Request implements HttpServletRequest
 
             _multiParts = newMultiParts(config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
-            setNonComplianceViolationsOnRequest();
+            reportComplianceViolations();
 
             String formCharset = null;
             Part charsetPart = _multiParts.getPart("_charset_");
@@ -1991,20 +1986,21 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    private void setNonComplianceViolationsOnRequest()
+    private void reportComplianceViolations()
     {
-        @SuppressWarnings("unchecked")
-        List<String> violations = (List<String>)getAttribute(HttpCompliance.VIOLATIONS_ATTR);
-        if (violations != null)
-            return;
+        Connector connector = getHttpChannel().getConnector();
+        if (connector == null)
+            return; // not using a connector?
 
-        EnumSet<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
-        violations = new ArrayList<>();
+        ComplianceViolations complianceViolations = connector.getBean(ComplianceViolations.class);
+        if (complianceViolations == null)
+            return; // no violation reporting active
+
+        List<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
         {
-            violations.add(nc.name() + ": " + nc.getURL());
+            complianceViolations.onComplianceViolation(nc.mode(), nc.violation(), nc.detail());
         }
-        setAttribute(HttpCompliance.VIOLATIONS_ATTR, violations);
     }
 
     private MultiPartFormInputStream newMultiParts(MultipartConfigElement config, int maxParts) throws IOException

@@ -16,7 +16,9 @@ package org.eclipse.jetty.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -27,6 +29,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.ComplianceViolations;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -43,10 +47,12 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -102,6 +108,7 @@ public class HttpChannelState implements HttpChannel, Components
     private final SerializedInvoker _readInvoker;
     private final SerializedInvoker _writeInvoker;
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
+    private final ComplianceViolations _complianceViolations;
     private Thread _handling;
     private boolean _handled;
     private StreamSendState _streamSendState = StreamSendState.SENDING;
@@ -125,6 +132,46 @@ public class HttpChannelState implements HttpChannel, Components
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
         _readInvoker = new HttpChannelSerializedInvoker();
         _writeInvoker = new HttpChannelSerializedInvoker();
+        _complianceViolations = newComplianceViolations();
+    }
+
+    /**
+     * @return a new ComplianceViolations if configuration enables it.
+     */
+    private ComplianceViolations newComplianceViolations()
+    {
+        Connector connector = getConnectionMetaData().getConnector();
+        if (connector == null)
+            return null;
+
+        HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
+        if (httpConnectionFactory != null)
+        {
+            // Is this connector recording compliance violations?
+            if (httpConnectionFactory.isRecordHttpComplianceViolations())
+            {
+                // Only add the ComplianceViolations instance if the recording of Compliance Violations is enabled
+                // This also means that any user provided ComplianceViolation.Listener beans will only be
+                // used when the configuration on the HttpConnectionFactory allows then to be used.
+
+                // Look for optional user provided ComplianceViolation.Listeners
+                List<ComplianceViolation.Listener> userListeners = new ArrayList<>();
+                userListeners.addAll(connector.getBeans(ComplianceViolation.Listener.class));
+                userListeners.addAll(connector.getServer().getBeans(ComplianceViolation.Listener.class));
+
+                // Establish ComplianceViolations Tracker
+                ComplianceViolations violations = new ComplianceViolations(userListeners);
+
+                // Store tracker (to be accessed elsewhere)
+                // If this bean is not present on the connector, then it is safe to assume that the
+                // HttpConnectionFactory is not allowing the recording of compliance violations.
+                connector.addBean(violations);
+
+                return violations;
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -148,6 +195,8 @@ public class HttpChannelState implements HttpChannel, Components
             _request = null;
             _response = null;
             _oldIdleTimeout = 0;
+            if (_complianceViolations != null)
+                _complianceViolations.recycle();
             // Break the link between channel and stream.
             _stream = null;
             _committedContentLength = -1;
@@ -237,6 +286,15 @@ public class HttpChannelState implements HttpChannel, Components
         if (LOG.isDebugEnabled())
             LOG.debug("onRequest {} {}", request, this);
 
+        // Handle UriCompliance Violations
+        if (request.getHttpURI().hasViolations())
+        {
+            UriCompliance compliance = getHttpConfiguration().getUriCompliance();
+            String badMessage = UriCompliance.checkUriCompliance(compliance, request.getHttpURI(), _complianceViolations);
+            if (badMessage != null)
+                throw new BadMessageException(badMessage);
+        }
+
         try (AutoLock ignored = _lock.lock())
         {
             if (_stream == null)
@@ -260,6 +318,8 @@ public class HttpChannelState implements HttpChannel, Components
             _oldIdleTimeout = _stream.getIdleTimeout();
             if (idleTO >= 0 && _oldIdleTimeout != idleTO)
                 _stream.setIdleTimeout(idleTO);
+
+            _complianceViolations.setAttribute(_request);
 
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
@@ -572,7 +632,7 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpURI uri = request.getHttpURI();
                 if (uri.hasViolations())
                 {
-                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri);
+                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, _complianceViolations);
                     if (badMessage != null)
                         throw new BadMessageException(badMessage);
                 }

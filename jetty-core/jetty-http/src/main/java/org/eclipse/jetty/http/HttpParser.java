@@ -294,22 +294,27 @@ public class HttpParser
 
     public HttpParser(RequestHandler handler, int maxHeaderBytes, HttpCompliance compliance)
     {
-        this(handler, null, maxHeaderBytes, compliance == null ? compliance() : compliance);
+        this(handler, null, maxHeaderBytes, compliance == null ? compliance() : compliance, null);
+    }
+
+    public HttpParser(RequestHandler handler, int maxHeaderBytes, HttpCompliance compliance, ComplianceViolation.Listener complianceListener)
+    {
+        this(handler, null, maxHeaderBytes, compliance == null ? compliance() : compliance, complianceListener);
     }
 
     public HttpParser(ResponseHandler handler, int maxHeaderBytes, HttpCompliance compliance)
     {
-        this(null, handler, maxHeaderBytes, compliance == null ? compliance() : compliance);
+        this(null, handler, maxHeaderBytes, compliance == null ? compliance() : compliance, null);
     }
 
-    private HttpParser(RequestHandler requestHandler, ResponseHandler responseHandler, int maxHeaderBytes, HttpCompliance compliance)
+    private HttpParser(RequestHandler requestHandler, ResponseHandler responseHandler, int maxHeaderBytes, HttpCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
         _handler = requestHandler != null ? requestHandler : responseHandler;
         _requestHandler = requestHandler;
         _responseHandler = responseHandler;
         _maxHeaderBytes = maxHeaderBytes;
         _complianceMode = compliance;
-        _complianceListener = (ComplianceViolation.Listener)(_handler instanceof ComplianceViolation.Listener ? _handler : null);
+        _complianceListener = complianceListener;
     }
 
     public long getBeginNanoTime()

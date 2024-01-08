@@ -75,13 +75,31 @@ public interface ComplianceViolation
         Set<? extends ComplianceViolation> getAllowed();
     }
 
+    public static record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    {
+        @Override
+        public String toString()
+        {
+            return String.format("%s (see %s) in mode %s for %s",
+                violation.getDescription(), violation.getURL(), mode, details);
+        }
+    };
+
     /**
      * A listener that can be notified of violations.
      */
     interface Listener
     {
+        /**
+         * The compliance violation event.
+         */
+        default void onComplianceViolation(Event event)
+        {
+        }
+
         default void onComplianceViolation(Mode mode, ComplianceViolation violation, String details)
         {
+            onComplianceViolation(new Event(mode, violation, details));
         }
     }
 }
