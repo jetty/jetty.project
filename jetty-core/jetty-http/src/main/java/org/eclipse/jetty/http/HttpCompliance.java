@@ -82,6 +82,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * as invalid even if the multiple values are the same. A deployment may include this violation to allow multiple
          * {@code Content-Length} values to be received, but only if they are identical.
          */
+        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         MULTIPLE_CONTENT_LENGTHS("https://tools.ietf.org/html/rfc7230#section-3.3.2", "Multiple Content-Lengths"),
 
         /**
@@ -89,6 +90,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * a request is invalid if it contains both a {@code Transfer-Encoding} field and  {@code Content-Length} field.
          * A deployment may include this violation to allow both fields to be in a received request.
          */
+        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
 
         /**
@@ -110,6 +112,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * says that a Server must reject a request duplicate host headers.
          * A deployment may include this violation to allow duplicate host headers on a received request.
          */
+        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         DUPLICATE_HOST_HEADERS("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Duplicate Host Header"),
 
         /**
@@ -117,6 +120,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * should reject a request if the Host headers contains an invalid / unsafe authority.
          * A deployment may include this violation to allow unsafe host headesr on a received request.
          */
+        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         UNSAFE_HOST_HEADER("https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1", "Invalid Authority"),
 
         /**
@@ -124,6 +128,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * must reject a request if the target URI has an authority that is different than a provided Host header.
          * A deployment may include this violation to allow different values on the target URI and the Host header on a received request.
          */
+        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority");
 
         private final String url;
