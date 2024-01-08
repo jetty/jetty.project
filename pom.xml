@@ -70,7 +70,7 @@
     <jnr-enxio.version>0.32.16</jnr-enxio.version>
     <jnr-ffi.version>2.2.15</jnr-ffi.version>
     <jnr-posix.version>3.1.18</jnr-posix.version>
-    <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
+    <jnr-unixsocket.version>0.38.21</jnr-unixsocket.version>
     <jolokia.version>1.7.2</jolokia.version>
     <jsp.version>8.5.70</jsp.version>
     <junit.version>5.10.1</junit.version>
