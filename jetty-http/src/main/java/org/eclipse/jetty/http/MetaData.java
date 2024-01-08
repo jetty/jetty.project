@@ -224,26 +224,35 @@ public class MetaData implements Iterable<HttpField>
     {
         private final String _protocol;
 
-        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String pathQuery, HttpFields fields, String protocol)
         {
-            this(scheme == null ? null : scheme.asString(), authority, path, fields, protocol);
+            this(scheme == null ? null : scheme.asString(), authority, pathQuery, fields, protocol);
         }
 
-        public ConnectRequest(long beginNanoTime, HttpScheme scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        public ConnectRequest(long beginNanoTime, HttpScheme scheme, HostPortHttpField authority, String pathQuery, HttpFields fields, String protocol)
         {
-            this(beginNanoTime, scheme == null ? null : scheme.asString(), authority, path, fields, protocol);
+            this(beginNanoTime, scheme == null ? null : scheme.asString(), authority, pathQuery, fields, protocol);
         }
 
-        public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        public ConnectRequest(String scheme, HostPortHttpField authority, String pathQuery, HttpFields fields, String protocol)
         {
-            this(NanoTime.now(), scheme, authority, path, fields, protocol);
+            this(NanoTime.now(), scheme, authority, pathQuery, fields, protocol);
         }
 
-        public ConnectRequest(long beginNanoTime, String scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        public ConnectRequest(long beginNanoTime, String scheme, HostPortHttpField authority, String pathQuery, HttpFields fields, String protocol)
         {
-            super(beginNanoTime, HttpMethod.CONNECT.asString(),
-                HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(path),
-                HttpVersion.HTTP_2, fields, Long.MIN_VALUE, null);
+            super(beginNanoTime,
+                HttpMethod.CONNECT.asString(),
+                HttpURI.build()
+                    .scheme(scheme)
+                    .host(authority == null ? null : authority.getHost())
+                    .port(authority == null ? -1 : authority.getPort())
+                    .pathQuery(pathQuery),
+                HttpVersion.HTTP_2,
+                fields,
+                Long.MIN_VALUE,
+                null
+            );
             _protocol = protocol;
         }
 
