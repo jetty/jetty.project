@@ -51,21 +51,18 @@ public class FormFieldsTest
             Arguments.of(List.of("name"), UTF_8, -1, -1, Map.of("name", "")),
             Arguments.of(List.of("name&"), UTF_8, -1, -1, Map.of("name", "")),
             Arguments.of(List.of("name="), UTF_8, -1, -1, Map.of("name", "")),
-            Arguments.of(List.of("%A"), UTF_8, -1, -1, Map.of("%A", "")),
-            Arguments.of(List.of("name%A"), UTF_8, -1, -1, Map.of("name%A", "")),
-            Arguments.of(List.of("name%A="), UTF_8, -1, -1, Map.of("name%A", "")),
-            Arguments.of(List.of("name%A&"), UTF_8, -1, -1, Map.of("name%A", "")),
-            Arguments.of(List.of("name=%A"), UTF_8, -1, -1, Map.of("name", "%A")),
+            Arguments.of(List.of("name%00="), UTF_8, -1, -1, Map.of("name\u0000", "")),
             Arguments.of(List.of("n1=v1&n2"), UTF_8, -1, -1, Map.of("n1", "v1", "n2", "")),
             Arguments.of(List.of("n1=v1&n2&n3=v3&n4"), UTF_8, -1, -1, Map.of("n1", "v1", "n2", "", "n3", "v3", "n4", "")),
             Arguments.of(List.of("name=value"), UTF_8, -1, -1, Map.of("name", "value")),
-            Arguments.of(List.of("name=value%A"), UTF_8, -1, -1, Map.of("name", "value%A")),
+            Arguments.of(List.of("name=%0A"), UTF_8, -1, -1, Map.of("name", "\n")),
             Arguments.of(List.of("name=value", ""), UTF_8, -1, -1, Map.of("name", "value")),
             Arguments.of(List.of("name", "=value", ""), UTF_8, -1, -1, Map.of("name", "value")),
             Arguments.of(List.of("n", "ame", "=", "value"), UTF_8, -1, -1, Map.of("name", "value")),
             Arguments.of(List.of("n=v&X=Y"), UTF_8, 2, 4, Map.of("n", "v", "X", "Y")),
             Arguments.of(List.of("name=f¤¤&X=Y"), UTF_8, -1, -1, Map.of("name", "f¤¤", "X", "Y")),
-            Arguments.of(List.of("na+me=", "va", "+", "lue"), UTF_8, -1, -1, Map.of("na me", "va lue"))
+            Arguments.of(List.of("na+me=", "va", "+", "lue"), UTF_8, -1, -1, Map.of("na me", "va lue")),
+            Arguments.of(List.of("=v"), UTF_8, -1, -1, Map.of("", "v"))
         );
     }
 
@@ -109,9 +106,22 @@ public class FormFieldsTest
     public static Stream<Arguments> invalidData()
     {
         return Stream.of(
+            Arguments.of(List.of("%A"), UTF_8, -1, -1, IllegalStateException.class),
+            Arguments.of(List.of("name%"), UTF_8, -1, -1, IllegalStateException.class),
+            Arguments.of(List.of("name%A"), UTF_8, -1, -1, IllegalStateException.class),
+
+            // TODO: these 2 should throw the same exception.
+            Arguments.of(List.of("name%A="), UTF_8, -1, -1, CharacterCodingException.class),
+            Arguments.of(List.of("name%A&"), UTF_8, -1, -1, IllegalArgumentException.class),
+
+            Arguments.of(List.of("name=%"), UTF_8, -1, -1, IllegalStateException.class),
+            Arguments.of(List.of("name=A%%A"), UTF_8, -1, -1, IllegalArgumentException.class),
+            Arguments.of(List.of("name=A%%3D"), UTF_8, -1, -1, IllegalArgumentException.class),
+            Arguments.of(List.of("%="), UTF_8, -1, -1, IllegalStateException.class),
+            Arguments.of(List.of("name=%A"), UTF_8, -1, -1, IllegalStateException.class),
+            Arguments.of(List.of("name=value%A"), UTF_8, -1, -1, IllegalStateException.class),
             Arguments.of(List.of("n=v&X=Y"), UTF_8, 1, -1, IllegalStateException.class),
             Arguments.of(List.of("n=v&X=Y"), UTF_8, -1, 3, IllegalStateException.class),
-            Arguments.of(List.of("=v"), UTF_8, -1, -1, IllegalStateException.class),
             Arguments.of(List.of("n%AH=v"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=v%AH"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=v%FF"), UTF_8, -1, -1, CharacterCodingException.class)

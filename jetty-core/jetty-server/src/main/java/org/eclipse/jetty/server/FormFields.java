@@ -32,8 +32,9 @@ import org.eclipse.jetty.util.StringUtil;
 import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
 
 /**
- * A {@link CompletableFuture} that is completed once a {@code application/x-www-form-urlencoded}
- * content has been parsed asynchronously from the {@link Content.Source}.
+ * <p>A {@link CompletableFuture} that is completed once a {@code application/x-www-form-urlencoded}
+ * content has been parsed asynchronously from the {@link Content.Source}.</p>
+ * <p><a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">Specification</a>.</p>
  */
 public class FormFields extends ContentSourceCompletableFuture<Fields>
 {
@@ -225,13 +226,6 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                 case 2 ->
                 {
                     _percent = 0;
-                    // If there is a "terminator" character, append the previous %x.
-                    if (b == '&' || b == '=')
-                    {
-                        _builder.append('%');
-                        _builder.append(_percentCode);
-                        break;
-                    }
                     _builder.append(decodeHexByte((char)_percentCode, (char)b));
                     continue;
                 }
@@ -250,8 +244,6 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                     case '=' ->
                     {
                         _name = _builder.build();
-                        if (_name.isEmpty())
-                            throw new IllegalStateException("form with invalid parameter name");
                         checkMaxLength(_name);
                     }
                     case '+' -> _builder.append(' ');
@@ -282,10 +274,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
 
         // Append any remaining %x.
         if (_percent > 0)
-        {
-            _builder.append('%');
-            _builder.append(_percentCode);
-        }
+            throw new IllegalStateException("invalid percent encoding");
         String value = _builder.build();
 
         if (_name == null)
