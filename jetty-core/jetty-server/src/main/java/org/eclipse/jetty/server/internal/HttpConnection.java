@@ -638,7 +638,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
         if (stream != null)
         {
+            // TODO 1) the stream may still have a retainable buffer that must be released that abort() isn't taking care of
+            // TODO 2) abrupt closing of the connector AND upgrade both call onClose()
+            //  how to differentiate them as the first one requires the stream's endpoint to be closed and the second wants it to stay open?
             stream.abort(cause);
+
+            // TODO this may run concurrently with onFillable()
             if (_retainableByteBuffer != null)
             {
                 _retainableByteBuffer.release();
@@ -1613,6 +1618,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         private void abort(Throwable failure)
         {
+            if (_chunk != null)
+            {
+                _chunk.release();
+                // TODO if failure is null, this is equivalent to _chunk = EOF
+                _chunk = Content.Chunk.from(failure);
+            }
             getEndPoint().close(failure);
         }
 
