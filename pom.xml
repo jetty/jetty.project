@@ -45,7 +45,7 @@
     <guava.version>33.0.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hawtio.version>3.0.0</hawtio.version>
-    <hazelcast.version>3.12.13</hazelcast.version>
+    <hazelcast.version>3.12.12</hazelcast.version>
     <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
     <infinispan.version>11.0.18.Final</infinispan.version>
     <jackson.annotations.version>2.16.1</jackson.annotations.version>
