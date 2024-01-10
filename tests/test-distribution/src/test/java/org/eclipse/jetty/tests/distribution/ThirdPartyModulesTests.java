@@ -19,16 +19,21 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ThirdPartyModulesTests extends AbstractJettyHomeTest
 {
     @Test
+    @Disabled("No longer functional in Servlet 4.0")
     public void testHawtio() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -107,6 +112,7 @@ public class ThirdPartyModulesTests extends AbstractJettyHomeTest
     }
 
     @Test
+    @Disabled("No longer functional in Servlet 4.0")
     public void testjolokia() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
