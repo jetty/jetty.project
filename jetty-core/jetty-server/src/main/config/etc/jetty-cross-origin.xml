@@ -44,9 +44,9 @@
             </Call>
           </Arg>
         </Call>
-        <Set name="deliverPreflightRequest">
-          <Property name="jetty.crossorigin.deliverPreflightRequest" default="false" />
-        </Set>
+        <Set name="deliverPreflightRequests" property="jetty.crossorigin.deliverPreflightRequests" />
+        <Set name="deliverNonAllowedOriginRequests" property="jetty.crossorigin.deliverNonAllowedOriginRequests" />
+        <Set name="deliverNonAllowedOriginWebSocketUpgradeRequests" property="jetty.crossorigin.deliverNonAllowedOriginWebSocketUpgradeRequests" />
         <Call name="setExposedHeaders">
           <Arg type="Set">
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
@@ -60,7 +60,7 @@
           <Arg>
             <Call class="java.time.Duration" name="ofSeconds">
               <Arg type="long">
-                <Property name="jetty.crossorigin.preflightMaxAge" default="5" />
+                <Property name="jetty.crossorigin.preflightMaxAge" default="60" />
               </Arg>
             </Call>
           </Arg>

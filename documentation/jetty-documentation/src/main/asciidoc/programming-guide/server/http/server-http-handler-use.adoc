@@ -415,7 +415,7 @@ This is common, for example, when you embed reusable components such as a chat c
 
 This kind of setup exposes to link:https://owasp.org/www-community/attacks/csrf[cross-site request forgery attacks], and the CORS protocol has been established to protect against this kind of attacks.
 
-For security reasons, browser by default do not allow cross-origin requests, unless the response from the cross domain contains the right CORS headers.
+For security reasons, browsers by default do not allow cross-origin requests, unless the response from the cross domain contains the right CORS headers.
 
 `CrossOriginHandler` relieves server-side web applications from handling CORS headers explicitly.
 You can set up your `Handler` tree with the `CrossOriginHandler`, configure it, and it will take care of the CORS headers separately from your application, where you can concentrate on the business logic.
@@ -433,7 +433,7 @@ Server
 The most important `CrossOriginHandler` configuration parameter is `allowedOrigins`, which by default is `*`, allowing any origin.
 
 You may want to restrict your server to only origins you trust.
-From the chat example above, the chat server at `+http://chat.domain.com+` knows that the chat component is downloaded from the origin server at `+http://domain.com+`, so it configures the `CrossOriginHandler` in this way:
+From the chat example above, the chat server at `+http://chat.domain.com+` knows that the chat component is downloaded from the origin server at `+http://domain.com+`, so the `CrossOriginHandler` is configured in this way:
 
 [source,java,indent=0]
 ----

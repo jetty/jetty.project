@@ -32,7 +32,13 @@ etc/jetty-cross-origin.xml
 # jetty.crossorigin.allowedTimingOriginPatterns=
 
 ## Whether preflight requests are delivered to the child Handler of CrossOriginHandler.
-# jetty.crossorigin.deliverPreflightRequest=false
+# jetty.crossorigin.deliverPreflightRequests=false
+
+## Whether requests whose origin is not allowed are delivered to the child Handler of CrossOriginHandler.
+# jetty.crossorigin.deliverNonAllowedOriginRequests=true
+
+## Whether WebSocket upgrade requests whose origin is not allowed are delivered to the child Handler of CrossOriginHandler.
+# jetty.crossorigin.deliverNonAllowedOriginWebSocketUpgradeRequests=false
 
 ## A comma-separated list of headers allowed in cross-origin responses.
 # jetty.crossorigin.exposedHeaders=
