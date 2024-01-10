@@ -74,6 +74,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     private final Set<Pattern> allowedTimingOriginPatterns = new LinkedHashSet<>();
     private PreEncodedHttpField accessControlAllowMethodsField;
     private PreEncodedHttpField accessControlAllowHeadersField;
+    private PreEncodedHttpField accessControlExposeHeadersField;
     private PreEncodedHttpField accessControlMaxAge;
 
     /**
@@ -101,7 +102,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the set of allowed headers in a cross-origin request
+     * @return the immutable set of allowed headers in a cross-origin request
      */
     @ManagedAttribute("The set of allowed headers in a cross-origin request")
     public Set<String> getAllowedHeaders()
@@ -128,7 +129,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the set of allowed methods in a cross-origin request
+     * @return the immutable set of allowed methods in a cross-origin request
      */
     @ManagedAttribute("The set of allowed methods in a cross-origin request")
     public Set<String> getAllowedMethods()
@@ -153,7 +154,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the set of allowed origin regex strings in a cross-origin request
+     * @return the immutable set of allowed origin regex strings in a cross-origin request
      */
     @ManagedAttribute("The set of allowed origin regex strings in a cross-origin request")
     public Set<String> getAllowedOriginPatterns()
@@ -184,7 +185,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the set of allowed timing origin regex strings in a cross-origin request
+     * @return the immutable set of allowed timing origin regex strings in a cross-origin request
      */
     @ManagedAttribute("The set of allowed timing origin regex strings in a cross-origin request")
     public Set<String> getAllowedTimingOriginPatterns()
@@ -265,7 +266,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the set of headers exposed in a cross-origin response
+     * @return the immutable set of headers exposed in a cross-origin response
      */
     @ManagedAttribute("The set of headers exposed in a cross-origin response")
     public Set<String> getExposedHeaders()
@@ -311,6 +312,7 @@ public class CrossOriginHandler extends Handler.Wrapper
         resolveAllowedTimingOrigins();
         accessControlAllowMethodsField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS, String.join(",", getAllowedMethods()));
         accessControlAllowHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", getAllowedHeaders()));
+        accessControlExposeHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(",", getExposedHeaders()));
         accessControlMaxAge = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_MAX_AGE, getPreflightMaxAge().toSeconds());
         super.doStart();
     }
@@ -475,7 +477,7 @@ public class CrossOriginHandler extends Handler.Wrapper
             headers.put(ACCESS_CONTROL_ALLOW_CREDENTIALS_TRUE);
         Set<String> exposedHeaders = getExposedHeaders();
         if (!exposedHeaders.isEmpty())
-            headers.put(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(",", exposedHeaders));
+            headers.put(accessControlExposeHeadersField);
     }
 
     private void resolveAllowedOrigins()
@@ -492,7 +494,7 @@ public class CrossOriginHandler extends Handler.Wrapper
                 return;
             }
 
-            allowedOriginPatterns.add(Pattern.compile(allowedOrigin));
+            allowedOriginPatterns.add(Pattern.compile(allowedOrigin, Pattern.CASE_INSENSITIVE));
         }
     }
 
@@ -510,7 +512,7 @@ public class CrossOriginHandler extends Handler.Wrapper
                 return;
             }
 
-            allowedTimingOriginPatterns.add(Pattern.compile(allowedTimingOrigin));
+            allowedTimingOriginPatterns.add(Pattern.compile(allowedTimingOrigin, Pattern.CASE_INSENSITIVE));
         }
     }
 
