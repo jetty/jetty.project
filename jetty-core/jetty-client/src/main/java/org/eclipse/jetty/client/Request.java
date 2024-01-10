@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.TransportProtocol;
 import org.eclipse.jetty.util.Fields;
 
 /**
@@ -101,6 +102,23 @@ public interface Request
     default Request port(int port)
     {
         return this;
+    }
+
+    /**
+     * @param transport the {@link TransportProtocol} of this request
+     * @return this request object
+     */
+    default Request transportProtocol(TransportProtocol transport)
+    {
+        return this;
+    }
+
+    /**
+     * @return the {@link TransportProtocol} of this request
+     */
+    default TransportProtocol getTransportProtocol()
+    {
+        return null;
     }
 
     /**

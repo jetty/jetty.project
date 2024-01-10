@@ -61,9 +61,10 @@ public interface ClientConnectionFactory
     }
 
     /**
-     * <p>A holder for a list of protocol strings identifying an application protocol
-     * (for example {@code ["h2", "h2-17", "h2-16"]}) and a {@link ClientConnectionFactory}
-     * that creates connections that speak that network protocol.</p>
+     * <p>A holder for a list of protocol strings identifiers
+     * (for example {@code ["h2", "h2-17", "h2-16"]}) and a
+     * {@link ClientConnectionFactory} that creates connections
+     * that speak an application protocol such as HTTP.</p>
      */
     public abstract static class Info extends ContainerLifeCycle
     {
@@ -75,15 +76,29 @@ public interface ClientConnectionFactory
             addBean(factory);
         }
 
+        /**
+         * @param secure {@code true} for the secure protocol identifiers,
+         * {@code false} for the clear-text protocol identifiers
+         * @return a list of protocol string identifiers
+         */
         public abstract List<String> getProtocols(boolean secure);
 
+        /**
+         * @return the {@link ClientConnectionFactory} that speaks the protocol
+         */
         public ClientConnectionFactory getClientConnectionFactory()
         {
             return factory;
         }
 
         /**
-         * Tests whether one of the protocols of this class is also present in the given candidates list.
+         * @return the default {@link TransportProtocol} used by the protocol
+         */
+        public abstract TransportProtocol newTransportProtocol();
+
+        /**
+         * <p>Tests whether one of the protocol identifiers of this
+         * class is also present in the given candidates list.</p>
          *
          * @param candidates the candidates to match against
          * @param secure whether the protocol should be a secure one
@@ -94,6 +109,12 @@ public interface ClientConnectionFactory
             return getProtocols(secure).stream().anyMatch(p -> candidates.stream().anyMatch(c -> c.equalsIgnoreCase(p)));
         }
 
+        /**
+         * <p>Upgrades the given {@link EndPoint} to the protocol represented by this class.</p>
+         *
+         * @param endPoint the {@link EndPoint} to upgrade
+         * @param context the context information to perform the upgrade
+         */
         public void upgrade(EndPoint endPoint, Map<String, Object> context)
         {
             throw new UnsupportedOperationException(this + " does not support upgrade to another protocol");

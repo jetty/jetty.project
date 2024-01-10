@@ -22,6 +22,7 @@ import java.util.Objects;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.TransportProtocol;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -46,6 +47,7 @@ public class Origin
     private final Address address;
     private final Object tag;
     private final Protocol protocol;
+    private final TransportProtocol transport;
 
     public Origin(String scheme, String host, int port)
     {
@@ -74,10 +76,16 @@ public class Origin
 
     public Origin(String scheme, Address address, Object tag, Protocol protocol)
     {
+        this(scheme, address, tag, protocol, TransportProtocol.TCP_IP);
+    }
+
+    public Origin(String scheme, Address address, Object tag, Protocol protocol, TransportProtocol transport)
+    {
         this.scheme = Objects.requireNonNull(scheme);
         this.address = address;
         this.tag = tag;
         this.protocol = protocol;
+        this.transport = transport;
     }
 
     public String getScheme()
@@ -100,6 +108,17 @@ public class Origin
         return protocol;
     }
 
+    public TransportProtocol getTransportProtocol()
+    {
+        return transport;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(scheme, address, tag, protocol, transport);
+    }
+
     @Override
     public boolean equals(Object obj)
     {
@@ -109,15 +128,10 @@ public class Origin
             return false;
         Origin that = (Origin)obj;
         return scheme.equals(that.scheme) &&
-            address.equals(that.address) &&
-            Objects.equals(tag, that.tag) &&
-            Objects.equals(protocol, that.protocol);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(scheme, address, tag, protocol);
+               address.equals(that.address) &&
+               Objects.equals(tag, that.tag) &&
+               Objects.equals(protocol, that.protocol) &&
+               Objects.equals(transport, that.transport);
     }
 
     public String asString()
@@ -130,12 +144,14 @@ public class Origin
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s,tag=%s,protocol=%s]",
+        return String.format("%s@%x[%s,tag=%s,protocol=%s,transport=%s]",
             getClass().getSimpleName(),
             hashCode(),
             asString(),
             getTag(),
-            getProtocol());
+            getProtocol(),
+            getTransportProtocol()
+        );
     }
 
     public static class Address
@@ -217,7 +233,7 @@ public class Origin
          */
         public Protocol(List<String> protocols, boolean negotiate)
         {
-            this.protocols = protocols;
+            this.protocols = List.copyOf(protocols);
             this.negotiate = negotiate;
         }
 

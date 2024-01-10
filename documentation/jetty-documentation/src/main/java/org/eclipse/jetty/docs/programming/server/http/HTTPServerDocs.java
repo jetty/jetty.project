@@ -46,8 +46,9 @@ import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
-import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
@@ -223,8 +224,10 @@ public class HTTPServerDocs
         sslContextFactory.setKeyStorePath("/path/to/keystore");
         sslContextFactory.setKeyStorePassword("secret");
 
-        // Create an HTTP3ServerConnector instance.
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory());
+        // Create a QuicServerConnector instance.
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
 
         // The port to listen to.
         connector.setPort(8080);
@@ -289,8 +292,9 @@ public class HTTPServerDocs
         server.addConnector(plainConnector);
 
         // Third, create the connector for HTTP/3.
-        HTTP3ServerConnectionFactory http3 = new HTTP3ServerConnectionFactory(secureConfig);
-        HTTP3ServerConnector http3Connector = new HTTP3ServerConnector(server, sslContextFactory, http3);
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector http3Connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         server.addConnector(http3Connector);
 
         // Set up a listener so that when the secure connector starts,
@@ -493,11 +497,11 @@ public class HTTPServerDocs
         httpConfig.addCustomizer(new SecureRequestCustomizer());
 
         // Create and configure the HTTP/3 connector.
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(httpConfig));
+        // It is mandatory to configure the PEM directory.
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         connector.setPort(843);
-
-        // It is mandatory to set the PEM directory.
-        connector.getQuicConfiguration().setPemWorkDirectory(Path.of("/path/to/pem/dir"));
 
         server.addConnector(connector);
 

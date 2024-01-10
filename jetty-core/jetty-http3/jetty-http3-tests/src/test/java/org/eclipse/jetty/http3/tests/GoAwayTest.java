@@ -1049,7 +1049,7 @@ public class GoAwayTest extends AbstractClientServerTest
         // Client sends a graceful GOAWAY.
         clientSession.goAway(true);
 
-        assertTrue(serverGracefulGoAwayLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(serverGracefulGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(streamFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientGoAwayLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));

@@ -50,6 +50,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.TransportProtocol;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -470,7 +471,16 @@ public class HttpClient extends ContainerLifeCycle
         host = host.toLowerCase(Locale.ENGLISH);
         int port = request.getPort();
         port = normalizePort(scheme, port);
-        return new Origin(scheme, host, port, request.getTag(), protocol);
+        TransportProtocol transportProtocol = request.getTransportProtocol();
+        if (transportProtocol == null)
+        {
+            // Ask the ClientConnector for backwards compatibility
+            // until ClientConnector.Configurator is removed.
+            transportProtocol = connector.newTransportProtocol();
+            if (transportProtocol == null)
+                transportProtocol = TransportProtocol.TCP_IP;
+        }
+        return new Origin(scheme, new Origin.Address(host, port), request.getTag(), protocol, transportProtocol);
     }
 
     /**
@@ -528,39 +538,54 @@ public class HttpClient extends ContainerLifeCycle
         List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
         context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, protocols);
 
+        Origin origin = destination.getOrigin();
         ProxyConfiguration.Proxy proxy = destination.getProxy();
-        Origin.Address address = proxy == null ? destination.getOrigin().getAddress() : proxy.getAddress();
-        getSocketAddressResolver().resolve(address.getHost(), address.getPort(), new Promise<>()
+        if (proxy != null)
+            origin = proxy.getOrigin();
+
+        TransportProtocol transportProtocol = origin.getTransportProtocol();
+        context.put(TransportProtocol.class.getName(), transportProtocol);
+
+        if (transportProtocol.requiresDomainNamesResolution())
         {
-            @Override
-            public void succeeded(List<InetSocketAddress> socketAddresses)
+            Origin.Address address = origin.getAddress();
+            getSocketAddressResolver().resolve(address.getHost(), address.getPort(), new Promise<>()
             {
-                connect(socketAddresses, 0, context);
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                promise.failed(x);
-            }
-
-            private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
-            {
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
+                @Override
+                public void succeeded(List<InetSocketAddress> socketAddresses)
                 {
-                    @Override
-                    public void failed(Throwable x)
+                    connect(socketAddresses, 0, context);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    promise.failed(x);
+                }
+
+                private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
+                {
+                    context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
                     {
-                        int nextIndex = index + 1;
-                        if (nextIndex == socketAddresses.size())
-                            super.failed(x);
-                        else
-                            connect(socketAddresses, nextIndex, context);
-                    }
-                });
-                transport.connect((SocketAddress)socketAddresses.get(index), context);
-            }
-        });
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            int nextIndex = index + 1;
+                            if (nextIndex == socketAddresses.size())
+                                super.failed(x);
+                            else
+                                connect(socketAddresses, nextIndex, context);
+                        }
+                    });
+                    transport.connect((SocketAddress)socketAddresses.get(index), context);
+                }
+            });
+        }
+        else
+        {
+            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
+            transport.connect(transportProtocol.getSocketAddress(), context);
+        }
     }
 
     private HttpConversation newConversation()

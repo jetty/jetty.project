@@ -29,13 +29,14 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.quic.server.ServerQuicConnection;
 import org.eclipse.jetty.quic.server.ServerQuicSession;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -74,9 +75,15 @@ public class IdleTimeoutTest
     public void testIdleTimeoutWhenCongested(WorkDir workDir) throws Exception
     {
         long idleTimeout = 1000;
+
+        SslContextFactory.Server sslServer = new SslContextFactory.Server();
+        sslServer.setKeyStorePath("src/test/resources/keystore.p12");
+        sslServer.setKeyStorePassword("storepwd");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslServer, workDir.getEmptyPathDir());
+
         AtomicBoolean established = new AtomicBoolean();
         CountDownLatch disconnectLatch = new CountDownLatch(1);
-        RawHTTP3ServerConnectionFactory h3 = new RawHTTP3ServerConnectionFactory(new HttpConfiguration(), new Session.Server.Listener()
+        RawHTTP3ServerConnectionFactory h3 = new RawHTTP3ServerConnectionFactory(serverQuicConfig, new Session.Server.Listener()
         {
             @Override
             public void onAccept(Session session)
@@ -92,15 +99,12 @@ public class IdleTimeoutTest
         });
 
         CountDownLatch closeLatch = new CountDownLatch(1);
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, h3)
+        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, h3)
         {
             @Override
             protected ServerQuicConnection newConnection(EndPoint endpoint)
             {
-                return new ServerQuicConnection(this, endpoint)
+                return new ServerQuicConnection(this, getQuicConfiguration(), endpoint)
                 {
                     @Override
                     protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
@@ -126,13 +130,13 @@ public class IdleTimeoutTest
                 };
             }
         };
-        connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
         connector.setIdleTimeout(idleTimeout);
         server.addConnector(connector);
         server.start();
 
-        http3Client = new HTTP3Client();
-        http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
+        SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
+        http3Client = new HTTP3Client(new ClientQuicConfiguration(sslClient, null));
+        http3Client.getClientConnector().setSslContextFactory(sslClient);
         http3Client.start();
 
         Session.Client session = http3Client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})

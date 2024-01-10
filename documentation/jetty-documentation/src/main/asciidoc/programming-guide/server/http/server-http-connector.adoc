@@ -20,12 +20,14 @@ The available implementations are:
 
 * `org.eclipse.jetty.server.ServerConnector`, for TCP/IP sockets.
 * `org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector` for Unix-Domain sockets (requires Java 16 or later).
-* `org.eclipse.jetty.quic.server.QuicServerConnector`, for the low-level QUIC protocol.
-* `org.eclipse.jetty.http3.server.HTTP3ServerConnector` for the HTTP/3 protocol.
+* `org.eclipse.jetty.quic.server.QuicServerConnector`, for the low-level QUIC protocol and HTTP/3.
+* `org.eclipse.jetty.server.MemoryConnector`, for memory communication between client and server.
 
-The first two use a `java.nio.channels.ServerSocketChannel` to listen to a socket address and to accept socket connections, while last two use a `java.nio.channels.DatagramChannel`.
+`ServerConnector` and `UnixDomainServerConnector` use a `java.nio.channels.ServerSocketChannel` to listen to a socket address and to accept socket connections.
+`QuicServerConnector` uses a `java.nio.channels.DatagramChannel` to listen to incoming UDP packets.
+`MemoryConnector` uses memory for the communication between client and server, avoiding the use of sockets
 
-Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a similar way, for example the IP port to listen to, the IP address to bind to, etc.:
+Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a similar way, for example the TCP port to listen to, the IP address to bind to, etc.:
 
 [source,java,indent=0]
 ----
@@ -44,12 +46,14 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 You can use Unix-Domain sockets support only when you run your server with Java 16 or later.
 ====
 
-`QuicServerConnector` and its extension `HTTP3ServerConnector` wrap a `DatagramChannel` and can be configured in a similar way:
+`QuicServerConnector` wraps a `DatagramChannel` and can be configured in a similar way:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectorQuic]
 ----
+
+// TODO: add a section on MemoryConnector.
 
 [[pg-server-http-connector-acceptors]]
 ===== Acceptors

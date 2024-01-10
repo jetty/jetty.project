@@ -69,6 +69,8 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -871,8 +873,11 @@ public class HTTPClientDocs
     public void http3Transport() throws Exception
     {
         // tag::http3Transport[]
+        // HTTP/3 requires secure communication.
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         // The HTTP3Client powers the HTTP/3 transport.
-        HTTP3Client h3Client = new HTTP3Client();
+        ClientQuicConfiguration clientQuicConfig = new ClientQuicConfiguration(sslContextFactory, null);
+        HTTP3Client h3Client = new HTTP3Client(clientQuicConfig);
         h3Client.getQuicConfiguration().setSessionRecvWindow(64 * 1024 * 1024);
 
         // Create and configure the HTTP/3 transport.
@@ -1018,25 +1023,29 @@ public class HTTPClientDocs
         // This is the path where the server "listens" on.
         Path unixDomainPath = Path.of("/path/to/server.sock");
 
-        // Creates a ClientConnector that uses Unix-Domain
-        // sockets, not the network, to connect to the server.
-        ClientConnector unixDomainClientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+        // Creates a ClientConnector.
+        ClientConnector clientConnector = new ClientConnector();
 
-        // Use Unix-Domain for HTTP/1.1.
-        HttpClientTransportOverHTTP http1Transport = new HttpClientTransportOverHTTP(unixDomainClientConnector);
+        // You can use Unix-Domain for HTTP/1.1.
+        HttpClientTransportOverHTTP http1Transport = new HttpClientTransportOverHTTP(clientConnector);
 
         // You can use Unix-Domain also for HTTP/2.
-        HTTP2Client http2Client = new HTTP2Client(unixDomainClientConnector);
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
         HttpClientTransportOverHTTP2 http2Transport = new HttpClientTransportOverHTTP2(http2Client);
 
-        // You can also use UnixDomain for the dynamic transport.
+        // You can use Unix-Domain also for the dynamic transport.
         ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
-        HttpClientTransportDynamic dynamicTransport = new HttpClientTransportDynamic(unixDomainClientConnector, http1, http2);
+        HttpClientTransportDynamic dynamicTransport = new HttpClientTransportDynamic(clientConnector, http1, http2);
 
         // Choose the transport you prefer for HttpClient, for example the dynamic transport.
         HttpClient httpClient = new HttpClient(dynamicTransport);
         httpClient.start();
+
+        // Make a request and specify that you want to send it over Unix-Domain.
+        ContentResponse response = httpClient.newRequest("jetty.org", 80)
+            .transportProtocol(new TransportProtocol.TCPUnix(unixDomainPath))
+            .send();
         // end::unixDomain[]
     }
 }

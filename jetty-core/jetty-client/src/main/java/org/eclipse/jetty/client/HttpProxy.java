@@ -19,7 +19,6 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.internal.TunnelRequest;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.TransportProtocol;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -49,27 +49,27 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public HttpProxy(Origin.Address address, boolean secure)
     {
-        this(address, secure, null, new Origin.Protocol(List.of("http/1.1"), false));
+        this(address, secure, new Origin.Protocol(List.of("http/1.1"), false));
     }
 
     public HttpProxy(Origin.Address address, boolean secure, Origin.Protocol protocol)
     {
-        this(address, secure, null, Objects.requireNonNull(protocol));
+        this(new Origin(secure ? "https" : "http", address, null, protocol, TransportProtocol.TCP_IP), null);
     }
 
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
     {
-        this(address, true, sslContextFactory, new Origin.Protocol(List.of("http/1.1"), false));
+        this(address, sslContextFactory, new Origin.Protocol(List.of("http/1.1"), false));
     }
 
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
     {
-        this(address, true, sslContextFactory, Objects.requireNonNull(protocol));
+        this(new Origin(sslContextFactory == null ? "http" : "https", address, null, protocol, TransportProtocol.TCP_IP), sslContextFactory);
     }
 
-    private HttpProxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
+    public HttpProxy(Origin origin, SslContextFactory.Client sslContextFactory)
     {
-        super(address, secure, sslContextFactory, Objects.requireNonNull(protocol));
+        super(origin, sslContextFactory);
     }
 
     @Override

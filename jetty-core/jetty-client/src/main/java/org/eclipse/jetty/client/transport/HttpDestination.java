@@ -69,7 +69,25 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     private boolean stale;
     private long activeNanoTime;
 
+    /**
+     * @param client the {@link HttpClient}
+     * @param origin the {@link Origin}
+     * @param intrinsicallySecure whether the destination is intrinsically secure
+     * @deprecated use {@link #HttpDestination(HttpClient, Origin)} instead
+     */
+    @Deprecated
     public HttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
+    {
+        this(client, origin);
+    }
+
+    /**
+     * <p>Creates a new HTTP destination.</p>
+     *
+     * @param client the {@link HttpClient}
+     * @param origin the {@link Origin}
+     */
+    public HttpDestination(HttpClient client, Origin origin)
     {
         this.client = client;
         this.origin = origin;
@@ -84,9 +102,11 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             host += ":" + port;
         hostField = new HttpField(HttpHeader.HOST, host);
 
+        ClientConnectionFactory connectionFactory = client.getTransport();
+        boolean intrinsicallySecure = origin.getTransportProtocol().isIntrinsicallySecure();
+
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxy = proxyConfig.match(origin);
-        ClientConnectionFactory connectionFactory = client.getTransport();
         if (proxy != null)
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
@@ -383,7 +403,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             if (cause != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                    LOG.debug("Aborted before processing {}", exchange, cause);
                 // Won't use this connection, release it back.
                 boolean released = connectionPool.release(connection);
                 if (!released)

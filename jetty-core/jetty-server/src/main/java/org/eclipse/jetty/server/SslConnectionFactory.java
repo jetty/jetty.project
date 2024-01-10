@@ -169,7 +169,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     }
 
     @Override
-    protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
+    protected <T extends AbstractConnection> T configure(T connection, Connector connector, EndPoint endPoint)
     {
         if (connection instanceof SslConnection sslConnection)
         {

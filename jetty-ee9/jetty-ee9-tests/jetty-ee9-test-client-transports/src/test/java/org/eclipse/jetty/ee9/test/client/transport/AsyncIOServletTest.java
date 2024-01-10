@@ -1138,7 +1138,7 @@ public class AsyncIOServletTest extends AbstractTest
             .body(requestContent)
             .onResponseSuccess(response ->
             {
-                if (transport == Transport.HTTP || transport == Transport.UNIX_DOMAIN)
+                if (transport == Transport.HTTP)
                     responseLatch.countDown();
             })
             .onResponseFailure((response, failure) ->
@@ -1157,7 +1157,6 @@ public class AsyncIOServletTest extends AbstractTest
             switch (transport)
             {
                 case HTTP:
-                case UNIX_DOMAIN:
                     assertThat(result.getResponse().getStatus(), Matchers.equalTo(responseCode));
                     break;
                 case H2C:
@@ -1175,7 +1174,6 @@ public class AsyncIOServletTest extends AbstractTest
         switch (transport)
         {
             case HTTP:
-            case UNIX_DOMAIN:
                 ((HttpConnectionOverHTTP)connection).getEndPoint().shutdownOutput();
                 break;
             case H2C:

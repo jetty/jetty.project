@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
@@ -153,7 +154,7 @@ public class ClientConnectorDocs
         CompletableFuture<CustomConnection> connectionPromise = new Promise.Completable<>();
 
         // Populate the context with the mandatory keys to create and obtain connections.
-        Map<String, Object> context = new HashMap<>();
+        Map<String, Object> context = new ConcurrentHashMap<>();
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);

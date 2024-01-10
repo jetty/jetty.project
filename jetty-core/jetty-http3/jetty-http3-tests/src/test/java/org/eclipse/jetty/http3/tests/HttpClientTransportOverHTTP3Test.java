@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
@@ -51,6 +52,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         });
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
             .onRequestBegin(request ->
             {
                 if (request.getVersion() != HttpVersion.HTTP_3)
@@ -164,6 +166,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         AtomicInteger contentCount = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
         httpClient.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
             .onResponseContentSource((response, contentSource) ->
             {
                 // Do not demand.
@@ -208,6 +211,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch latch = new CountDownLatch(1);
         httpClient.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
             .onResponseContentSource((response, contentSource) ->
             {
                 // Do not demand.

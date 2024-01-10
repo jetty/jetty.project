@@ -93,6 +93,11 @@ import org.eclipse.jetty.util.thread.Invocable;
 public interface EndPoint extends Closeable
 {
     /**
+     * <p>Constant returned by {@link #receive(ByteBuffer)} to indicate the end-of-file.</p>
+     */
+    SocketAddress EOF = InetSocketAddress.createUnresolved("", 0);
+
+    /**
      * Marks an {@code EndPoint} that wraps another {@code EndPoint}.
      */
     interface Wrapper
@@ -212,6 +217,24 @@ public interface EndPoint extends Closeable
     }
 
     /**
+     * <p>Receives data into the given buffer from the returned address.</p>
+     * <p>This method should be used to receive UDP data.</p>
+     *
+     * @param buffer the buffer to fill with data
+     * @return the peer address that sent the data, or {@link #EOF}
+     * @throws IOException if the receive fails
+     */
+    default SocketAddress receive(ByteBuffer buffer) throws IOException
+    {
+        int filled = fill(buffer);
+        if (filled < 0)
+            return EndPoint.EOF;
+        if (filled == 0)
+            return null;
+        return getRemoteSocketAddress();
+    }
+
+    /**
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
      * are taken from the header/buffer position up until the buffer limit.  The header/buffers position
      * is updated to indicate how many bytes have been consumed.
@@ -224,6 +247,21 @@ public interface EndPoint extends Closeable
     default boolean flush(ByteBuffer... buffer) throws IOException
     {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * <p>Sends to the given address the data in the given buffers.</p>
+     * <p>This methods should be used to send UDP data.</p>
+     *
+     * @param address the peer address to send data to
+     * @param buffers the buffers containing the data to send
+     * @return true if all the buffers have been consumed
+     * @throws IOException if the send fails
+     * @see #write(Callback, SocketAddress, ByteBuffer...)
+     */
+    default boolean send(SocketAddress address, ByteBuffer... buffers) throws IOException
+    {
+        return flush(buffers);
     }
 
     /**
@@ -283,6 +321,21 @@ public interface EndPoint extends Closeable
     default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * <p>Writes to the given address the data contained in the given buffers, and invokes
+     * the given callback when either all the data has been sent, or a failure occurs.</p>
+     *
+     * @param callback the callback to notify of the success or failure of the write operation
+     * @param address the peer address to send data to
+     * @param buffers the buffers containing the data to send
+     * @throws WritePendingException if a previous write was initiated but was not yet completed
+     * @see #send(SocketAddress, ByteBuffer...)
+     */
+    default void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
+    {
+        write(callback, buffers);
     }
 
     /**
@@ -438,5 +491,21 @@ public interface EndPoint extends Closeable
                     baseData.cipherSuite(),
                     baseData.peerCertificates());
         }
+    }
+
+    /**
+     * <p>A communication conduit between two peers.</p>
+     */
+    interface Pipe
+    {
+        /**
+         * @return the {@link EndPoint} of the local peer
+         */
+        EndPoint getLocalEndPoint();
+
+        /**
+         * @return the {@link EndPoint} of the remote peer
+         */
+        EndPoint getRemoteEndPoint();
     }
 }

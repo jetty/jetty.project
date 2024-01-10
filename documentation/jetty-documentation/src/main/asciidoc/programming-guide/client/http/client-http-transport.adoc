@@ -187,9 +187,11 @@ All the transports can be configured with a `ClientConnector`, the component tha
 
 By default, `ClientConnector` uses TCP networking to send bytes to the server and receive bytes from the server.
 
-When you are using Java 16 or later, `ClientConnector` also support xref:pg-client-io-arch-unix-domain[Unix-Domain sockets], and every transport can be configured to use Unix-Domain sockets instead of TCP networking.
+When you are using Java 16 or later, `ClientConnector` also support xref:pg-client-io-arch-unix-domain[Unix-Domain sockets].
 
-To configure Unix-Domain sockets, you can create a `ClientConnector` instance in the following way:
+Unix-Domain sockets can be used for HTTP/1.1 and HTTP/2 but not for HTTP/3, because HTTP/3 is based on UDP and there is currently no support in Java for UDP over Unix-Domain sockets.
+
+You can send requests to a Unix-Domain sockets server in the following way:
 
 [source,java,indent=0]
 ----

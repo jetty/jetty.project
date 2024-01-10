@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
@@ -53,7 +54,9 @@ import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.TransportProtocol;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -968,7 +971,6 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_16)
     public void testUnixDomain() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -992,10 +994,12 @@ public class DistributionTests extends AbstractJettyHomeTest
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
-                ClientConnector connector = ClientConnector.forUnixDomain(path);
-                client = new HttpClient(new HttpClientTransportDynamic(connector));
+                ClientConnector connector = new ClientConnector();
+                client = new HttpClient(new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11));
                 client.start();
-                ContentResponse response = client.GET("http://localhost/path");
+                ContentResponse response = client.newRequest("http://localhost/path")
+                    .transportProtocol(new TransportProtocol.TCPUnix(path))
+                    .send();
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             }
         }
@@ -1188,8 +1192,8 @@ public class DistributionTests extends AbstractJettyHomeTest
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
-                HTTP3Client http3Client = new HTTP3Client();
-                http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
+                SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
+                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
                 this.client = new HttpClient(new HttpClientTransportOverHTTP3(http3Client));
                 this.client.start();
                 ContentResponse response = this.client.newRequest("localhost", h3Port)

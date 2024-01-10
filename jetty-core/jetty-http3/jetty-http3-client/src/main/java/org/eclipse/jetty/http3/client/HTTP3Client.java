@@ -22,13 +22,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
+import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.ClientQuicConnection;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
-import org.eclipse.jetty.quic.client.QuicClientConnectorConfigurator;
-import org.eclipse.jetty.quic.common.QuicConfiguration;
-import org.eclipse.jetty.quic.common.QuicConnection;
+import org.eclipse.jetty.quic.client.QuicTransportProtocol;
 import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -134,20 +133,22 @@ public class HTTP3Client extends ContainerLifeCycle
     public static final String SESSION_PROMISE_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".promise";
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Client.class);
 
-    private final HTTP3Configuration http3Configuration = new HTTP3Configuration();
     private final QuicSessionContainer container = new QuicSessionContainer();
+    private final HTTP3Configuration http3Configuration = new HTTP3Configuration();
+    private final ClientQuicConfiguration quicConfiguration;
     private final ClientConnector connector;
-    private final QuicConfiguration quicConfiguration;
 
-    public HTTP3Client()
+    public HTTP3Client(ClientQuicConfiguration quicConfiguration)
     {
-        QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator(this::configureConnection);
-        this.connector = new ClientConnector(configurator);
-        this.quicConfiguration = configurator.getQuicConfiguration();
+        this(quicConfiguration, new ClientConnector());
+    }
+
+    public HTTP3Client(ClientQuicConfiguration quicConfiguration, ClientConnector connector)
+    {
+        this.quicConfiguration = quicConfiguration;
+        this.connector = connector;
         addBean(connector);
-        addBean(quicConfiguration);
-        addBean(http3Configuration);
-        addBean(container);
+        connector.setSslContextFactory(quicConfiguration.getSslContextFactory());
         // Allow the mandatory unidirectional streams, plus pushed streams.
         quicConfiguration.setMaxUnidirectionalRemoteStreams(48);
         quicConfiguration.setUnidirectionalStreamRecvWindow(4 * 1024 * 1024);
@@ -159,7 +160,7 @@ public class HTTP3Client extends ContainerLifeCycle
         return connector;
     }
 
-    public QuicConfiguration getQuicConfiguration()
+    public ClientQuicConfiguration getQuicConfiguration()
     {
         return quicConfiguration;
     }
@@ -173,43 +174,44 @@ public class HTTP3Client extends ContainerLifeCycle
     protected void doStart() throws Exception
     {
         LOG.info("HTTP/3+QUIC support is experimental and not suited for production use.");
+        addBean(quicConfiguration);
+        addBean(container);
+        addBean(http3Configuration);
+        quicConfiguration.addEventListener(container);
         super.doStart();
     }
 
-    public CompletableFuture<Session.Client> connect(SocketAddress address, Session.Client.Listener listener)
+    public CompletableFuture<Session.Client> connect(SocketAddress socketAddress, Session.Client.Listener listener)
     {
         Map<String, Object> context = new ConcurrentHashMap<>();
-        return connect(address, listener, context);
+        return connect(socketAddress, listener, context);
     }
 
-    public CompletableFuture<Session.Client> connect(SocketAddress address, Session.Client.Listener listener, Map<String, Object> context)
+    public CompletableFuture<Session.Client> connect(SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
     {
+        if (context == null)
+            context = new ConcurrentHashMap<>();
+        return connect(new QuicTransportProtocol(getQuicConfiguration()), socketAddress, listener, context);
+    }
+
+    public CompletableFuture<Session.Client> connect(TransportProtocol transportProtocol, SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
+    {
+        if (context == null)
+            context = new ConcurrentHashMap<>();
         Promise.Completable<Session.Client> completable = new Promise.Completable<>();
         context.put(CLIENT_CONTEXT_KEY, this);
         context.put(SESSION_LISTENER_CONTEXT_KEY, listener);
         context.put(SESSION_PROMISE_CONTEXT_KEY, completable);
+        context.putIfAbsent(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, connector);
         context.computeIfAbsent(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, key -> new HTTP3ClientConnectionFactory());
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, completable::failed));
+        context.put(TransportProtocol.class.getName(), transportProtocol);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("connecting to {}", address);
+            LOG.debug("connecting to {}", socketAddress);
 
-        connector.connect(address, context);
+        transportProtocol.connect(socketAddress, context);
         return completable;
-    }
-
-    private Connection configureConnection(Connection connection)
-    {
-        if (connection instanceof QuicConnection)
-        {
-            QuicConnection quicConnection = (QuicConnection)connection;
-            quicConnection.addEventListener(container);
-            quicConnection.setInputBufferSize(getHTTP3Configuration().getInputBufferSize());
-            quicConnection.setOutputBufferSize(getHTTP3Configuration().getOutputBufferSize());
-            quicConnection.setUseInputDirectByteBuffers(getHTTP3Configuration().isUseInputDirectByteBuffers());
-            quicConnection.setUseOutputDirectByteBuffers(getHTTP3Configuration().isUseOutputDirectByteBuffers());
-        }
-        return connection;
     }
 
     public CompletableFuture<Void> shutdown()

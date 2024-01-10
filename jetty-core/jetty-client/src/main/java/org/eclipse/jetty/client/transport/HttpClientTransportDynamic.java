@@ -14,15 +14,12 @@
 package org.eclipse.jetty.client.transport;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
@@ -39,6 +36,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.TransportProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,42 +79,42 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportDynamic.class);
 
-    private final List<ClientConnectionFactory.Info> factoryInfos;
-    private final List<String> protocols;
+    private final List<ClientConnectionFactory.Info> infos;
 
     /**
-     * Creates a transport that speaks only HTTP/1.1.
+     * Creates a dynamic transport that speaks only HTTP/1.1.
      */
     public HttpClientTransportDynamic()
     {
-        this(HttpClientConnectionFactory.HTTP11);
-    }
-
-    public HttpClientTransportDynamic(ClientConnectionFactory.Info... factoryInfos)
-    {
-        this(findClientConnector(factoryInfos), factoryInfos);
+        this(new ClientConnector(), HttpClientConnectionFactory.HTTP11);
     }
 
     /**
-     * Creates a transport with the given {@link ClientConnector} and the given <em>application protocols</em>.
+     * <p>Creates a dynamic transport that speaks the given protocols.</p>
+     *
+     * @param infos the protocols this dynamic transport speaks
+     * @deprecated use {@link #HttpClientTransportDynamic(ClientConnector, ClientConnectionFactory.Info...)}
+     */
+    @Deprecated(since = "12.0.7", forRemoval = true)
+    public HttpClientTransportDynamic(ClientConnectionFactory.Info... infos)
+    {
+        this(findClientConnector(infos), infos);
+    }
+
+    /**
+     * Creates a dynamic transport with the given {@link ClientConnector} and the given <em>application protocols</em>.
      *
      * @param connector the ClientConnector used by this transport
-     * @param factoryInfos the <em>application protocols</em> that this transport can speak
+     * @param infos the <em>application protocols</em> that this transport can speak
      */
-    public HttpClientTransportDynamic(ClientConnector connector, ClientConnectionFactory.Info... factoryInfos)
+    public HttpClientTransportDynamic(ClientConnector connector, ClientConnectionFactory.Info... infos)
     {
         super(connector);
-        if (factoryInfos.length == 0)
-            factoryInfos = new Info[]{HttpClientConnectionFactory.HTTP11};
-        this.factoryInfos = Arrays.asList(factoryInfos);
-        this.protocols = Arrays.stream(factoryInfos)
-                .flatMap(info -> Stream.concat(info.getProtocols(false).stream(), info.getProtocols(true).stream()))
-                .distinct()
-                .map(p -> p.toLowerCase(Locale.ENGLISH))
-                .collect(Collectors.toList());
-        Arrays.stream(factoryInfos).forEach(this::addBean);
+        this.infos = infos.length == 0 ? List.of(HttpClientConnectionFactory.HTTP11) : List.of(infos);
+        this.infos.forEach(this::addBean);
         setConnectionPoolFactory(destination ->
-                new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1));
+            new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1)
+        );
     }
 
     private static ClientConnector findClientConnector(ClientConnectionFactory.Info[] infos)
@@ -130,72 +128,128 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     @Override
     public Origin newOrigin(Request request)
     {
-        String scheme = request.getScheme();
-        boolean secure = HttpScheme.isSecure(scheme);
-        String http1 = "http/1.1";
-        String http2 = secure ? "h2" : "h2c";
-        List<String> protocols = List.of();
+        boolean secure = HttpScheme.isSecure(request.getScheme());
+
+        List<Info> matchingInfos = new ArrayList<>();
+        boolean negotiate = false;
+
         if (((HttpRequest)request).isVersionExplicit())
         {
             HttpVersion version = request.getVersion();
-            String desired = version == HttpVersion.HTTP_2 ? http2 : http1;
-            if (this.protocols.contains(desired))
-                protocols = List.of(desired);
+            List<String> wanted = toProtocols(version);
+            for (Info info : infos)
+            {
+                // Find the first protocol that matches the version.
+                List<String> protocols = info.getProtocols(secure);
+                for (String p : protocols)
+                {
+                    if (wanted.contains(p))
+                    {
+                        matchingInfos.add(info);
+                        break;
+                    }
+                }
+                if (matchingInfos.isEmpty())
+                    continue;
+
+                if (secure && protocols.size() > 1)
+                    negotiate = true;
+
+                break;
+            }
         }
         else
         {
+            Info preferredInfo = infos.get(0);
             if (secure)
             {
-                // There may be protocol negotiation, so preserve the order
-                // of protocols chosen by the application.
-                // We need to keep multiple protocols in case the protocol
-                // is negotiated: e.g. [http/1.1, h2] negotiates [h2], but
-                // here we don't know yet what will be negotiated.
-                List<String> http = List.of("http/1.1", "h2c", "h2");
-                protocols = this.protocols.stream()
-                    .filter(http::contains)
-                    .collect(Collectors.toCollection(ArrayList::new));
+                if (preferredInfo.getProtocols(true).contains("h3"))
+                {
+                    // HTTP/3 is not compatible with HTTP/2 and HTTP/1
+                    // due to UDP vs TCP, so we can only try HTTP/3.
+                    matchingInfos.add(preferredInfo);
+                }
+                else
+                {
+                    // If the preferred protocol is not HTTP/3, then
+                    // must be excluded since it won't be compatible
+                    // with the other HTTP versions due to UDP vs TCP.
+                    for (Info info : infos)
+                    {
+                        if (info.getProtocols(true).contains("h3"))
+                            continue;
+                        matchingInfos.add(info);
+                    }
 
-                // The http/1.1 upgrade to http/2 over TLS implicitly
-                // "negotiates" [h2c], so we need to remove [h2]
-                // because we don't want to negotiate using ALPN.
-                if (request.getHeaders().contains(HttpHeader.UPGRADE, "h2c"))
-                    protocols.remove("h2");
+                    // We can only have HTTP/1 and HTTP/2 here,
+                    // decide whether negotiation is necessary.
+                    if (!request.getHeaders().contains(HttpHeader.UPGRADE, "h2c"))
+                    {
+                        int matches = matchingInfos.size();
+                        if (matches > 1)
+                            negotiate = true;
+                        else if (matches == 1)
+                            negotiate = matchingInfos.get(0).getProtocols(true).size() > 1;
+                    }
+                }
             }
             else
             {
-                // Pick the first.
-                protocols = List.of(this.protocols.get(0));
+                // Pick the first that allows non-secure.
+                for (Info info : infos)
+                {
+                    if (info.getProtocols(false).contains("h3"))
+                        continue;
+                    matchingInfos.add(info);
+                    break;
+                }
             }
         }
-        Origin.Protocol protocol = null;
-        if (!protocols.isEmpty())
-            protocol = new Origin.Protocol(protocols, secure && protocols.contains(http2));
+
+        if (matchingInfos.isEmpty())
+            return getHttpClient().createOrigin(request, null);
+
+        TransportProtocol transportProtocol = request.getTransportProtocol();
+        if (transportProtocol == null)
+        {
+            // Ask the ClientConnector for backwards compatibility
+            // until ClientConnector.Configurator is removed.
+            transportProtocol = getClientConnector().newTransportProtocol();
+            if (transportProtocol == null)
+                transportProtocol = matchingInfos.get(0).newTransportProtocol();
+            request.transportProtocol(transportProtocol);
+        }
+
+        List<String> protocols = matchingInfos.stream()
+            .flatMap(info -> info.getProtocols(secure).stream())
+            .collect(Collectors.toCollection(ArrayList::new));
+        if (negotiate)
+            protocols.remove("h2c");
+        Origin.Protocol protocol = new Origin.Protocol(protocols, negotiate);
         return getHttpClient().createOrigin(request, protocol);
     }
 
     @Override
     public Destination newDestination(Origin origin)
     {
-        SocketAddress address = origin.getAddress().getSocketAddress();
-        return new HttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
+        return new HttpDestination(getHttpClient(), origin);
     }
 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        Origin.Protocol protocol = destination.getOrigin().getProtocol();
+        Origin origin = destination.getOrigin();
+        Origin.Protocol protocol = origin.getProtocol();
         ClientConnectionFactory factory;
         if (protocol == null)
         {
             // Use the default ClientConnectionFactory.
-            factory = factoryInfos.get(0).getClientConnectionFactory();
+            factory = infos.get(0).getClientConnectionFactory();
         }
         else
         {
-            SocketAddress address = destination.getOrigin().getAddress().getSocketAddress();
-            boolean intrinsicallySecure = getClientConnector().isIntrinsicallySecure(address);
+            boolean intrinsicallySecure = origin.getTransportProtocol().isIntrinsicallySecure();
             if (!intrinsicallySecure && destination.isSecure() && protocol.isNegotiate())
             {
                 factory = new ALPNClientConnectionFactory(getClientConnector().getExecutor(), this::newNegotiatedConnection, protocol.getProtocols());
@@ -237,7 +291,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             else
             {
                 // Server does not support ALPN, let's try the first protocol.
-                factoryInfo = factoryInfos.get(0);
+                factoryInfo = infos.get(0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("No ALPN protocol, using {}", factoryInfo);
             }
@@ -252,8 +306,18 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
 
     private Optional<Info> findClientConnectionFactoryInfo(List<String> protocols, boolean secure)
     {
-        return factoryInfos.stream()
-                .filter(info -> info.matches(protocols, secure))
-                .findFirst();
+        return infos.stream()
+            .filter(info -> info.matches(protocols, secure))
+            .findFirst();
+    }
+
+    private List<String> toProtocols(HttpVersion version)
+    {
+        return switch (version)
+        {
+            case HTTP_0_9, HTTP_1_0, HTTP_1_1 -> List.of("http/1.1");
+            case HTTP_2 -> List.of("h2c", "h2");
+            case HTTP_3 -> List.of("h3");
+        };
     }
 }

@@ -44,6 +44,11 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerConnectionFactory.class);
 
+    public HTTP2ServerConnectionFactory()
+    {
+        this(new HttpConfiguration());
+    }
+
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
         super(httpConfiguration);

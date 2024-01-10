@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.TransportProtocol;
 import org.eclipse.jetty.proxy.ProxyHandler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -267,12 +268,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
     @Override
     protected HttpClient newHttpClient()
     {
-        ClientConnector clientConnector;
-        Path unixDomainPath = getUnixDomainPath();
-        if (unixDomainPath != null)
-            clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
-        else
-            clientConnector = new ClientConnector();
+        ClientConnector clientConnector = new ClientConnector();
         QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
         proxyClientThreads.setName("proxy-client");
         clientConnector.setExecutor(proxyClientThreads);
@@ -332,6 +328,10 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
             String allCookies = String.join("; ", cookies);
             proxyToServerRequest.headers(headers -> headers.put(HttpHeader.COOKIE, allCookies));
         }
+
+        Path unixDomain = getUnixDomainPath();
+        if (unixDomain != null)
+            proxyToServerRequest.transportProtocol(new TransportProtocol.TCPUnix(unixDomain));
 
         super.sendProxyToServerRequest(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
     }
