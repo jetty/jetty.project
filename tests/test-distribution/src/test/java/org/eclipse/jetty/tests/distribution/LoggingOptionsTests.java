@@ -25,6 +25,8 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -36,6 +38,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class LoggingOptionsTests extends AbstractJettyHomeTest
 {
     public static Stream<Arguments> validLoggingModules()

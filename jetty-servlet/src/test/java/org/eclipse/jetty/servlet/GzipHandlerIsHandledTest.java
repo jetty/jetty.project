@@ -31,10 +31,12 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -43,6 +45,7 @@ import static org.hamcrest.Matchers.is;
 /**
  * Tests of behavior of GzipHandler when Request.isHandled() or Response.isCommitted() is true
  */
+@ExtendWith(WorkDirExtension.class)
 public class GzipHandlerIsHandledTest
 {
     public WorkDir workDir;
