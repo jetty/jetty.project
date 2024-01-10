@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -79,23 +78,44 @@ public class CrossOriginHandlerTest
     @Test
     public void testSimpleRequestWithNonMatchingOrigin() throws Exception
     {
-        String origin = "http://localhost";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
-        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://localhost"));
         start(crossOriginHandler);
 
-        String otherOrigin = StringUtil.replace(origin, "localhost", "127.0.0.1");
         String request = """
             GET / HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
-            Origin: %s\r
+            Origin: http://127.0.0.1\r
             \r
-            """.formatted(otherOrigin);
+            """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
+        assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+    }
+
+    @Test
+    public void testSimpleRequestWithNonMatchingOriginNotDelivered() throws Exception
+    {
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://localhost"));
+        crossOriginHandler.setDeliverNonAllowedOriginRequests(false);
+        start(crossOriginHandler);
+
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            Origin: http://127.0.0.1\r
+            \r
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+
+        assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+        assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
         assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
         assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
     }
@@ -252,9 +272,9 @@ public class CrossOriginHandlerTest
     public void testSimpleRequestWithMatchingMultipleOrigins() throws Exception
     {
         String origin = "http://localhost";
-        String otherOrigin = StringUtil.replace(origin, "localhost", "127.0.0.1");
+        String otherOrigin = "http://127\\.0\\.0\\.1";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
-        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin, otherOrigin.replace(".", "\\.")));
+        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin, otherOrigin));
         start(crossOriginHandler);
 
         // Use 2 spaces as separator in the Origin header
@@ -510,7 +530,7 @@ public class CrossOriginHandlerTest
     public void testDoNotDeliverPreflightRequest() throws Exception
     {
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
-        crossOriginHandler.setDeliverPreflightRequest(false);
+        crossOriginHandler.setDeliverPreflightRequests(false);
         start(crossOriginHandler);
 
         // Preflight request.
@@ -525,8 +545,58 @@ public class CrossOriginHandlerTest
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
+        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS));
+    }
+
+    @Test
+    public void testDeliverWebSocketUpgradeRequest() throws Exception
+    {
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        start(crossOriginHandler);
+
+        // Preflight request.
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            Connection: Upgrade\r
+            Upgrade: websocket\r
+            Origin: http://localhost\r
+            \r
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
+        assertThat(response.get(HttpHeader.VARY), is(HttpHeader.ORIGIN.asString()));
+        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+    }
+
+    @Test
+    public void testDoNotDeliverNonMatchingWebSocketUpgradeRequest() throws Exception
+    {
+        String origin = "http://localhost";
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
+        start(crossOriginHandler);
+
+        // Preflight request.
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            Connection: Upgrade\r
+            Upgrade: websocket\r
+            Origin: http://127.0.0.1\r
+            \r
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+
+        assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+        assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
+        assertThat(response.get(HttpHeader.VARY), is(HttpHeader.ORIGIN.asString()));
+        assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
     }
 
     public static class ApplicationHandler extends Handler.Abstract

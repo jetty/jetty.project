@@ -21,6 +21,8 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -53,6 +55,8 @@ import org.slf4j.LoggerFactory;
 public class CrossOriginHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(CrossOriginHandler.class);
+    private static final PreEncodedHttpField ACCESS_CONTROL_ALLOW_CREDENTIALS_TRUE = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+    private static final PreEncodedHttpField VARY_ORIGIN = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ORIGIN.asString());
 
     private boolean allowCredentials = true;
     private Set<String> allowedHeaders = Set.of("Content-Type");
@@ -60,12 +64,17 @@ public class CrossOriginHandler extends Handler.Wrapper
     private Set<String> allowedOrigins = Set.of("*");
     private Set<String> allowedTimingOrigins = Set.of();
     private boolean deliverPreflight = false;
+    private boolean deliverNonAllowedOrigin = true;
+    private boolean deliverNonAllowedOriginWebSocketUpgrade = false;
     private Set<String> exposedHeaders = Set.of();
     private Duration preflightMaxAge = Duration.ofSeconds(60);
     private boolean anyOriginAllowed;
     private final Set<Pattern> allowedOriginPatterns = new LinkedHashSet<>();
     private boolean anyTimingOriginAllowed;
     private final Set<Pattern> allowedTimingOriginPatterns = new LinkedHashSet<>();
+    private PreEncodedHttpField accessControlAllowMethodsField;
+    private PreEncodedHttpField accessControlAllowHeadersField;
+    private PreEncodedHttpField accessControlMaxAge;
 
     /**
      * @return whether the cross server allows cross-origin requests to include credentials
@@ -115,7 +124,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     public void setAllowedHeaders(Set<String> headers)
     {
         throwIfStarted();
-        allowedHeaders = headers;
+        allowedHeaders = Set.copyOf(headers);
     }
 
     /**
@@ -140,7 +149,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     public void setAllowedMethods(Set<String> methods)
     {
         throwIfStarted();
-        allowedMethods = methods;
+        allowedMethods = Set.copyOf(methods);
     }
 
     /**
@@ -171,7 +180,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     public void setAllowedOriginPatterns(Set<String> origins)
     {
         throwIfStarted();
-        allowedOrigins = origins;
+        allowedOrigins = Set.copyOf(origins);
     }
 
     /**
@@ -191,14 +200,14 @@ public class CrossOriginHandler extends Handler.Wrapper
     public void setAllowedTimingOriginPatterns(Set<String> origins)
     {
         throwIfStarted();
-        allowedTimingOrigins = origins;
+        allowedTimingOrigins = Set.copyOf(origins);
     }
 
     /**
      * @return whether preflight requests are delivered to the child Handler
      */
     @ManagedAttribute("whether preflight requests are delivered to the child Handler")
-    public boolean isDeliverPreflightRequest()
+    public boolean isDeliverPreflightRequests()
     {
         return deliverPreflight;
     }
@@ -209,10 +218,50 @@ public class CrossOriginHandler extends Handler.Wrapper
      *
      * @param deliver whether preflight requests are delivered to the child Handler
      */
-    public void setDeliverPreflightRequest(boolean deliver)
+    public void setDeliverPreflightRequests(boolean deliver)
     {
         throwIfStarted();
         deliverPreflight = deliver;
+    }
+
+    /**
+     * @return whether requests whose origin is not allowed are delivered to the child Handler
+     */
+    @ManagedAttribute("whether requests whose origin is not allowed are delivered to the child Handler")
+    public boolean isDeliverNonAllowedOriginRequests()
+    {
+        return deliverNonAllowedOrigin;
+    }
+
+    /**
+     * <p>Sets whether requests whose origin is not allowed are delivered to the child Handler.</p>
+     * <p>Default value is {@code true}.</p>
+     *
+     * @param deliverNonAllowedOrigin whether requests whose origin is not allowed are delivered to the child Handler
+     */
+    public void setDeliverNonAllowedOriginRequests(boolean deliverNonAllowedOrigin)
+    {
+        this.deliverNonAllowedOrigin = deliverNonAllowedOrigin;
+    }
+
+    /**
+     * @return whether WebSocket upgrade requests whose origin is not allowed are delivered to the child Handler
+     */
+    @ManagedAttribute("whether WebSocket upgrade requests whose origin is not allowed are delivered to the child Handler")
+    public boolean isDeliverNonAllowedOriginWebSocketUpgradeRequests()
+    {
+        return deliverNonAllowedOriginWebSocketUpgrade;
+    }
+
+    /**
+     * <p>Sets whether WebSocket upgrade requests whose origin is not allowed are delivered to the child Handler.</p>
+     * <p>Default value is {@code false}.</p>
+     *
+     * @param deliverNonAllowedOriginWebSocketUpgrade whether WebSocket upgrade requests whose origin is not allowed are delivered to the child Handler
+     */
+    public void setDeliverNonAllowedOriginWebSocketUpgradeRequests(boolean deliverNonAllowedOriginWebSocketUpgrade)
+    {
+        this.deliverNonAllowedOriginWebSocketUpgrade = deliverNonAllowedOriginWebSocketUpgrade;
     }
 
     /**
@@ -234,7 +283,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     public void setExposedHeaders(Set<String> headers)
     {
         throwIfStarted();
-        exposedHeaders = headers;
+        exposedHeaders = Set.copyOf(headers);
     }
 
     /**
@@ -260,56 +309,101 @@ public class CrossOriginHandler extends Handler.Wrapper
     {
         resolveAllowedOrigins();
         resolveAllowedTimingOrigins();
+        accessControlAllowMethodsField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS, String.join(",", getAllowedMethods()));
+        accessControlAllowHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", getAllowedHeaders()));
+        accessControlMaxAge = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_MAX_AGE, getPreflightMaxAge().toSeconds());
         super.doStart();
     }
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        response.getHeaders().add(HttpHeader.VARY, HttpHeader.ORIGIN.asString());
+        // The response may change if the Origin header is present, so always add Vary.
+        response.getHeaders().add(VARY_ORIGIN);
+
         String origins = request.getHeaders().get(HttpHeader.ORIGIN);
-        if (origins != null)
+        if (origins == null)
+            return super.handle(request, response, callback);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("handling cross-origin request {}", request);
+
+        boolean preflight = isPreflight(request);
+
+        if (originMatches(origins))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("handling cross-origin request {}", request);
+                LOG.debug("cross-origin request matches allowed origins: {} {}", request, getAllowedOriginPatterns());
 
-            boolean preflight = isPreflight(request);
-
-            if (originMatches(origins))
+            if (preflight)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("cross-origin request matches allowed origins: {} {}", request, getAllowedOriginPatterns());
-
-                if (preflight)
+                    LOG.debug("preflight cross-origin request {}", request);
+                handlePreflightResponse(origins, response);
+                if (!isDeliverPreflightRequests())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("preflight cross-origin request {}", request);
-                    handlePreflightResponse(origins, response);
+                        LOG.debug("preflight cross-origin request not delivered to child handler {}", request);
+                    callback.succeeded();
+                    return true;
+                }
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("simple cross-origin request {}", request);
+                handleSimpleResponse(origins, response);
+            }
+
+            if (timingOriginMatches(origins))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("cross-origin request matches allowed timing origins: {} {}", request, getAllowedTimingOriginPatterns());
+                response.getHeaders().put(HttpHeader.TIMING_ALLOW_ORIGIN, origins);
+            }
+
+            return super.handle(request, response, callback);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("cross-origin request does not match allowed origins: {} {}", request, getAllowedOriginPatterns());
+
+            if (isDeliverNonAllowedOriginRequests())
+            {
+                if (preflight)
+                {
+                    if (!isDeliverPreflightRequests())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("preflight cross-origin request not delivered to child handler {}", request);
+                        callback.succeeded();
+                        return true;
+                    }
                 }
                 else
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("simple cross-origin request {}", request);
-                    handleSimpleResponse(origins, response);
+                    if (isWebSocketUpgrade(request))
+                    {
+                        if (!isDeliverNonAllowedOriginWebSocketUpgradeRequests())
+                        {
+                            Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "origin not allowed");
+                            return true;
+                        }
+                    }
                 }
 
-                if (timingOriginMatches(origins))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("cross-origin request matches allowed timing origins: {} {}", request, getAllowedTimingOriginPatterns());
-                    response.getHeaders().put(HttpHeader.TIMING_ALLOW_ORIGIN, origins);
-                }
-            }
-
-            if (preflight && !isDeliverPreflightRequest())
-            {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("preflight cross-origin request not delivered to child handler {}", request);
-                callback.succeeded();
+                    LOG.debug("cross-origin request delivered to child handler {}", request);
+
+                return super.handle(request, response, callback);
+            }
+            else
+            {
+                Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "origin not allowed");
                 return true;
             }
         }
-        return super.handle(request, response, callback);
     }
 
     private boolean originMatches(String origins)
@@ -351,21 +445,26 @@ public class CrossOriginHandler extends Handler.Wrapper
         return HttpMethod.OPTIONS.is(request.getMethod()) && request.getHeaders().contains(HttpHeader.ACCESS_CONTROL_REQUEST_METHOD);
     }
 
-    private void handlePreflightResponse(String origin, Response response)
+    private boolean isWebSocketUpgrade(Request request)
+    {
+        return request.getHeaders().contains(HttpHeader.UPGRADE, "websocket");
+    }
+
+    private void handlePreflightResponse(String origins, Response response)
     {
         HttpFields.Mutable headers = response.getHeaders();
-        headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+        headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN, origins);
         if (isAllowCredentials())
-            headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+            headers.put(ACCESS_CONTROL_ALLOW_CREDENTIALS_TRUE);
         Set<String> allowedMethods = getAllowedMethods();
         if (!allowedMethods.isEmpty())
-            headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS, String.join(",", allowedMethods));
+            headers.put(accessControlAllowMethodsField);
         Set<String> allowedHeaders = getAllowedHeaders();
         if (!allowedHeaders.isEmpty())
-            headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", allowedHeaders));
+            headers.put(accessControlAllowHeadersField);
         long seconds = getPreflightMaxAge().toSeconds();
         if (seconds > 0)
-            headers.put(HttpHeader.ACCESS_CONTROL_MAX_AGE, seconds);
+            headers.put(accessControlMaxAge);
     }
 
     private void handleSimpleResponse(String origin, Response response)
@@ -373,7 +472,7 @@ public class CrossOriginHandler extends Handler.Wrapper
         HttpFields.Mutable headers = response.getHeaders();
         headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
         if (isAllowCredentials())
-            headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+            headers.put(ACCESS_CONTROL_ALLOW_CREDENTIALS_TRUE);
         Set<String> exposedHeaders = getExposedHeaders();
         if (!exposedHeaders.isEmpty())
             headers.put(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(",", exposedHeaders));
