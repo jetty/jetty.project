@@ -211,6 +211,9 @@ public class ServletChannel
 
     private long getBytesWritten()
     {
+        // This returns the bytes written to the network,
+        // which may be different from those written by the
+        // application as they might have been compressed.
         return Response.getContentBytesWritten(getServletContextResponse());
     }
 
@@ -544,6 +547,8 @@ public class ServletChannel
                         // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.
                         if (!_servletContextRequest.isHead() && getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304)
                         {
+                            // Compare the bytes written by the application, even if
+                            // they might be compressed (or changed) by child Handlers.
                             long written = getHttpOutput().getWritten();
                             if (getServletContextResponse().isContentIncomplete(written))
                             {
