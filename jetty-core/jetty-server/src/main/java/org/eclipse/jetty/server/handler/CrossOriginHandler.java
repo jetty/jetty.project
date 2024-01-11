@@ -321,7 +321,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // The response may change if the Origin header is present, so always add Vary.
-        response.getHeaders().add(VARY_ORIGIN);
+        response.getHeaders().ensureField(VARY_ORIGIN);
 
         String origins = request.getHeaders().get(HttpHeader.ORIGIN);
         if (origins == null)
