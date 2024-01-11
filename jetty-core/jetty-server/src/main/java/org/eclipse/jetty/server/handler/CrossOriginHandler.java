@@ -446,7 +446,7 @@ public class CrossOriginHandler extends Handler.Wrapper
 
     private boolean isWebSocketUpgrade(Request request)
     {
-        return request.getHeaders().contains(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
+        return request.getHeaders().contains(HttpHeader.SEC_WEBSOCKET_VERSION);
     }
 
     private void handlePreflightResponse(String origins, Response response)

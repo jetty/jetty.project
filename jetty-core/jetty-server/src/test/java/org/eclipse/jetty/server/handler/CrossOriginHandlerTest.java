@@ -561,6 +561,7 @@ public class CrossOriginHandlerTest
             Host: localhost\r
             Connection: Upgrade\r
             Upgrade: websocket\r
+            Sec-WebSocket-Version: 13\r
             Origin: http://localhost\r
             \r
             """;
@@ -587,6 +588,7 @@ public class CrossOriginHandlerTest
             Host: localhost\r
             Connection: Upgrade\r
             Upgrade: websocket\r
+            Sec-WebSocket-Version: 13
             Origin: http://127.0.0.1\r
             \r
             """;
