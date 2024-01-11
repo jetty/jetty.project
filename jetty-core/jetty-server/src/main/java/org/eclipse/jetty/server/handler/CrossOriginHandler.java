@@ -385,13 +385,10 @@ public class CrossOriginHandler extends Handler.Wrapper
                 }
                 else
                 {
-                    if (isWebSocketUpgrade(request))
+                    if (isWebSocketUpgrade(request) && !isDeliverNonAllowedOriginWebSocketUpgradeRequests())
                     {
-                        if (!isDeliverNonAllowedOriginWebSocketUpgradeRequests())
-                        {
-                            Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "origin not allowed");
-                            return true;
-                        }
+                        Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "origin not allowed");
+                        return true;
                     }
                 }
 
@@ -449,7 +446,7 @@ public class CrossOriginHandler extends Handler.Wrapper
 
     private boolean isWebSocketUpgrade(Request request)
     {
-        return request.getHeaders().contains(HttpHeader.UPGRADE, "websocket");
+        return request.getHeaders().contains(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
     }
 
     private void handlePreflightResponse(String origins, Response response)
