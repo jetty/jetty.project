@@ -39,23 +39,19 @@
   <properties>
     <!-- generated sources cannot follow exactly Jetty code style -->
     <checkstyle.skip>true</checkstyle.skip>
-
-    <!-- generated sources cannot follow exactly Jetty code style -->
-    <checkstyle.skip>true</checkstyle.skip>
     <ee9.module></ee9.module>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
     <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
+    <jakarta.servlet.jsp.jstl.api.version>1.2.7</jakarta.servlet.jsp.jstl.api.version>
     <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
     <jakarta.websocket.api.version>1.1.2</jakarta.websocket.api.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
+    <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
     <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
     <jsp.impl.version>9.0.83.1</jsp.impl.version>
     <modify-sources-plugin.version>1.0.9</modify-sources-plugin.version>
     <sonar.skip>true</sonar.skip>
     <weld.version>3.1.9.Final</weld.version>
-
-    <jakarta.servlet.jsp.jstl.api.version>1.2.7</jakarta.servlet.jsp.jstl.api.version>
-    <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
   </properties>
 
   <dependencyManagement>
