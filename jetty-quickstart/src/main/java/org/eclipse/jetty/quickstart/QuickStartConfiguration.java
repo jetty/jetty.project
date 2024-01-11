@@ -48,7 +48,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public static final String ORIGIN_ATTRIBUTE = "org.eclipse.jetty.quickstart.origin";
     public static final String QUICKSTART_WEB_XML = "org.eclipse.jetty.quickstart.xml";
     public static final String MODE = "org.eclipse.jetty.quickstart.mode";
-    public static final String QUICKSTART_ENABLED = "org.eclipse.jetty.quickstart.enabled";
 
     static
     {
@@ -78,20 +77,13 @@ public class QuickStartConfiguration extends AbstractConfiguration
     }
 
     private Mode _mode = Mode.AUTO;
+    private boolean _quickStart;
 
     public QuickStartConfiguration()
     {
         super(true);
         addDependencies(WebInfConfiguration.class);
         addDependents(WebXmlConfiguration.class);
-    }
-
-    private boolean isQuickStartEnabled(WebAppContext context)
-    {
-        Boolean enabled = (Boolean)context.getAttribute(QUICKSTART_ENABLED);
-        if (enabled == null)
-            return true; // default is true
-        return enabled;
     }
 
     @Override
@@ -110,10 +102,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Mode mode = (Mode)context.getAttribute(MODE);
         if (mode != null)
             _mode = mode;
-
-        // disable quickstart for this context (it is only enabled if AUTO or QUICKSTART mode succeeds)
-        context.setAttribute(QUICKSTART_ENABLED, false);
-
+        
+        _quickStart = false;
+        
         switch (_mode)
         {
             case GENERATE:
@@ -148,9 +139,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 if (quickStartWebXml.exists())
                     quickStart(context);
                 else
-                {
-                    LOG.warn("Skipping {} for {} as it does not contain {}", this.getClass().getName(), context, quickStartWebXml);
-                }
+                    throw new IllegalStateException("No " + quickStartWebXml);
                 break;
 
             default:
@@ -171,42 +160,37 @@ public class QuickStartConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        if (!isQuickStartEnabled(context))
+        if (!_quickStart)
         {
-            return;
+            super.configure(context);
         }
+        else
+        {
+            //add the processor to handle normal web.xml content
+            context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
 
-        //add the processor to handle normal web.xml content
-        context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
+            //add a processor to handle extended web.xml format
+            context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
 
-        //add a processor to handle extended web.xml format
-        context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
+            //add a decorator that will find introspectable annotations
+            context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
 
-        //add a decorator that will find introspectable annotations
-        context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
+            //add a context bean that will run ServletContainerInitializers as the context starts
+            ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
+            if (starter != null)
+                throw new IllegalStateException("ServletContainerInitializersStarter already exists");
+            starter = new ServletContainerInitializersStarter(context);
+            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
+            context.addBean(starter, true);
 
-        //add a context bean that will run ServletContainerInitializers as the context starts
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        if (starter != null)
-            throw new IllegalStateException("ServletContainerInitializersStarter already exists");
-        starter = new ServletContainerInitializersStarter(context);
-        context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
-        context.addBean(starter, true);
-
-        LOG.debug("configured {}", this);
+            LOG.debug("configured {}", this);
+        }
     }
 
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        if (!isQuickStartEnabled(context))
-        {
-            super.postConfigure(context);
-            return;
-        }
-
-        context.removeAttribute(QUICKSTART_ENABLED);
-
+        super.postConfigure(context);
         ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
         if (starter != null)
         {
@@ -219,7 +203,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         throws Exception
     {
         LOG.info("Quickstarting {}", context);
-        context.setAttribute(QUICKSTART_ENABLED, true);
+        _quickStart = true;
         context.setConfigurations(context.getConfigurations().stream()
             .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
             .collect(Collectors.toList()).toArray(new Configuration[]{}));
@@ -245,10 +229,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         if (webInf == null || !webInf.exists())
         {
             File tmp = new File(context.getBaseResource().getFile(), "WEB-INF");
-            if (!tmp.mkdirs())
-            {
-                throw new IllegalStateException("Unable to create directory " + tmp);
-            }
+            tmp.mkdirs();
             webInf = context.getWebInf();
         }
 
