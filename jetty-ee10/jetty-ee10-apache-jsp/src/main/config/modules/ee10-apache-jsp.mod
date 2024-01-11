@@ -10,7 +10,17 @@ ee10
 ee10-servlet
 ee10-annotations
 
+[ini]
+ee10.jakarta.el.api.version?=@jakarta.el.api.version@
+ee10.jakarta.servlet.jsp.api.version?=@jakarta.servlet.jsp.api.version@
+eclipse.jdt.ecj.version?=@eclipse.jdt.ecj.version@
+ee10.jsp.impl.version?=@jsp.impl.version@
+
 [lib]
-lib/ee10-apache-jsp/*.jar
+lib/ee10-apache-jsp/jakarta.el.jakarta.el-api-${ee10.jakarta.el.api.version}.jar
+lib/ee10-apache-jsp/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${ee10.jakarta.servlet.jsp.api.version}.jar
+lib/ee10-apache-jsp/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
+lib/ee10-apache-jsp/org.mortbay.jasper.apache-el-${ee10.jsp.impl.version}.jar
+lib/ee10-apache-jsp/org.mortbay.jasper.apache-jsp-${ee10.jsp.impl.version}.jar
 lib/jetty-ee10-apache-jsp-${jetty.version}.jar
 

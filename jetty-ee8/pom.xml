@@ -54,6 +54,8 @@
     <sonar.skip>true</sonar.skip>
     <weld.version>3.1.9.Final</weld.version>
 
+    <jakarta.servlet.jsp.jstl.api.version>1.2.7</jakarta.servlet.jsp.jstl.api.version>
+    <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
   </properties>
 
   <dependencyManagement>
@@ -78,7 +80,7 @@
       <dependency>
         <groupId>jakarta.servlet.jsp.jstl</groupId>
         <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-        <version>1.2.7</version>
+        <version>${jakarta.servlet.jsp.jstl.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.transaction</groupId>
@@ -238,7 +240,7 @@
       <dependency>
         <groupId>org.glassfish.web</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>1.2.5</version>
+        <version>${javax.servlet.jsp.jstl.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>

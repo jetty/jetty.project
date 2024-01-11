@@ -10,9 +10,12 @@ security
 ee9-security
 ee9-auth-config-factory
 
+[ini]
+ee9.jakarta.authentication.api.version?=@jakarta.authentication.api.version@
+
 [lib]
 lib/jetty-ee9-jaspi-${jetty.version}.jar
-lib/jaspi/*.jar
+lib/ee9-jaspi/jakarta.authentication-api-${ee9.jakarta.authentication.api.version}.jar
 
 [xml]
 etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
