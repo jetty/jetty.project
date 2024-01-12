@@ -1935,7 +1935,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                         goAwayFrame = goAwaySent;
                         closed = CloseState.CLOSING;
                         zeroStreamsAction = null;
-                        failure = cause = new TimeoutException("Session idle timeout expired");
+                        failure = cause = newTimeoutException();
                     }
                     case REMOTELY_CLOSED ->
                     {
@@ -1944,7 +1944,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                         goAwayFrame = goAwaySent;
                         closed = CloseState.CLOSING;
                         zeroStreamsAction = null;
-                        failure = cause = new TimeoutException("Session idle timeout expired");
+                        failure = cause = newTimeoutException();
                     }
                     default -> terminate = true;
                 }
@@ -1955,7 +1955,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 if (LOG.isDebugEnabled())
                     LOG.debug("Already closed, ignored idle timeout for {}", HTTP2Session.this);
                 // Writes may be TCP congested, so termination never happened.
-                flusher.abort(new TimeoutException());
+                flusher.abort(newTimeoutException());
                 return false;
             }
 
@@ -1975,6 +1975,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             notifyFailure(HTTP2Session.this, cause, Callback.NOOP);
             terminate(goAwayFrame);
             return false;
+        }
+
+        private TimeoutException newTimeoutException()
+        {
+            return new TimeoutException("Session idle timeout expired");
         }
 
         private void onSessionFailure(int error, String reason, Callback callback)
