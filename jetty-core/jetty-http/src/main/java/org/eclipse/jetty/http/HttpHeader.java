@@ -21,7 +21,6 @@ import org.eclipse.jetty.util.StringUtil;
 
 public enum HttpHeader
 {
-
     /**
      * General Fields.
      */
@@ -59,6 +58,8 @@ public enum HttpHeader
     ACCEPT_CHARSET("Accept-Charset"),
     ACCEPT_ENCODING("Accept-Encoding"),
     ACCEPT_LANGUAGE("Accept-Language"),
+    ACCESS_CONTROL_REQUEST_HEADERS("Access-Control-Request-Headers"),
+    ACCESS_CONTROL_REQUEST_METHOD("Access-Control-Request-Method"),
     AUTHORIZATION("Authorization"),
     EXPECT("Expect"),
     FORWARDED("Forwarded"),
@@ -87,6 +88,12 @@ public enum HttpHeader
      * Response Fields.
      */
     ACCEPT_RANGES("Accept-Ranges"),
+    ACCESS_CONTROL_ALLOW_ORIGIN("Access-Control-Allow-Origin"),
+    ACCESS_CONTROL_ALLOW_METHODS("Access-Control-Allow-Methods"),
+    ACCESS_CONTROL_ALLOW_HEADERS("Access-Control-Allow-Headers"),
+    ACCESS_CONTROL_MAX_AGE("Access-Control-Max-Age"),
+    ACCESS_CONTROL_ALLOW_CREDENTIALS("Access-Control-Allow-Credentials"),
+    ACCESS_CONTROL_EXPOSE_HEADERS("Access-Control-Expose-Headers"),
     AGE("Age"),
     ALT_SVC("Alt-Svc"),
     ETAG("ETag"),
@@ -96,6 +103,7 @@ public enum HttpHeader
     RETRY_AFTER("Retry-After"),
     SERVER("Server"),
     SERVLET_ENGINE("Servlet-Engine"),
+    TIMING_ALLOW_ORIGIN("Timing-Allow-Origin"),
     VARY("Vary"),
     WWW_AUTHENTICATE("WWW-Authenticate"),
 
