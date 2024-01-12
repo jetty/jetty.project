@@ -398,11 +398,14 @@ public abstract class QuicSession extends ContainerLifeCycle
 
     public void outwardClose(long error, String reason)
     {
+        boolean closed = quicheConnection.close(error, reason);
         if (LOG.isDebugEnabled())
-            LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        quicheConnection.close(error, reason);
-        // Flushing will eventually forward the outward close to the connection.
-        flush();
+            LOG.debug("outward closing ({}) 0x{}/{} on {}", closed, Long.toHexString(error), reason, this);
+        if (closed)
+        {
+            // Flushing will eventually forward the outward close to the connection.
+            flush();
+        }
     }
 
     private void finishOutwardClose(Throwable failure)
