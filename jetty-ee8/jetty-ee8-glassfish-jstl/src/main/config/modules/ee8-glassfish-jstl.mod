@@ -12,4 +12,4 @@ ee8.javax.servlet.jsp.jstl.impl.version?=@javax.servlet.jsp.jstl.impl.version@
 
 [lib]
 lib/ee8-glassfish-jstl/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee8.jakarta.servlet.jsp.jstl.api.version}.jar
-lib/ee8-glassfish-jstl/org.glassfish.web.javax.servlet.jsp.jstl-${ee8.jakarta.servlet.jsp.jstl.impl.version}.jar
+lib/ee8-glassfish-jstl/org.glassfish.web.javax.servlet.jsp.jstl-${ee8.javax.servlet.jsp.jstl.impl.version}.jar
