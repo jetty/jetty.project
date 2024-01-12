@@ -75,11 +75,6 @@
         <version>${mail.impl.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.sun.mail</groupId>
-        <artifactId>jakarta.mail</artifactId>
-        <version>${mail.impl.version}</version>
-      </dependency>
-      <dependency>
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-rt</artifactId>
         <version>${jakarta.xml.jaxws.impl.version}</version>
