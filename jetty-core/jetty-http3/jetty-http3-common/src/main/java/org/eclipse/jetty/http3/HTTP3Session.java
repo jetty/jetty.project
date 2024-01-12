@@ -628,13 +628,9 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         failStreams(stream -> true, error, reason, true, new IOException(reason));
 
         if (goAwayFrame != null)
-        {
             writeControlFrame(goAwayFrame, Callback.from(() -> terminateAndDisconnect(error, reason)));
-        }
         else
-        {
             terminateAndDisconnect(error, reason);
-        }
     }
 
     private void terminateAndDisconnect(long error, String reason)
