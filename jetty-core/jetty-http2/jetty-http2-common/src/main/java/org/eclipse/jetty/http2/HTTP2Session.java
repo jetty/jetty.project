@@ -1909,6 +1909,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         {
             String reason = "idle_timeout";
             boolean notify = false;
+            boolean terminate = false;
             boolean sendGoAway = false;
             GoAwayFrame goAwayFrame = null;
             Throwable cause = null;
@@ -1923,10 +1924,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                             return false;
                         notify = true;
                     }
-
-                    // Timed out while waiting for closing events, fail all the streams.
                     case LOCALLY_CLOSED ->
                     {
+                        // Timed out while waiting for closing events, fail all the streams.
                         if (goAwaySent.isGraceful())
                         {
                             goAwaySent = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
@@ -1946,13 +1946,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                         zeroStreamsAction = null;
                         failure = cause = new TimeoutException("Session idle timeout expired");
                     }
-                    default ->
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Already closed, ignored idle timeout for {}", HTTP2Session.this);
-                        return false;
-                    }
+                    default -> terminate = true;
                 }
+            }
+
+            if (terminate)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Already closed, ignored idle timeout for {}", HTTP2Session.this);
+                // Writes may be TCP congested, so termination never happened.
+                flusher.abort(new TimeoutException());
+                return false;
             }
 
             if (notify)
@@ -2036,7 +2040,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         private void sendGoAwayAndTerminate(GoAwayFrame frame, GoAwayFrame eventFrame)
         {
-            sendGoAway(frame, Callback.from(Callback.NOOP, () -> terminate(eventFrame)));
+            sendGoAway(frame, Callback.from(() -> terminate(eventFrame)));
         }
 
         private void sendGoAway(GoAwayFrame frame, Callback callback)
