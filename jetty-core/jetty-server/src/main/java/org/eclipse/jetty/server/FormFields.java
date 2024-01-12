@@ -32,8 +32,9 @@ import org.eclipse.jetty.util.StringUtil;
 import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
 
 /**
- * A {@link CompletableFuture} that is completed once a {@code application/x-www-form-urlencoded}
- * content has been parsed asynchronously from the {@link Content.Source}.
+ * <p>A {@link CompletableFuture} that is completed once a {@code application/x-www-form-urlencoded}
+ * content has been parsed asynchronously from the {@link Content.Source}.</p>
+ * <p><a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">Specification</a>.</p>
  */
 public class FormFields extends ContentSourceCompletableFuture<Fields>
 {
@@ -209,98 +210,103 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     @Override
     protected Fields parse(Content.Chunk chunk) throws CharacterCodingException
     {
-        String value = null;
         ByteBuffer buffer = chunk.getByteBuffer();
 
-        do
+        while (BufferUtil.hasContent(buffer))
         {
-            loop:
-            while (BufferUtil.hasContent(buffer))
+            byte b = buffer.get();
+            switch (_percent)
             {
-                byte b = buffer.get();
-                switch (_percent)
+                case 1 ->
                 {
-                    case 1 ->
-                    {
-                        _percentCode = b;
-                        _percent++;
-                        continue;
-                    }
-                    case 2 ->
-                    {
-                        _builder.append(decodeHexByte((char)_percentCode, (char)b));
-                        _percent = 0;
-                        continue;
-                    }
+                    _percentCode = b;
+                    _percent++;
+                    continue;
                 }
-
-                if (_name == null)
+                case 2 ->
                 {
-                    switch (b)
-                    {
-                        case '=' ->
-                        {
-                            _name = _builder.build();
-                            checkLength(_name);
-                        }
-                        case '+' -> _builder.append((byte)' ');
-                        case '%' -> _percent++;
-                        default -> _builder.append(b);
-                    }
-                }
-                else
-                {
-                    switch (b)
-                    {
-                        case '&' ->
-                        {
-                            value = _builder.build();
-                            checkLength(value);
-                            break loop;
-                        }
-                        case '+' -> _builder.append((byte)' ');
-                        case '%' -> _percent++;
-                        default -> _builder.append(b);
-                    }
+                    _percent = 0;
+                    _builder.append(decodeHexByte((char)_percentCode, (char)b));
+                    continue;
                 }
             }
 
-            if (_name != null)
+            if (_name == null)
             {
-                if (value == null && chunk.isLast())
+                switch (b)
                 {
-                    if (_percent > 0)
+                    case '&' ->
                     {
-                        _builder.append((byte)'%');
-                        _builder.append(_percentCode);
+                        String name = _builder.build();
+                        checkMaxLength(name);
+                        onNewField(name, "");
                     }
-                    value = _builder.build();
-                    checkLength(value);
+                    case '=' ->
+                    {
+                        _name = _builder.build();
+                        checkMaxLength(_name);
+                    }
+                    case '+' -> _builder.append(' ');
+                    case '%' -> _percent++;
+                    default -> _builder.append(b);
                 }
-
-                if (value != null)
+            }
+            else
+            {
+                switch (b)
                 {
-                    Fields.Field field = new Fields.Field(_name, value);
-                    _name = null;
-                    value = null;
-                    if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
-                        throw new IllegalStateException("form with too many fields > " + _maxFields);
-                    _fields.add(field);
+                    case '&' ->
+                    {
+                        String value = _builder.build();
+                        checkMaxLength(value);
+                        onNewField(_name, value);
+                        _name = null;
+                    }
+                    case '+' -> _builder.append(' ');
+                    case '%' -> _percent++;
+                    default -> _builder.append(b);
                 }
             }
         }
-        while (BufferUtil.hasContent(buffer));
 
-        return chunk.isLast() ? _fields : null;
+        if (!chunk.isLast())
+            return null;
+
+        // Append any remaining %x.
+        if (_percent > 0)
+            throw new IllegalStateException("invalid percent encoding");
+        String value = _builder.build();
+
+        if (_name == null)
+        {
+            if (!value.isEmpty())
+            {
+                checkMaxLength(value);
+                onNewField(value, "");
+            }
+            return _fields;
+        }
+
+        checkMaxLength(value);
+        onNewField(_name, value);
+        return _fields;
     }
 
-    private void checkLength(String nameOrValue)
+    private void checkMaxLength(String nameOrValue)
     {
         if (_maxLength >= 0)
         {
             _length += nameOrValue.length();
             if (_length > _maxLength)
-                throw new IllegalStateException("form too large");
+                throw new IllegalStateException("form too large > " + _maxLength);
         }
+    }
+
+    private void onNewField(String name, String value)
+    {
+        Fields.Field field = new Fields.Field(name, value);
+        _fields.add(field);
+        if (_maxFields >= 0 && _fields.getSize() > _maxFields)
+            throw new IllegalStateException("form with too many fields > " + _maxFields);
     }
 }
