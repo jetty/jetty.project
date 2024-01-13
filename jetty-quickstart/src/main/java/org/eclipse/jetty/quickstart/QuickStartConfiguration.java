@@ -109,24 +109,29 @@ public class QuickStartConfiguration extends AbstractConfiguration
             return;
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("quickStartWebXml={} exists={}", quickStartWebXml, quickStartWebXml.exists());
-
         // Get the mode
         Mode mode = getModeForContext(context);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("QuickStart.Mode={} on {}", mode, context);
+            LOG.debug("mode={} quickStartWebXml={} exists={} for {}",
+                mode,
+                quickStartWebXml,
+                quickStartWebXml.exists(),
+                context);
 
         switch (mode)
         {
             case GENERATE:
             {
                 if (quickStartWebXml.exists())
-                    LOG.info("Regenerating {}", quickStartWebXml);
+                    LOG.info("Regenerating {} for {}", quickStartWebXml, context);
                 else
-                    LOG.info("Generating {}", quickStartWebXml);
-                generateQuickStart(context);
+                    LOG.info("Generating {} for {}", quickStartWebXml, context);
+
+                // generate the quickstart file then abort
+                QuickStartGeneratorConfiguration generator = new QuickStartGeneratorConfiguration(true);
+                configure(generator, context);
+                context.addConfiguration(generator);
                 break;
             }
             case AUTO:
@@ -158,14 +163,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
             default:
                 throw new IllegalStateException("Unhandled QuickStart.Mode: " + mode);
         }
-    }
-
-    private void generateQuickStart(WebAppContext context) throws IOException
-    {
-        // generate the quickstart file then abort
-        QuickStartGeneratorConfiguration generator = new QuickStartGeneratorConfiguration(true);
-        configure(generator, context);
-        context.addConfiguration(generator);
     }
 
     protected void configure(QuickStartGeneratorConfiguration generator, WebAppContext context) throws IOException
