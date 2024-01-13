@@ -115,6 +115,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
         // Get the mode
         Mode mode = getModeForContext(context);
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("QuickStart.Mode={} on {}", mode, context);
+
         switch (mode)
         {
             case GENERATE:
@@ -128,11 +131,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
             }
             case AUTO:
             {
-                if (!quickStartWebXml.exists())
-                {
-                    LOG.info("Generating {}", quickStartWebXml);
-                    generateQuickStart(context);
-                }
+                // TODO: why doesn't AUTO generate a WEB-INF/quickstart-web.xml if not present?
                 if (quickStartWebXml.exists())
                 {
                     quickStart(context);
@@ -145,16 +144,17 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 break;
             }
             case QUICKSTART:
+            {
                 if (quickStartWebXml.exists())
                 {
                     quickStart(context);
                 }
                 else
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("No quickstart xml file, starting webapp {} normally", context);
+                    throw new IllegalStateException("No WEB-INF/quickstart-web.xml file for " + context);
                 }
                 break;
+            }
             default:
                 throw new IllegalStateException("Unhandled QuickStart.Mode: " + mode);
         }
