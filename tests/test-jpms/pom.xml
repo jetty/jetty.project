@@ -35,6 +35,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
+            <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
             <jettyVersion>${project.version}</jettyVersion>
             <slf4jVersion>${slf4j.version}</slf4jVersion>
           </systemPropertyVariables>
