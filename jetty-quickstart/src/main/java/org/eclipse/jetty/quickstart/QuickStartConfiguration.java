@@ -73,7 +73,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public enum Mode
     {
         GENERATE,  // Generate quickstart-web.xml and then stop
-        AUTO,      // use or generate depending on the existence of quickstart-web.xml
+        AUTO,      // use quickstart depending on the existence of quickstart-web.xml
         QUICKSTART // Use quickstart-web.xml
     }
 
@@ -102,12 +102,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
         // look for quickstart-web.xml in WEB-INF of webapp
         Resource quickStartWebXml = getQuickStartWebXml(context);
-        if (quickStartWebXml == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("No quickStartWebXml present on {}", context);
-            return;
-        }
 
         // Get the mode
         Mode mode = getModeForContext(context);
@@ -128,6 +122,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 else
                     LOG.info("Generating {} for {}", quickStartWebXml, context);
 
+                super.preConfigure(context);
                 // generate the quickstart file then abort
                 QuickStartGeneratorConfiguration generator = new QuickStartGeneratorConfiguration(true);
                 configure(generator, context);
@@ -136,7 +131,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
             }
             case AUTO:
             {
-                // TODO: why doesn't AUTO generate a WEB-INF/quickstart-web.xml if not present?
                 if (quickStartWebXml.exists())
                 {
                     quickStart(context);
@@ -144,7 +138,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("No quickstart xml file, starting webapp {} normally", context);
+                        LOG.debug("No quickstart-web.xml found, starting webapp {} normally", context);
                 }
                 break;
             }
@@ -181,31 +175,36 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource quickStartWebXml = getQuickStartWebXml(context);
         // Don't run configure() if quickstart-web.xml does not exist
         if (quickStartWebXml == null || !quickStartWebXml.exists())
-            return;
+        {
+            super.configure(context);
+        }
+        else
+        {
+            //add the processor to handle normal web.xml content
+            context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
 
-        // add the processor to handle normal web.xml content
-        context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
+            //add a processor to handle extended web.xml format
+            context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
 
-        // add a processor to handle extended web.xml format
-        context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
+            //add a decorator that will find introspectable annotations
+            context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
 
-        // add a decorator that will find introspectable annotations
-        context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
+            //add a context bean that will run ServletContainerInitializers as the context starts
+            ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
+            if (starter != null)
+                throw new IllegalStateException("ServletContainerInitializersStarter already exists");
+            starter = new ServletContainerInitializersStarter(context);
+            context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
+            context.addBean(starter, true);
 
-        // add a context bean that will run ServletContainerInitializers as the context starts
-        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
-        if (starter != null)
-            throw new IllegalStateException("ServletContainerInitializersStarter already exists");
-        starter = new ServletContainerInitializersStarter(context);
-        context.setAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER, starter);
-        context.addBean(starter, true);
-
-        LOG.debug("configured {}", this);
+            LOG.debug("configured {}", this);
+        }
     }
 
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
+        super.postConfigure(context);
         ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
         if (starter != null)
         {
@@ -239,14 +238,14 @@ public class QuickStartConfiguration extends AbstractConfiguration
         if (attr instanceof Resource)
             return (Resource)attr;
 
+        Resource qstart;
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
         {
             switch (getModeForContext(context))
             {
                 case GENERATE:
-                case AUTO:
-                    // These two modes allow for generation of quickstart-web.xml
+                    // This mode allow for generation of quickstart-web.xml
                     // So we should be safe to attempt to create the missing WEB-INF directory.
                     File tmp = new File(context.getBaseResource().getFile(), "WEB-INF");
                     if (!tmp.mkdirs())
@@ -255,17 +254,18 @@ public class QuickStartConfiguration extends AbstractConfiguration
                     }
                     webInf = context.getWebInf();
                     break;
+                case AUTO:
                 case QUICKSTART:
-                    // This mode does not allow for generation of quickstart-web.xml, so do not
-                    // create a WEB-INF directory if it is missing.
-                    // There is obviously no quickstart-web.xml present, so return null.
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Not generating new WEB-INF directory for {}", context);
-                    return null;
+                    // These modes do not allow for generation of quickstart-web.xml, so do not
+                    // create the missing WEB-INF directory.
+
+                    // Establish a Resource suitable for callers of this method (does not exist)
+                    qstart = context.getBaseResource().addPath("WEB-INF/quickstart-web.xml");
+                    context.setAttribute(QUICKSTART_WEB_XML, qstart);
+                    return qstart;
             }
         }
 
-        Resource qstart;
         if (attr == null || StringUtil.isBlank(attr.toString()))
         {
             qstart = webInf.addPath("quickstart-web.xml");

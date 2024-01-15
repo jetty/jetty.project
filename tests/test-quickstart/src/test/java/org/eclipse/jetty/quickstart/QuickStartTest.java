@@ -36,6 +36,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,8 +49,9 @@ public class QuickStartTest
      * Test of an exploded webapp directory, no WEB-INF/quickstart-web.xml,
      * with QuickStartConfiguration enabled.
      */
-    @Test
-    public void testExplodedWebAppDirNoWebXml() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testExplodedWebAppDirNoWebXml(boolean defaultMode) throws Exception
     {
         Path jettyHome = MavenPaths.targetDir();
         Path webappDir = MavenPaths.targetTestDir("no-web-xml");
@@ -65,7 +68,9 @@ public class QuickStartTest
             new EnvConfiguration(),
             new PlusConfiguration(),
             new AnnotationConfiguration());
-        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
+        // Default mode should allow this style of exploded webapp dir.
+        if (!defaultMode)
+            webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.AUTO);
         webapp.setWarResource(new PathResource(webappDir));
         webapp.setContextPath("/");
         server.setHandler(webapp);
