@@ -19,7 +19,11 @@
 package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -43,7 +47,10 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -57,7 +64,9 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -679,6 +688,53 @@ public class IdleTimeoutTest extends AbstractTest
         sleep(1000);
 
         assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+    }
+
+    @Test
+    public void testIdleTimeoutWhenCongested() throws Exception
+    {
+        long idleTimeout = 1000;
+        HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(new HttpConfiguration());
+        prepareServer(h2c);
+        server.removeConnector(connector);
+        connector = new ServerConnector(server, 1, 1, h2c)
+        {
+            @Override
+            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+            {
+                SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
+                {
+                    @Override
+                    public boolean flush(ByteBuffer... buffers)
+                    {
+                        // Fake TCP congestion.
+                        return false;
+                    }
+
+                    @Override
+                    protected void onIncompleteFlush()
+                    {
+                        // Do nothing here to avoid spin loop,
+                        // since the network is actually writable,
+                        // as we are only faking TCP congestion.
+                    }
+                };
+                endpoint.setIdleTimeout(getIdleTimeout());
+                return endpoint;
+            }
+        };
+        connector.setIdleTimeout(idleTimeout);
+        server.addConnector(connector);
+        server.start();
+
+        prepareClient();
+        client.start();
+
+        InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
+        // The connect() will complete exceptionally.
+        client.connect(address, new Session.Listener.Adapter(), new Promise.Completable<>());
+
+        await().atMost(Duration.ofMillis(5 * idleTimeout)).until(() -> connector.getConnectedEndPoints().size(), is(0));
     }
 
     private void sleep(long value)
