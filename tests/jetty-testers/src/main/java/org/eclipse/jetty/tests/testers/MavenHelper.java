@@ -73,7 +73,8 @@ class MavenHelper
 
     private static RemoteRepository newCentralRepository()
     {
-        return new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
+        String centralRepoUrl = System.getProperty("maven.repo.uri", "https://repo.maven.apache.org/maven2/");
+        return new RemoteRepository.Builder("central", "default", centralRepoUrl).build();
     }
 
     private static class LogTransferListener extends AbstractTransferListener

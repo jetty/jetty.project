@@ -34,7 +34,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <systemPropertyVariables>
+          <systemPropertyVariables combine.children="append">
             <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
             <jettyVersion>${project.version}</jettyVersion>
             <slf4jVersion>${slf4j.version}</slf4jVersion>
