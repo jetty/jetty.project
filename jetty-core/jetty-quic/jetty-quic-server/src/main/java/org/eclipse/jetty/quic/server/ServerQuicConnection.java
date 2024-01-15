@@ -45,11 +45,16 @@ public class ServerQuicConnection extends QuicConnection
     private final QuicServerConnector connector;
     private final SessionTimeouts sessionTimeouts;
 
-    protected ServerQuicConnection(QuicServerConnector connector, EndPoint endPoint)
+    public ServerQuicConnection(QuicServerConnector connector, EndPoint endPoint)
     {
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
         this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
+    }
+
+    public QuicServerConnector getQuicServerConnector()
+    {
+        return connector;
     }
 
     @Override
@@ -87,11 +92,16 @@ public class ServerQuicConnection extends QuicConnection
         }
         else
         {
-            QuicSession session = new ServerQuicSession(getExecutor(), getScheduler(), bufferPool, quicheConnection, this, remoteAddress, connector);
+            ServerQuicSession session = newQuicSession(remoteAddress, quicheConnection);
             // Send the response packet(s) that tryAccept() generated.
             session.flush();
             return session;
         }
+    }
+
+    protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
+    {
+        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector());
     }
 
     public void schedule(ServerQuicSession session)
