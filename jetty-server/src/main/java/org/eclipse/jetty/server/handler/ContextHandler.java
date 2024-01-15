@@ -145,6 +145,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
     public static final int DEFAULT_MAX_FORM_KEYS = 1000;
     public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+    private static final int MAX_FORM_UNSET = -2;
 
     /**
      * Get the current ServletContext implementation.
@@ -215,8 +216,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private String[] _vconnectors; // connector portion, matching _vhosts array
     private Logger _logger;
     private boolean _allowNullPathInfo;
-    private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
-    private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
+    private int _maxFormKeys = MAX_FORM_UNSET;
+    private int _maxFormContentSize = MAX_FORM_UNSET;
     private boolean _compactPath = false;
     private boolean _usingSecurityManager = getSecurityManager() != null;
 
@@ -873,6 +874,30 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
+        if (_maxFormContentSize == MAX_FORM_UNSET)
+        {
+            // Use context attribute as primary source of value
+            Integer maxFormContentSize = getIntegerAttribute(MAX_FORM_CONTENT_SIZE_KEY);
+            if (maxFormContentSize == null)
+            {
+                // fall back to System Property as secondary value if context attribute version is not present
+                maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
+            }
+            setMaxFormContentSize(maxFormContentSize);
+        }
+
+        if (_maxFormKeys == MAX_FORM_UNSET)
+        {
+            // Use context attribute as primary source of value
+            Integer maxFormKeys = getIntegerAttribute(MAX_FORM_KEYS_KEY);
+            if (maxFormKeys == null)
+            {
+                // fall back to System Property as secondary value if context attribute version is not present
+                maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
+            }
+            setMaxFormKeys(maxFormKeys);
+        }
+
         ClassLoader oldClassloader = null;
         Thread currentThread = null;
         Context oldContext = null;
@@ -914,6 +939,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (_classLoader != null && currentThread != null)
                 currentThread.setContextClassLoader(oldClassloader);
         }
+    }
+
+    private Integer getIntegerAttribute(String key)
+    {
+        Object value = getAttribute(key);
+        if (value == null)
+            return null;
+        if (value instanceof Integer)
+            return ((Integer)value);
+        if (value instanceof String)
+            return Integer.parseInt((String)value);
+        LOG.warn("Unrecognized type {} for context attribute [{}]", value.getClass().getName(), key);
+        return null;
     }
 
     private String getLogNameSuffix()
@@ -1790,6 +1828,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
+        if (_maxFormContentSize == MAX_FORM_UNSET)
+            return DEFAULT_MAX_FORM_CONTENT_SIZE;
         return _maxFormContentSize;
     }
 
@@ -1805,6 +1845,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public int getMaxFormKeys()
     {
+        if (_maxFormKeys == MAX_FORM_UNSET)
+            return DEFAULT_MAX_FORM_KEYS;
         return _maxFormKeys;
     }
 
