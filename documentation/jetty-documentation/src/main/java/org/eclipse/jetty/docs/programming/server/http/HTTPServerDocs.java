@@ -18,12 +18,11 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.Security;
 import java.time.Duration;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 
-import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,10 +30,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
-import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.servlets.CrossOriginFilter;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
@@ -74,6 +71,7 @@ import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
@@ -1066,21 +1064,20 @@ public class HTTPServerDocs
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
+        // Add the CrossOriginHandler to protect from CSRF attacks.
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        server.setHandler(crossOriginHandler);
+
         // Create a ServletContextHandler with contextPath.
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/shop");
         // Link the context to the server.
-        server.setHandler(context);
+        crossOriginHandler.setHandler(context);
 
         // Add the Servlet implementing the cart functionality to the context.
         ServletHolder servletHolder = context.addServlet(ShopCartServlet.class, "/cart/*");
         // Configure the Servlet with init-parameters.
         servletHolder.setInitParameter("maxItems", "128");
-
-        // Add the CrossOriginFilter to protect from CSRF attacks.
-        FilterHolder filterHolder = context.addFilter(CrossOriginFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-        // Configure the filter.
-        filterHolder.setAsyncSupported(true);
 
         server.start();
         // end::servletContextHandler-setup[]
@@ -1461,6 +1458,15 @@ public class HTTPServerDocs
 
         server.start();
         // end::securedHandler[]
+    }
+
+    public void crossOriginAllowedOrigins()
+    {
+        // tag::crossOriginAllowedOrigins[]
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        // The allowed origins are regex patterns.
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://domain\\.com"));
+        // end::crossOriginAllowedOrigins[]
     }
 
     public void defaultHandler() throws Exception

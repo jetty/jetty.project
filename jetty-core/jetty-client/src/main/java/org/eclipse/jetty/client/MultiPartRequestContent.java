@@ -30,7 +30,7 @@ import org.eclipse.jetty.io.Content;
  * multiPart.close();
  * ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
  *         .method(HttpMethod.POST)
- *         .content(multiPart)
+ *         .body(multiPart)
  *         .send();
  * </pre>
  * <p>The above example would be the equivalent of submitting this form:</p>

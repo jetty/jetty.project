@@ -55,7 +55,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * Content.Source content = ...;
  *
  * // Create and configure MultiPartFormData.
- * MultiPartFormData formData = new MultiPartFormData(boundary);
+ * MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
  * // Where to store the files.
  * formData.setFilesDirectory(Path.of("/tmp"));
  * // Max 1 MiB files.
