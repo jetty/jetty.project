@@ -1909,6 +1909,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             String reason = "idle_timeout";
             boolean notify = false;
+            boolean terminate = false;
             boolean sendGoAway = false;
             GoAwayFrame goAwayFrame = null;
             Throwable cause = null;
@@ -1952,9 +1953,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Already closed, ignored idle timeout for {}", HTTP2Session.this);
-                        return false;
+                        // Writes may be TCP congested, so termination never happened.
+                        terminate = true;
+                        goAwayFrame = goAwaySent;
+                        if (goAwayFrame == null)
+                            goAwayFrame = goAwayRecv;
+                        break;
                     }
                 }
+            }
+
+            if (terminate)
+            {
+                terminate(goAwayFrame);
+                return false;
             }
 
             if (notify)

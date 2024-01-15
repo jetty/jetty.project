@@ -216,8 +216,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                 long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
                 String reason = "go_away";
                 failStreams(stream -> true, error, reason, true);
-                terminate();
-                outwardDisconnect(error, reason);
+                terminateAndDisconnect(error, reason);
             }
             return CompletableFuture.completedFuture(null);
         }
@@ -494,18 +493,12 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                             goAwaySent = newGoAwayFrame(false);
                             GoAwayFrame goAwayFrame = goAwaySent;
                             zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() ->
-                            {
-                                terminate();
-                                outwardDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away");
-                            }));
+                                terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away")
+                            ));
                         }
                         else
                         {
-                            zeroStreamsAction = () ->
-                            {
-                                terminate();
-                                outwardDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away");
-                            };
+                            zeroStreamsAction = () -> terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away");
                             failStreams = true;
                         }
                     }
@@ -566,6 +559,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public boolean onIdleTimeout()
     {
         boolean notify = false;
+        boolean terminate = false;
         try (AutoLock ignored = lock.lock())
         {
             switch (closeState)
@@ -583,15 +577,22 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                 case CLOSING:
                 case CLOSED:
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("already closed, ignored idle timeout for {}", this);
-                    return false;
+                    terminate = true;
+                    break;
                 }
                 default:
                 {
                     throw new IllegalStateException();
                 }
             }
+        }
+
+        if (terminate)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("already closed, ignored idle timeout for {}", this);
+            terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "idle_timeout");
+            return false;
         }
 
         boolean confirmed = true;
@@ -650,18 +651,15 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         failStreams(stream -> true, error, reason, true);
 
         if (goAwayFrame != null)
-        {
-            writeControlFrame(goAwayFrame, Callback.from(() ->
-            {
-                terminate();
-                outwardDisconnect(error, reason);
-            }));
-        }
+            writeControlFrame(goAwayFrame, Callback.from(() -> terminateAndDisconnect(error, reason)));
         else
-        {
-            terminate();
-            outwardDisconnect(error, reason);
-        }
+            terminateAndDisconnect(error, reason);
+    }
+
+    private void terminateAndDisconnect(long error, String reason)
+    {
+        terminate();
+        outwardDisconnect(error, reason);
     }
 
     /**
