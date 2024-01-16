@@ -6,5 +6,10 @@ Enables the glassfish version of JSTL for all webapps.
 [environment]
 ee9
 
+[ini]
+ee9.jakarta.servlet.jsp.jstl.api.version?=@jakarta.servlet.jsp.jstl.api.version@
+ee9.jakarta.servlet.jsp.jstl.impl.version?=@jakarta.servlet.jsp.jstl.impl.version@
+
 [lib]
-lib/ee9-glassfish-jstl/*.jar
+lib/ee9-glassfish-jstl/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee9.jakarta.servlet.jsp.jstl.api.version}.jar
+lib/ee9-glassfish-jstl/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee9.jakarta.servlet.jsp.jstl.impl.version}.jar
