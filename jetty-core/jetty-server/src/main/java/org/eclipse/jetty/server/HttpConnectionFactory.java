@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -27,7 +28,7 @@ import org.eclipse.jetty.util.annotation.Name;
  * {@link HttpConnection}s are configured by a {@link HttpConfiguration} instance that is either created by
  * default or passed in to the constructor.
  */
-public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
+public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory, ConnectionFactory.Configuring
 {
     private final HttpConfiguration _config;
     private boolean _recordHttpComplianceViolations;
@@ -52,6 +53,13 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     public HttpConfiguration getHttpConfiguration()
     {
         return _config;
+    }
+
+    @Override
+    public void configure(Connector connector)
+    {
+        if (isRecordHttpComplianceViolations())
+            addBean(new ComplianceViolation.LoggingListenerFactory());
     }
 
     public boolean isRecordHttpComplianceViolations()
@@ -87,7 +95,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        HttpConnection connection = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
+        HttpConnection connection = new HttpConnection(_config, connector, endPoint);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         return configure(connection, connector, endPoint);

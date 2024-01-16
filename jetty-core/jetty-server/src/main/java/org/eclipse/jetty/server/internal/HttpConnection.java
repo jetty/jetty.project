@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.ComplianceViolations;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
@@ -99,7 +99,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final Lazy _attributes = new Lazy();
     private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
     private final SendCallback _sendCallback = new SendCallback();
-    private final boolean _recordHttpComplianceViolations;
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
@@ -132,7 +131,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         return last;
     }
 
+    /**
+     * @deprecated use {@link #HttpConnection(HttpConfiguration, Connector, EndPoint)} instead.  Will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.5", forRemoval = true)
     public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
+    {
+        this(configuration, connector, endPoint);
+    }
+
+    public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint)
     {
         super(connector, configuration, endPoint);
         _id = __connectionIdGenerator.getAndIncrement();
@@ -141,7 +149,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
-        _recordHttpComplianceViolations = recordComplianceViolations;
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
     }
@@ -152,9 +159,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         return getServer().getInvocationType();
     }
 
+    /**
+     * @deprecated No replacement, no longer used within {@link HttpConnection}, will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.5", forRemoval = true)
     public boolean isRecordHttpComplianceViolations()
     {
-        return _recordHttpComplianceViolations;
+        return false;
     }
 
     protected HttpGenerator newHttpGenerator()
@@ -164,8 +175,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
     {
-        ComplianceViolations complianceViolations = getHttpChannel().getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
-        HttpParser parser = new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance, complianceViolations);
+        HttpParser parser = new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance);
         parser.setHeaderCacheSize(getHttpConfiguration().getHeaderCacheSize());
         parser.setHeaderCacheCaseSensitive(getHttpConfiguration().isHeaderCacheCaseSensitive());
         return parser;
@@ -183,7 +193,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     protected RequestHandler newRequestHandler()
     {
-        return new RequestHandler();
+        return new RequestHandler(getConnector());
     }
 
     public Server getServer()
@@ -912,6 +922,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     protected class RequestHandler implements HttpParser.RequestHandler
     {
         private Throwable _failure;
+        private ComplianceViolation.Listener _listener;
+
+        public RequestHandler(Connector connector)
+        {
+            _listener = Server.newComplianceViolationListener(connector);
+        }
 
         @Override
         public void startRequest(String method, String uri, HttpVersion version)
@@ -960,6 +976,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
+        public void onViolation(ComplianceViolation.Event event)
+        {
+            if (_listener != null)
+                _listener.onComplianceViolation(event);
+        }
+
+        @Override
         public void parsedTrailer(HttpField field)
         {
             if (_trailers == null)
@@ -977,6 +1000,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 stream._chunk = new Trailers(_trailers.asImmutable());
             else
                 stream._chunk = Content.Chunk.EOF;
+
+            _listener.onRequestEnd(getHttpChannel().getRequest());
             return false;
         }
 
@@ -985,6 +1010,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
+
+            _listener.onRequestEnd(getHttpChannel().getRequest());
 
             _failure = (Throwable)failure;
             _generator.setPersistent(false);
@@ -1154,13 +1181,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_uri.hasViolations())
             {
                 compliance = getHttpConfiguration().getUriCompliance();
-                ComplianceViolations complianceViolations = getHttpChannel().getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, complianceViolations);
+                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, _requestHandler._listener);
                 if (badMessage != null)
                     throw new BadMessageException(badMessage);
             }
 
-            // Check host field matches the authority in the any absolute URI or is not blank
+            // Check host field matches the authority in the absolute URI or is not blank
             if (_hostField != null)
             {
                 if (_uri.isAbsolute())
@@ -1170,9 +1196,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
                         {
-                            ComplianceViolations complianceViolations = getHttpChannel().getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
-                            if (complianceViolations != null)
-                                complianceViolations.onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString());
+                            if (_requestHandler._listener != null)
+                                _requestHandler._listener.onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString());
                         }
                         else
                             throw new BadMessageException("Authority!=Host");
@@ -1216,6 +1241,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             Runnable handle = _httpChannel.onRequest(_request);
             ++_requests;
+
+            Request request = _httpChannel.getRequest();
+            request.setAttribute(ComplianceViolation.Listener.class.getName(), _requestHandler._listener);
+            _requestHandler._listener.onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {

@@ -13,7 +13,13 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+
+import org.eclipse.jetty.util.Attributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Compliance Violation represents a requirement of an RFC, specification or Jetty implementation
@@ -91,15 +97,158 @@ public interface ComplianceViolation
     interface Listener
     {
         /**
-         * The compliance violation event.
+         * A new Request has begun.
+         *
+         * @param request the request attributes, or null if the Request does not exist yet (eg: during parsing of HTTP/1.1 headers, before request is created)
          */
-        default void onComplianceViolation(Event event)
+        default void onRequestBegin(Attributes request)
         {
         }
 
+        /**
+         * A Request has ended.
+         *
+         * @param request the request attribtues, or null if Request does not exist yet (eg: during handling of a {@link BadMessageException})
+         */
+        default void onRequestEnd(Attributes request)
+        {
+        }
+
+        /**
+         * The compliance violation event.
+         *
+         * @param event the compliance violation event
+         */
+        default void onComplianceViolation(Event event)
+        {
+            onComplianceViolation(event.mode, event.violation, event.details);
+        }
+
+        /**
+         * The compliance violation event.
+         *
+         * @param mode the mode
+         * @param violation the violation
+         * @param details the details
+         * @deprecated use {@link #onComplianceViolation(Event)} instead.  Will be removed in Jetty 12.1.0
+         */
+        @Deprecated(since = "12.0.5", forRemoval = true)
         default void onComplianceViolation(Mode mode, ComplianceViolation violation, String details)
         {
-            onComplianceViolation(new Event(mode, violation, details));
+        }
+    }
+
+    /**
+     * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
+     */
+    class ListenerCollection implements Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(ListenerCollection.class);
+        private final List<ComplianceViolation.Listener> userListeners;
+
+        /**
+         * Construct a new ComplianceViolations that will notify user listeners.
+         * @param userListeners the user listeners to notify, null or empty is allowed.
+         */
+        public ListenerCollection(List<ComplianceViolation.Listener> userListeners)
+        {
+            this.userListeners = userListeners;
+        }
+
+        /**
+         * Get a specific ComplianceViolation.Listener from collected user listeners
+         * @param clazz the class to look for
+         * @return the instance of the class in the user listeners
+         * @param <T> the type of class
+         */
+        public <T> T getUserListener(Class<T> clazz)
+        {
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                if (clazz.isInstance(listener))
+                    return clazz.cast(listener);
+            }
+            return null;
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Event event)
+        {
+            assert event != null;
+            notifyUserListeners(event);
+        }
+
+        private void notifyUserListeners(ComplianceViolation.Event event)
+        {
+            if (userListeners == null || userListeners.isEmpty())
+                return;
+
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                try
+                {
+                    listener.onComplianceViolation(event);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
+                }
+            }
+        }
+    }
+
+    interface ListenerFactory
+    {
+        Listener newComplianceViolationListener();
+    }
+
+    public class LoggingListenerFactory implements ListenerFactory, Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(ComplianceViolation.class);
+
+        @Override
+        public void onComplianceViolation(Event event)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(event.toString());
+        }
+
+        @Override
+        public Listener newComplianceViolationListener()
+        {
+            return this;
+        }
+    }
+
+    public class CapturingListenerFactory implements ListenerFactory
+    {
+        @Override
+        public Listener newComplianceViolationListener()
+        {
+            return new CapturingListener();
+        }
+    }
+
+    public class CapturingListener implements Listener
+    {
+        private List<Event> events = new ArrayList<>();
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            if (request != null)
+                request.setAttribute(ComplianceViolation.class.getPackageName() + ".complianceViolations", events);
+        }
+
+        @Override
+        public void onRequestEnd(Attributes request)
+        {
+        }
+
+        @Override
+        public void onComplianceViolation(Event event)
+        {
+            events.add(event);
         }
     }
 }

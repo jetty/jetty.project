@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.http.ComplianceViolations;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -590,8 +590,8 @@ public interface Request extends Attributes, Content.Source
         CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(CACHE_ATTRIBUTE);
         if (cookieCache == null)
         {
-            ComplianceViolations complianceViolations = request.getConnectionMetaData().getConnector().getBean(ComplianceViolations.class);
-            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), complianceViolations);
+            ComplianceViolation.Listener complianceViolationListener = (ComplianceViolation.Listener)request.getAttribute(ComplianceViolation.Listener.class.getName());
+            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), complianceViolationListener);
             request.getComponents().getCache().setAttribute(CACHE_ATTRIBUTE, cookieCache);
         }
 

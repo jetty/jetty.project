@@ -229,7 +229,6 @@ public class HttpParser
     private final HttpHandler _handler;
     private final RequestHandler _requestHandler;
     private final ResponseHandler _responseHandler;
-    private final ComplianceViolation.Listener _complianceListener;
     private final int _maxHeaderBytes;
     private final HttpCompliance _complianceMode;
     private final Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH);
@@ -294,27 +293,21 @@ public class HttpParser
 
     public HttpParser(RequestHandler handler, int maxHeaderBytes, HttpCompliance compliance)
     {
-        this(handler, null, maxHeaderBytes, compliance == null ? compliance() : compliance, null);
-    }
-
-    public HttpParser(RequestHandler handler, int maxHeaderBytes, HttpCompliance compliance, ComplianceViolation.Listener complianceListener)
-    {
-        this(handler, null, maxHeaderBytes, compliance == null ? compliance() : compliance, complianceListener);
+        this(handler, null, maxHeaderBytes, compliance == null ? compliance() : compliance);
     }
 
     public HttpParser(ResponseHandler handler, int maxHeaderBytes, HttpCompliance compliance)
     {
-        this(null, handler, maxHeaderBytes, compliance == null ? compliance() : compliance, null);
+        this(null, handler, maxHeaderBytes, compliance == null ? compliance() : compliance);
     }
 
-    private HttpParser(RequestHandler requestHandler, ResponseHandler responseHandler, int maxHeaderBytes, HttpCompliance compliance, ComplianceViolation.Listener complianceListener)
+    private HttpParser(RequestHandler requestHandler, ResponseHandler responseHandler, int maxHeaderBytes, HttpCompliance compliance)
     {
         _handler = requestHandler != null ? requestHandler : responseHandler;
         _requestHandler = requestHandler;
         _responseHandler = responseHandler;
         _maxHeaderBytes = maxHeaderBytes;
         _complianceMode = compliance;
-        _complianceListener = complianceListener;
     }
 
     public long getBeginNanoTime()
@@ -362,8 +355,8 @@ public class HttpParser
 
     protected void reportComplianceViolation(Violation violation, String reason)
     {
-        if (_complianceListener != null)
-            _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
+        if (_requestHandler != null)
+            _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
     }
 
     protected String caseInsensitiveHeader(String orig, String normative)
@@ -2024,6 +2017,14 @@ public class HttpParser
          * during the parsing of an HTTP message
          */
         void earlyEOF();
+
+        /**
+         * Called to indicate that a {@link ComplianceViolation} has occurred.
+         * @param event the Compliance Violation event
+         */
+        default void onViolation(ComplianceViolation.Event event)
+        {
+        }
 
         /**
          * Called to signal that a bad HTTP message has been received.

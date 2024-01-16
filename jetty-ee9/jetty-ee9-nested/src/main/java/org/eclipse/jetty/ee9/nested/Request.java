@@ -65,7 +65,6 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.ComplianceViolations;
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -83,7 +82,6 @@ import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
@@ -1988,18 +1986,14 @@ public class Request implements HttpServletRequest
 
     private void reportComplianceViolations()
     {
-        Connector connector = getHttpChannel().getConnector();
-        if (connector == null)
-            return; // not using a connector?
-
-        ComplianceViolations complianceViolations = connector.getBean(ComplianceViolations.class);
-        if (complianceViolations == null)
+        ComplianceViolation.Listener complianceViolationListener = (ComplianceViolation.Listener)getAttribute(ComplianceViolation.Listener.class.getName());
+        if (complianceViolationListener == null)
             return; // no violation reporting active
 
         List<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
         {
-            complianceViolations.onComplianceViolation(nc.mode(), nc.violation(), nc.detail());
+            complianceViolationListener.onComplianceViolation(nc.mode(), nc.violation(), nc.detail());
         }
     }
 

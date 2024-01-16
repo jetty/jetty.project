@@ -63,7 +63,7 @@ public class ServerTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
+                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint)
                 {
                     @Override
                     protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
