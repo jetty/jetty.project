@@ -233,7 +233,7 @@ testFileSystemPermissions()
 
   # Don't test if setuid is specified
   # as the Jetty process will switch to a different user id on startup
-  if expr "${JETTY_ARGS[*]}" : '.*setuid.*' >/dev/null
+  if expr -- "${JETTY_ARGS[*]}" : '.*setuid.*' >/dev/null
   then
     (( DEBUG )) && echo "Not testing file system permissions: setuid in use"
     return 0
@@ -459,7 +459,7 @@ then
   (( DEBUG )) && echo "$JETTY_CONF: (begin read) JETTY_ARGS.length=${#JETTY_ARGS[@]}"
   while read -r CONF
   do
-    if expr "$CONF" : '#' >/dev/null ; then
+    if expr -- "$CONF" : '#' >/dev/null ; then
       continue
     fi
 
@@ -573,7 +573,7 @@ RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 
 if (( DEBUG ))
 then
-  if expr "${RUN_ARGS[*]}" : '.*/etc/console-capture.xml.*' > /dev/null
+  if expr -- "${RUN_ARGS[*]}" : '.*/etc/console-capture.xml.*' > /dev/null
   then
     echo "WARNING: Disable console-capture module for best DEBUG results"
   fi
@@ -649,7 +649,7 @@ case "$ACTION" in
 
     fi
 
-    if expr "${JETTY_ARGS[*]}" : '.*jetty\.state=.*' >/dev/null
+    if expr -- "${JETTY_ARGS[*]}" : '.*jetty\.state=.*' >/dev/null
     then
       if started "$JETTY_STATE" "$JETTY_PID" "$JETTY_START_TIMEOUT"
       then
