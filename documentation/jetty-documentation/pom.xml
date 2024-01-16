@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.6-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-documentation</artifactId>
   <packaging>pom</packaging>
@@ -171,6 +171,19 @@
               <goal>single</goal>
             </goals>
             <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>compile-documentation-sources</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <phase>compile</phase>
           </execution>
         </executions>
       </plugin>

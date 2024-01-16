@@ -24,8 +24,8 @@
     <global>
       <glob>{*.java,*.xml,*.properties,*.mod,*.adoc}</glob>
       <excludes>
-        <exclude>*Jenkinsfile*</exclude>
-        <exclude>./idea/*</exclude>
+        <exclude glob="*Jenkinsfile*" />
+        <exclude glob="./idea/*" />
       </excludes>
     </global>
     <plugins>

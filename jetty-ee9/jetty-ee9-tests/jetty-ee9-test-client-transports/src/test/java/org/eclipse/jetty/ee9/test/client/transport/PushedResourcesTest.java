@@ -349,7 +349,6 @@ public class PushedResourcesTest extends AbstractTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 String target = request.getRequestURI();
-                System.err.println("SIMON: target = " + target);
                 if (target.equals(oldPath))
                     response.sendRedirect(newPath);
                 else if (target.equals(newPath))

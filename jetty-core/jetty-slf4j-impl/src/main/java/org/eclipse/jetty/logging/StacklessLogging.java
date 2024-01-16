@@ -84,6 +84,9 @@ public class StacklessLogging implements AutoCloseable
 
     public StacklessLogging(Logger... logs)
     {
+        if (loggerFactory == null)
+            return;
+
         for (Logger log : logs)
         {
             if (log instanceof JettyLogger jettyLogger && !jettyLogger.isDebugEnabled())
