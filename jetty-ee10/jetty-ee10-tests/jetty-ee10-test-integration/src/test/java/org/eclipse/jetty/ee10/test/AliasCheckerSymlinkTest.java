@@ -281,11 +281,11 @@ public class AliasCheckerSymlinkTest
             Arguments.of(allowedResource, "/files/file1", HttpStatus.OK_200, "file1 from combined dir"),
             Arguments.of(allowedResource, "/files/file2", HttpStatus.OK_200, "file1 from webroot"),
 
-            Arguments.of(allowedResource, "/combinedSymlinkFile", HttpStatus.OK_200, "file1 from webroot"),
+            Arguments.of(allowedResource, "/combinedSymlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
             Arguments.of(allowedResource, "/externalCombinedSymlinkFile/file", HttpStatus.NOT_FOUND_404, null),
             Arguments.of(allowedResource, "/combinedWebInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
 
-            Arguments.of(symlinkAllowedResource, "/combinedSymlinkFile", HttpStatus.OK_200, "file1 from webroot"),
+            Arguments.of(symlinkAllowedResource, "/combinedSymlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
             Arguments.of(symlinkAllowedResource, "/externalCombinedSymlinkFile/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
             Arguments.of(symlinkAllowedResource, "/combinedWebInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file.")
         );
