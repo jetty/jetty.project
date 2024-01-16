@@ -86,12 +86,6 @@ public class AliasCheckerSymlinkTest
             contextHandler.addAliasCheck(aliasChecker);
     }
 
-    // TODO: REMOVE
-    private static void createSymbolicLink(Path base, String symlinkFile, String target) throws IOException
-    {
-        createSymbolicLink(base.resolve(symlinkFile), base.resolve(target));
-    }
-
     private static void createSymbolicLink(Path symlinkFile, Path target) throws IOException
     {
         delete(symlinkFile);
