@@ -327,6 +327,14 @@ public interface RetainableByteBuffer extends Retainable
         }
     }
 
+    /**
+     * Obtain a new accumulating {@link RetainableByteBuffer} that may internally accumulate multiple other
+     * {@link RetainableByteBuffer}s with zero-copy if the {@link #append(RetainableByteBuffer)} API is used
+     * @param bufferPool The pool from which to allocate buffers
+     * @param direct true if direct buffers should be used
+     * @param maxLength The maximum length of the accumulated buffers or -1 for no limit
+     * @return The accumulating {@link RetainableByteBuffer}
+     */
     static RetainableByteBuffer newAccumulator(ByteBufferPool bufferPool, boolean direct, int maxLength)
     {
         return new Accumulator(bufferPool, direct, maxLength);
@@ -510,22 +518,30 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean writeTo(ByteBuffer to)
         {
-            // TODO
-            return RetainableByteBuffer.super.writeTo(to);
+            for (RetainableByteBuffer buffer : _buffers)
+            {
+                if (!buffer.writeTo(to))
+                    return false;
+            }
+            return true;
         }
 
         @Override
         public boolean writeTo(RetainableByteBuffer to)
         {
-            // TODO
-            return RetainableByteBuffer.super.writeTo(to);
+            for (RetainableByteBuffer buffer : _buffers)
+            {
+                if (!buffer.writeTo(to))
+                    return false;
+            }
+            return true;
         }
 
         @Override
         public void writeTo(OutputStream out) throws IOException
         {
-            // TODO
-            RetainableByteBuffer.super.writeTo(out);
+            for (RetainableByteBuffer buffer : _buffers)
+                buffer.writeTo(out);
         }
 
         @Override
