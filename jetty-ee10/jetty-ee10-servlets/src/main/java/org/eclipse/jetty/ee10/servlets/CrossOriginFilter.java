@@ -116,7 +116,10 @@ import org.slf4j.LoggerFactory;
  *     ...
  * &lt;/web-app&gt;
  * </pre>
+ *
+ * @deprecated Use {@link org.eclipse.jetty.server.handler.CrossOriginHandler} instead
  */
+@Deprecated
 public class CrossOriginFilter implements Filter
 {
     private static final Logger LOG = LoggerFactory.getLogger(CrossOriginFilter.class);

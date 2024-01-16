@@ -18,12 +18,11 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.Security;
 import java.time.Duration;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 
-import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,10 +30,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
-import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.servlets.CrossOriginFilter;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
@@ -55,12 +52,14 @@ import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLogWriter;
@@ -72,6 +71,7 @@ import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
@@ -84,6 +84,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -255,6 +256,65 @@ public class HTTPServerDocs
 
         server.start();
         // end::configureConnectors[]
+    }
+
+    public void sameRandomPort() throws Exception
+    {
+        // tag::sameRandomPort[]
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        Server server = new Server();
+
+        // The plain HTTP configuration.
+        HttpConfiguration plainConfig = new HttpConfiguration();
+
+        // The secure HTTP configuration.
+        HttpConfiguration secureConfig = new HttpConfiguration(plainConfig);
+        secureConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // First, create the secure connector for HTTPS and HTTP/2.
+        HttpConnectionFactory https = new HttpConnectionFactory(secureConfig);
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(secureConfig);
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(https.getProtocol());
+        ConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, https.getProtocol());
+        ServerConnector secureConnector = new ServerConnector(server, 1, 1, ssl, alpn, http2, https);
+        server.addConnector(secureConnector);
+
+        // Second, create the plain connector for HTTP.
+        HttpConnectionFactory http = new HttpConnectionFactory(plainConfig);
+        ServerConnector plainConnector = new ServerConnector(server, 1, 1, http);
+        server.addConnector(plainConnector);
+
+        // Third, create the connector for HTTP/3.
+        HTTP3ServerConnectionFactory http3 = new HTTP3ServerConnectionFactory(secureConfig);
+        HTTP3ServerConnector http3Connector = new HTTP3ServerConnector(server, sslContextFactory, http3);
+        server.addConnector(http3Connector);
+
+        // Set up a listener so that when the secure connector starts,
+        // it configures the other connectors that have not started yet.
+        secureConnector.addEventListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStarted(LifeCycle lifeCycle)
+            {
+                if (lifeCycle instanceof NetworkConnector networkConnector)
+                {
+                    int port = networkConnector.getLocalPort();
+
+                    // Configure the plain connector for secure redirects from http to https.
+                    plainConfig.setSecurePort(port);
+
+                    // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
+                    http3Connector.setPort(port);
+                }
+            }
+        });
+
+        server.start();
+        // end::sameRandomPort[]
     }
 
     public void http11() throws Exception
@@ -1004,21 +1064,20 @@ public class HTTPServerDocs
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
+        // Add the CrossOriginHandler to protect from CSRF attacks.
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        server.setHandler(crossOriginHandler);
+
         // Create a ServletContextHandler with contextPath.
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/shop");
         // Link the context to the server.
-        server.setHandler(context);
+        crossOriginHandler.setHandler(context);
 
         // Add the Servlet implementing the cart functionality to the context.
         ServletHolder servletHolder = context.addServlet(ShopCartServlet.class, "/cart/*");
         // Configure the Servlet with init-parameters.
         servletHolder.setInitParameter("maxItems", "128");
-
-        // Add the CrossOriginFilter to protect from CSRF attacks.
-        FilterHolder filterHolder = context.addFilter(CrossOriginFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-        // Configure the filter.
-        filterHolder.setAsyncSupported(true);
 
         server.start();
         // end::servletContextHandler-setup[]
@@ -1399,6 +1458,15 @@ public class HTTPServerDocs
 
         server.start();
         // end::securedHandler[]
+    }
+
+    public void crossOriginAllowedOrigins()
+    {
+        // tag::crossOriginAllowedOrigins[]
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        // The allowed origins are regex patterns.
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://domain\\.com"));
+        // end::crossOriginAllowedOrigins[]
     }
 
     public void defaultHandler() throws Exception

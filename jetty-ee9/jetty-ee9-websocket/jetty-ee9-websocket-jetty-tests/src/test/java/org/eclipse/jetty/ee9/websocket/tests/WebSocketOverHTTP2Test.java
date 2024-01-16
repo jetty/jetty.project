@@ -162,7 +162,7 @@ public class WebSocketOverHTTP2Test
         startClient(protocolFn);
 
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo/query?param=value");
         Session session = wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS);
 
         String text = "websocket";
@@ -382,6 +382,11 @@ public class WebSocketOverHTTP2Test
         protected void configure(JettyWebSocketServletFactory factory)
         {
             factory.addMapping("/ws/echo", (request, response) -> new EchoSocket());
+            factory.addMapping("/ws/echo/query", (request, response) ->
+            {
+                assertNotNull(request.getQueryString());
+                return new EchoSocket();
+            });
             factory.addMapping("/ws/null", (request, response) ->
             {
                 response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503, "null");
