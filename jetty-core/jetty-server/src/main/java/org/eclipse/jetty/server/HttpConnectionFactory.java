@@ -59,7 +59,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     public void configure(Connector connector)
     {
         if (isRecordHttpComplianceViolations())
-            addBean(new ComplianceViolation.LoggingListenerFactory());
+            addBean(new ComplianceViolation.LoggingListener());
     }
 
     public boolean isRecordHttpComplianceViolations()

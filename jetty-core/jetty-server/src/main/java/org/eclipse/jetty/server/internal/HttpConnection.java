@@ -1001,7 +1001,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
                 stream._chunk = Content.Chunk.EOF;
 
-            _listener.onRequestEnd(getHttpChannel().getRequest());
+            if (_listener != null)
+                _listener.onRequestEnd(getHttpChannel().getRequest());
             return false;
         }
 
@@ -1011,7 +1012,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
 
-            _listener.onRequestEnd(getHttpChannel().getRequest());
+            if (_listener != null)
+                _listener.onRequestEnd(getHttpChannel().getRequest());
 
             _failure = (Throwable)failure;
             _generator.setPersistent(false);
@@ -1244,7 +1246,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             Request request = _httpChannel.getRequest();
             request.setAttribute(ComplianceViolation.Listener.class.getName(), _requestHandler._listener);
-            _requestHandler._listener.onRequestBegin(request);
+            if (_requestHandler._listener != null)
+                _requestHandler._listener.onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {

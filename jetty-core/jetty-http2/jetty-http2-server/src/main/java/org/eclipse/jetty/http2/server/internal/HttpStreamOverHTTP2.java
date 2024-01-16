@@ -90,7 +90,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             ComplianceViolation.Listener listener = Server.newComplianceViolationListener(_httpChannel.getConnectionMetaData().getConnector());
             Request request = _httpChannel.getRequest();
             request.setAttribute(ComplianceViolation.Listener.class.getName(), listener);
-            listener.onRequestBegin(request);
+            if (listener != null)
+                listener.onRequestBegin(request);
             // Note UriCompliance is done by HandlerInvoker
             // TODO: perform HttpCompliance violation checks?
 

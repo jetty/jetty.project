@@ -202,7 +202,7 @@ public interface ComplianceViolation
         Listener newComplianceViolationListener();
     }
 
-    public class LoggingListenerFactory implements ListenerFactory, Listener
+    public class LoggingListener implements Listener
     {
         private static final Logger LOG = LoggerFactory.getLogger(ComplianceViolation.class);
 
@@ -211,12 +211,6 @@ public interface ComplianceViolation
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(event.toString());
-        }
-
-        @Override
-        public Listener newComplianceViolationListener()
-        {
-            return this;
         }
     }
 

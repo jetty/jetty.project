@@ -170,15 +170,18 @@ public class Server extends Handler.Wrapper implements Attributes
             return null;
 
         // Only add the ComplianceViolations instance if the recording of Compliance Violations is enabled
-        // This also means that any user provided ComplianceViolation.Listener beans will only be
+        // This also means that any user provided ComplianceViolation.ListenerFactory beans will only be
         // used when the configuration on the HttpConnectionFactory allows then to be used.
 
-        // Look for optional user provided ComplianceViolation.ListenerSupplier
+        // Look for optional user provided ComplianceViolation.Listener and ComplianceViolation.ListenerFactory beans
         List<ComplianceViolation.Listener> userListeners = new ArrayList<>();
-        for (ComplianceViolation.ListenerFactory listenerFactory: connector.getBeans(ComplianceViolation.ListenerFactory.class))
-            userListeners.add(listenerFactory.newComplianceViolationListener());
-        for (ComplianceViolation.ListenerFactory listenerFactory: connector.getServer().getBeans(ComplianceViolation.ListenerFactory.class))
-            userListeners.add(listenerFactory.newComplianceViolationListener());
+        for (org.eclipse.jetty.util.component.Container container: List.of(connector, connector.getServer()))
+        {
+            for (ComplianceViolation.Listener listener: container.getBeans(ComplianceViolation.Listener.class))
+                userListeners.add(listener);
+            for (ComplianceViolation.ListenerFactory listenerFactory: container.getBeans(ComplianceViolation.ListenerFactory.class))
+                userListeners.add(listenerFactory.newComplianceViolationListener());
+        }
 
         // No listeners? then we are done
         if (userListeners.isEmpty())
@@ -186,7 +189,7 @@ public class Server extends Handler.Wrapper implements Attributes
         // Only 1 listener, just return it.
         if (userListeners.size() == 1)
             return userListeners.get(0);
-        // More than 1, establish ComplianceViolations collection
+        // More than 1, establish ComplianceViolation.ListenerCollection for user listeners
         return new ComplianceViolation.ListenerCollection(userListeners);
     }
 
