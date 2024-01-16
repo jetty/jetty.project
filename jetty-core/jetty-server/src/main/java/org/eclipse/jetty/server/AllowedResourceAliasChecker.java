@@ -45,7 +45,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
 
     private final ContextHandler _contextHandler;
     private final Supplier<Resource> _resourceBaseSupplier;
-    private final List<Resource> _protected = new ArrayList<>();
+    private final List<String> _protected = new ArrayList<>();
     private final AllowedResourceAliasCheckListener _listener = new AllowedResourceAliasCheckListener();
     private boolean _initialized;
     protected Resource _baseResource;
@@ -92,16 +92,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         {
             String[] protectedTargets = getProtectedTargets();
             if (protectedTargets != null)
-            {
-                for (String s : protectedTargets)
-                {
-                    Resource p = _baseResource.resolve(s);
-                    // TODO: we still want to include the protected target if it does not exist.
-                    if (p == null)
-                        continue;
-                    _protected.add(p);
-                }
-            }
+                _protected.addAll(Arrays.asList(protectedTargets));
         }
         catch (Throwable t)
         {
@@ -193,8 +184,11 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
                     return true;
 
                 // If the path is the same file as any protected resources, then it is protected.
-                for (Resource p : _protected)
+                for (String protectedTarget : _protected)
                 {
+                    Resource p = _baseResource.resolve(protectedTarget);
+                    if (p == null)
+                        continue;
                     for (Resource r : p)
                     {
                         if (isSameFile(path, r.getPath()))
