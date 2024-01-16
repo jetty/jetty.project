@@ -37,7 +37,7 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>3.22.2</version>
+      <version>${protobuf.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

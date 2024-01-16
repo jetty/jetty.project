@@ -92,6 +92,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         _buffer = buffer;
     }
 
+    @Override
     public int length()
     {
         return _buffer.length();

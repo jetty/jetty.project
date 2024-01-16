@@ -44,7 +44,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     public ByteArrayMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
     {
         super(session, methodHandle, autoDemand);
-
         // This uses the offset length byte array signature not supported by jakarta websocket.
         // The jakarta layer instead uses decoders for whole byte array messages instead of this message sink.
         MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
@@ -65,8 +64,10 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 return;
             }
 
+            // If the frame is fin and no accumulator has been
+            // created or used, then we don't need to aggregate.
             ByteBuffer payload = frame.getPayload();
-            if (frame.isFin() && accumulator == null)
+            if (frame.isFin() && (accumulator == null || accumulator.getLength() == 0))
             {
                 byte[] buf = BufferUtil.toArray(payload);
                 getMethodHandle().invoke(buf, 0, buf.length);
@@ -98,18 +99,11 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 getCoreSession().demand();
             }
-
         }
         catch (Throwable t)
         {
-            if (accumulator != null)
-                accumulator.fail(t);
+            fail(t);
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-                accumulator = null;
         }
     }
 
