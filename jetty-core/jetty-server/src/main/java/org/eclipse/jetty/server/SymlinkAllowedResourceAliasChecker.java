@@ -75,7 +75,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                     // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
                     // This does not allow symlinks like /WeB-InF->/var/lib/other
                     if (Files.isSymbolicLink(p))
-                        return !getContextHandler().isProtectedTarget(realURI);
+                        return !getContextHandler().isProtectedTarget(segmentPath.toString());
 
                     // If the ancestor is not allowed then do not allow.
                     if (!isAllowed(p))
