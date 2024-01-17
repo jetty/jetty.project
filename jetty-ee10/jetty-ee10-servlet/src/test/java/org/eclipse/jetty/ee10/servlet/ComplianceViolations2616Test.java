@@ -30,6 +30,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -59,14 +60,14 @@ public class ComplianceViolations2616Test
         {
             if (request instanceof HttpServletRequest)
             {
-                List<String> violations = (List<String>)request.getAttribute("org.eclipse.jetty.http.compliance.violations");
+                List<ComplianceViolation.Event> violations = (List<ComplianceViolation.Event>)request.getAttribute("org.eclipse.jetty.http.compliance.violations");
                 if (violations != null)
                 {
                     HttpServletResponse httpResponse = (HttpServletResponse)response;
                     int i = 0;
-                    for (String violation : violations)
+                    for (ComplianceViolation.Event event : violations)
                     {
-                        httpResponse.setHeader("X-Http-Violation-" + (i++), violation);
+                        httpResponse.setHeader("X-Http-Violation-" + (i++), event.toString());
                     }
                 }
             }
@@ -108,6 +109,7 @@ public class ComplianceViolations2616Test
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(config);
         httpConnectionFactory.setRecordHttpComplianceViolations(true);
         connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
+        connector.addBean(new ComplianceViolation.CapturingListenerFactory());
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");

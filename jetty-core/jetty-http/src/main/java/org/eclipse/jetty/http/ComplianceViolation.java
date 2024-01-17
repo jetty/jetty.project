@@ -225,13 +225,14 @@ public interface ComplianceViolation
 
     public class CapturingListener implements Listener
     {
+        public static final String VIOLATIONS_ATTR_KEY = "org.eclipse.jetty.http.compliance.violations";
         private List<Event> events = new ArrayList<>();
 
         @Override
         public void onRequestBegin(Attributes request)
         {
             if (request != null)
-                request.setAttribute(ComplianceViolation.class.getPackageName() + ".complianceViolations", events);
+                request.setAttribute(VIOLATIONS_ATTR_KEY, events);
         }
 
         @Override
