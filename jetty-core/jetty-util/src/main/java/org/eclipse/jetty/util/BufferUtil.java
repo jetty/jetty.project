@@ -681,6 +681,12 @@ public class BufferUtil
         }
     }
 
+    /**
+     * Write a {@link ByteBuffer} to an {@link OutputStream}, updating the position for the bytes written.
+     * @param buffer The buffer to write
+     * @param out The output stream
+     * @throws IOException if there was a problem writing.
+     */
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())

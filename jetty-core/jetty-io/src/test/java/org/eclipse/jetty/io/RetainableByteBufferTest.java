@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,7 +34,7 @@ public class RetainableByteBufferTest
 {
     public static final int MIN_CAPACITY = 32;
     public static final int MAX_CAPACITY = 64;
-    private static ByteBufferPool _pool;
+    private static ArrayByteBufferPool.Tracking _pool;
 
     @BeforeAll
     public static void beforeAll()
@@ -41,15 +42,21 @@ public class RetainableByteBufferTest
         _pool = new ArrayByteBufferPool.Tracking(MIN_CAPACITY, MIN_CAPACITY, MAX_CAPACITY, Integer.MAX_VALUE);
     }
 
+    @AfterAll
+    public static void afterAll()
+    {
+        assertThat("Leaks: " + _pool.dumpLeaks(), _pool.getLeaks().size(), is(0));
+    }
+
     static Stream<Arguments> buffers()
     {
         return Stream.of(
             Arguments.of(_pool.acquire(MIN_CAPACITY, true)),
             Arguments.of(_pool.acquire(MIN_CAPACITY, false)),
-            Arguments.of(RetainableByteBuffer.newAggregator(_pool, true, MIN_CAPACITY, MIN_CAPACITY)),
-            Arguments.of(RetainableByteBuffer.newAggregator(_pool, false, MIN_CAPACITY, MIN_CAPACITY)),
-            Arguments.of(RetainableByteBuffer.newAccumulator(_pool, true, MIN_CAPACITY)),
-            Arguments.of(RetainableByteBuffer.newAccumulator(_pool, false, MIN_CAPACITY))
+            Arguments.of(new RetainableByteBuffer.Aggregator(_pool, true, MIN_CAPACITY, MIN_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Aggregator(_pool, false, MIN_CAPACITY, MIN_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Accumulator(_pool, true, MIN_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Accumulator(_pool, false, MIN_CAPACITY))
         );
     }
 
@@ -64,6 +71,7 @@ public class RetainableByteBufferTest
 
         assertThat(buffer.getByteBuffer().remaining(), is(0));
         assertFalse(buffer.getByteBuffer().hasRemaining());
+        buffer.release();
     }
 
     @ParameterizedTest
@@ -75,6 +83,7 @@ public class RetainableByteBufferTest
             assertThat(buffer.append(bytes, 1, 1), is(1));
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        buffer.release();
     }
 
     @ParameterizedTest
@@ -87,6 +96,7 @@ public class RetainableByteBufferTest
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
         assertTrue(buffer.isFull());
+        buffer.release();
     }
 
     @ParameterizedTest
@@ -103,6 +113,7 @@ public class RetainableByteBufferTest
         }
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        buffer.release();
     }
 
     @ParameterizedTest
@@ -114,5 +125,6 @@ public class RetainableByteBufferTest
         assertTrue(from.hasRemaining());
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
         assertTrue(buffer.isFull());
+        buffer.release();
     }
 }

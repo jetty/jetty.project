@@ -45,7 +45,7 @@ public class BufferedContentSink implements Content.Sink
     private final boolean _direct;
     private final int _maxBufferSize;
     private final int _maxAggregationSize;
-    private RetainableByteBuffer _accumulator;
+    private RetainableByteBuffer _aggregator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
@@ -62,6 +62,12 @@ public class BufferedContentSink implements Content.Sink
         _direct = direct;
         _maxBufferSize = maxBufferSize;
         _maxAggregationSize = maxAggregationSize;
+    }
+    
+    private void releaseAggregator()
+    {
+        _aggregator.release();
+        _aggregator = null;
     }
 
     @Override
@@ -91,8 +97,8 @@ public class BufferedContentSink implements Content.Sink
         if (current.remaining() <= _maxAggregationSize)
         {
             // current buffer can be aggregated
-            if (_accumulator == null)
-                _accumulator = RetainableByteBuffer.newAccumulator(_bufferPool, _direct, _maxBufferSize);
+            if (_aggregator == null)
+                _aggregator = new RetainableByteBuffer.Aggregator(_bufferPool, _direct, _maxBufferSize);
             aggregateAndFlush(last, current, callback);
         }
         else
@@ -120,7 +126,7 @@ public class BufferedContentSink implements Content.Sink
         if (LOG.isDebugEnabled())
             LOG.debug("given buffer is greater than _maxBufferSize");
 
-        if (_accumulator == null)
+        if (_aggregator == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("nothing aggregated, flushing current buffer {}", currentBuffer);
@@ -129,9 +135,9 @@ public class BufferedContentSink implements Content.Sink
         else if (BufferUtil.hasContent(currentBuffer))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("flushing aggregated buffer {}", _accumulator);
+                LOG.debug("flushing aggregated buffer {}", _aggregator);
 
-            _accumulator.writeTo(_delegate, false, new Callback.Nested(Callback.from(_accumulator::release))
+            _aggregator.writeTo(_delegate, false, new Callback.Nested(Callback.from(this::releaseAggregator))
             {
                 @Override
                 public void succeeded()
@@ -154,7 +160,7 @@ public class BufferedContentSink implements Content.Sink
         }
         else
         {
-            _accumulator.writeTo(_delegate, last, Callback.from(_accumulator::release, callback));
+            _aggregator.writeTo(_delegate, last, last ? Callback.from(this::releaseAggregator, callback) : callback);
         }
     }
 
@@ -163,20 +169,20 @@ public class BufferedContentSink implements Content.Sink
      */
     private void aggregateAndFlush(boolean last, ByteBuffer currentBuffer, Callback callback)
     {
-        _accumulator.append(currentBuffer);
-        boolean full = _accumulator.isFull();
+        _aggregator.append(currentBuffer);
+        boolean full = _aggregator.isFull();
         boolean empty = !currentBuffer.hasRemaining();
         boolean flush = full || currentBuffer == FLUSH_BUFFER;
         boolean complete = last && empty;
         if (LOG.isDebugEnabled())
-            LOG.debug("aggregated current buffer, full={}, complete={}, bytes left={}, aggregator={}", full, complete, currentBuffer.remaining(), _accumulator);
+            LOG.debug("aggregated current buffer, full={}, complete={}, bytes left={}, aggregator={}", full, complete, currentBuffer.remaining(), _aggregator);
         if (complete)
         {
-            if (_accumulator != null)
+            if (_aggregator != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("complete; writing aggregated buffer as the last one: {} bytes", _accumulator.remaining());
-                _accumulator.writeTo(_delegate, true, Callback.from(callback, _accumulator::release));
+                    LOG.debug("complete; writing aggregated buffer as the last one: {} bytes", _aggregator.remaining());
+                _aggregator.writeTo(_delegate, true, Callback.from(this::releaseAggregator, callback));
             }
             else
             {
@@ -188,22 +194,30 @@ public class BufferedContentSink implements Content.Sink
         else if (flush)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("writing aggregated buffer: {} bytes, then {}", _accumulator.remaining(), currentBuffer.remaining());
+                LOG.debug("writing aggregated buffer: {} bytes, then {}", _aggregator.remaining(), currentBuffer.remaining());
 
-            if (BufferUtil.hasContent(currentBuffer))
+            if (BufferUtil.isEmpty(currentBuffer))
             {
-                _accumulator.writeTo(_delegate, false, new Callback.Nested(Callback.from(_accumulator::release))
+                _aggregator.writeTo(_delegate, last, last ? Callback.from(this::releaseAggregator, callback) : callback);
+            }
+            else
+            {
+                _aggregator.writeTo(_delegate, false, new Callback()
                 {
                     @Override
                     public void succeeded()
                     {
-                        super.succeeded();
                         if (LOG.isDebugEnabled())
                             LOG.debug("written aggregated buffer, writing remaining of current: {} bytes{}", currentBuffer.remaining(), (last ? " (last write)" : ""));
                         if (last)
+                        {
+                            releaseAggregator();
                             _delegate.write(true, currentBuffer, callback);
+                        }
                         else
+                        {
                             aggregateAndFlush(false, currentBuffer, callback);
+                        }
                     }
 
                     @Override
@@ -211,20 +225,15 @@ public class BufferedContentSink implements Content.Sink
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("failure writing aggregated buffer", x);
-                        super.failed(x);
                         callback.failed(x);
                     }
                 });
-            }
-            else
-            {
-                _accumulator.writeTo(_delegate, last, Callback.from(_accumulator::release, callback));
             }
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("buffer fully aggregated, delaying writing - aggregator: {}", _accumulator);
+                LOG.debug("buffer fully aggregated, delaying writing - aggregator: {}", _aggregator);
             callback.succeeded();
         }
     }

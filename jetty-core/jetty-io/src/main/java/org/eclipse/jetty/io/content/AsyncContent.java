@@ -304,7 +304,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         @Override
         public boolean isRetained()
         {
-            return referenceCounter.isRetained();
+            return canRetain() && referenceCounter.isRetained();
         }
 
         @Override
@@ -317,6 +317,8 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         @Override
         public boolean release()
         {
+            if (hasRemaining())
+                BufferUtil.clear(getByteBuffer());
             if (!canRetain())
                 return true;
             boolean released = referenceCounter.release();

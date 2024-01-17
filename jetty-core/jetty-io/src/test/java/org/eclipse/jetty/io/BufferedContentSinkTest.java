@@ -270,6 +270,12 @@ public class BufferedContentSinkTest
             assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("Hello World!"));
             chunk.release();
             callback.get(5, TimeUnit.SECONDS);
+
+            buffered.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+            chunk = async.read();
+            assertThat(chunk.isLast(), is(true));
+            assertThat(chunk.remaining(), is(0));
+            chunk.release();
         }
     }
 
