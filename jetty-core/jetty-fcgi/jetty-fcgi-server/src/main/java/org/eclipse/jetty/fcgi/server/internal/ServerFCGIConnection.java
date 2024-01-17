@@ -181,7 +181,11 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 if (read > 0)
                 {
                     if (parse(networkBuffer.getByteBuffer()))
-                        return;
+                    {
+                        if (!networkBuffer.hasRemaining())
+                            releaseInputBuffer();
+                        break;
+                    }
                 }
                 else if (read == 0)
                 {
