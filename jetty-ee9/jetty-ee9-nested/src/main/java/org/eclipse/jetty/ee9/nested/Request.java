@@ -1993,7 +1993,7 @@ public class Request implements HttpServletRequest
         List<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
         {
-            complianceViolationListener.onComplianceViolation(nc.mode(), nc.violation(), nc.detail());
+            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.detail()));
         }
     }
 

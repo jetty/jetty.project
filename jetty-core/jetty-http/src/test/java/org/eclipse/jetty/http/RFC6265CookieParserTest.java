@@ -444,9 +444,9 @@ public class RFC6265CookieParserTest
         }
 
         @Override
-        public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+        public void onComplianceViolation(ComplianceViolation.Event event)
         {
-            violations.add((CookieCompliance.Violation)violation);
+            violations.add((CookieCompliance.Violation)event.violation());
         }
 
         private List<Cookie> parseFields(String... fields)

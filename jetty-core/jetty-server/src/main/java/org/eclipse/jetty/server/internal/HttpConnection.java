@@ -1199,7 +1199,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
                         {
                             if (_requestHandler._listener != null)
-                                _requestHandler._listener.onComplianceViolation(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString());
+                                _requestHandler._listener.onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
                         }
                         else
                             throw new BadMessageException("Authority!=Host");

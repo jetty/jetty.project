@@ -215,7 +215,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             if (compliance.getName().equals(name))
                 return compliance;
         }
-        LOG.warn("Unknown HttpCompliance mode {}", name);
+        if (name.indexOf(',') == -1) // skip warning if delimited, will be handled by .from() properly as a CUSTOM mode.
+            LOG.warn("Unknown HttpCompliance mode {}", name);
         return null;
     }
 
