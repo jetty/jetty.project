@@ -1987,13 +1987,11 @@ public class Request implements HttpServletRequest
     private void reportComplianceViolations()
     {
         ComplianceViolation.Listener complianceViolationListener = (ComplianceViolation.Listener)getAttribute(ComplianceViolation.Listener.class.getName());
-        if (complianceViolationListener == null)
-            return; // no violation reporting active
-
         List<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
         {
-            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.detail()));
+            if (complianceViolationListener != null)
+                complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.detail()));
         }
     }
 

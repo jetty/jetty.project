@@ -161,8 +161,14 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
     /**
      * The request attribute which may be set to record any allowed HTTP violations.
+     * @deprecated use {@link ComplianceViolation.CapturingListener#VIOLATIONS_ATTR_KEY} instead.<br>
+     *   (Note: new ATTR captures all Compliance violations, not just HTTP.<br>
+     *   Make sure you have {@code HttpConnectionFactory.setRecordHttpComplianceViolations(true)}.<br>
+     *   Also make sure that a {@link ComplianceViolation.CapturingListenerFactory} has been added as a bean to
+     *   either the {@code Connector} or {@code Server} for the Attribute to be created.)
      */
-    public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
+    @Deprecated(since = "12.0.5", forRemoval = true)
+    public static final String VIOLATIONS_ATTR = ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY;
 
     /**
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>
