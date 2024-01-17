@@ -231,7 +231,11 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         while (stream != null)
         {
             if (parse(networkBuffer.getByteBuffer()))
-                return;
+            {
+                if (!networkBuffer.hasRemaining())
+                    releaseInputBuffer();
+                break;
+            }
 
             // Check if the request was completed by the parsing.
             if (stream == null || fillInputBuffer() <= 0)
