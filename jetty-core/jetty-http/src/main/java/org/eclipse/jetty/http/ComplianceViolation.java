@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.util.Attributes;
@@ -152,7 +153,43 @@ public interface ComplianceViolation
          */
         public ListenerCollection(List<ComplianceViolation.Listener> userListeners)
         {
-            this.userListeners = userListeners;
+            Objects.requireNonNull(userListeners);
+            if (userListeners.isEmpty())
+                throw new IllegalStateException("Listener list is empty");
+            this.userListeners =  userListeners;
+        }
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                try
+                {
+                    listener.onRequestBegin(request);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify {}.onRequestBegin({})", listener.getClass().getName(), request, e);
+                }
+            }
+
+        }
+
+        @Override
+        public void onRequestEnd(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                try
+                {
+                    listener.onRequestEnd(request);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify {}.onRequestEnd({})", listener.getClass().getName(), request, e);
+                }
+            }
         }
 
         /**
@@ -175,15 +212,7 @@ public interface ComplianceViolation
         public void onComplianceViolation(ComplianceViolation.Event event)
         {
             assert event != null;
-            notifyUserListeners(event);
-        }
-
-        private void notifyUserListeners(ComplianceViolation.Event event)
-        {
-            if (userListeners == null || userListeners.isEmpty())
-                return;
-
-            for (ComplianceViolation.Listener listener : userListeners)
+            for (Listener listener : userListeners)
             {
                 try
                 {
@@ -238,6 +267,7 @@ public interface ComplianceViolation
         @Override
         public void onRequestEnd(Attributes request)
         {
+            events = new ArrayList<>();
         }
 
         @Override
