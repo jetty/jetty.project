@@ -668,4 +668,47 @@ public class HttpField
             return _long;
         }
     }
+
+    public static class MultiHttpField extends HttpField
+    {
+        private final List<String> _list;
+
+        public MultiHttpField(String name, List<String> list)
+        {
+            super(name, buildValue(list));
+            _list = list;
+        }
+
+        private static String buildValue(List<String> list)
+        {
+            StringBuilder builder = null;
+            for (String v : list)
+            {
+                if (StringUtil.isBlank(v))
+                    continue;
+                if (builder == null)
+                    builder = new StringBuilder(list.size() * v.length() * 2);
+                else
+                    builder.append(", ");
+                builder.append(v);
+            }
+
+            return builder == null ? null : builder.toString();
+        }
+
+        @Override
+        public List<String> getValueList()
+        {
+            return _list;
+        }
+
+        @Override
+        public boolean contains(String search)
+        {
+            for (String v : _list)
+                if (StringUtil.asciiEqualsIgnoreCase(v, search))
+                    return true;
+            return false;
+        }
+    }
 }

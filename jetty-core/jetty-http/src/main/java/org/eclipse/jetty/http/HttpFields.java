@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -990,6 +991,31 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
+         * Add a field with a list value;
+         *
+         * @param name the name of the field
+         * @param list the List value of the field. If null the field is cleared.
+         * @return this builder
+         */
+        default Mutable add(String name, List<String> list)
+        {
+            Objects.requireNonNull(name);
+            if (list == null || list.isEmpty())
+                return this;
+            if (list.size() == 1)
+            {
+                String v = list.get(0);
+                if (v == null)
+                    return this;
+                return add(name, v);
+            }
+            HttpField field = new HttpField.MultiHttpField(name, list);
+            if (field.getValueList() == null)
+                return this;
+            return add(field);
+        }
+
+        /**
          * <p>Adds the given value(s) to the {@link HttpField} with the given name,
          * encoding them as comma-separated if necessary,
          * unless they are already present in existing fields with the same name.</p>
@@ -1186,7 +1212,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Set a field.
+         * Set a field to a list value;
          *
          * @param name the name of the field
          * @param list the List value of the field. If null the field is cleared.
@@ -1194,19 +1220,16 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(String name, List<String> list)
         {
-            // TODO: this implementation should not add
-            //  multiple headers, see RFC 9110 section 5.3.
-            boolean first = true;
-            for (String s : list)
-            {
-                HttpField field = new HttpField(name, s);
-                if (first)
-                    put(field);
-                else
-                    add(field);
-                first = false;
-            }
-            return this;
+            Objects.requireNonNull(name);
+            if (list == null || list.isEmpty())
+                return remove(name);
+            if (list.size() == 1)
+                return put(name, list.get(0));
+
+            HttpField field = new HttpField.MultiHttpField(name, list);
+            if (field.getValueList() == null)
+                return remove(name);
+            return put(field);
         }
 
         /**

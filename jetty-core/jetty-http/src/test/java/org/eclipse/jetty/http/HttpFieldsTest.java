@@ -1001,12 +1001,61 @@ public class HttpFieldsTest
     }
 
     @Test
+    public void testAddNullValueList()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+
+        fields.add("name", (List<String>)null);
+        assertThat(fields.size(), is(0));
+        List<String> list = new ArrayList<>();
+        fields.add("name", list);
+        assertThat(fields.size(), is(0));
+        list.add(null);
+        fields.add("name", list);
+        assertThat(fields.size(), is(0));
+    }
+
+    @Test
+    public void testAddValueList()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+
+        fields.add("name", "0, 1, 2");
+        fields.add("name", List.of("A", "B", "C"));
+        assertThat(fields.size(), is(2));
+        assertThat(fields.getValuesList("name"), contains("0, 1, 2", "A, B, C"));
+        assertThat(fields.getCSV("name", false), contains("0", "1", "2", "A", "B", "C"));
+        assertThat(fields.getField("name").getValueList(), contains("0", "1", "2"));
+        assertThat(fields.getField(1).getValueList(), contains("A", "B", "C"));
+    }
+
+    @Test
     public void testPutNullValueList()
     {
         HttpFields.Mutable fields = HttpFields.build();
 
-        assertThrows(NullPointerException.class, () -> fields.put("name", (List<String>)null));
+        fields.add("name", "x");
+        fields.put("name", (List<String>)null);
         assertThat(fields.size(), is(0));
+        List<String> list = new ArrayList<>();
+        fields.add("name", "x");
+        fields.put("name", list);
+        assertThat(fields.size(), is(0));
+        list.add(null);
+        fields.add("name", "x");
+        fields.put("name", list);
+        assertThat(fields.size(), is(0));
+    }
+
+    @Test
+    public void testPutValueList()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+
+        fields.put("name", List.of("A", "B", "C"));
+        assertThat(fields.size(), is(1));
+        assertThat(fields.get("name"), is("A, B, C"));
+        assertThat(fields.getField("name").getValueList(), contains("A", "B", "C"));
     }
 
     @Test
