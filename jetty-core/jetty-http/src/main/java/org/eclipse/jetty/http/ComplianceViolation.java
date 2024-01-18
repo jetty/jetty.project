@@ -98,6 +98,10 @@ public interface ComplianceViolation
     {
         Listener NOOP = new Listener() {};
 
+        /**
+         * Initialize the listener in preparation for a new request life cycle.
+         * @return The {@link Listener} instance to use for the request life cycle.
+         */
         default Listener initialize()
         {
             return this;
@@ -230,44 +234,35 @@ public interface ComplianceViolation
     {
         public static final String VIOLATIONS_ATTR_KEY = "org.eclipse.jetty.http.compliance.violations";
 
+        private final List<Event> events;
+
+        public CapturingListener()
+        {
+            this(null);
+        }
+
+        private CapturingListener(List<Event> events)
+        {
+            this.events = events;
+        }
+
         @Override
         public Listener initialize()
         {
-            return new Listener()
-            {
-                private final List<Event> events = new ArrayList<>();
-
-                @Override
-                public void onRequestBegin(Attributes request)
-                {
-                    if (request != null)
-                        request.setAttribute(VIOLATIONS_ATTR_KEY, events);
-                }
-
-                @Override
-                public void onComplianceViolation(Event event)
-                {
-                    events.add(event);
-                }
-            };
+            return new CapturingListener(new ArrayList<>());
         }
 
         @Override
         public void onRequestBegin(Attributes request)
         {
-            throw new IllegalStateException("!initialized");
-        }
-
-        @Override
-        public void onRequestEnd(Attributes request)
-        {
-            throw new IllegalStateException("!initialized");
+            if (request != null)
+                request.setAttribute(VIOLATIONS_ATTR_KEY, events);
         }
 
         @Override
         public void onComplianceViolation(Event event)
         {
-            throw new IllegalStateException("!initialized");
+            events.add(event);
         }
     }
 }
