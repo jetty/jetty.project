@@ -164,7 +164,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public static ComplianceViolation.Listener getComplianceViolationListener(Connector connector)
     {
-        // TODO store listener in a field of AbstractConnector?
+        // TODO store listener in a field of AbstractConnection?
         return connector.getServer()._complianceViolationListener.computeIfAbsent(connector, c ->
         {
             Server server = connector.getServer();
