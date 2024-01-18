@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -386,8 +385,7 @@ public interface Response extends Content.Sink
         }
         catch (ComplianceViolationException e)
         {
-            ComplianceViolation.Listener complianceViolationListener = (ComplianceViolation.Listener)request.getAttribute(ComplianceViolation.Listener.class.getName());
-            complianceViolationListener.onComplianceViolation(e.getEvent());
+            request.getComponents().getComplianceViolationListener().onComplianceViolation(e.getEvent());
             throw e;
         }
 
@@ -421,8 +419,7 @@ public interface Response extends Content.Sink
         }
         catch (ComplianceViolationException e)
         {
-            ComplianceViolation.Listener complianceViolationListener = (ComplianceViolation.Listener)request.getAttribute(ComplianceViolation.Listener.class.getName());
-            complianceViolationListener.onComplianceViolation(e.getEvent());
+            request.getComponents().getComplianceViolationListener().onComplianceViolation(e.getEvent());
             throw e;
         }
 

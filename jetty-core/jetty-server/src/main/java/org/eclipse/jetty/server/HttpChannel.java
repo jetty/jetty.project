@@ -37,6 +37,12 @@ public interface HttpChannel extends Invocable
     ConnectionMetaData getConnectionMetaData();
 
     /**
+     * @return the {@link Components} associated with this {@code HttpChannel}.
+     * @see Request#getComponents()
+     */
+    Components getComponents();
+
+    /**
      * Set the {@link HttpStream} to associate to this channel..
      * @param httpStream the {@link HttpStream} to associate to this channel.
      */

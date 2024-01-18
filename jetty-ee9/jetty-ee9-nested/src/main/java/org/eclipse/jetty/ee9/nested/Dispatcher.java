@@ -26,7 +26,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
@@ -247,8 +246,7 @@ public class Dispatcher implements RequestDispatcher
         {
             HttpChannel channel = baseRequest.getHttpChannel();
             UriCompliance compliance = channel == null || channel.getHttpConfiguration() == null ? null : channel.getHttpConfiguration().getUriCompliance();
-            ComplianceViolation.Listener complianceViolationListener = (ComplianceViolation.Listener)baseRequest.getAttribute(ComplianceViolation.Listener.class.getName());
-            String illegalState = UriCompliance.checkUriCompliance(compliance, uri, complianceViolationListener);
+            String illegalState = UriCompliance.checkUriCompliance(compliance, uri, baseRequest.getCoreRequest().getComponents().getComplianceViolationListener());
             if (illegalState != null)
                 throw new IllegalStateException(illegalState);
         }

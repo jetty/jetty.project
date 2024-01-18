@@ -138,7 +138,7 @@ public class RequestTest
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         http.getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC6265_LEGACY);
         _connector = new LocalConnector(_server, http);
-        _connector.addBean(new ComplianceViolation.CapturingListenerFactory());
+        _connector.addBean(new ComplianceViolation.CapturingListener());
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
         _handler = new RequestHandler();

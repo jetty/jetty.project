@@ -81,7 +81,7 @@ public interface ComplianceViolation
         Set<? extends ComplianceViolation> getAllowed();
     }
 
-    public static record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
     {
         @Override
         public String toString()
@@ -90,8 +90,6 @@ public interface ComplianceViolation
                 violation.getDescription(), violation.getURL(), mode, details);
         }
     }
-
-    ;
 
     /**
      * A listener that can be notified of violations.
@@ -168,43 +166,26 @@ public interface ComplianceViolation
         @Override
         public Listener initialize()
         {
-            List<ComplianceViolation.Listener> cloned = null;
+            List<ComplianceViolation.Listener> initialized = null;
             for (ComplianceViolation.Listener listener : userListeners)
             {
-                Listener initialized = listener.initialize();
-                if (initialized != listener)
+                Listener listening = listener.initialize();
+                if (listening != listener)
                 {
-                    cloned = new ArrayList<>(userListeners.size());
+                    initialized = new ArrayList<>(userListeners.size());
                     for (ComplianceViolation.Listener l : userListeners)
                     {
                         if (l == listener)
                             break;
-                        cloned.add(l);
+                        initialized.add(l);
                     }
                 }
-                if (cloned != null)
-                    cloned.add(initialized);
+                if (initialized != null)
+                    initialized.add(listening);
             }
-            if (cloned == null)
+            if (initialized == null)
                 return this;
-            return new ListenerCollection(cloned);
-        }
-
-        /**
-         * Get a specific ComplianceViolation.Listener from collected user listeners
-         *
-         * @param clazz the class to look for
-         * @param <T> the type of class
-         * @return the instance of the class in the user listeners
-         */
-        public <T> T getUserListener(Class<T> clazz)
-        {
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                if (clazz.isInstance(listener))
-                    return clazz.cast(listener);
-            }
-            return null;
+            return new ListenerCollection(initialized);
         }
 
         @Override
@@ -254,18 +235,13 @@ public interface ComplianceViolation
         {
             return new Listener()
             {
-                private List<Event> events = new ArrayList<>();
+                private final List<Event> events = new ArrayList<>();
 
                 @Override
                 public void onRequestBegin(Attributes request)
                 {
                     if (request != null)
                         request.setAttribute(VIOLATIONS_ATTR_KEY, events);
-                }
-
-                @Override
-                public void onRequestEnd(Attributes request)
-                {
                 }
 
                 @Override

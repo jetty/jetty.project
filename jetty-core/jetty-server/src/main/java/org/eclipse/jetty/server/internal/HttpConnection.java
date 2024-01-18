@@ -103,8 +103,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
     private final HttpFields.Mutable _headerBuilder = HttpFields.build();
-    private final ComplianceViolation.Listener _complianceViolationListener;
-    private ComplianceViolation.Listener _complianceViolationInitializedListener;
     private volatile RetainableByteBuffer _retainableByteBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
@@ -150,7 +148,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _generator = newHttpGenerator();
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();
-        _complianceViolationListener = Server.getComplianceViolationListener(connector);
         _parser = newHttpParser(configuration.getHttpCompliance());
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
@@ -567,9 +564,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         if (_parser.isTerminated())
             throw new RuntimeIOException("Parser is terminated");
 
-        if (_complianceViolationInitializedListener == null)
-            _complianceViolationInitializedListener = _complianceViolationListener.initialize();
-
         boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
@@ -983,7 +977,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void onViolation(ComplianceViolation.Event event)
         {
-            _complianceViolationInitializedListener.onComplianceViolation(event);
+            getHttpChannel().getComponents().getComplianceViolationListener().onComplianceViolation(event);
         }
 
         @Override
@@ -1005,7 +999,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
                 stream._chunk = Content.Chunk.EOF;
 
-            _complianceViolationInitializedListener.onRequestBegin(getHttpChannel().getRequest());
+            getHttpChannel().getComponents().getComplianceViolationListener().onRequestBegin(getHttpChannel().getRequest());
             return false;
         }
 
@@ -1015,7 +1009,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
 
-            _complianceViolationInitializedListener.onRequestEnd(getHttpChannel().getRequest());
+            getHttpChannel().getComponents().getComplianceViolationListener().onRequestEnd(getHttpChannel().getRequest());
 
             _failure = (Throwable)failure;
             _generator.setPersistent(false);
@@ -1185,7 +1179,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_uri.hasViolations())
             {
                 compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, _complianceViolationInitializedListener);
+                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComponents().getComplianceViolationListener());
                 if (badMessage != null)
                     throw new BadMessageException(badMessage);
             }
@@ -1200,7 +1194,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
                         {
-                            _complianceViolationInitializedListener.onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
+                            getHttpChannel().getComponents().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
                         }
                         else
                             throw new BadMessageException("Authority!=Host");
@@ -1246,9 +1240,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             ++_requests;
 
             Request request = _httpChannel.getRequest();
-            // TODO why is this still needed?
-            request.setAttribute(ComplianceViolation.Listener.class.getName(), _complianceViolationInitializedListener);
-            _complianceViolationInitializedListener.onRequestBegin(request);
+            getHttpChannel().getComponents().getComplianceViolationListener().onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
@@ -1526,7 +1518,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
 
             _httpChannel.recycle();
-            _complianceViolationInitializedListener = null;
 
             if (_expects100Continue)
             {

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -43,4 +44,6 @@ public interface Components
      * @return A Map, which may be an empty map that discards all items.
      */
     Attributes getCache();
+
+    ComplianceViolation.Listener getComplianceViolationListener();
 }

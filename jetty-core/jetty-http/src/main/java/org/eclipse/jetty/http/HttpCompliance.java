@@ -164,7 +164,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * @deprecated use {@link ComplianceViolation.CapturingListener#VIOLATIONS_ATTR_KEY} instead.<br>
      *   (Note: new ATTR captures all Compliance violations, not just HTTP.<br>
      *   Make sure you have {@code HttpConnectionFactory.setRecordHttpComplianceViolations(true)}.<br>
-     *   Also make sure that a {@link ComplianceViolation.CapturingListenerFactory} has been added as a bean to
+     *   Also make sure that a {@link ComplianceViolation.CapturingListener} has been added as a bean to
      *   either the {@code Connector} or {@code Server} for the Attribute to be created.)
      */
     @Deprecated(since = "12.0.5", forRemoval = true)

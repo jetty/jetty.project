@@ -75,13 +75,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             requestMetaData = (MetaData.Request)frame.getMetaData();
 
+            ComplianceViolation.Listener listener = Server.getComplianceViolationListener(this.httpChannel.getConnectionMetaData().getConnector()).initialize();
             Runnable handler = httpChannel.onRequest(requestMetaData);
-
-            ComplianceViolation.Listener listener = Server.newComplianceViolationListener(this.httpChannel.getConnectionMetaData().getConnector());
             Request request = this.httpChannel.getRequest();
-            request.setAttribute(ComplianceViolation.Listener.class.getName(), listener);
-            if (listener != null)
-                listener.onRequestBegin(request);
+            listener.onRequestBegin(request);
             // Note UriCompliance is done by HandlerInvoker
             // TODO: perform HttpCompliance violation checks?
 
