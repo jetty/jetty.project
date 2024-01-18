@@ -15,9 +15,11 @@ package org.eclipse.jetty.io.content;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>A {@link Flow.Subscriber} that wraps a {@link Content.Sink}.
@@ -29,6 +31,7 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
 {
     private final Content.Sink sink;
     private final Callback callback;
+    private final AtomicInteger lastAndComplete = new AtomicInteger(2);
     private Flow.Subscription subscription;
 
     public ContentSinkSubscriber(Content.Sink sink, Callback callback)
@@ -49,22 +52,30 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     {
         // Retain the chunk because the write may not complete immediately.
         chunk.retain();
-        // Always set last=false because we do the last write from onComplete().
-        sink.write(false, chunk.getByteBuffer(), Callback.from(() -> succeeded(chunk), x -> failed(chunk, x)));
-    }
+        sink.write(chunk.isLast(), chunk.getByteBuffer(), new Callback()
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return Invocable.getInvocationType(callback);
+            }
 
-    private void succeeded(Content.Chunk chunk)
-    {
-        chunk.release();
-        if (!chunk.isLast())
-            subscription.request(1);
-    }
+            public void succeeded()
+            {
+                chunk.release();
+                if (chunk.isLast())
+                    onComplete();
+                else
+                    subscription.request(1);
+            }
 
-    private void failed(Content.Chunk chunk, Throwable failure)
-    {
-        chunk.release();
-        subscription.cancel();
-        onError(failure);
+            public void failed(Throwable failure)
+            {
+                chunk.release();
+                subscription.cancel();
+                onError(failure);
+            }
+        });
     }
 
     @Override
@@ -76,6 +87,8 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     @Override
     public void onComplete()
     {
-        sink.write(true, null, callback);
+        // wait until called twice: once from last write success and once from the publisher
+        if (lastAndComplete.decrementAndGet() == 0)
+            callback.succeeded();
     }
 }
