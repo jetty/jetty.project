@@ -89,13 +89,22 @@ public interface ComplianceViolation
             return String.format("%s (see %s) in mode %s for %s",
                 violation.getDescription(), violation.getURL(), mode, details);
         }
-    };
+    }
+
+    ;
 
     /**
      * A listener that can be notified of violations.
      */
     interface Listener
     {
+        Listener NOOP = new Listener() {};
+
+        default Listener initialize()
+        {
+            return this;
+        }
+
         /**
          * A new Request has begun.
          *
@@ -148,6 +157,7 @@ public interface ComplianceViolation
 
         /**
          * Construct a new ComplianceViolations that will notify user listeners.
+         *
          * @param userListeners the user listeners to notify, null or empty is allowed.
          */
         public ListenerCollection(List<ComplianceViolation.Listener> userListeners)
@@ -155,11 +165,37 @@ public interface ComplianceViolation
             this.userListeners = userListeners;
         }
 
+        @Override
+        public Listener initialize()
+        {
+            List<ComplianceViolation.Listener> cloned = null;
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                Listener initialized = listener.initialize();
+                if (initialized != listener)
+                {
+                    cloned = new ArrayList<>(userListeners.size());
+                    for (ComplianceViolation.Listener l : userListeners)
+                    {
+                        if (l == listener)
+                            break;
+                        cloned.add(l);
+                    }
+                }
+                if (cloned != null)
+                    cloned.add(initialized);
+            }
+            if (cloned == null)
+                return this;
+            return new ListenerCollection(cloned);
+        }
+
         /**
          * Get a specific ComplianceViolation.Listener from collected user listeners
+         *
          * @param clazz the class to look for
-         * @return the instance of the class in the user listeners
          * @param <T> the type of class
+         * @return the instance of the class in the user listeners
          */
         public <T> T getUserListener(Class<T> clazz)
         {
@@ -197,12 +233,7 @@ public interface ComplianceViolation
         }
     }
 
-    interface ListenerFactory
-    {
-        Listener newComplianceViolationListener();
-    }
-
-    public class LoggingListener implements Listener
+    class LoggingListener implements Listener
     {
         private static final Logger LOG = LoggerFactory.getLogger(ComplianceViolation.class);
 
@@ -214,36 +245,53 @@ public interface ComplianceViolation
         }
     }
 
-    public class CapturingListenerFactory implements ListenerFactory
-    {
-        @Override
-        public Listener newComplianceViolationListener()
-        {
-            return new CapturingListener();
-        }
-    }
-
-    public class CapturingListener implements Listener
+    class CapturingListener implements Listener
     {
         public static final String VIOLATIONS_ATTR_KEY = "org.eclipse.jetty.http.compliance.violations";
-        private List<Event> events = new ArrayList<>();
+
+        @Override
+        public Listener initialize()
+        {
+            return new Listener()
+            {
+                private List<Event> events = new ArrayList<>();
+
+                @Override
+                public void onRequestBegin(Attributes request)
+                {
+                    if (request != null)
+                        request.setAttribute(VIOLATIONS_ATTR_KEY, events);
+                }
+
+                @Override
+                public void onRequestEnd(Attributes request)
+                {
+                }
+
+                @Override
+                public void onComplianceViolation(Event event)
+                {
+                    events.add(event);
+                }
+            };
+        }
 
         @Override
         public void onRequestBegin(Attributes request)
         {
-            if (request != null)
-                request.setAttribute(VIOLATIONS_ATTR_KEY, events);
+            throw new IllegalStateException("!initialized");
         }
 
         @Override
         public void onRequestEnd(Attributes request)
         {
+            throw new IllegalStateException("!initialized");
         }
 
         @Override
         public void onComplianceViolation(Event event)
         {
-            events.add(event);
+            throw new IllegalStateException("!initialized");
         }
     }
 }
