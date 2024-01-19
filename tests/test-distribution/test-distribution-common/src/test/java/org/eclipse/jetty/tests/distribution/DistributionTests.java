@@ -16,7 +16,9 @@ package org.eclipse.jetty.tests.distribution;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -65,6 +67,8 @@ import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -73,6 +77,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -81,6 +86,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DistributionTests extends AbstractJettyHomeTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DistributionTests.class);
+
     @Test
     public void testStartStop() throws Exception
     {
@@ -1722,6 +1729,61 @@ public class DistributionTests extends AbstractJettyHomeTest
                     .timeout(15, TimeUnit.SECONDS)
                     .send();
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+        }
+    }
+
+    @Test
+    public void testSendDateHeader() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int httpPort = distribution.freePort();
+            List<String> args = List.of("jetty.http.port=" + httpPort);
+            try (JettyHomeTester.Run run2 = distribution.start(args))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                startHttpClient();
+
+                List<String> hostHeaders = new ArrayList<>();
+                hostHeaders.add("localhost");
+                hostHeaders.add("127.0.0.1");
+                try
+                {
+                    InetAddress localhost = InetAddress.getLocalHost();
+                    hostHeaders.add(localhost.getHostName());
+                    hostHeaders.add(localhost.getHostAddress());
+                }
+                catch (UnknownHostException e)
+                {
+                    LOG.debug("Unable to obtain InetAddress.LocalHost", e);
+                }
+
+                for (String hostHeader: hostHeaders)
+                {
+                    ContentResponse response = client.newRequest("http://" + hostHeader + ":" + httpPort + "/")
+                        .timeout(15, TimeUnit.SECONDS)
+                        .send();
+                    assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+                    String date = response.getHeaders().get(HttpHeader.DATE);
+                    String msg = "Request to [%s]: Response Header [Date]".formatted(hostHeader);
+                    assertThat(msg, date, notNullValue());
+                    // asserting an exact value is tricky as the Date header is dynamic,
+                    // so we just assert that it has some content and isn't blank
+                    assertTrue(StringUtil.isNotBlank(date), msg);
+                    assertThat(msg, date, containsString(","));
+                    assertThat(msg, date, containsString(":"));
+                }
             }
         }
     }
