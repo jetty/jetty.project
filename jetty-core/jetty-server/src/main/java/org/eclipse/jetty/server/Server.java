@@ -618,7 +618,6 @@ public class Server extends Handler.Wrapper implements Attributes
             {
                 try
                 {
-                    getComplianceViolationListener(connector);
                     connector.start();
                 }
                 catch (Throwable e)
