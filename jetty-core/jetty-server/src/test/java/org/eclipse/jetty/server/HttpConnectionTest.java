@@ -761,9 +761,22 @@ public class HttpConnectionTest
     }
 
     @Test
+    public void testHostOnlyPort() throws Exception
+    {
+        String response;
+
+        response = _connector.getResponse("""
+            GET /foo HTTP/1.1
+            Host: :1234
+            Connection: close
+            
+            """);
+        checkContains(response, 0, "HTTP/1.1 400");
+    }
+
+    @Test
     public void testBadHostPort() throws Exception
     {
-        LOG.info("badMessage: Number formate exception expected ...");
         String response;
 
         response = _connector.getResponse("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\r\n" +

@@ -2134,7 +2134,7 @@ public class HttpParser
 
         public boolean cacheable(HttpHeader header, String valueString)
         {
-            return isEnabled() && header != null && valueString.length() <= _size;
+            return isEnabled() && header != null && valueString != null && valueString.length() <= _size;
         }
 
         private void prepare()
