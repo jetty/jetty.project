@@ -31,6 +31,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -159,6 +160,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
+    private ComplianceViolation.Listener _complianceViolationListener;
 
     /**
      * @param server The {@link Server} this connector will be added to, must not be null
@@ -321,6 +323,36 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         LOG.info("Started {}", this);
     }
 
+    public ComplianceViolation.Listener getComplianceViolationListener()
+    {
+        if (_complianceViolationListener == null)
+        {
+            Server server = getServer();
+
+            // Only add the ComplianceViolations instance if the recording of Compliance Violations is enabled
+            // This also means that any user provided ComplianceViolation.ListenerFactory beans will only be
+            // used when the configuration on the HttpConnectionFactory allows then to be used.
+            HttpConnectionFactory httpConnectionFactory = getConnectionFactory(HttpConnectionFactory.class);
+            if (httpConnectionFactory == null || !httpConnectionFactory.isRecordHttpComplianceViolations())
+                return ComplianceViolation.Listener.NOOP;
+
+            // Look for optional user provided ComplianceViolation.Listener and ComplianceViolation.ListenerFactory beans
+            List<ComplianceViolation.Listener> userListeners = new ArrayList<>();
+            userListeners.addAll(getBeans(ComplianceViolation.Listener.class));
+            userListeners.addAll(server.getBeans(ComplianceViolation.Listener.class));
+
+            // No listeners? then we are done
+            if (userListeners.isEmpty())
+                return ComplianceViolation.Listener.NOOP;
+            // Only 1 listener, just return it.
+            if (userListeners.size() == 1)
+                return userListeners.get(0);
+            // More than 1, establish ComplianceViolation.ListenerCollection for user listeners
+            _complianceViolationListener = new ComplianceViolation.ListenerCollection(userListeners);
+        }
+        return _complianceViolationListener;
+    }
+
     protected void interruptAcceptors()
     {
         try (AutoLock lock = _lock.lock())
@@ -372,6 +404,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             removeBean(a);
 
         _shutdown = null;
+        _complianceViolationListener = null;
 
         LOG.info("Stopped {}", this);
     }

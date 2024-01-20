@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -87,7 +85,6 @@ public class Server extends Handler.Wrapper implements Attributes
     private final Context _serverContext = new ServerContext();
     private final AutoLock _dateLock = new AutoLock();
     private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
-    private final Map<Connector, ComplianceViolation.Listener> _complianceViolationListener = new ConcurrentHashMap<>();
     private String _serverInfo = __serverInfo;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
@@ -164,32 +161,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public static ComplianceViolation.Listener getComplianceViolationListener(Connector connector)
     {
-        // TODO store listener in a field of AbstractConnection?
-        return connector.getServer()._complianceViolationListener.computeIfAbsent(connector, c ->
-        {
-            Server server = connector.getServer();
-
-            // Only add the ComplianceViolations instance if the recording of Compliance Violations is enabled
-            // This also means that any user provided ComplianceViolation.ListenerFactory beans will only be
-            // used when the configuration on the HttpConnectionFactory allows then to be used.
-            HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
-            if (httpConnectionFactory == null || !httpConnectionFactory.isRecordHttpComplianceViolations())
-                return ComplianceViolation.Listener.NOOP;
-
-            // Look for optional user provided ComplianceViolation.Listener and ComplianceViolation.ListenerFactory beans
-            List<ComplianceViolation.Listener> userListeners = new ArrayList<>();
-            userListeners.addAll(connector.getBeans(ComplianceViolation.Listener.class));
-            userListeners.addAll(server.getBeans(ComplianceViolation.Listener.class));
-
-            // No listeners? then we are done
-            if (userListeners.isEmpty())
-                return ComplianceViolation.Listener.NOOP;
-            // Only 1 listener, just return it.
-            if (userListeners.size() == 1)
-                return userListeners.get(0);
-            // More than 1, establish ComplianceViolation.ListenerCollection for user listeners
-            return new ComplianceViolation.ListenerCollection(userListeners);
-        });
+        return connector instanceof AbstractConnector abstractConnector ? abstractConnector.getComplianceViolationListener() : ComplianceViolation.Listener.NOOP;
     }
 
     public Handler getDefaultHandler()
@@ -703,7 +675,6 @@ public class Server extends Handler.Wrapper implements Attributes
                 multiException = ExceptionUtil.combine(multiException, e);
             }
         }
-        _complianceViolationListener.clear();
 
         // And finally stop everything else
         try
