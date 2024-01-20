@@ -20,7 +20,7 @@
   <!-- =========================================================== -->
   <Call name="addConnector">
     <Arg>
-      <New class="org.eclipse.jetty.server.ServerConnector">
+      <New id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server"><Ref refid="Server" /></Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
