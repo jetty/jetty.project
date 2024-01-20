@@ -1085,7 +1085,7 @@ public class MultiPart
                     if (state == State.EPILOGUE)
                         notifyComplete();
                     else
-                        throw new EOFException("unexpected EOF");
+                        throw new EOFException("unexpected EOF in " + state);
                 }
             }
             catch (Throwable x)

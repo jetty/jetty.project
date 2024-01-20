@@ -317,8 +317,6 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         @Override
         public boolean release()
         {
-            if (hasRemaining())
-                BufferUtil.clear(getByteBuffer());
             if (!canRetain())
                 return true;
             boolean released = referenceCounter.release();
@@ -337,6 +335,18 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         public void failed(Throwable x)
         {
             callback.failed(x);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[rc=%d,l=%b,b=%s]".formatted(
+                getClass().getSimpleName(),
+                hashCode(),
+                referenceCounter.get(),
+                isLast(),
+                BufferUtil.toDetailString(getByteBuffer())
+            );
         }
     }
 }
