@@ -515,10 +515,11 @@ public class BufferedContentSinkTest
     @Test
     public void testByteByByteAsync() throws Exception
     {
+        // This test relies on selecting a size that will not be over allocated by the buffer pool
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 1024);
-            AtomicInteger count = new AtomicInteger(2048);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 8 * 1024, 8 * 1024);
+            AtomicInteger count = new AtomicInteger(16 * 1024);
             CountDownLatch complete = new CountDownLatch(1);
             Callback callback = new Callback()
             {
@@ -546,12 +547,12 @@ public class BufferedContentSinkTest
 
             Content.Chunk read = await().atMost(5, TimeUnit.SECONDS).until(async::read, Objects::nonNull);
             assertThat(read.isLast(), is(false));
-            assertThat(read.remaining(), is(1024));
+            assertThat(read.remaining(), is(8 * 1024));
             assertThat(read.release(), is(true));
 
             read = await().atMost(5, TimeUnit.SECONDS).until(async::read, Objects::nonNull);
             assertThat(read.isLast(), is(true));
-            assertThat(read.remaining(), is(1024));
+            assertThat(read.remaining(), is(8 * 1024));
             assertThat(read.release(), is(true));
 
             assertTrue(complete.await(5, TimeUnit.SECONDS));
