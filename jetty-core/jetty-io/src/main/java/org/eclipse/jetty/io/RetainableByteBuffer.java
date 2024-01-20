@@ -270,7 +270,7 @@ public interface RetainableByteBuffer extends Retainable
          * {@link RetainableByteBuffer}s with zero-copy if the {@link #append(RetainableByteBuffer)} API is used
          * @param pool The pool from which to allocate buffers
          * @param direct true if direct buffers should be used
-         * @param growBy the size to grow the buffer by or <= 0 for a heuristic
+         * @param growBy the size to grow the buffer by or &lt;= 0 for a heuristic
          * @param maxCapacity The maximum requested length of the accumulated buffers or -1 for no limit.
          *                    Note that the pool may provide a buffer that exceeds this capacity.
          */
