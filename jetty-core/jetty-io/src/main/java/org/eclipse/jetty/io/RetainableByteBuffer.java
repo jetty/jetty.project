@@ -442,19 +442,37 @@ public interface RetainableByteBuffer extends Retainable
             };
         }
 
+        /**
+         * {@inheritDoc}
+         * @throws ArithmeticException if the length of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}
+         */
         @Override
         public int remaining()
+        {
+            return Math.toIntExact(remainingLong());
+        }
+
+        public long remainingLong()
         {
             long length = 0;
             for (RetainableByteBuffer buffer : _buffers)
                 length += buffer.remaining();
-            return Math.toIntExact(length);
+            return length;
         }
 
+        /**
+         * {@inheritDoc}
+         * @throws ArithmeticException if the maxLength of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}.
+         */
         @Override
         public int capacity()
         {
-            return Math.toIntExact(_maxLength);
+            return Math.toIntExact(capacityLong());
+        }
+
+        public long capacityLong()
+        {
+            return _maxLength;
         }
 
         @Override
