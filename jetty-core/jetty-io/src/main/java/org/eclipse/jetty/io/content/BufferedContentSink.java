@@ -134,11 +134,18 @@ public class BufferedContentSink implements Content.Sink
         if (complete || flush)
             _flusher.flush(last, byteBuffer, callback);
         else
-            _flusher.callSucceeded(callback);
+            _flusher.serialize(callback);
     }
 
     private class Flusher extends IteratingCallback
     {
+        private enum Scheduled
+        {
+            FLUSHING_AGGREGATION,
+            FLUSHING_BUFFER,
+        }
+
+        private Scheduled _scheduled;
         private boolean _flush;
         private boolean _last;
         private ByteBuffer _byteBuffer;
@@ -156,7 +163,7 @@ public class BufferedContentSink implements Content.Sink
             iterate();
         }
 
-        private void callSucceeded(Callback callback)
+        private void serialize(Callback callback)
         {
             if (_callback != null)
                 throw new WritePendingException();
@@ -168,30 +175,45 @@ public class BufferedContentSink implements Content.Sink
         @Override
         protected Action process()
         {
+            if (_scheduled != null)
+            {
+                switch (_scheduled)
+                {
+                    case FLUSHING_AGGREGATION ->
+                    {
+                        _aggregator.clear();
+                        if (_byteBuffer != null && _byteBuffer.remaining() <= _maxAggregationSize && !_last)
+                        {
+                            _aggregator.append(_byteBuffer);
+                            _byteBuffer = null;
+                            _flush = false;
+                        }
+                    }
+
+                    case FLUSHING_BUFFER ->
+                        _byteBuffer = null;
+                }
+                _scheduled = null;
+            }
+
             if (_flush && _aggregator != null && _aggregator.hasRemaining())
             {
                 boolean last = _last && BufferUtil.isEmpty(_byteBuffer);
                 _lastWritten |= last;
                 _aggregator.writeTo(_delegate, last, this);
+                _scheduled = Scheduled.FLUSHING_AGGREGATION;
                 return Action.SCHEDULED;
             }
 
             if (_flush && BufferUtil.hasContent(_byteBuffer))
             {
-                if (_aggregator != null && _byteBuffer.remaining() <= _maxAggregationSize)
-                {
-                    _aggregator.append(_byteBuffer);
-                    this.succeeded();
-                    return Action.SCHEDULED;
-                }
                 ByteBuffer buffer = _byteBuffer;
                 _byteBuffer = null;
                 _lastWritten |= _last;
                 _delegate.write(_last, buffer, this);
+                _scheduled = Scheduled.FLUSHING_BUFFER;
                 return Action.SCHEDULED;
             }
-
-            _byteBuffer = null;
 
             if (_last && !_lastWritten)
             {
@@ -200,26 +222,16 @@ public class BufferedContentSink implements Content.Sink
                 return Action.SCHEDULED;
             }
 
-            if (_callback != null)
+            Callback callback = _callback;
+            if (callback != null)
             {
-                succeeded();
+                _callback = null;
+                callback.succeeded();
+                this.succeeded();
                 return Action.SCHEDULED;
             }
 
             return _last ? Action.SUCCEEDED : Action.IDLE;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            if (BufferUtil.isEmpty(_byteBuffer))
-            {
-                Callback callback = _callback;
-                _callback = null;
-                if (callback != null)
-                    callback.succeeded();
-            }
-            super.succeeded();
         }
 
         @Override

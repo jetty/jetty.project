@@ -291,7 +291,21 @@ public interface RetainableByteBuffer extends Retainable
                     throw new IllegalArgumentException("growBy(%d) must be <= maxCapacity(%d)".formatted(growBy, _maxCapacity));
 
                 _growBy = growBy;
-                _buffer = _pool.acquire(growBy, _direct);
+                _buffer = _pool.acquire(_growBy, _direct);
+            }
+        }
+
+        @Override
+        public void clear()
+        {
+            if (isRetained())
+            {
+                _buffer.release();
+                _buffer = _pool.acquire(_growBy, _direct);
+            }
+            else
+            {
+                BufferUtil.clear(_buffer.getByteBuffer());
             }
         }
 
