@@ -205,7 +205,7 @@ public class BufferedContentSink implements Content.Sink
                 return Action.SCHEDULED;
             }
 
-            if (_flush && BufferUtil.hasContent(_byteBuffer))
+            if (_flush && (BufferUtil.hasContent(_byteBuffer) || _byteBuffer == FLUSH_BUFFER))
             {
                 ByteBuffer buffer = _byteBuffer;
                 _byteBuffer = null;
