@@ -445,7 +445,7 @@ public class BufferUtil
             return length;
         }
 
-        if (to.hasArray())
+        if (from.hasArray())
         {
             to.put(from.array(), from.arrayOffset() + from.position(), space);
             from.position(from.position() + space);
