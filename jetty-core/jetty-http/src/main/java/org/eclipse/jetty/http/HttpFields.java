@@ -1000,7 +1000,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         default Mutable add(String name, List<String> list)
         {
             Objects.requireNonNull(name);
-            if (list == null || list.isEmpty())
+            if (list == null)
+                throw new IllegalArgumentException("null list");
+            if (list.isEmpty())
                 return this;
             if (list.size() == 1)
             {
