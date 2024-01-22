@@ -2229,7 +2229,7 @@ public class DefaultServletTest
             abcde
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         Files.writeString(file, "How now brown cow", UTF_8);
 
@@ -2242,7 +2242,7 @@ public class DefaultServletTest
             abcde
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
     }
 
     @Test

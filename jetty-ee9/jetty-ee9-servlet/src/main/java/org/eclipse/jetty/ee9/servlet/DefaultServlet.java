@@ -514,7 +514,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        doGet(request, response);
     }
 
     @Override
