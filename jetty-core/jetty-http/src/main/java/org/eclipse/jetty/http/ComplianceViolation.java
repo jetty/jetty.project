@@ -100,7 +100,7 @@ public interface ComplianceViolation
 
         /**
          * Initialize the listener in preparation for a new request life cycle.
-         * @return The {@link Listener} instance to use for the request life cycle.
+         * @return The Listener instance to use for the request life cycle.
          */
         default Listener initialize()
         {
@@ -119,7 +119,7 @@ public interface ComplianceViolation
         /**
          * A Request has ended.
          *
-         * @param request the request attribtues, or null if Request does not exist yet (eg: during handling of a {@link BadMessageException})
+         * @param request the request attributes, or null if Request does not exist yet (eg: during handling of a {@link BadMessageException})
          */
         default void onRequestEnd(Attributes request)
         {
@@ -146,75 +146,6 @@ public interface ComplianceViolation
         @Deprecated(since = "12.0.5", forRemoval = true)
         default void onComplianceViolation(Mode mode, ComplianceViolation violation, String details)
         {
-        }
-    }
-
-    /**
-     * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
-     */
-    class ListenerCollection implements Listener
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(ListenerCollection.class);
-        private final List<ComplianceViolation.Listener> userListeners;
-
-        /**
-         * Construct a new ComplianceViolations that will notify user listeners.
-         *
-         * @param userListeners the user listeners to notify, null or empty is allowed.
-         */
-        public ListenerCollection(List<ComplianceViolation.Listener> userListeners)
-        {
-            this.userListeners = userListeners;
-        }
-
-        @Override
-        public Listener initialize()
-        {
-            List<ComplianceViolation.Listener> initialized = null;
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                Listener listening = listener.initialize();
-                if (listening != listener)
-                {
-                    initialized = new ArrayList<>(userListeners.size());
-                    for (ComplianceViolation.Listener l : userListeners)
-                    {
-                        if (l == listener)
-                            break;
-                        initialized.add(l);
-                    }
-                }
-                if (initialized != null)
-                    initialized.add(listening);
-            }
-            if (initialized == null)
-                return this;
-            return new ListenerCollection(initialized);
-        }
-
-        @Override
-        public void onComplianceViolation(ComplianceViolation.Event event)
-        {
-            assert event != null;
-            notifyUserListeners(event);
-        }
-
-        private void notifyUserListeners(ComplianceViolation.Event event)
-        {
-            if (userListeners == null || userListeners.isEmpty())
-                return;
-
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                try
-                {
-                    listener.onComplianceViolation(event);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
-                }
-            }
         }
     }
 

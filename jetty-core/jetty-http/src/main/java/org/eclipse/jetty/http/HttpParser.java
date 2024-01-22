@@ -1518,6 +1518,10 @@ public class HttpParser
             // Start a request/response
             if (_state == State.START)
             {
+                if (_requestHandler != null)
+                    _requestHandler.messageBegin();
+                if (_responseHandler != null)
+                    _responseHandler.messageBegin();
                 _version = null;
                 _method = null;
                 _methodString = null;
@@ -1988,6 +1992,8 @@ public class HttpParser
      */
     public interface HttpHandler
     {
+        default void messageBegin() {}
+
         boolean content(ByteBuffer item);
 
         boolean headerComplete();

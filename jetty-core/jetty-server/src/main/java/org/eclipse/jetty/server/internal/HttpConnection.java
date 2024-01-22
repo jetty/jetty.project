@@ -929,6 +929,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
+        public void messageBegin()
+        {
+            _httpChannel.init();
+        }
+
+        @Override
         public void startRequest(String method, String uri, HttpVersion version)
         {
             HttpStreamOverHTTP1 stream = newHttpStream(method, uri, version);

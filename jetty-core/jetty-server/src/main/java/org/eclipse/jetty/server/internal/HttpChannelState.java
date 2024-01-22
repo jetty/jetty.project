@@ -127,6 +127,11 @@ public class HttpChannelState implements HttpChannel, Components
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
         _readInvoker = new HttpChannelSerializedInvoker();
         _writeInvoker = new HttpChannelSerializedInvoker();
+    }
+
+    @Override
+    public void init()
+    {
         _complianceViolationListener = Server.getComplianceViolationListener(_connectionMetaData.getConnector()).initialize();
     }
 
@@ -172,7 +177,7 @@ public class HttpChannelState implements HttpChannel, Components
             _onFailure = null;
             _callbackFailure = null;
             _expects100Continue = false;
-            _complianceViolationListener = _complianceViolationListener.initialize();
+            _complianceViolationListener = null;
         }
     }
 
