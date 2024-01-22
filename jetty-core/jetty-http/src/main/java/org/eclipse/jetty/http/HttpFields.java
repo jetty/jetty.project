@@ -991,7 +991,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Add a field with a list value;
+         * <p>Adds a field associated with a list of values.</p>
          *
          * @param name the name of the field
          * @param list the List value of the field. If null the field is cleared.
@@ -1212,7 +1212,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Set a field to a list value;
+         * <p>Puts a field associated with a list of values.</p>
          *
          * @param name the name of the field
          * @param list the List value of the field. If null the field is cleared.
