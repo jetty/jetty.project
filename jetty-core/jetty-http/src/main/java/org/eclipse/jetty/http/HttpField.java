@@ -669,7 +669,7 @@ public class HttpField
         }
     }
 
-    public static class MultiHttpField extends HttpField
+    static class MultiHttpField extends HttpField
     {
         private final List<String> _list;
 
