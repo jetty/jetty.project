@@ -15,10 +15,12 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
@@ -26,6 +28,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Jetty;
@@ -33,6 +36,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HTTP Configuration.
@@ -53,6 +58,8 @@ public class HttpConfiguration implements Dumpable
         .caseSensitive(false)
         .mutable()
         .build();
+    private final List<ComplianceViolation.Listener> _complianceViolationListeners = new CopyOnWriteArrayList<>();
+    private ComplianceViolation.Listener _combinedComplianceViolationListener;
     private int _outputBufferSize = 32 * 1024;
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
@@ -77,7 +84,6 @@ public class HttpConfiguration implements Dumpable
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
-    private boolean _notifyComplianceViolations = false;
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed = true;
     private HostPort _serverAuthority;
@@ -124,6 +130,7 @@ public class HttpConfiguration implements Dumpable
     public HttpConfiguration(HttpConfiguration config)
     {
         _customizers.addAll(config._customizers);
+        _complianceViolationListeners.addAll(config._complianceViolationListeners);
         for (String s : config._formEncodedMethods.keySet())
         {
             _formEncodedMethods.put(s, Boolean.TRUE);
@@ -151,7 +158,6 @@ public class HttpConfiguration implements Dumpable
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
         _multiPartCompliance = config._multiPartCompliance;
-        _notifyComplianceViolations = config._notifyComplianceViolations;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
         _uriCompliance = config._uriCompliance;
@@ -657,7 +663,7 @@ public class HttpConfiguration implements Dumpable
      */
     public boolean isNotifyComplianceViolations()
     {
-        return _notifyComplianceViolations;
+        return _complianceViolationListeners.stream().anyMatch(ComplianceViolation.LoggingListener.class::isInstance);
     }
 
     /**
@@ -665,7 +671,15 @@ public class HttpConfiguration implements Dumpable
      */
     public void setNotifyComplianceViolations(boolean notifyComplianceViolations)
     {
-        _notifyComplianceViolations = notifyComplianceViolations;
+        if (notifyComplianceViolations == isNotifyComplianceViolations())
+            return;
+        if (notifyComplianceViolations)
+            _complianceViolationListeners.add(new ComplianceViolation.LoggingListener());
+        else
+            _complianceViolationListeners.stream()
+                .filter(ComplianceViolation.LoggingListener.class::isInstance)
+                .forEach(_complianceViolationListeners::remove);
+        _combinedComplianceViolationListener = null;
     }
 
     /**
@@ -788,6 +802,32 @@ public class HttpConfiguration implements Dumpable
         return _maxUnconsumedRequestContentReads;
     }
 
+    public void addComplianceViolationListener(ComplianceViolation.Listener listener)
+    {
+        _complianceViolationListeners.add(listener);
+        _combinedComplianceViolationListener = null;
+    }
+
+    public void removeComplianceViolationListener(ComplianceViolation.Listener listener)
+    {
+        _complianceViolationListeners.remove(listener);
+        _combinedComplianceViolationListener = null;
+    }
+
+    public ComplianceViolation.Listener getCombinedComplianceViolationListener()
+    {
+        if (_combinedComplianceViolationListener == null)
+        {
+            _combinedComplianceViolationListener = switch (_complianceViolationListeners.size())
+            {
+                case 0 -> ComplianceViolation.Listener.NOOP;
+                case 1 -> _complianceViolationListeners.get(0);
+                default -> new ComplianceViolationListenerCollection(_complianceViolationListeners);
+            };
+        }
+        return _combinedComplianceViolationListener;
+    }
+
     @Override
     public String dump()
     {
@@ -836,5 +876,106 @@ public class HttpConfiguration implements Dumpable
             _secureScheme,
             _securePort,
             _customizers);
+    }
+
+    /**
+     * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
+     */
+    private static class ComplianceViolationListenerCollection implements ComplianceViolation.Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(ComplianceViolationListenerCollection.class);
+        private final List<ComplianceViolation.Listener> _listeners;
+
+        /**
+         * Construct a new ComplianceViolations that will notify user listeners.
+         *
+         * @param listeners the user listeners to notify, null or empty is allowed.
+         */
+        public ComplianceViolationListenerCollection(List<ComplianceViolation.Listener> listeners)
+        {
+            _listeners = listeners;
+        }
+
+        @Override
+        public ComplianceViolation.Listener initialize()
+        {
+            List<ComplianceViolation.Listener> initialized = null;
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                ComplianceViolation.Listener listening = listener.initialize();
+                if (listening != listener)
+                {
+                    initialized = new ArrayList<>(_listeners.size());
+                    for (ComplianceViolation.Listener l : _listeners)
+                    {
+                        if (l == listener)
+                            break;
+                        initialized.add(l);
+                    }
+                }
+                if (initialized != null)
+                    initialized.add(listening);
+            }
+            if (initialized == null)
+                return this;
+            return new ComplianceViolationListenerCollection(initialized);
+        }
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onRequestBegin(request);
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("Unable to begin request on {}", listener, t);
+                }
+            }
+        }
+
+        @Override
+        public void onRequestEnd(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onRequestEnd(request);
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("Unable to end request on {}", listener, t);
+                }
+            }
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Event event)
+        {
+            assert event != null;
+            notifyUserListeners(event);
+        }
+
+        private void notifyUserListeners(ComplianceViolation.Event event)
+        {
+            if (_listeners == null || _listeners.isEmpty())
+                return;
+
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onComplianceViolation(event);
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, t);
+                }
+            }
+        }
     }
 }

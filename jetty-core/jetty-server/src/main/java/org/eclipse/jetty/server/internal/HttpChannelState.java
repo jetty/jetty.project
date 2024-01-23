@@ -132,7 +132,7 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public void init()
     {
-        _complianceViolationListener = Server.getComplianceViolationListener(_connectionMetaData.getConnector()).initialize();
+        _complianceViolationListener = getHttpConfiguration().getCombinedComplianceViolationListener().initialize();
     }
 
     @Override
@@ -790,7 +790,7 @@ public class HttpChannelState implements HttpChannel, Components
             return _connectionMetaData;
         }
 
-        private HttpChannelState getHttpChannelState()
+        public HttpChannelState getHttpChannelState()
         {
             try (AutoLock ignore = _lock.lock())
             {
@@ -1072,6 +1072,11 @@ public class HttpChannelState implements HttpChannel, Components
         {
             _request = request;
             _httpFields = getResponseHttpFields(_request.lockedGetHttpChannelState());
+        }
+
+        public ChannelRequest getChannelRequest()
+        {
+            return _request;
         }
 
         protected ResponseHttpFields getResponseHttpFields(HttpChannelState httpChannelState)

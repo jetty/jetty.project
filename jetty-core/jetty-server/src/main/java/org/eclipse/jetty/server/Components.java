@@ -45,5 +45,10 @@ public interface Components
      */
     Attributes getCache();
 
+    /**
+     * @return A {@link ComplianceViolation.Listener} instance that has been
+     * {@link ComplianceViolation.Listener#initialize() initialized}
+     * for the current request cycle.
+     */
     ComplianceViolation.Listener getComplianceViolationListener();
 }

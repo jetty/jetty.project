@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -57,9 +56,6 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     @Override
     public void configure(Connector connector)
     {
-        // TODO: need HTTP/2 and HTTP/3 version of this
-        if (getHttpConfiguration().isNotifyComplianceViolations())
-            addBean(new ComplianceViolation.LoggingListener());
     }
 
     /**
