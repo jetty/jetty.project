@@ -163,7 +163,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      *   Also make sure that a {@link ComplianceViolation.CapturingListener} has been added as a bean to
      *   either the {@code Connector} or {@code Server} for the Attribute to be created.)
      */
-    @Deprecated(since = "12.0.5", forRemoval = true)
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public static final String VIOLATIONS_ATTR = ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY;
 
     /**

@@ -61,7 +61,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
      * @deprecated use {@link HttpConfiguration#getComplianceViolationListeners()} instead to know if there
      * are any {@link ComplianceViolation.Listener} to notify.  this method will be removed in Jetty 12.1.0
      */
-    @Deprecated(since = "12.0.5", forRemoval = true)
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public boolean isRecordHttpComplianceViolations()
     {
         return !_config.getComplianceViolationListeners().isEmpty();
@@ -72,7 +72,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
      * @deprecated use {@link HttpConfiguration#addComplianceViolationListener(ComplianceViolation.Listener)} instead.
      * this method will be removed in Jetty 12.1.0
      */
-    @Deprecated(since = "12.0.5", forRemoval = true)
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
     {
         _config.addComplianceViolationListener(new ComplianceViolation.LoggingListener());

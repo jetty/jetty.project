@@ -134,7 +134,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     /**
      * @deprecated use {@link #HttpConnection(HttpConfiguration, Connector, EndPoint)} instead.  Will be removed in Jetty 12.1.0
      */
-    @Deprecated(since = "12.0.5", forRemoval = true)
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
     {
         this(configuration, connector, endPoint);
@@ -162,7 +162,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     /**
      * @deprecated No replacement, no longer used within {@link HttpConnection}, will be removed in Jetty 12.1.0
      */
-    @Deprecated(since = "12.0.5", forRemoval = true)
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public boolean isRecordHttpComplianceViolations()
     {
         return false;

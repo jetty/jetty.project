@@ -143,7 +143,7 @@ public interface ComplianceViolation
          * @param details the details
          * @deprecated use {@link #onComplianceViolation(Event)} instead.  Will be removed in Jetty 12.1.0
          */
-        @Deprecated(since = "12.0.5", forRemoval = true)
+        @Deprecated(since = "12.0.6", forRemoval = true)
         default void onComplianceViolation(Mode mode, ComplianceViolation violation, String details)
         {
         }
