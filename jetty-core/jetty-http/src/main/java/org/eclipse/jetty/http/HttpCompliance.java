@@ -370,6 +370,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         HttpFields fields = request.getHttpFields();
         for (HttpField httpField: fields)
         {
+            if (httpField.getHeader() == null)
+                continue;
+
             switch (httpField.getHeader())
             {
                 case CONTENT_LENGTH ->
