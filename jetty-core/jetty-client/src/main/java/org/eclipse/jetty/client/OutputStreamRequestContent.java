@@ -34,7 +34,7 @@ import org.eclipse.jetty.io.content.OutputStreamContentSource;
  * try (OutputStream output = content.getOutputStream())
  * {
  *     httpClient.newRequest("localhost", 8080)
- *             .content(content)
+ *             .body(content)
  *             .send(new Response.CompleteListener()
  *             {
  *                 &#64;Override

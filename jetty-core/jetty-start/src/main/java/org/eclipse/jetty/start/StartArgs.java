@@ -67,7 +67,7 @@ public class StartArgs
         String tag = System.getProperty(JETTY_TAG_NAME_KEY);
 
         // Use META-INF/MANIFEST.MF versions
-        if (ver == null)
+        if (Utils.isBlank(ver))
         {
             ver = ManifestUtils.getManifest(StartArgs.class)
                 .map(Manifest::getMainAttributes)

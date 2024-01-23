@@ -1733,4 +1733,58 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testCrossOriginModule() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,cross-origin,demo-handler"))
+        {
+            run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS);
+            assertThat(run1.getExitValue(), is(0));
+
+            int httpPort1 = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.http.port=" + httpPort1)))
+            {
+                assertThat(run2.awaitConsoleLogsFor("Started oejs.Server", START_TIMEOUT, TimeUnit.SECONDS), is(true));
+                startHttpClient();
+
+                ContentResponse response = client.newRequest("http://localhost:" + httpPort1 + "/demo-handler/")
+                    .headers(headers -> headers.put(HttpHeader.ORIGIN, "http://localhost:" + httpPort1))
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("Hello World"));
+                // Verify that the CORS headers are present.
+                assertTrue(response.getHeaders().contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
+            }
+
+            int httpPort2 = distribution.freePort();
+            List<String> args = List.of(
+                "jetty.http.port=" + httpPort2,
+                // Allow a different origin.
+                "jetty.crossorigin.allowedOriginPatterns=http://localhost"
+            );
+            try (JettyHomeTester.Run run2 = distribution.start(args))
+            {
+                assertThat(run2.awaitConsoleLogsFor("Started oejs.Server", START_TIMEOUT, TimeUnit.SECONDS), is(true));
+                startHttpClient();
+
+                ContentResponse response = client.newRequest("http://localhost:" + httpPort2 + "/demo-handler/")
+                    .headers(headers -> headers.put(HttpHeader.ORIGIN, "http://localhost:" + httpPort2))
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("Hello World"));
+                // Verify that the CORS headers are not present, as the allowed origin is different.
+                assertFalse(response.getHeaders().contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
+            }
+        }
+    }
 }
