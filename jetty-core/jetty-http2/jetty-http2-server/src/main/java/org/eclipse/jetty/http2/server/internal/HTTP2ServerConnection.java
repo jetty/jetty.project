@@ -258,7 +258,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             httpChannel = httpChannels.poll();
         if (httpChannel == null)
             httpChannel = httpChannelFactory.newHttpChannel(this);
-        httpChannel.init();
+        httpChannel.initialize();
         return httpChannel;
     }
 

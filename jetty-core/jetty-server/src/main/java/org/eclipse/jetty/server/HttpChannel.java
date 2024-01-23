@@ -101,7 +101,7 @@ public interface HttpChannel extends Invocable
     /**
      * Recycle the HttpChannel, so that a new cycle of calling {@link #setHttpStream(HttpStream)},
      * {@link #onRequest(MetaData.Request)} etc. may be performed on the channel.
-     * @see #init()
+     * @see #initialize()
      */
     void recycle();
 
@@ -109,7 +109,7 @@ public interface HttpChannel extends Invocable
      * Initialize the HttpChannel when a new cycle of request handling begins.
      * @see #recycle()
      */
-    void init();
+    void initialize();
 
     /**
      * @return the active {@link ComplianceViolation.Listener}

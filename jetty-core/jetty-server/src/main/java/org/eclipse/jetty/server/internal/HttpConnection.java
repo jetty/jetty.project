@@ -927,7 +927,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void messageBegin()
         {
-            _httpChannel.init();
+            _httpChannel.initialize();
         }
 
         @Override
