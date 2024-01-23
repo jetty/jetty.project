@@ -1747,7 +1747,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS);
             assertThat(run1.getExitValue(), is(0));
 
-            int httpPort1 = distribution.freePort();
+            int httpPort1 = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.http.port=" + httpPort1)))
             {
                 assertThat(run2.awaitConsoleLogsFor("Started oejs.Server", START_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -1764,7 +1764,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(response.getHeaders().contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
             }
 
-            int httpPort2 = distribution.freePort();
+            int httpPort2 = Tester.freePort();
             List<String> args = List.of(
                 "jetty.http.port=" + httpPort2,
                 // Allow a different origin.
