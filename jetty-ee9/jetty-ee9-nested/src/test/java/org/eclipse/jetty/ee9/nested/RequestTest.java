@@ -137,8 +137,8 @@ public class RequestTest
         http.getHttpConfiguration().setOutputBufferSize(2048);
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         http.getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC6265_LEGACY);
+        http.getHttpConfiguration().addComplianceViolationListener(new ComplianceViolation.CapturingListener());
         _connector = new LocalConnector(_server, http);
-        _connector.addBean(new ComplianceViolation.CapturingListener());
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
         _handler = new RequestHandler();
