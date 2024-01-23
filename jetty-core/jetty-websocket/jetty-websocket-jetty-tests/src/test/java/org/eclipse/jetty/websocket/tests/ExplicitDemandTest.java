@@ -74,10 +74,32 @@ public class ExplicitDemandTest
         }
     }
 
+    @WebSocket(autoDemand = false)
+    public static class PingSocket extends ListenerSocket
+    {
+        Session session;
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
+            session.demand();
+        }
+
+        @Override
+        public void onWebSocketFrame(Frame frame, Callback callback)
+        {
+            super.onWebSocketFrame(frame, callback);
+            if (frame.getType() == Frame.Type.TEXT)
+                session.sendPing(ByteBuffer.wrap("server-ping".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        }
+    }
+
     private final Server server = new Server();
     private final WebSocketClient client = new WebSocketClient();
     private final SuspendSocket serverSocket = new SuspendSocket();
     private final ListenerSocket listenerSocket = new ListenerSocket();
+    private final PingSocket pingSocket = new PingSocket();
     private ServerConnector connector;
 
     @BeforeEach
@@ -90,6 +112,7 @@ public class ExplicitDemandTest
         {
             container.addMapping("/suspend", (rq, rs, cb) -> serverSocket);
             container.addMapping("/listenerSocket", (rq, rs, cb) -> listenerSocket);
+            container.addMapping("/ping", (rq, rs, cb) -> pingSocket);
         });
 
         server.setHandler(wsHandler);
@@ -149,15 +172,45 @@ public class ExplicitDemandTest
         session.sendPing(ByteBuffer.wrap("ping-0".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
         session.sendText("test-text", Callback.NOOP);
         session.sendPing(ByteBuffer.wrap("ping-1".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
-        session.close();
 
-        await().atMost(5, TimeUnit.SECONDS).until(listenerSocket.frames::size, is(3));
+        await().atMost(5, TimeUnit.SECONDS).until(listenerSocket.frames::size, is(2));
         Frame frame0 = listenerSocket.frames.get(0);
         assertThat(frame0.getType(), is(Frame.Type.PONG));
         assertThat(StandardCharsets.UTF_8.decode(frame0.getPayload()).toString(), is("ping-0"));
         Frame frame1 = listenerSocket.frames.get(1);
         assertThat(frame1.getType(), is(Frame.Type.PONG));
         assertThat(StandardCharsets.UTF_8.decode(frame1.getPayload()).toString(), is("ping-1"));
+
+        session.close();
+        await().atMost(5, TimeUnit.SECONDS).until(listenerSocket.frames::size, is(3));
         assertThat(listenerSocket.frames.get(2).getType(), is(Frame.Type.CLOSE));
+    }
+
+    @Test
+    public void testServerPing() throws Exception
+    {
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/ping");
+        PingSocket pingSocket = new PingSocket();
+        Future<Session> connect = client.connect(pingSocket, uri);
+        Session session = connect.get(5, TimeUnit.SECONDS);
+
+        session.sendText("send-me-a-ping", Callback.NOOP);
+
+        await().atMost(5, TimeUnit.SECONDS).until(pingSocket.frames::size, is(1));
+        Frame frame = pingSocket.frames.get(0);
+        assertThat(frame.getType(), is(Frame.Type.PING));
+        assertThat(StandardCharsets.UTF_8.decode(frame.getPayload()).toString(), is("server-ping"));
+
+        session.sendText("send-me-another-ping", Callback.NOOP);
+
+        await().atMost(5, TimeUnit.SECONDS).until(pingSocket.frames::size, is(2));
+        frame = pingSocket.frames.get(1);
+        assertThat(frame.getType(), is(Frame.Type.PING));
+        assertThat(StandardCharsets.UTF_8.decode(frame.getPayload()).toString(), is("server-ping"));
+
+        session.close();
+        await().atMost(5, TimeUnit.SECONDS).until(pingSocket.frames::size, is(3));
+        frame = pingSocket.frames.get(2);
+        assertThat(frame.getType(), is(Frame.Type.CLOSE));
     }
 }

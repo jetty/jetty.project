@@ -149,7 +149,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             if (openHandle != null)
                 autoDemand();
             else
-                session.getCoreSession().demand();
+                internalDemand();
         }
         catch (Throwable cause)
         {
@@ -321,7 +321,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 public void succeed()
                 {
                     callback.succeeded();
-                    session.getCoreSession().demand();
+                    internalDemand();
                 }
 
                 @Override
@@ -329,7 +329,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 {
                     // Ignore failures, we might be output closed and receive a PING.
                     callback.succeeded();
-                    session.getCoreSession().demand();
+                    internalDemand();
                 }
             });
         }
@@ -357,7 +357,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         else
         {
-            session.getCoreSession().demand();
+            internalDemand();
         }
     }
 
@@ -386,7 +386,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
-            session.getCoreSession().demand();
+            internalDemand();
             return;
         }
 
@@ -405,7 +405,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private void autoDemand()
     {
         if (isAutoDemand())
-            session.getCoreSession().demand();
+            internalDemand();
+    }
+
+    private void internalDemand()
+    {
+        session.getCoreSession().demand();
     }
 
     public String toString()
