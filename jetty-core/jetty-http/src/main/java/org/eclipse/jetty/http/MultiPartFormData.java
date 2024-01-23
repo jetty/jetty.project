@@ -77,13 +77,22 @@ public class MultiPartFormData
     {
     }
 
+    /**
+     * @deprecated use {@link #from(Attributes, ComplianceViolation.Listener, String, Function)} instead.  This method will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    {
+        return from(attributes, ComplianceViolation.Listener.NOOP, boundary, parse);
+    }
+
+    public static CompletableFuture<Parts> from(Attributes attributes, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         @SuppressWarnings("unchecked")
         CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
         if (futureParts == null)
         {
-            futureParts = parse.apply(new Parser(boundary));
+            futureParts = parse.apply(new Parser(boundary, listener));
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
         }
         return futureParts;
@@ -200,9 +209,6 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
-        // TODO: it's a bit odd to hang onto a ComplianceViolation.Listener here.
-        // as that would require the user to pass it in.  Maybe a List<Event> violations instead?
-        // that the ee10 layer could use?
         private ComplianceViolation.Listener complianceViolationListener;
         private boolean useFilesForPartsWithoutFileName;
         private Path filesDirectory;
@@ -214,7 +220,13 @@ public class MultiPartFormData
 
         public Parser(String boundary)
         {
+            this(boundary, null);
+        }
+
+        public Parser(String boundary, ComplianceViolation.Listener complianceViolationListener)
+        {
             parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
+            this.complianceViolationListener = complianceViolationListener != null ? complianceViolationListener : ComplianceViolation.Listener.NOOP;
         }
 
         public CompletableFuture<Parts> parse(Content.Source content)
