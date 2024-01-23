@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Collection;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -31,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * {@link HttpConnection}s are configured by a {@link HttpConfiguration} instance that is either created by
  * default or passed in to the constructor.
  */
-public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory, ConnectionFactory.Configuring
+public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionFactory.class);
     private final HttpConfiguration _config;
@@ -58,33 +57,25 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
-    @Override
-    public void configure(Connector connector)
-    {
-        Collection<ComplianceViolation.Listener> userListeners = getBeans(ComplianceViolation.Listener.class);
-        if (userListeners != null && !userListeners.isEmpty())
-            for (ComplianceViolation.Listener listener: userListeners)
-                LOG.warn("Connector based ComplianceViolation.Listener {} not used from Beans, use HttpConfiguration.addComplianceViolationListener() instead", listener);
-    }
-
     /**
-     * @return always returns false
-     * @deprecated use {@link HttpConfiguration#getComplianceViolationListeners()} instead to know if there are any {@link ComplianceViolation.Listener} to notify.  this method will be removed in Jetty 12.1.0
+     * @deprecated use {@link HttpConfiguration#getComplianceViolationListeners()} instead to know if there
+     * are any {@link ComplianceViolation.Listener} to notify.  this method will be removed in Jetty 12.1.0
      */
     @Deprecated(since = "12.0.5", forRemoval = true)
     public boolean isRecordHttpComplianceViolations()
     {
-        return false;
+        return !_config.getComplianceViolationListeners().isEmpty();
     }
 
     /**
      * Does nothing.
-     * @deprecated use {@link HttpConfiguration#addComplianceViolationListener(ComplianceViolation.Listener)} instead.  this method will be removed in Jetty 12.1.0
+     * @deprecated use {@link HttpConfiguration#addComplianceViolationListener(ComplianceViolation.Listener)} instead.
+     * this method will be removed in Jetty 12.1.0
      */
     @Deprecated(since = "12.0.5", forRemoval = true)
     public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
     {
-        // no-op
+        _config.addComplianceViolationListener(new ComplianceViolation.LoggingListener());
     }
 
     public boolean isUseInputDirectByteBuffers()
