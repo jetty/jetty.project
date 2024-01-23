@@ -305,6 +305,16 @@ public class QuicServerConnector extends AbstractNetworkConnector
         throw new UnsupportedOperationException(getClass().getSimpleName() + " has no accept mechanism");
     }
 
+    protected EndPoint newEndPoint(DatagramChannel channel, ManagedSelector selector, SelectionKey selectionKey)
+    {
+        return new DatagramChannelEndPoint(channel, selector, selectionKey, getScheduler());
+    }
+
+    protected ServerQuicConnection newConnection(EndPoint endpoint)
+    {
+        return new ServerQuicConnection(QuicServerConnector.this, endpoint);
+    }
+
     private class ServerDatagramSelectorManager extends SelectorManager
     {
         protected ServerDatagramSelectorManager(Executor executor, Scheduler scheduler, int selectors)
@@ -315,7 +325,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            EndPoint endPoint = new DatagramChannelEndPoint((DatagramChannel)channel, selector, selectionKey, getScheduler());
+            EndPoint endPoint = QuicServerConnector.this.newEndPoint((DatagramChannel)channel, selector, selectionKey);
             endPoint.setIdleTimeout(getIdleTimeout());
             return endPoint;
         }
@@ -323,7 +333,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
-            ServerQuicConnection connection = new ServerQuicConnection(QuicServerConnector.this, endpoint);
+            ServerQuicConnection connection = QuicServerConnector.this.newConnection(endpoint);
             connection.addEventListener(container);
             connection.setInputBufferSize(getInputBufferSize());
             connection.setOutputBufferSize(getOutputBufferSize());

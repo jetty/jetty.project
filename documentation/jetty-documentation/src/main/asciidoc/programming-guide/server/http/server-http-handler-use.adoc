@@ -404,6 +404,53 @@ Server applications must configure a `HttpConfiguration` object with the secure 
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=securedHandler]
 ----
 
+[[pg-server-http-handler-use-cross-origin]]
+====== CrossOriginHandler
+
+`CrossOriginHandler` supports the server-side requirements of the link:https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[CORS protocol] implemented by browsers when performing cross-origin requests.
+
+An example of a cross-origin request is when a script downloaded from the origin domain `+http://domain.com+` uses `fetch()` or `XMLHttpRequest` to make a request to a cross domain such as `+http://cross.domain.com+` (a subdomain of the origin domain) or to `+http://example.com+` (a completely different domain).
+
+This is common, for example, when you embed reusable components such as a chat component into a web page: the web page and the chat component files are downloaded from `+http://domain.com+`, but the chat server is at `+http://chat.domain.com+`, so the chat component must make cross-origin requests to the chat server.
+
+This kind of setup exposes to link:https://owasp.org/www-community/attacks/csrf[cross-site request forgery attacks], and the CORS protocol has been established to protect against this kind of attacks.
+
+For security reasons, browsers by default do not allow cross-origin requests, unless the response from the cross domain contains the right CORS headers.
+
+`CrossOriginHandler` relieves server-side web applications from handling CORS headers explicitly.
+You can set up your `Handler` tree with the `CrossOriginHandler`, configure it, and it will take care of the CORS headers separately from your application, where you can concentrate on the business logic.
+
+The `Handler` tree structure looks like the following:
+
+[source,screen]
+----
+Server
+└── CrossOriginHandler
+    └── ContextHandler /app
+        └── AppHandler
+----
+
+The most important `CrossOriginHandler` configuration parameter is `allowedOrigins`, which by default is `*`, allowing any origin.
+
+You may want to restrict your server to only origins you trust.
+From the chat example above, the chat server at `+http://chat.domain.com+` knows that the chat component is downloaded from the origin server at `+http://domain.com+`, so the `CrossOriginHandler` is configured in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=crossOriginAllowedOrigins]
+----
+
+Browsers send cross-origin request in two ways:
+
+* Directly, if the cross-origin request meets some simple criteria.
+* By issuing a hidden _preflight_ request before the actual cross-origin request, to verify with the server if it is willing to reply properly to the actual cross-origin request.
+
+Both preflight requests and cross-origin requests will be handled by `CrossOriginHandler`, which will analyze the request and possibly add appropriate CORS response headers.
+
+By default, preflight requests are not delivered to the `CrossOriginHandler` child `Handler`, but it is possible to configure `CrossOriginHandler` by setting `deliverPreflightRequests=true` so that the web application can fine-tune the CORS response headers.
+
+For more `CrossOriginHandler` configuration options, refer to the link:{javadoc-url}/org/eclipse/jetty/server/handler/CrossOriginHandler.html[`CrossOriginHandler` javadocs].
+
 [[pg-server-http-handler-use-default]]
 ====== DefaultHandler
 

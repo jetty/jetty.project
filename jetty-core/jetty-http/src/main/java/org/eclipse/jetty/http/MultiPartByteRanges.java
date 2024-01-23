@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
  * Content.Source content = ...;
  *
  * // Create and configure MultiPartByteRanges.
- * MultiPartByteRanges byteRanges = new MultiPartByteRanges(boundary);
+ * MultiPartByteRanges.Parser byteRanges = new MultiPartByteRanges.Parser(boundary);
  *
  * // Parse the content.
  * byteRanges.parse(content)
