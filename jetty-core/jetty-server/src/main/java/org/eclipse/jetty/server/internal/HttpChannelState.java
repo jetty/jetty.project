@@ -523,16 +523,18 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public String toString()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock lock = _lock.tryLock())
         {
-            return String.format("%s@%x{handling=%s, handled=%b, send=%s, completed=%b, request=%s}",
+            boolean held = lock.isHeldByCurrentThread();
+            return String.format("%s@%x{handling=%s, handled=%s, send=%s, completed=%s, request=%s}",
                 this.getClass().getSimpleName(),
                 hashCode(),
-                _handling,
-                _handled,
-                _streamSendState,
-                _callbackCompleted,
-                _request);
+                held ? _handling : "?",
+                held ? _handled : "?",
+                held ? _streamSendState : "?",
+                held ? _callbackCompleted : "?",
+                held ? _request : "?"
+            );
         }
     }
 
@@ -1247,6 +1249,7 @@ public class HttpChannelState implements HttpChannel, Components
          * <p>
          * The implementation maintains the {@link #_streamSendState} before taking
          * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
+         *
          * @param x The reason for the failure.
          */
         @Override
@@ -1475,6 +1478,7 @@ public class HttpChannelState implements HttpChannel, Components
 
         /**
          * Called when the {@link Handler} (or it's delegates) fail the request handling.
+         *
          * @param failure The reason for the failure.
          */
         @Override
@@ -1656,6 +1660,7 @@ public class HttpChannelState implements HttpChannel, Components
 
         /**
          * Called when the error write in {@link HttpChannelState.ChannelCallback#failed(Throwable)} fails.
+         *
          * @param x The reason for the failure.
          */
         @Override
