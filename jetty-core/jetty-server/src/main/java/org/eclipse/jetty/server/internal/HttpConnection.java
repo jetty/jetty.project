@@ -193,7 +193,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     protected RequestHandler newRequestHandler()
     {
-        return new RequestHandler(getConnector());
+        return new RequestHandler();
     }
 
     public Server getServer()
@@ -923,10 +923,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     protected class RequestHandler implements HttpParser.RequestHandler
     {
         private Throwable _failure;
-
-        public RequestHandler(Connector connector)
-        {
-        }
 
         @Override
         public void messageBegin()
