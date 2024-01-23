@@ -76,7 +76,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             requestMetaData = (MetaData.Request)frame.getMetaData();
 
             // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
-            ComplianceViolation.Listener listener = httpChannel.getComponents().getComplianceViolationListener();
+            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
             Runnable handler = httpChannel.onRequest(requestMetaData);
             Request request = this.httpChannel.getRequest();
             listener.onRequestBegin(request);

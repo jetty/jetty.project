@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -150,18 +149,6 @@ public class Server extends Handler.Wrapper implements Attributes
         addBean(_bufferPool);
         setServer(this);
         addBean(FileSystemPool.INSTANCE, false);
-    }
-
-    /**
-     * Get a new ComplianceViolation.Listener suitable for given Connector.
-     *
-     * @param connector the connector to base the ComplianceViolation.Listener off of.
-     * @return the ComplianceViolation.Listener implementation, or null if {@link HttpConnectionFactory#isRecordHttpComplianceViolations()} is false,
-     *   or there are no ComplianceViolation.Listener implementations registered.
-     */
-    public static ComplianceViolation.Listener getComplianceViolationListener(Connector connector)
-    {
-        return connector instanceof AbstractConnector abstractConnector ? abstractConnector.getComplianceViolationListener() : ComplianceViolation.Listener.NOOP;
     }
 
     public Handler getDefaultHandler()

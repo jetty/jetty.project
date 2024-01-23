@@ -31,7 +31,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -160,7 +159,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
-    private ComplianceViolation.Listener _complianceViolationListener;
 
     /**
      * @param server The {@link Server} this connector will be added to, must not be null
@@ -323,37 +321,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         LOG.info("Started {}", this);
     }
 
-    public ComplianceViolation.Listener getComplianceViolationListener()
-    {
-        if (_complianceViolationListener == null)
-        {
-            Server server = getServer();
-
-            // Only add the ComplianceViolations instance if the recording of Compliance Violations is enabled
-            // This also means that any user provided ComplianceViolation.Listener beans will only be
-            // used when the HttpConfiguration allows then to be used.
-            HttpConfiguration httpConfiguration = getBean(HttpConfiguration.class);
-            if (!httpConfiguration.isNotifyComplianceViolations())
-                _complianceViolationListener = ComplianceViolation.Listener.NOOP;
-            else
-            {
-                // Look for optional user provided ComplianceViolation.Listener beans
-                List<ComplianceViolation.Listener> userListeners = new ArrayList<>();
-                userListeners.addAll(getBeans(ComplianceViolation.Listener.class));
-                if (server != null)
-                    userListeners.addAll(server.getBeans(ComplianceViolation.Listener.class));
-
-                if (userListeners.isEmpty())
-                    _complianceViolationListener = ComplianceViolation.Listener.NOOP;
-                else if (userListeners.size() == 1)
-                    _complianceViolationListener = userListeners.get(0);
-                else
-                    _complianceViolationListener = new ComplianceViolationListenerCollection(userListeners);
-            }
-        }
-        return _complianceViolationListener;
-    }
-
     protected void interruptAcceptors()
     {
         try (AutoLock lock = _lock.lock())
@@ -405,7 +372,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             removeBean(a);
 
         _shutdown = null;
-        _complianceViolationListener = null;
 
         LOG.info("Stopped {}", this);
     }
@@ -809,74 +775,5 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             _name == null ? getClass().getSimpleName() : _name,
             hashCode(),
             getDefaultProtocol(), getProtocols().stream().collect(Collectors.joining(", ", "(", ")")));
-    }
-
-    /**
-     * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
-     */
-    private static class ComplianceViolationListenerCollection implements ComplianceViolation.Listener
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(ComplianceViolationListenerCollection.class);
-        private final List<ComplianceViolation.Listener> userListeners;
-
-        /**
-         * Construct a new ComplianceViolations that will notify user listeners.
-         *
-         * @param userListeners the user listeners to notify, null or empty is allowed.
-         */
-        public ComplianceViolationListenerCollection(List<ComplianceViolation.Listener> userListeners)
-        {
-            this.userListeners = userListeners;
-        }
-
-        @Override
-        public ComplianceViolation.Listener initialize()
-        {
-            List<ComplianceViolation.Listener> initialized = null;
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                ComplianceViolation.Listener listening = listener.initialize();
-                if (listening != listener)
-                {
-                    initialized = new ArrayList<>(userListeners.size());
-                    for (ComplianceViolation.Listener l : userListeners)
-                    {
-                        if (l == listener)
-                            break;
-                        initialized.add(l);
-                    }
-                }
-                if (initialized != null)
-                    initialized.add(listening);
-            }
-            if (initialized == null)
-                return this;
-            return new ComplianceViolationListenerCollection(initialized);
-        }
-
-        @Override
-        public void onComplianceViolation(ComplianceViolation.Event event)
-        {
-            assert event != null;
-            notifyUserListeners(event);
-        }
-
-        private void notifyUserListeners(ComplianceViolation.Event event)
-        {
-            if (userListeners == null || userListeners.isEmpty())
-                return;
-
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                try
-                {
-                    listener.onComplianceViolation(event);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
-                }
-            }
-        }
     }
 }

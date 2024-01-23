@@ -64,7 +64,7 @@ public class ServerHttpCookieTest
                 Fields.Field setCookie = parameters.get("SetCookie");
                 if (setCookie != null)
                 {
-                    ComplianceViolation.Listener complianceViolationListener = request.getComponents().getComplianceViolationListener();
+                    ComplianceViolation.Listener complianceViolationListener = HttpChannel.from(request).getComplianceViolationListener();
                     CookieParser parser = CookieParser.newParser((name, value, version, domain, path, comment) ->
                         Response.addCookie(response, HttpCookie.build(name, value, version).domain(domain).path(path).comment(comment).build()), RFC2965, complianceViolationListener);
                     parser.parseField(setCookie.getValue());

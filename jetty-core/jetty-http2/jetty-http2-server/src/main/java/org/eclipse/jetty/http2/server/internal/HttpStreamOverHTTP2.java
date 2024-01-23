@@ -86,7 +86,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             _requestMetaData = (MetaData.Request)frame.getMetaData();
 
             // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
-            ComplianceViolation.Listener listener = _httpChannel.getComponents().getComplianceViolationListener();
+            ComplianceViolation.Listener listener = _httpChannel.getComplianceViolationListener();
             Runnable handler = _httpChannel.onRequest(_requestMetaData);
             Request request = _httpChannel.getRequest();
             listener.onRequestBegin(request);

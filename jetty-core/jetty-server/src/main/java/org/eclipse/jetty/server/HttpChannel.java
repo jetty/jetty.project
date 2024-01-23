@@ -17,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -37,13 +38,7 @@ public interface HttpChannel extends Invocable
     ConnectionMetaData getConnectionMetaData();
 
     /**
-     * @return the {@link Components} associated with this {@code HttpChannel}.
-     * @see Request#getComponents()
-     */
-    Components getComponents();
-
-    /**
-     * Set the {@link HttpStream} to associate to this channel.
+     * Set the {@link HttpStream} to associate to this channel..
      * @param httpStream the {@link HttpStream} to associate to this channel.
      */
     void setHttpStream(HttpStream httpStream);
@@ -115,6 +110,32 @@ public interface HttpChannel extends Invocable
      * @see #recycle()
      */
     void init();
+
+    /**
+     * @return the active {@link ComplianceViolation.Listener}
+     */
+    ComplianceViolation.Listener getComplianceViolationListener();
+
+    /**
+     * @param request attempt to resolve the HttpChannel from the provided request
+     * @return the HttpChannel if found
+     * @throws IllegalStateException if unable to find HttpChannel
+     */
+    static HttpChannel from(Request request)
+    {
+        while (true)
+        {
+            if (request instanceof Request.Wrapper wrapper)
+                request = wrapper.getWrapped();
+            else
+                break;
+        }
+
+        if (request.getComponents() instanceof HttpChannel httpChannel)
+            return httpChannel;
+
+        throw new IllegalStateException("Unable to find HttpChannel from " + request);
+    }
 
     /**
      * <p>A factory for {@link HttpChannel} instances.</p>

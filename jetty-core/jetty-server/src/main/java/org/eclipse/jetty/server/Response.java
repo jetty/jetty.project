@@ -385,7 +385,7 @@ public interface Response extends Content.Sink
         }
         catch (ComplianceViolationException e)
         {
-            request.getComponents().getComplianceViolationListener().onComplianceViolation(e.getEvent());
+            HttpChannel.from(request).getComplianceViolationListener().onComplianceViolation(e.getEvent());
             throw e;
         }
 
@@ -419,7 +419,7 @@ public interface Response extends Content.Sink
         }
         catch (ComplianceViolationException e)
         {
-            request.getComponents().getComplianceViolationListener().onComplianceViolation(e.getEvent());
+            HttpChannel.from(request).getComplianceViolationListener().onComplianceViolation(e.getEvent());
             throw e;
         }
 

@@ -15,10 +15,13 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
@@ -53,6 +56,7 @@ public class HttpConfiguration implements Dumpable
         .caseSensitive(false)
         .mutable()
         .build();
+    private final List<ComplianceViolation.Listener> _complianceViolationListeners = new ArrayList<>();
     private int _outputBufferSize = 32 * 1024;
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
@@ -77,7 +81,6 @@ public class HttpConfiguration implements Dumpable
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
-    private boolean _notifyComplianceViolations = false;
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed = true;
     private HostPort _serverAuthority;
@@ -151,7 +154,7 @@ public class HttpConfiguration implements Dumpable
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
         _multiPartCompliance = config._multiPartCompliance;
-        _notifyComplianceViolations = config._notifyComplianceViolations;
+        _complianceViolationListeners.addAll(config._complianceViolationListeners);
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
         _uriCompliance = config._uriCompliance;
@@ -650,22 +653,31 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * Set whether compliance violations (from {@link HttpCompliance}, {@link CookieCompliance}, {@link UriCompliance}, and {@link MultiPartCompliance})
-     * should be reported to the registered ComplianceViolation.Listeners.
-     *
-     * @return true if Compliance Violations should be notified via the ComplianceViolation.Listener mechanism.
+     * Add a {@link ComplianceViolation.Listener} to the configuration
+     * @param listener the listener to add
      */
-    public boolean isNotifyComplianceViolations()
+    public void addComplianceViolationListener(ComplianceViolation.Listener listener)
     {
-        return _notifyComplianceViolations;
+        this._complianceViolationListeners.add(Objects.requireNonNull(listener));
     }
 
     /**
-     * @param notifyComplianceViolations true
+     * Remove a {@link ComplianceViolation.Listener} from the configuration
+     * @param listener the listener to remove
+     * @return {@code true} if this list contained the specified element
      */
-    public void setNotifyComplianceViolations(boolean notifyComplianceViolations)
+    public boolean removeComplianceViolationListener(ComplianceViolation.Listener listener)
     {
-        _notifyComplianceViolations = notifyComplianceViolations;
+        return this._complianceViolationListeners.remove(Objects.requireNonNull(listener));
+    }
+
+    /**
+     * Get the list of configured {@link ComplianceViolation.Listener} to use.
+     * @return the list of configured listeners
+     */
+    public List<ComplianceViolation.Listener> getComplianceViolationListeners()
+    {
+        return this._complianceViolationListeners;
     }
 
     /**

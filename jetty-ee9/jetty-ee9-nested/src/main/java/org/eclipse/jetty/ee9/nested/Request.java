@@ -538,7 +538,7 @@ public class Request implements HttpServletRequest
     @Deprecated(since = "12.0.6", forRemoval = true)
     public ComplianceViolation.Listener getComplianceViolationListener()
     {
-        return getCoreRequest().getComponents().getComplianceViolationListener();
+        return org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
     }
 
     /**
@@ -1986,7 +1986,7 @@ public class Request implements HttpServletRequest
 
     private void reportComplianceViolations()
     {
-        ComplianceViolation.Listener complianceViolationListener = getCoreRequest().getComponents().getComplianceViolationListener();
+        ComplianceViolation.Listener complianceViolationListener = org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
         List<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
             complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.detail()));

@@ -16,7 +16,9 @@ package org.eclipse.jetty.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -132,13 +134,17 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public void init()
     {
-        _complianceViolationListener = Server.getComplianceViolationListener(_connectionMetaData.getConnector()).initialize();
-    }
+        List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
 
-    @Override
-    public Components getComponents()
-    {
-        return this;
+        ComplianceViolation.Listener listener;
+        if (listeners.isEmpty())
+            listener = ComplianceViolation.Listener.NOOP;
+        else if (listeners.size() == 1)
+            listener = listeners.get(0);
+        else
+            listener = new CompositeComplianceViolationListener(listeners);
+
+        _complianceViolationListener = listener.initialize();
     }
 
     @Override
@@ -593,7 +599,7 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpURI uri = request.getHttpURI();
                 if (uri.hasViolations())
                 {
-                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, request.getComponents().getComplianceViolationListener());
+                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, HttpChannel.from(request).getComplianceViolationListener());
                     if (badMessage != null)
                         throw new BadMessageException(badMessage);
                 }
@@ -1761,6 +1767,99 @@ public class HttpChannelState implements HttpChannel, Components
             Runnable failureTask = onFailure(failure);
             if (failureTask != null)
                 failureTask.run();
+        }
+    }
+
+    /**
+     * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
+     */
+    private static class CompositeComplianceViolationListener implements ComplianceViolation.Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(CompositeComplianceViolationListener.class);
+        private final List<ComplianceViolation.Listener> userListeners;
+
+        /**
+         * Construct a new ComplianceViolations that will notify user listeners.
+         *
+         * @param userListeners the user listeners to notify, null or empty is allowed.
+         */
+        public CompositeComplianceViolationListener(List<ComplianceViolation.Listener> userListeners)
+        {
+            this.userListeners = userListeners;
+        }
+
+        @Override
+        public void onRequestEnd(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                try
+                {
+                    listener.onRequestEnd(request);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of onRequestEnd {}", listener, request, e);
+                }
+            }
+        }
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                try
+                {
+                    listener.onRequestBegin(request);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of onRequestBegin {}", listener, request, e);
+                }
+            }
+        }
+
+        @Override
+        public ComplianceViolation.Listener initialize()
+        {
+            List<ComplianceViolation.Listener> initialized = null;
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                ComplianceViolation.Listener listening = listener.initialize();
+                if (listening != listener)
+                {
+                    initialized = new ArrayList<>(userListeners.size());
+                    for (ComplianceViolation.Listener l : userListeners)
+                    {
+                        if (l == listener)
+                            break;
+                        initialized.add(l);
+                    }
+                }
+                if (initialized != null)
+                    initialized.add(listening);
+            }
+            if (initialized == null)
+                return this;
+            return new CompositeComplianceViolationListener(initialized);
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Event event)
+        {
+            assert event != null;
+            for (ComplianceViolation.Listener listener : userListeners)
+            {
+                try
+                {
+                    listener.onComplianceViolation(event);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
+                }
+            }
         }
     }
 }

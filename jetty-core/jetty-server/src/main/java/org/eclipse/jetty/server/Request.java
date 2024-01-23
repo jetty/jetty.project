@@ -589,7 +589,8 @@ public interface Request extends Attributes, Content.Source
         CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(CACHE_ATTRIBUTE);
         if (cookieCache == null)
         {
-            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), request.getComponents().getComplianceViolationListener());
+            // TODO: CookieCache is per connection, needs to be per request for ComplianceViolation.Listener
+            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), HttpChannel.from(request).getComplianceViolationListener());
             request.getComponents().getCache().setAttribute(CACHE_ATTRIBUTE, cookieCache);
         }
 

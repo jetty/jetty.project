@@ -246,7 +246,7 @@ public class Dispatcher implements RequestDispatcher
         {
             HttpChannel channel = baseRequest.getHttpChannel();
             UriCompliance compliance = channel == null || channel.getHttpConfiguration() == null ? null : channel.getHttpConfiguration().getUriCompliance();
-            String illegalState = UriCompliance.checkUriCompliance(compliance, uri, baseRequest.getCoreRequest().getComponents().getComplianceViolationListener());
+            String illegalState = UriCompliance.checkUriCompliance(compliance, uri, org.eclipse.jetty.server.HttpChannel.from(baseRequest.getCoreRequest()).getComplianceViolationListener());
             if (illegalState != null)
                 throw new IllegalStateException(illegalState);
         }
