@@ -693,6 +693,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         {
             super(dynamic);
             _handler = handler;
+            addBean(handler);
         }
 
         @Override
