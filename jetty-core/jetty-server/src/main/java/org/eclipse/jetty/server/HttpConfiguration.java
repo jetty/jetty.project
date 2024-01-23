@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
@@ -75,6 +76,8 @@ public class HttpConfiguration implements Dumpable
     private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
+    private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
+    private boolean _notifyComplianceViolations = false;
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed = true;
     private HostPort _serverAuthority;
@@ -147,6 +150,8 @@ public class HttpConfiguration implements Dumpable
         _httpCompliance = config._httpCompliance;
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
+        _multiPartCompliance = config._multiPartCompliance;
+        _notifyComplianceViolations = config._notifyComplianceViolations;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
         _uriCompliance = config._uriCompliance;
@@ -626,6 +631,41 @@ public class HttpConfiguration implements Dumpable
     public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
     {
         _responseCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
+    }
+
+    /**
+     * @return the {@link MultiPartCompliance} used for validating multipart form syntax.
+     */
+    public MultiPartCompliance getMultiPartCompliance()
+    {
+        return _multiPartCompliance;
+    }
+
+    /**
+     * @param multiPartCompliance the {@link MultiPartCompliance} used for validating multipart form syntax.
+     */
+    public void setMultiPartCompliance(MultiPartCompliance multiPartCompliance)
+    {
+        this._multiPartCompliance = multiPartCompliance;
+    }
+
+    /**
+     * Set whether compliance violations (from {@link HttpCompliance}, {@link CookieCompliance}, {@link UriCompliance}, and {@link MultiPartCompliance})
+     * should be reported to the registered ComplianceViolation.Listeners.
+     *
+     * @return true if Compliance Violations should be notified via the ComplianceViolation.Listener mechanism.
+     */
+    public boolean isNotifyComplianceViolations()
+    {
+        return _notifyComplianceViolations;
+    }
+
+    /**
+     * @param notifyComplianceViolations true
+     */
+    public void setNotifyComplianceViolations(boolean notifyComplianceViolations)
+    {
+        _notifyComplianceViolations = notifyComplianceViolations;
     }
 
     /**

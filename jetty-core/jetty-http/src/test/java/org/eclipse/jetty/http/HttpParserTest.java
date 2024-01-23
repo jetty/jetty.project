@@ -557,12 +557,23 @@ public class HttpParserTest
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0" + eoln +
                 "Host: localhost" + eoln +
-                "Name0: " + eoln +
+                "Name0:  " + eoln +
                 "Name1:" + eoln +
+                "Authorization:  " + eoln +
+                "Authorization:" + eoln +
                 eoln);
 
-        HttpParser.RequestHandler handler = new Handler();
+        HttpParser.RequestHandler handler = new Handler()
+        {
+            @Override
+            public void badMessage(HttpException failure)
+            {
+                ((Throwable)failure).printStackTrace();
+                super.badMessage(failure);
+            }
+        };
         HttpParser parser = new HttpParser(handler);
+        parser.setHeaderCacheSize(1024);
         parseAll(parser, buffer);
 
         assertTrue(_headerCompleted);
@@ -576,7 +587,11 @@ public class HttpParserTest
         assertEquals("", _val[1]);
         assertEquals("Name1", _hdr[2]);
         assertEquals("", _val[2]);
-        assertEquals(2, _headers);
+        assertEquals("Authorization", _hdr[3]);
+        assertEquals("", _val[3]);
+        assertEquals("Authorization", _hdr[4]);
+        assertEquals("", _val[4]);
+        assertEquals(4, _headers);
     }
 
     @ParameterizedTest

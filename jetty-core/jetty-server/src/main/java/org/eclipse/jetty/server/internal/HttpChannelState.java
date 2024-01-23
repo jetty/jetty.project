@@ -119,6 +119,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Throwable _callbackFailure;
     private Attributes _cache;
     private boolean _expects100Continue;
+    private ComplianceViolation.Listener _complianceViolationListener;
 
     public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
@@ -126,6 +127,24 @@ public class HttpChannelState implements HttpChannel, Components
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
         _readInvoker = new HttpChannelSerializedInvoker();
         _writeInvoker = new HttpChannelSerializedInvoker();
+    }
+
+    @Override
+    public void init()
+    {
+        _complianceViolationListener = Server.getComplianceViolationListener(_connectionMetaData.getConnector()).initialize();
+    }
+
+    @Override
+    public Components getComponents()
+    {
+        return this;
+    }
+
+    @Override
+    public ComplianceViolation.Listener getComplianceViolationListener()
+    {
+        return _complianceViolationListener;
     }
 
     @Override
@@ -158,6 +177,7 @@ public class HttpChannelState implements HttpChannel, Components
             _onFailure = null;
             _callbackFailure = null;
             _expects100Continue = false;
+            _complianceViolationListener = null;
         }
     }
 
@@ -573,8 +593,7 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpURI uri = request.getHttpURI();
                 if (uri.hasViolations())
                 {
-                    ComplianceViolation.Listener complianceViolationListener = (ComplianceViolation.Listener)request.getAttribute(ComplianceViolation.Listener.class.getName());
-                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, complianceViolationListener);
+                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, request.getComponents().getComplianceViolationListener());
                     if (badMessage != null)
                         throw new BadMessageException(badMessage);
                 }

@@ -109,7 +109,7 @@ public class ComplianceViolations2616Test
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(config);
         httpConnectionFactory.setRecordHttpComplianceViolations(true);
         connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
-        connector.addBean(new ComplianceViolation.CapturingListenerFactory());
+        connector.addBean(new ComplianceViolation.CapturingListener());
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");

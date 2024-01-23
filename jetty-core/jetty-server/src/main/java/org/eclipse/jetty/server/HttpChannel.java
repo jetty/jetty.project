@@ -37,7 +37,13 @@ public interface HttpChannel extends Invocable
     ConnectionMetaData getConnectionMetaData();
 
     /**
-     * Set the {@link HttpStream} to associate to this channel..
+     * @return the {@link Components} associated with this {@code HttpChannel}.
+     * @see Request#getComponents()
+     */
+    Components getComponents();
+
+    /**
+     * Set the {@link HttpStream} to associate to this channel.
      * @param httpStream the {@link HttpStream} to associate to this channel.
      */
     void setHttpStream(HttpStream httpStream);
@@ -100,8 +106,15 @@ public interface HttpChannel extends Invocable
     /**
      * Recycle the HttpChannel, so that a new cycle of calling {@link #setHttpStream(HttpStream)},
      * {@link #onRequest(MetaData.Request)} etc. may be performed on the channel.
+     * @see #init()
      */
     void recycle();
+
+    /**
+     * Initialize the HttpChannel when a new cycle of request handling begins.
+     * @see #recycle()
+     */
+    void init();
 
     /**
      * <p>A factory for {@link HttpChannel} instances.</p>

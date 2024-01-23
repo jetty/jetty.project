@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.util.Attributes;
@@ -82,7 +81,7 @@ public interface ComplianceViolation
         Set<? extends ComplianceViolation> getAllowed();
     }
 
-    public static record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
     {
         @Override
         public String toString()
@@ -90,13 +89,24 @@ public interface ComplianceViolation
             return String.format("%s (see %s) in mode %s for %s",
                 violation.getDescription(), violation.getURL(), mode, details);
         }
-    };
+    }
 
     /**
      * A listener that can be notified of violations.
      */
     interface Listener
     {
+        Listener NOOP = new Listener() {};
+
+        /**
+         * Initialize the listener in preparation for a new request life cycle.
+         * @return The Listener instance to use for the request life cycle.
+         */
+        default Listener initialize()
+        {
+            return this;
+        }
+
         /**
          * A new Request has begun.
          *
@@ -109,7 +119,7 @@ public interface ComplianceViolation
         /**
          * A Request has ended.
          *
-         * @param request the request attribtues, or null if Request does not exist yet (eg: during handling of a {@link BadMessageException})
+         * @param request the request attributes, or null if Request does not exist yet (eg: during handling of a {@link BadMessageException})
          */
         default void onRequestEnd(Attributes request)
         {
@@ -139,99 +149,7 @@ public interface ComplianceViolation
         }
     }
 
-    /**
-     * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
-     */
-    class ListenerCollection implements Listener
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(ListenerCollection.class);
-        private final List<ComplianceViolation.Listener> userListeners;
-
-        /**
-         * Construct a new ComplianceViolations that will notify user listeners.
-         * @param userListeners the user listeners to notify, null or empty is allowed.
-         */
-        public ListenerCollection(List<ComplianceViolation.Listener> userListeners)
-        {
-            Objects.requireNonNull(userListeners);
-            if (userListeners.isEmpty())
-                throw new IllegalStateException("Listener list is empty");
-            this.userListeners =  userListeners;
-        }
-
-        @Override
-        public void onRequestBegin(Attributes request)
-        {
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                try
-                {
-                    listener.onRequestBegin(request);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to notify {}.onRequestBegin({})", listener.getClass().getName(), request, e);
-                }
-            }
-
-        }
-
-        @Override
-        public void onRequestEnd(Attributes request)
-        {
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                try
-                {
-                    listener.onRequestEnd(request);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to notify {}.onRequestEnd({})", listener.getClass().getName(), request, e);
-                }
-            }
-        }
-
-        /**
-         * Get a specific ComplianceViolation.Listener from collected user listeners
-         * @param clazz the class to look for
-         * @return the instance of the class in the user listeners
-         * @param <T> the type of class
-         */
-        public <T> T getUserListener(Class<T> clazz)
-        {
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                if (clazz.isInstance(listener))
-                    return clazz.cast(listener);
-            }
-            return null;
-        }
-
-        @Override
-        public void onComplianceViolation(ComplianceViolation.Event event)
-        {
-            assert event != null;
-            for (Listener listener : userListeners)
-            {
-                try
-                {
-                    listener.onComplianceViolation(event);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
-                }
-            }
-        }
-    }
-
-    interface ListenerFactory
-    {
-        Listener newComplianceViolationListener();
-    }
-
-    public class LoggingListener implements Listener
+    class LoggingListener implements Listener
     {
         private static final Logger LOG = LoggerFactory.getLogger(ComplianceViolation.class);
 
@@ -243,31 +161,33 @@ public interface ComplianceViolation
         }
     }
 
-    public class CapturingListenerFactory implements ListenerFactory
-    {
-        @Override
-        public Listener newComplianceViolationListener()
-        {
-            return new CapturingListener();
-        }
-    }
-
-    public class CapturingListener implements Listener
+    class CapturingListener implements Listener
     {
         public static final String VIOLATIONS_ATTR_KEY = "org.eclipse.jetty.http.compliance.violations";
-        private List<Event> events = new ArrayList<>();
+
+        private final List<Event> events;
+
+        public CapturingListener()
+        {
+            this(null);
+        }
+
+        private CapturingListener(List<Event> events)
+        {
+            this.events = events;
+        }
+
+        @Override
+        public Listener initialize()
+        {
+            return new CapturingListener(new ArrayList<>());
+        }
 
         @Override
         public void onRequestBegin(Attributes request)
         {
             if (request != null)
                 request.setAttribute(VIOLATIONS_ATTR_KEY, events);
-        }
-
-        @Override
-        public void onRequestEnd(Attributes request)
-        {
-            events = new ArrayList<>();
         }
 
         @Override

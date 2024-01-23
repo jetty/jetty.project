@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +83,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * as invalid even if the multiple values are the same. A deployment may include this violation to allow multiple
          * {@code Content-Length} values to be received, but only if they are identical.
          */
-        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         MULTIPLE_CONTENT_LENGTHS("https://tools.ietf.org/html/rfc7230#section-3.3.2", "Multiple Content-Lengths"),
 
         /**
@@ -90,7 +90,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * a request is invalid if it contains both a {@code Transfer-Encoding} field and  {@code Content-Length} field.
          * A deployment may include this violation to allow both fields to be in a received request.
          */
-        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
 
         /**
@@ -112,7 +111,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * says that a Server must reject a request duplicate host headers.
          * A deployment may include this violation to allow duplicate host headers on a received request.
          */
-        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         DUPLICATE_HOST_HEADERS("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Duplicate Host Header"),
 
         /**
@@ -120,7 +118,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * should reject a request if the Host headers contains an invalid / unsafe authority.
          * A deployment may include this violation to allow unsafe host headesr on a received request.
          */
-        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         UNSAFE_HOST_HEADER("https://www.rfc-editor.org/rfc/rfc7230#section-2.7.1", "Invalid Authority"),
 
         /**
@@ -128,7 +125,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * must reject a request if the target URI has an authority that is different than a provided Host header.
          * A deployment may include this violation to allow different values on the target URI and the Host header on a received request.
          */
-        // TODO: see if this is a violation in HTTP/2 & HTTP/3 as well
         MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority");
 
         private final String url;
@@ -164,7 +160,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * @deprecated use {@link ComplianceViolation.CapturingListener#VIOLATIONS_ATTR_KEY} instead.<br>
      *   (Note: new ATTR captures all Compliance violations, not just HTTP.<br>
      *   Make sure you have {@code HttpConnectionFactory.setRecordHttpComplianceViolations(true)}.<br>
-     *   Also make sure that a {@link ComplianceViolation.CapturingListenerFactory} has been added as a bean to
+     *   Also make sure that a {@link ComplianceViolation.CapturingListener} has been added as a bean to
      *   either the {@code Connector} or {@code Server} for the Attribute to be created.)
      */
     @Deprecated(since = "12.0.5", forRemoval = true)
@@ -362,5 +358,63 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         if (violations == null || violations.isEmpty())
             return EnumSet.noneOf(Violation.class);
         return EnumSet.copyOf(violations);
+    }
+
+    public static void checkHttpCompliance(MetaData.Request request, HttpCompliance mode,
+                             ComplianceViolation.Listener listener)
+    {
+        boolean seenContentLength = false;
+        boolean seenTransferEncoding = false;
+        boolean seenHostHeader = false;
+
+        HttpFields fields = request.getHttpFields();
+        for (HttpField httpField: fields)
+        {
+            switch (httpField.getHeader())
+            {
+                case CONTENT_LENGTH ->
+                {
+                    if (seenContentLength)
+                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, mode, listener);
+                    String[] lengths = httpField.getValues();
+                    if (lengths.length > 1)
+                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, mode, listener);
+                    if (seenTransferEncoding)
+                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, mode, listener);
+                    seenContentLength = true;
+                }
+                case TRANSFER_ENCODING ->
+                {
+                    if (seenContentLength)
+                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, mode, listener);
+                    seenTransferEncoding = true;
+                }
+                case HOST ->
+                {
+                    if (seenHostHeader)
+                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
+                    String[] hostValues = httpField.getValues();
+                    if (hostValues.length > 1)
+                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
+                    for (String hostValue: hostValues)
+                        if (StringUtil.isBlank(hostValue))
+                            assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
+                    String authority = request.getHttpURI().getHost();
+                    if (StringUtil.isBlank(authority))
+                        assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
+                    seenHostHeader = true;
+                }
+            }
+        }
+    }
+
+    private static void assertAllowed(Violation violation, HttpCompliance mode, ComplianceViolation.Listener listener)
+    {
+        if (mode.allows(violation))
+            listener.onComplianceViolation(new ComplianceViolation.Event(
+                mode, violation, violation.getDescription()
+            ));
+        else
+            throw new BadMessageException(violation.getDescription());
     }
 }

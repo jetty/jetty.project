@@ -200,6 +200,10 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
+        // TODO: it's a bit odd to hang onto a ComplianceViolation.Listener here.
+        // as that would require the user to pass it in.  Maybe a List<Event> violations instead?
+        // that the ee10 layer could use?
+        private ComplianceViolation.Listener complianceViolationListener;
         private boolean useFilesForPartsWithoutFileName;
         private Path filesDirectory;
         private long maxFileSize = -1;
@@ -517,6 +521,13 @@ public class MultiPartFormData
                 memoryFileSize = 0;
                 try (AutoLock ignored = lock.lock())
                 {
+                    if (headers.contains("content-transfer-encoding"))
+                    {
+                        String value = headers.get("content-transfer-encoding");
+                        if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
+                            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
+                    }
+
                     MultiPart.Part part;
                     if (fileChannel != null)
                         part = new MultiPart.PathPart(name, fileName, headers, filePath);

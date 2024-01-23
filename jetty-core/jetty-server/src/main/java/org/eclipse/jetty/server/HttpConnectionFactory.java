@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory, ConnectionFactory.Configuring
 {
     private final HttpConfiguration _config;
-    private boolean _recordHttpComplianceViolations;
     private boolean _useInputDirectByteBuffers;
     private boolean _useOutputDirectByteBuffers;
 
@@ -58,18 +57,27 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     @Override
     public void configure(Connector connector)
     {
-        if (isRecordHttpComplianceViolations())
+        // TODO: need HTTP/2 and HTTP/3 version of this
+        if (getHttpConfiguration().isNotifyComplianceViolations())
             addBean(new ComplianceViolation.LoggingListener());
     }
 
+    /**
+     * @deprecated use {@link HttpConfiguration#isNotifyComplianceViolations()} instead.  will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.5", forRemoval = true)
     public boolean isRecordHttpComplianceViolations()
     {
-        return _recordHttpComplianceViolations;
+        return _config.isNotifyComplianceViolations();
     }
 
+    /**
+     * @deprecated use {@link HttpConfiguration#setNotifyComplianceViolations(boolean)} instead.  will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.5", forRemoval = true)
     public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
     {
-        this._recordHttpComplianceViolations = recordHttpComplianceViolations;
+        _config.setNotifyComplianceViolations(recordHttpComplianceViolations);
     }
 
     public boolean isUseInputDirectByteBuffers()

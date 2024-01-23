@@ -1518,6 +1518,10 @@ public class HttpParser
             // Start a request/response
             if (_state == State.START)
             {
+                if (_requestHandler != null)
+                    _requestHandler.messageBegin();
+                if (_responseHandler != null)
+                    _responseHandler.messageBegin();
                 _version = null;
                 _method = null;
                 _methodString = null;
@@ -1988,6 +1992,8 @@ public class HttpParser
      */
     public interface HttpHandler
     {
+        default void messageBegin() {}
+
         boolean content(ByteBuffer item);
 
         boolean headerComplete();
@@ -2134,7 +2140,7 @@ public class HttpParser
 
         public boolean cacheable(HttpHeader header, String valueString)
         {
-            return isEnabled() && header != null && valueString.length() <= _size;
+            return isEnabled() && header != null && valueString != null && valueString.length() <= _size;
         }
 
         private void prepare()

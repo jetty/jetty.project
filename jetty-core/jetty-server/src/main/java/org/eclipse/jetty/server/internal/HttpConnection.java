@@ -563,6 +563,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         if (_parser.isTerminated())
             throw new RuntimeIOException("Parser is terminated");
+
         boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
@@ -922,11 +923,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     protected class RequestHandler implements HttpParser.RequestHandler
     {
         private Throwable _failure;
-        private ComplianceViolation.Listener _listener;
 
         public RequestHandler(Connector connector)
         {
-            _listener = Server.newComplianceViolationListener(connector);
+        }
+
+        @Override
+        public void messageBegin()
+        {
+            _httpChannel.init();
         }
 
         @Override
@@ -978,8 +983,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void onViolation(ComplianceViolation.Event event)
         {
-            if (_listener != null)
-                _listener.onComplianceViolation(event);
+            getHttpChannel().getComponents().getComplianceViolationListener().onComplianceViolation(event);
         }
 
         @Override
@@ -1001,8 +1005,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
                 stream._chunk = Content.Chunk.EOF;
 
-            if (_listener != null)
-                _listener.onRequestEnd(getHttpChannel().getRequest());
+            getHttpChannel().getComponents().getComplianceViolationListener().onRequestBegin(getHttpChannel().getRequest());
             return false;
         }
 
@@ -1012,8 +1015,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
 
-            if (_listener != null)
-                _listener.onRequestEnd(getHttpChannel().getRequest());
+            getHttpChannel().getComponents().getComplianceViolationListener().onRequestEnd(getHttpChannel().getRequest());
 
             _failure = (Throwable)failure;
             _generator.setPersistent(false);
@@ -1183,7 +1185,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_uri.hasViolations())
             {
                 compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, _requestHandler._listener);
+                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComponents().getComplianceViolationListener());
                 if (badMessage != null)
                     throw new BadMessageException(badMessage);
             }
@@ -1198,8 +1200,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
                         {
-                            if (_requestHandler._listener != null)
-                                _requestHandler._listener.onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
+                            getHttpChannel().getComponents().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
                         }
                         else
                             throw new BadMessageException("Authority!=Host");
@@ -1245,9 +1246,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             ++_requests;
 
             Request request = _httpChannel.getRequest();
-            request.setAttribute(ComplianceViolation.Listener.class.getName(), _requestHandler._listener);
-            if (_requestHandler._listener != null)
-                _requestHandler._listener.onRequestBegin(request);
+            getHttpChannel().getComponents().getComplianceViolationListener().onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {

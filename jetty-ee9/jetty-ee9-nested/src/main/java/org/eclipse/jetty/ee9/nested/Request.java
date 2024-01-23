@@ -538,7 +538,7 @@ public class Request implements HttpServletRequest
     @Deprecated(since = "12.0.6", forRemoval = true)
     public ComplianceViolation.Listener getComplianceViolationListener()
     {
-        return null;
+        return getCoreRequest().getComponents().getComplianceViolationListener();
     }
 
     /**
@@ -1986,13 +1986,10 @@ public class Request implements HttpServletRequest
 
     private void reportComplianceViolations()
     {
-        ComplianceViolation.Listener complianceViolationListener = (ComplianceViolation.Listener)getAttribute(ComplianceViolation.Listener.class.getName());
+        ComplianceViolation.Listener complianceViolationListener = getCoreRequest().getComponents().getComplianceViolationListener();
         List<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
-        {
-            if (complianceViolationListener != null)
-                complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.detail()));
-        }
+            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.detail()));
     }
 
     private MultiPartFormInputStream newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
