@@ -145,14 +145,15 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
 
             callback.succeeded();
+
+            if (openHandle != null)
+                autoDemand();
+            else
+                session.getCoreSession().demand();
         }
         catch (Throwable cause)
         {
             callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause));
-        }
-        finally
-        {
-            autoDemand();
         }
     }
 
@@ -320,7 +321,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 public void succeed()
                 {
                     callback.succeeded();
-                    autoDemand();
+                    session.getCoreSession().demand();
                 }
 
                 @Override
@@ -328,6 +329,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 {
                     // Ignore failures, we might be output closed and receive a PING.
                     callback.succeeded();
+                    session.getCoreSession().demand();
                 }
             });
         }
@@ -355,7 +357,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         else
         {
-            autoDemand();
+            session.getCoreSession().demand();
         }
     }
 
@@ -384,7 +386,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
-            autoDemand();
+            session.getCoreSession().demand();
             return;
         }
 
