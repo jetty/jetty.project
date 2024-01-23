@@ -1004,8 +1004,7 @@ public class HttpFieldsTest
     public void testAddNullValueList()
     {
         HttpFields.Mutable fields = HttpFields.build();
-
-        fields.add("name", (List<String>)null);
+        assertThrows(IllegalArgumentException.class, () -> fields.add("name", (List<String>)null));
         assertThat(fields.size(), is(0));
         List<String> list = new ArrayList<>();
         fields.add("name", list);
