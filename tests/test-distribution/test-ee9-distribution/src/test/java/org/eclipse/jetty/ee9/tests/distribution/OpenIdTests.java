@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.tests.distribution;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +20,8 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.ee9.tests.distribution.openid.OpenIdProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -59,10 +59,10 @@ public class OpenIdTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File webApp = distribution.resolveArtifact("org.eclipse.jetty.ee9:jetty-ee9-test-openid-webapp:war:" + jettyVersion);
-            distribution.installWarFile(webApp, "test");
+            Path webApp = distribution.resolveArtifact("org.eclipse.jetty.ee9:jetty-ee9-test-openid-webapp:war:" + jettyVersion);
+            distribution.installWar(webApp, "test");
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             openIdProvider.addRedirectUri("http://localhost:" + port + "/test/j_security_check");
             openIdProvider.start();
             String[] args2 = {
