@@ -226,7 +226,10 @@ public class MultiPart
 
         public long getLength()
         {
-            return getContentSource().getLength();
+            Content.Source source = getContentSource();
+            if (source != null)
+                return source.getLength();
+            return -1;
         }
 
         /**
@@ -320,7 +323,9 @@ public class MultiPart
         {
             try
             {
-                getContentSource().fail(t);
+                Content.Source source = getContentSource();
+                if (source != null)
+                    source.fail(t);
                 Path path = null;
                 try (AutoLock ignored = lock.lock())
                 {
