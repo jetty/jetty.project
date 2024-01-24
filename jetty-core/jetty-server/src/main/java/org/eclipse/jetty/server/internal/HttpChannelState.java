@@ -135,16 +135,12 @@ public class HttpChannelState implements HttpChannel, Components
     public void initialize()
     {
         List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
-
-        ComplianceViolation.Listener listener;
-        if (listeners.isEmpty())
-            listener = ComplianceViolation.Listener.NOOP;
-        else if (listeners.size() == 1)
-            listener = listeners.get(0);
-        else
-            listener = new CompositeComplianceViolationListener(listeners);
-
-        _complianceViolationListener = listener.initialize();
+        _complianceViolationListener = switch (listeners.size())
+        {
+            case 0 -> ComplianceViolation.Listener.NOOP;
+            case 1 -> listeners.get(0).initialize();
+            default -> new InitializedCompositeComplianceViolationListener(listeners);
+        };
     }
 
     @Override
@@ -1773,25 +1769,43 @@ public class HttpChannelState implements HttpChannel, Components
     /**
      * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
      */
-    private static class CompositeComplianceViolationListener implements ComplianceViolation.Listener
+    private static class InitializedCompositeComplianceViolationListener implements ComplianceViolation.Listener
     {
-        private static final Logger LOG = LoggerFactory.getLogger(CompositeComplianceViolationListener.class);
-        private final List<ComplianceViolation.Listener> userListeners;
+        private static final Logger LOG = LoggerFactory.getLogger(InitializedCompositeComplianceViolationListener.class);
+        private final List<ComplianceViolation.Listener> _listeners;
 
         /**
-         * Construct a new ComplianceViolations that will notify user listeners.
+         * Construct a new ComplianceViolations that will initialize the list of listeners and notify events to all.
          *
-         * @param userListeners the user listeners to notify, null or empty is allowed.
+         * @param unInitializedListeners the user listeners to initialized and notify. Null or empty list is not allowed..
          */
-        public CompositeComplianceViolationListener(List<ComplianceViolation.Listener> userListeners)
+        public InitializedCompositeComplianceViolationListener(List<ComplianceViolation.Listener> unInitializedListeners)
         {
-            this.userListeners = userListeners;
+            List<ComplianceViolation.Listener> initialized = null;
+            for (ComplianceViolation.Listener listener : unInitializedListeners)
+            {
+                ComplianceViolation.Listener listening = listener.initialize();
+                if (listening != listener)
+                {
+                    initialized = new ArrayList<>(unInitializedListeners.size());
+                    for (ComplianceViolation.Listener l : unInitializedListeners)
+                    {
+                        if (l == listener)
+                            break;
+                        initialized.add(l);
+                    }
+                }
+                if (initialized != null)
+                    initialized.add(listening);
+            }
+
+            _listeners = initialized == null ? unInitializedListeners : initialized;
         }
 
         @Override
         public void onRequestEnd(Attributes request)
         {
-            for (ComplianceViolation.Listener listener : userListeners)
+            for (ComplianceViolation.Listener listener : _listeners)
             {
                 try
                 {
@@ -1807,7 +1821,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void onRequestBegin(Attributes request)
         {
-            for (ComplianceViolation.Listener listener : userListeners)
+            for (ComplianceViolation.Listener listener : _listeners)
             {
                 try
                 {
@@ -1823,33 +1837,14 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public ComplianceViolation.Listener initialize()
         {
-            List<ComplianceViolation.Listener> initialized = null;
-            for (ComplianceViolation.Listener listener : userListeners)
-            {
-                ComplianceViolation.Listener listening = listener.initialize();
-                if (listening != listener)
-                {
-                    initialized = new ArrayList<>(userListeners.size());
-                    for (ComplianceViolation.Listener l : userListeners)
-                    {
-                        if (l == listener)
-                            break;
-                        initialized.add(l);
-                    }
-                }
-                if (initialized != null)
-                    initialized.add(listening);
-            }
-            if (initialized == null)
-                return this;
-            return new CompositeComplianceViolationListener(initialized);
+            throw new IllegalStateException("already initialized");
         }
 
         @Override
         public void onComplianceViolation(ComplianceViolation.Event event)
         {
             assert event != null;
-            for (ComplianceViolation.Listener listener : userListeners)
+            for (ComplianceViolation.Listener listener : _listeners)
             {
                 try
                 {
