@@ -323,18 +323,19 @@ public class MultiPart
         {
             try
             {
-                Content.Source source = getContentSource();
-                if (source != null)
-                    source.fail(t);
+                Content.Source source;
                 Path path = null;
                 try (AutoLock ignored = lock.lock())
                 {
+                    source = contentSource;
                     if (temporary)
                     {
                         path = this.path;
                         this.path = null;
                     }
                 }
+                if (source != null)
+                    source.fail(t);
                 if (path != null)
                     Files.delete(path);
             }
