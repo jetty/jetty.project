@@ -1040,7 +1040,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             b.append(getDisplayName()).append(',');
         b.append(getContextPath());
         b.append(",b=").append(getBaseResource());
-        b.append(",a=").append(_availability.get());
+        b.append(",a=");
+        b.append(",a=").append(_availability);
 
         if (vhosts != null && !vhosts.isEmpty())
         {

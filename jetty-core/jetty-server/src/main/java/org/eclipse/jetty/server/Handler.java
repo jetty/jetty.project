@@ -693,14 +693,21 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         {
             super(dynamic);
             _handler = handler;
-            addBean(handler);
         }
 
         @Override
         protected void doStart() throws Exception
         {
+            addBean(_handler);
             Singleton.updateHandler(this, _handler);
             super.doStart();
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            super.doStop();
+            removeBean(_handler);
         }
 
         @Override
