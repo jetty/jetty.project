@@ -535,7 +535,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     protected void doOptions(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        response.setHeader("Allow", "GET, HEAD, OPTIONS");
+        response.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
 
     @Override
