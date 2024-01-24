@@ -180,12 +180,12 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                     LOG.debug("Read {} bytes from {} {}", read, getEndPoint(), this);
                 if (read > 0)
                 {
+                    // The networkBuffer cannot be released immediately after parse()
+                    // even if the buffer has been fully consumed because releaseInputBuffer()
+                    // must be called as the last release for it to be able to null out the
+                    // networkBuffer field exactly when the latter isn't used anymore.
                     if (parse(networkBuffer.getByteBuffer()))
-                    {
-                        if (!networkBuffer.hasRemaining())
-                            releaseInputBuffer();
                         break;
-                    }
                 }
                 else if (read == 0)
                 {
@@ -230,12 +230,12 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         // See also HttpConnection.parseAndFillForContent().
         while (stream != null)
         {
+            // The networkBuffer cannot be released immediately after parse()
+            // even if the buffer has been fully consumed because releaseInputBuffer()
+            // must be called as the last release for it to be able to null out the
+            // networkBuffer field exactly when the latter isn't used anymore.
             if (parse(networkBuffer.getByteBuffer()))
-            {
-                if (!networkBuffer.hasRemaining())
-                    releaseInputBuffer();
                 break;
-            }
 
             // Check if the request was completed by the parsing.
             if (stream == null || fillInputBuffer() <= 0)
