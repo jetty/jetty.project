@@ -12,7 +12,9 @@ ssl
 alpn
 
 [lib]
-lib/http2/*.jar
+lib/http2/jetty-http2-common-${jetty.version}.jar
+lib/http2/jetty-http2-hpack-${jetty.version}.jar
+lib/http2/jetty-http2-server-${jetty.version}.jar
 
 [xml]
 etc/jetty-http2.xml

@@ -12,6 +12,9 @@ updates:
     # Associate with milestone 10.0.x
     milestone: 6
     ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
       # Restrict updates in this branch to jetty in the 10.x.x space
       - dependency-name: "jakarta.servlet:*"
         versions: [ ">=5.0.0" ]
@@ -60,6 +63,9 @@ updates:
     # Associate with milestone 11.0.x
     milestone: 7
     ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
       # Restrict updates in this branch to jetty in the 11.x.x space
       - dependency-name: "jakarta.activation:*"
         versions: [ ">=2.1.0" ]

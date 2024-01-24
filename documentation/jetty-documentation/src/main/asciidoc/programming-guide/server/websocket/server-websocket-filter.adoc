@@ -22,7 +22,7 @@ However, if the `WebSocketUpgradeFilter` is already present in `web.xml` under t
 
 This allows you to customize:
 
-* The filter order; for example, by configuring the `CrossOriginFilter` (or other filters) for increased security or authentication _before_ the `WebSocketUpgradeFilter`.
+* The filter order; for example, by configuring filters for increased security or authentication _before_ the `WebSocketUpgradeFilter`.
 * The `WebSocketUpgradeFilter` configuration via ``init-param``s, that affects all `Session` instances created by this filter.
 * The `WebSocketUpgradeFilter` path mapping. Rather than the default mapping of `+/*+`, you can map the `WebSocketUpgradeFilter` to a more specific path such as `+/ws/*+`.
 * The possibility to have multiple ``WebSocketUpgradeFilter``s, mapped to different paths, each with its own configuration.
@@ -38,14 +38,14 @@ For example:
          version="5.0">
   <display-name>My WebSocket WebApp</display-name>
 
-  <!-- The CrossOriginFilter *must* be the first --> <!--1-->
+  <!-- The SecurityFilter *must* be the first --> <!--1-->
   <filter>
-    <filter-name>cross-origin</filter-name>
-    <filter-class>org.eclipse.jetty.{ee-current}.servlets.CrossOriginFilter</filter-class>
+    <filter-name>security</filter-name>
+    <filter-class>com.acme.SecurityFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
-    <filter-name>cross-origin</filter-name>
+    <filter-name>security</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 
@@ -69,7 +69,7 @@ For example:
 
 </web-app>
 ----
-<1> The `CrossOriginFilter` is the first to protect against link:https://owasp.org/www-community/attacks/csrf[cross-site request forgery attacks].
+<1> The custom `SecurityFilter` is the first, to apply custom security.
 <2> The configuration for the _default_ `WebSocketUpgradeFilter`.
 <3> Note the use of the _default_ `WebSocketUpgradeFilter` name.
 <4> Specific configuration for `WebSocketUpgradeFilter` parameters.

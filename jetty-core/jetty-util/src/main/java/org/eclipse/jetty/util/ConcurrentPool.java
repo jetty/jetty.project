@@ -282,7 +282,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         // No need to lock, no race with reserve()
         // and the race with terminate() is harmless.
         Holder<P> holder = ((ConcurrentEntry<P>)entry).getHolder();
-        boolean evicted = holder != null && entries.remove(holder);
+        boolean evicted = entries.remove(holder);
         if (LOG.isDebugEnabled())
             LOG.debug("evicted {} {} for {}", evicted, entry, this);
 
@@ -418,16 +418,16 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         //    1+ -> multiplex count
         private final AtomicBiInteger state = new AtomicBiInteger(0, -1);
         private final ConcurrentPool<E> pool;
+        private final Holder<E> holder;
         // The pooled object. This is not volatile as it is set once and then never changed.
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private E pooled;
-        private final Holder<E> holder;
 
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
-            holder = new Holder<>(this);
+            this.holder = new Holder<>(this);
         }
 
         private Holder<E> getHolder()
