@@ -13,7 +13,13 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+
+import org.eclipse.jetty.util.Attributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Compliance Violation represents a requirement of an RFC, specification or Jetty implementation
@@ -75,13 +81,119 @@ public interface ComplianceViolation
         Set<? extends ComplianceViolation> getAllowed();
     }
 
+    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    {
+        @Override
+        public String toString()
+        {
+            return String.format("%s (see %s) in mode %s for %s",
+                violation.getDescription(), violation.getURL(), mode, details);
+        }
+    }
+
     /**
      * A listener that can be notified of violations.
      */
     interface Listener
     {
+        Listener NOOP = new Listener() {};
+
+        /**
+         * Initialize the listener in preparation for a new request life cycle.
+         * @return The Listener instance to use for the request life cycle.
+         */
+        default Listener initialize()
+        {
+            return this;
+        }
+
+        /**
+         * A new Request has begun.
+         *
+         * @param request the request attributes, or null if the Request does not exist yet (eg: during parsing of HTTP/1.1 headers, before request is created)
+         */
+        default void onRequestBegin(Attributes request)
+        {
+        }
+
+        /**
+         * A Request has ended.
+         *
+         * @param request the request attributes, or null if Request does not exist yet (eg: during handling of a {@link BadMessageException})
+         */
+        default void onRequestEnd(Attributes request)
+        {
+        }
+
+        /**
+         * The compliance violation event.
+         *
+         * @param event the compliance violation event
+         */
+        default void onComplianceViolation(Event event)
+        {
+            onComplianceViolation(event.mode, event.violation, event.details);
+        }
+
+        /**
+         * The compliance violation event.
+         *
+         * @param mode the mode
+         * @param violation the violation
+         * @param details the details
+         * @deprecated use {@link #onComplianceViolation(Event)} instead.  Will be removed in Jetty 12.1.0
+         */
+        @Deprecated(since = "12.0.6", forRemoval = true)
         default void onComplianceViolation(Mode mode, ComplianceViolation violation, String details)
         {
+        }
+    }
+
+    class LoggingListener implements Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(ComplianceViolation.class);
+
+        @Override
+        public void onComplianceViolation(Event event)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(event.toString());
+        }
+    }
+
+    class CapturingListener implements Listener
+    {
+        public static final String VIOLATIONS_ATTR_KEY = "org.eclipse.jetty.http.compliance.violations";
+
+        private final List<Event> events;
+
+        public CapturingListener()
+        {
+            this(null);
+        }
+
+        private CapturingListener(List<Event> events)
+        {
+            this.events = events;
+        }
+
+        @Override
+        public Listener initialize()
+        {
+            return new CapturingListener(new ArrayList<>());
+        }
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            if (request != null)
+                request.setAttribute(VIOLATIONS_ATTR_KEY, events);
+        }
+
+        @Override
+        public void onComplianceViolation(Event event)
+        {
+            events.add(event);
         }
     }
 }
