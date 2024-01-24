@@ -104,14 +104,6 @@ public class TestOSGiUtil
         StringBuffer xmlConfigs = new StringBuffer();
         xmlConfigs.append(JettyBootstrapActivator.DEFAULT_JETTY_ETC_FILES);
         xmlConfigs.append(",");
-        /*
-        xmlConfigs.append("etc/jetty.xml");
-        xmlConfigs.append(";");
-        xmlConfigs.append("etc/jetty-http.xml");
-        xmlConfigs.append(";");
-        xmlConfigs.append("etc/jetty-deploy.xml");
-        xmlConfigs.append(";");
-         */
         //add in a couple of external files needed for testing
         File etc = new File(FS.separators("src/test/config/etc"));
         xmlConfigs.append(new File(etc, jettyConnectorListenerFileName).toURI());
