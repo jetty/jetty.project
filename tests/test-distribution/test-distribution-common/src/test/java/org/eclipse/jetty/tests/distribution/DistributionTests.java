@@ -1749,7 +1749,10 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertEquals(0, run1.getExitValue());
 
             int httpPort = distribution.freePort();
-            List<String> args = List.of("jetty.http.port=" + httpPort);
+            List<String> args = List.of(
+                "jetty.http.port=" + httpPort,
+                "jetty.httpConfig.sendDateHeader=true"
+            );
             try (JettyHomeTester.Run run2 = distribution.start(args))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
