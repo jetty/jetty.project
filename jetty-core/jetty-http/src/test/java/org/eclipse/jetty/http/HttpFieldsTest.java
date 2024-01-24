@@ -1009,9 +1009,23 @@ public class HttpFieldsTest
         List<String> list = new ArrayList<>();
         fields.add("name", list);
         assertThat(fields.size(), is(0));
+
         list.add(null);
         fields.add("name", list);
-        assertThat(fields.size(), is(0));
+        assertThat(fields.size(), is(1));
+        assertThat(fields.get("name"), is(""));
+
+        list.add("");
+        fields.clear();
+        fields.add("name", list);
+        assertThat(fields.size(), is(1));
+        assertThat(fields.get("name"), is(", "));
+
+        list.add(" ");
+        fields.clear();
+        fields.add("name", list);
+        assertThat(fields.size(), is(1));
+        assertThat(fields.get("name"), is(", ,  "));
     }
 
     @Test
@@ -1039,11 +1053,26 @@ public class HttpFieldsTest
         List<String> list = new ArrayList<>();
         fields.add("name", "x");
         fields.put("name", list);
-        assertThat(fields.size(), is(0));
+
         list.add(null);
         fields.add("name", "x");
         fields.put("name", list);
-        assertThat(fields.size(), is(0));
+        assertThat(fields.size(), is(1));
+        assertThat(fields.get("name"), is(""));
+
+        list.add("");
+        fields.clear();
+        fields.add("name", "x");
+        fields.put("name", list);
+        assertThat(fields.size(), is(1));
+        assertThat(fields.get("name"), is(", "));
+
+        list.add(" ");
+        fields.clear();
+        fields.add("name", "x");
+        fields.put("name", list);
+        assertThat(fields.size(), is(1));
+        assertThat(fields.get("name"), is(", ,  "));
     }
 
     @Test

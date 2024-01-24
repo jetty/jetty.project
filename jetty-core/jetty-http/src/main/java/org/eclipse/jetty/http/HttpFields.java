@@ -994,7 +994,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          * <p>Adds a field associated with a list of values.</p>
          *
          * @param name the name of the field
-         * @param list the List value of the field. If null the field is cleared.
+         * @param list the List value of the field.
          * @return this builder
          */
         default Mutable add(String name, List<String> list)
@@ -1007,13 +1007,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             if (list.size() == 1)
             {
                 String v = list.get(0);
-                if (v == null)
-                    return this;
-                return add(name, v);
+                return add(name, v == null ? "" : v);
             }
             HttpField field = new HttpField.MultiHttpField(name, list);
-            if (field.getValueList() == null)
-                return this;
             return add(field);
         }
 
@@ -1226,11 +1222,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             if (list == null || list.isEmpty())
                 return remove(name);
             if (list.size() == 1)
-                return put(name, list.get(0));
+            {
+                String value = list.get(0);
+                return put(name, value == null ? "" : value);
+            }
 
             HttpField field = new HttpField.MultiHttpField(name, list);
-            if (field.getValueList() == null)
-                return remove(name);
             return put(field);
         }
 
