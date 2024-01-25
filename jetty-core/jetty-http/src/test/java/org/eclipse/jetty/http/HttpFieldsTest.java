@@ -1010,22 +1010,21 @@ public class HttpFieldsTest
         fields.add("name", list);
         assertThat(fields.size(), is(0));
 
+        list.add("Foo");
         list.add(null);
-        fields.add("name", list);
-        assertThat(fields.size(), is(1));
-        assertThat(fields.get("name"), is(""));
+        list.add("Bar");
+        assertThrows(IllegalArgumentException.class, () -> fields.add("name", list));
 
-        list.add("");
-        fields.clear();
-        fields.add("name", list);
-        assertThat(fields.size(), is(1));
-        assertThat(fields.get("name"), is(", "));
+        list.set(1, "");
+        assertThrows(IllegalArgumentException.class, () -> fields.add("name", list));
 
-        list.add(" ");
-        fields.clear();
-        fields.add("name", list);
-        assertThat(fields.size(), is(1));
-        assertThat(fields.get("name"), is(", ,  "));
+        list.set(1, " ");
+        assertThrows(IllegalArgumentException.class, () -> fields.add("name", list));
+
+        list.set(1, "  ");
+        assertThrows(IllegalArgumentException.class, () -> fields.add("name", list));
+
+        assertThat(fields.size(), is(0));
     }
 
     @Test
@@ -1050,29 +1049,29 @@ public class HttpFieldsTest
         fields.add("name", "x");
         fields.put("name", (List<String>)null);
         assertThat(fields.size(), is(0));
+
         List<String> list = new ArrayList<>();
         fields.add("name", "x");
         fields.put("name", list);
+        assertThat(fields.size(), is(0));
 
+        fields.add("name", "x");
+        list.add("Foo");
         list.add(null);
-        fields.add("name", "x");
-        fields.put("name", list);
-        assertThat(fields.size(), is(1));
-        assertThat(fields.get("name"), is(""));
+        list.add("Bar");
+        assertThrows(IllegalArgumentException.class, () -> fields.put("name", list));
 
-        list.add("");
-        fields.clear();
-        fields.add("name", "x");
-        fields.put("name", list);
-        assertThat(fields.size(), is(1));
-        assertThat(fields.get("name"), is(", "));
+        list.set(1, "");
+        assertThrows(IllegalArgumentException.class, () -> fields.put("name", list));
 
-        list.add(" ");
-        fields.clear();
-        fields.add("name", "x");
-        fields.put("name", list);
+        list.set(1, " ");
+        assertThrows(IllegalArgumentException.class, () -> fields.put("name", list));
+
+        list.set(1, "  ");
+        assertThrows(IllegalArgumentException.class, () -> fields.put("name", list));
+
         assertThat(fields.size(), is(1));
-        assertThat(fields.get("name"), is(", ,  "));
+        assertThat(fields.get("name"), is("x"));
     }
 
     @Test

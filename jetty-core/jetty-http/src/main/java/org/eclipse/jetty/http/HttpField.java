@@ -684,12 +684,13 @@ public class HttpField
             StringBuilder builder = null;
             for (String v : list)
             {
+                if (StringUtil.isBlank(v))
+                    throw new IllegalArgumentException("blank element");
                 if (builder == null)
                     builder = new StringBuilder(list.size() * (v == null ? 5 : v.length()) * 2);
                 else
                     builder.append(", ");
-                if (v != null)
-                    builder.append(v);
+                builder.append(v);
             }
 
             return builder == null ? null : builder.toString();
