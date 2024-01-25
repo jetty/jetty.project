@@ -37,7 +37,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>jetty-home-tester</artifactId>
+      <artifactId>jetty-testers</artifactId>
       <scope>compile</scope>
     </dependency>
   </dependencies>

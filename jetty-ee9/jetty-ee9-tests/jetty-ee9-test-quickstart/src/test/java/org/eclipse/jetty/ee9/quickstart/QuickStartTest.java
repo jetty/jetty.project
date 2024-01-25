@@ -26,13 +26,17 @@ import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +45,46 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QuickStartTest
 {
+    /**
+     * Test of an exploded webapp directory, no WEB-INF/quickstart-web.xml,
+     * with QuickStartConfiguration enabled.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testExplodedWebAppDirNoWebXml(boolean defaultMode) throws Exception
+    {
+        Path jettyHome = MavenPaths.targetDir();
+        Path webappDir = MavenPaths.targetTestDir("no-web-xml");
+        Path src = MavenPaths.projectBase().resolve("src/test/webapps/no-web-xml");
+        FS.ensureEmpty(webappDir);
+        org.eclipse.jetty.toolchain.test.IO.copyDir(src, webappDir);
+
+        System.setProperty("jetty.home", jettyHome.toString());
+
+        Server server = new Server(0);
+
+        WebAppContext webapp = new WebAppContext();
+        webapp.addConfiguration(new QuickStartConfiguration(),
+            new EnvConfiguration(),
+            new PlusConfiguration(),
+            new AnnotationConfiguration());
+        // Default mode should allow this style of exploded webapp dir.
+        if (!defaultMode)
+            webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.AUTO);
+
+        Resource warResource = webapp.getResourceFactory().newResource(webappDir);
+        webapp.setWarResource(warResource);
+        webapp.setContextPath("/");
+        server.setHandler(webapp);
+        server.start();
+
+        URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/index.html");
+        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+        assertEquals(200, connection.getResponseCode());
+        assertThat(IO.toString((InputStream)connection.getContent()), Matchers.containsString("<p>Contents of no-web-xml</p>"));
+
+        server.stop();
+    }
 
     @Test
     public void testStandardTestWar() throws Exception
@@ -151,7 +195,7 @@ public class QuickStartTest
         url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/");
         connection = (HttpURLConnection)url.openConnection();
         connection.setRequestMethod("POST");
-        
+
         assertEquals(200, connection.getResponseCode());
         content = IO.toString((InputStream)connection.getContent());
         assertThat(content, Matchers.containsString("Results"));

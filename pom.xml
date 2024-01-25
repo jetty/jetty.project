@@ -873,12 +873,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-home-tester</artifactId>
+        <artifactId>jetty-test-session-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-test-session-common</artifactId>
+        <artifactId>jetty-testers</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

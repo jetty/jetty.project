@@ -14,7 +14,6 @@
 package org.eclipse.jetty.tests.distribution.session;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +28,8 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -87,11 +87,11 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = jettyHomeTester.resolveArtifact("org.eclipse.jetty." +  environment +
+            Path war = jettyHomeTester.resolveArtifact("org.eclipse.jetty." +  environment +
                     ":" + "jetty-" + environment + "-test-simple-session-webapp:war:" + jettyVersion);
-            jettyHomeTester.installWarFile(war, "test");
+            jettyHomeTester.installWar(war, "test");
 
-            int port = jettyHomeTester.freePort();
+            int port = Tester.freePort();
             args = new ArrayList<>(Collections.singletonList("jetty.http.port=" + port));
             args.addAll(getSecondStartExtraArgs());
             argsStart = args.toArray(new String[0]);

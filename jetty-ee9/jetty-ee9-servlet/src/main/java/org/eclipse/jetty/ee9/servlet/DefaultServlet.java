@@ -317,13 +317,13 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
     private String getInitParameter(String name, String... deprecated)
     {
-        String value = super.getInitParameter(name);
+        String value = getInitParameter(name);
         if (value != null)
             return value;
 
         for (String d : deprecated)
         {
-            value = super.getInitParameter(d);
+            value = getInitParameter(d);
             if (value != null)
             {
                 LOG.warn("Deprecated {} used instead of {}", d, name);
@@ -514,7 +514,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        doGet(request, response);
     }
 
     @Override
@@ -535,7 +535,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     protected void doOptions(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        response.setHeader("Allow", "GET, HEAD, OPTIONS");
+        response.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
 
     @Override

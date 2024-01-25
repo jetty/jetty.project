@@ -44,7 +44,7 @@ public class CloseTrackingEndpoint extends Session.Listener.AbstractAutoDemandin
     public String closeReason = null;
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public AtomicInteger closeCount = new AtomicInteger(0);
-    public CountDownLatch connectLatch = new CountDownLatch(1);
+    public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch errorLatch = new CountDownLatch(1);
 
     public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
@@ -94,7 +94,7 @@ public class CloseTrackingEndpoint extends Session.Listener.AbstractAutoDemandin
     {
         super.onWebSocketOpen(session);
         LOG.debug("onWebSocketOpen({})", session);
-        connectLatch.countDown();
+        openLatch.countDown();
     }
 
     @Override

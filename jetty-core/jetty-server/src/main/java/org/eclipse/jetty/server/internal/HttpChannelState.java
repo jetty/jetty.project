@@ -16,7 +16,9 @@ package org.eclipse.jetty.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -27,6 +29,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -118,6 +121,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Throwable _callbackFailure;
     private Attributes _cache;
     private boolean _expects100Continue;
+    private ComplianceViolation.Listener _complianceViolationListener;
 
     public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
@@ -125,6 +129,24 @@ public class HttpChannelState implements HttpChannel, Components
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
         _readInvoker = new HttpChannelSerializedInvoker();
         _writeInvoker = new HttpChannelSerializedInvoker();
+    }
+
+    @Override
+    public void initialize()
+    {
+        List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
+        _complianceViolationListener = switch (listeners.size())
+        {
+            case 0 -> ComplianceViolation.Listener.NOOP;
+            case 1 -> listeners.get(0).initialize();
+            default -> new InitializedCompositeComplianceViolationListener(listeners);
+        };
+    }
+
+    @Override
+    public ComplianceViolation.Listener getComplianceViolationListener()
+    {
+        return _complianceViolationListener;
     }
 
     @Override
@@ -157,6 +179,7 @@ public class HttpChannelState implements HttpChannel, Components
             _onFailure = null;
             _callbackFailure = null;
             _expects100Continue = false;
+            _complianceViolationListener = null;
         }
     }
 
@@ -523,16 +546,18 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public String toString()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock lock = _lock.tryLock())
         {
-            return String.format("%s@%x{handling=%s, handled=%b, send=%s, completed=%b, request=%s}",
+            boolean held = lock.isHeldByCurrentThread();
+            return String.format("%s@%x{handling=%s, handled=%s, send=%s, completed=%s, request=%s}",
                 this.getClass().getSimpleName(),
                 hashCode(),
-                _handling,
-                _handled,
-                _streamSendState,
-                _callbackCompleted,
-                _request);
+                held ? _handling : "?",
+                held ? _handled : "?",
+                held ? _streamSendState : "?",
+                held ? _callbackCompleted : "?",
+                held ? _request : "?"
+            );
         }
     }
 
@@ -572,7 +597,7 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpURI uri = request.getHttpURI();
                 if (uri.hasViolations())
                 {
-                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri);
+                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, HttpChannel.from(request).getComplianceViolationListener());
                     if (badMessage != null)
                         throw new BadMessageException(badMessage);
                 }
@@ -1247,6 +1272,7 @@ public class HttpChannelState implements HttpChannel, Components
          * <p>
          * The implementation maintains the {@link #_streamSendState} before taking
          * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
+         *
          * @param x The reason for the failure.
          */
         @Override
@@ -1475,6 +1501,7 @@ public class HttpChannelState implements HttpChannel, Components
 
         /**
          * Called when the {@link Handler} (or it's delegates) fail the request handling.
+         *
          * @param failure The reason for the failure.
          */
         @Override
@@ -1656,6 +1683,7 @@ public class HttpChannelState implements HttpChannel, Components
 
         /**
          * Called when the error write in {@link HttpChannelState.ChannelCallback#failed(Throwable)} fails.
+         *
          * @param x The reason for the failure.
          */
         @Override
@@ -1740,6 +1768,98 @@ public class HttpChannelState implements HttpChannel, Components
             Runnable failureTask = onFailure(failure);
             if (failureTask != null)
                 failureTask.run();
+        }
+    }
+
+    /**
+     * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
+     */
+    private static class InitializedCompositeComplianceViolationListener implements ComplianceViolation.Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(InitializedCompositeComplianceViolationListener.class);
+        private final List<ComplianceViolation.Listener> _listeners;
+
+        /**
+         * Construct a new ComplianceViolations that will initialize the list of listeners and notify events to all.
+         *
+         * @param unInitializedListeners the user listeners to initialized and notify. Null or empty list is not allowed..
+         */
+        public InitializedCompositeComplianceViolationListener(List<ComplianceViolation.Listener> unInitializedListeners)
+        {
+            List<ComplianceViolation.Listener> initialized = null;
+            for (ComplianceViolation.Listener listener : unInitializedListeners)
+            {
+                ComplianceViolation.Listener listening = listener.initialize();
+                if (listening != listener)
+                {
+                    initialized = new ArrayList<>(unInitializedListeners.size());
+                    for (ComplianceViolation.Listener l : unInitializedListeners)
+                    {
+                        if (l == listener)
+                            break;
+                        initialized.add(l);
+                    }
+                }
+                if (initialized != null)
+                    initialized.add(listening);
+            }
+
+            _listeners = initialized == null ? unInitializedListeners : initialized;
+        }
+
+        @Override
+        public void onRequestEnd(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onRequestEnd(request);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of onRequestEnd {}", listener, request, e);
+                }
+            }
+        }
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onRequestBegin(request);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of onRequestBegin {}", listener, request, e);
+                }
+            }
+        }
+
+        @Override
+        public ComplianceViolation.Listener initialize()
+        {
+            throw new IllegalStateException("already initialized");
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Event event)
+        {
+            assert event != null;
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onComplianceViolation(event);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
+                }
+            }
         }
     }
 }
