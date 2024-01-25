@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -57,15 +58,15 @@ public class BadAppTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
-            
-            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "badapp");
+
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "badapp");
             
             // Setup webapps directory
             distribution.installBaseResource("badapp-" + env + "/badapp_throwonunavailable_true.xml",
                 "webapps/badapp.xml");
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), "Should have exited");
@@ -96,14 +97,14 @@ public class BadAppTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
-            
-            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "badapp");
+
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "badapp");
 
             distribution.installBaseResource("badapp-" + env + "/badapp_throwonunavailable_false.xml",
                 "webapps/badapp.xml");
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
@@ -138,11 +139,11 @@ public class BadAppTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
-            
-            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "badapp");
 
-            int port = distribution.freePort();
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "badapp");
+
+            int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
@@ -182,10 +183,10 @@ public class BadAppTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File badWebApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":" + "jetty-" + env + "-test-bad-websocket-webapp:war:" + jettyVersion);
-            distribution.installWarFile(badWebApp, "test");
+            Path badWebApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":" + "jetty-" + env + "-test-bad-websocket-webapp:war:" + jettyVersion);
+            distribution.installWar(badWebApp, "test");
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             String[] args2 = {"jetty.http.port=" + port};
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))
