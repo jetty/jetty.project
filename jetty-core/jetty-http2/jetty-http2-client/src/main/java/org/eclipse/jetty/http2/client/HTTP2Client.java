@@ -128,7 +128,7 @@ public class HTTP2Client extends ContainerLifeCycle
     public HTTP2Client(ClientConnector connector)
     {
         this.connector = connector;
-        addBean(connector);
+        addBeanFromConstructor(connector);
     }
 
     public ClientConnector getClientConnector()

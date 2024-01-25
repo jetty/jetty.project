@@ -52,7 +52,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     public HttpClientTransportOverHTTP2(HTTP2Client client)
     {
         this.client = client;
-        addBean(client.getClientConnector(), false);
+        addBeanFromConstructor(client.getClientConnector(), false);
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();

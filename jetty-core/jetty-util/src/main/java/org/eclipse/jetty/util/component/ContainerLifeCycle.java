@@ -311,13 +311,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     public boolean addBean(Object o)
     {
-        if (o instanceof LifeCycle)
-        {
-            LifeCycle l = (LifeCycle)o;
-            return addBean(o, l.isRunning() ? Managed.UNMANAGED : Managed.AUTO);
-        }
-
-        return addBean(o, Managed.POJO);
+        return addBean(o, o instanceof LifeCycle l ? (l.isRunning() ? Managed.UNMANAGED : Managed.AUTO) : Managed.POJO);
     }
 
     /**
@@ -418,6 +412,53 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         if (LOG.isDebugEnabled())
             LOG.debug("{} added {}", this, newBean);
 
+        return true;
+    }
+
+    /**
+     * Add a bean in a way that is safe to call from a super constructor of this {@code ContainerLifeCycle}:
+     * there are no {@link LifeCycle.Listener}s registered;
+     * the object itself is not a {@link LifeCycle.Listener};
+     * this {@link LifeCycle} is not started or starting;
+     * and the is no debugging call to {@code this.toString()}.
+     * @param o The bean to add
+     * @return true if the bean was added
+     */
+    protected boolean addBeanFromConstructor(Object o)
+    {
+        return addBeanFromConstructor(o, o instanceof LifeCycle l ? (l.isRunning() ? Managed.UNMANAGED : Managed.AUTO) : Managed.POJO);
+    }
+
+    /**
+     * Add a bean in a way that is safe to call from a super constructor of this {@code ContainerLifeCycle}:
+     * there are no {@link LifeCycle.Listener}s registered;
+     * the object itself is not a {@link LifeCycle.Listener};
+     * this {@link LifeCycle} is not started or starting;
+     * and the is no debugging call to {@code this.toString()}.
+     * @param o The bean to add
+     * @param managed true if the bean is to be managed.
+     * @return true if the bean was added
+     */
+    protected boolean addBeanFromConstructor(Object o, boolean managed)
+    {
+        return addBeanFromConstructor(o, o instanceof LifeCycle
+            ? (managed ? Managed.MANAGED : Managed.UNMANAGED)
+            : (managed ? Managed.POJO : Managed.UNMANAGED));
+    }
+
+    private boolean addBeanFromConstructor(Object o, Managed managed)
+    {
+        if (o == null || contains(o))
+            return false;
+        if (o instanceof LifeCycle.Listener || !_listeners.isEmpty())
+            throw new IllegalArgumentException("Cannot call Listeners from constructor");
+
+        Bean newBean = new Bean(o);
+        newBean._managed = managed;
+        _beans.add(newBean);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("added from constructor {}", newBean);
         return true;
     }
 

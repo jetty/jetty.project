@@ -35,7 +35,7 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
     public ClientConnectionFactoryOverHTTP3(HTTP3Client client)
     {
         this.client = client;
-        addBean(client);
+        addBeanFromConstructor(client);
     }
 
     @Override

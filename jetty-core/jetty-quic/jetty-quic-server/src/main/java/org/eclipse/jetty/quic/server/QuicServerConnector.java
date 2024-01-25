@@ -80,11 +80,11 @@ public class QuicServerConnector extends AbstractNetworkConnector
     {
         super(server, executor, scheduler, bufferPool, 0, factories);
         this.selectorManager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), 1);
-        addBean(this.selectorManager);
+        addBeanFromConstructor(this.selectorManager);
         this.sslContextFactory = sslContextFactory;
-        addBean(this.sslContextFactory);
-        addBean(quicConfiguration);
-        addBean(container);
+        addBeanFromConstructor(this.sslContextFactory);
+        addBeanFromConstructor(quicConfiguration);
+        addBeanFromConstructor(container);
         // Initialize to sane defaults for a server.
         quicConfiguration.setSessionRecvWindow(4 * 1024 * 1024);
         quicConfiguration.setBidirectionalStreamRecvWindow(2 * 1024 * 1024);

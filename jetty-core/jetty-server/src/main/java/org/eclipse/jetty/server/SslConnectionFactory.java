@@ -56,7 +56,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
         super("SSL");
         _sslContextFactory = factory == null ? new SslContextFactory.Server() : factory;
         _nextProtocol = nextProtocol;
-        addBean(_sslContextFactory);
+        addBeanFromConstructor(_sslContextFactory);
     }
 
     public SslContextFactory.Server getSslContextFactory()

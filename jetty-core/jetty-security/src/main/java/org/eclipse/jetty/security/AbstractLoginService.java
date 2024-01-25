@@ -40,7 +40,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
 
     protected AbstractLoginService()
     {
-        addBean(_identityService);
+        addBeanFromConstructor(_identityService);
     }
 
     @Override

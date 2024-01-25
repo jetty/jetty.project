@@ -180,13 +180,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _server = Objects.requireNonNull(server);
 
         _executor = executor != null ? executor : _server.getThreadPool();
-        addBean(_executor, executor != null);
+        addBeanFromConstructor(_executor, executor != null);
 
         _scheduler = scheduler != null ? scheduler : _server.getScheduler();
-        addBean(_scheduler, scheduler != null);
+        addBeanFromConstructor(_scheduler, scheduler != null);
 
         _bufferPool = bufferPool != null ? bufferPool : server.getByteBufferPool();
-        addBean(_bufferPool, bufferPool != null);
+        addBeanFromConstructor(_bufferPool, bufferPool != null);
 
         for (ConnectionFactory factory : factories)
         {

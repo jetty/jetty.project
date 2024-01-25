@@ -145,9 +145,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         _executor = executor;
         _tryExecutor = TryExecutor.asTryExecutor(executor);
         _virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(_executor);
-        addBean(_producer);
-        addBean(_tryExecutor);
-        addBean(_virtualExecutor);
+        addBeanFromConstructor(_producer);
+        addBeanFromConstructor(_tryExecutor);
+        addBeanFromConstructor(_virtualExecutor);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);
     }

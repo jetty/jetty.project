@@ -68,7 +68,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         _scanner.setReportExistingFilesOnStartup(false);
         _scanner.setScanDepth(1);
         _scanner.addListener(this);
-        addBean(_scanner);
+        addBeanFromConstructor(_scanner);
     }
 
     private Path getRealKeyStorePath()

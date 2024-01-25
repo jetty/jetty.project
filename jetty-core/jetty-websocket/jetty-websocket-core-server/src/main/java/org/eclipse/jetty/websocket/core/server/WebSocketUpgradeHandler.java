@@ -49,7 +49,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     {
         _mappings = new WebSocketMappings(components == null ? new WebSocketComponents() : components);
         _configurator = configurator;
-        addBean(_mappings);
+        addBeanFromConstructor(_mappings);
         setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override

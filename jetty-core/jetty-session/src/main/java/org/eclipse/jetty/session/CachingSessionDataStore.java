@@ -52,14 +52,14 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
 
     /**
      * @param cache the front cache to use
-     * @param store the actual store for the the session data
+     * @param store the actual store for the session data
      */
     public CachingSessionDataStore(SessionDataMap cache, SessionDataStore store)
     {
         _cache = cache;
-        addBean(_cache, true);
+        addBeanFromConstructor(_cache, true);
         _store = store;
-        addBean(_store, true);
+        addBeanFromConstructor(_store, true);
     }
 
     /**

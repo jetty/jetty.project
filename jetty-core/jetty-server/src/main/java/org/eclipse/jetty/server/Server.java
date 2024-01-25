@@ -115,7 +115,7 @@ public class Server extends Handler.Wrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
         addConnector(connector);
-        addBean(_attributes);
+        addBeanFromConstructor(_attributes);
     }
 
     /**
@@ -142,13 +142,13 @@ public class Server extends Handler.Wrapper implements Attributes
     public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool bufferPool)
     {
         _threadPool = threadPool != null ? threadPool : new QueuedThreadPool();
-        addBean(_threadPool);
+        addBeanFromConstructor(_threadPool);
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler();
-        addBean(_scheduler);
+        addBeanFromConstructor(_scheduler);
         _bufferPool = bufferPool != null ? bufferPool : new ArrayByteBufferPool();
-        addBean(_bufferPool);
+        addBeanFromConstructor(_bufferPool);
         setServer(this);
-        addBean(FileSystemPool.INSTANCE, false);
+        addBeanFromConstructor(FileSystemPool.INSTANCE, false);
     }
 
     public Handler getDefaultHandler()

@@ -98,7 +98,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     protected SecurityHandler(Handler handler)
     {
         super(handler);
-        addBean(new DumpableCollection("knownAuthenticatorFactories", __knownAuthenticatorFactories));
+        addBeanFromConstructor(new DumpableCollection("knownAuthenticatorFactories", __knownAuthenticatorFactories));
     }
 
     /**

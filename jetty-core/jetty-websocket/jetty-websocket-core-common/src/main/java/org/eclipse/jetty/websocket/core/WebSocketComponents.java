@@ -69,12 +69,12 @@ public class WebSocketComponents extends ContainerLifeCycle
             _executor = executor;
         }
 
-        addBean(_inflaterPool);
-        addBean(_deflaterPool);
-        addBean(_bufferPool);
-        addBean(_extensionRegistry);
-        addBean(_objectFactory);
-        addBean(_executor);
+        addBeanFromConstructor(_inflaterPool);
+        addBeanFromConstructor(_deflaterPool);
+        addBeanFromConstructor(_bufferPool);
+        addBeanFromConstructor(_extensionRegistry);
+        addBeanFromConstructor(_objectFactory);
+        addBeanFromConstructor(_executor);
     }
 
     public ByteBufferPool getByteBufferPool()

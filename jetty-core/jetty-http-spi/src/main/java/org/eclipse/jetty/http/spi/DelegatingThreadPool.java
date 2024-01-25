@@ -33,7 +33,7 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
     {
         _executor = executor;
         _tryExecutor = TryExecutor.asTryExecutor(executor);
-        addBean(_executor);
+        addBeanFromConstructor(_executor);
     }
 
     public Executor getExecutor()

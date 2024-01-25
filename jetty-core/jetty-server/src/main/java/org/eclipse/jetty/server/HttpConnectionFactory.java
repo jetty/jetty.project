@@ -43,7 +43,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     {
         super(HttpVersion.HTTP_1_1.asString());
         _config = Objects.requireNonNull(config);
-        addBean(_config);
+        addBeanFromConstructor(_config);
         setUseInputDirectByteBuffers(_config.isUseInputDirectByteBuffers());
         setUseOutputDirectByteBuffers(_config.isUseOutputDirectByteBuffers());
     }

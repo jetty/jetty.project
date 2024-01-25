@@ -266,7 +266,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                              String contextPath)
     {
         _coreContextHandler = new CoreContextHandler();
-        addBean(_coreContextHandler, false);
+        addBeanFromConstructor(_coreContextHandler, false);
         _apiContext = context == null ? new APIContext() : context;
         _initParams = new HashMap<>();
         if (contextPath != null)
@@ -2538,7 +2538,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         CoreContextHandler()
         {
             super.setHandler(new CoreToNestedHandler());
-            addBean(ContextHandler.this, true);
+            addBeanFromConstructor(ContextHandler.this, true);
         }
 
         @Override

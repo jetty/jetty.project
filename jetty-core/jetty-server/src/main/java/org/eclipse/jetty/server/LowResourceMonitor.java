@@ -267,7 +267,7 @@ public class LowResourceMonitor extends ContainerLifeCycle
 
     public void addLowResourceCheck(LowResourceCheck lowResourceCheck)
     {
-        addBean(lowResourceCheck);
+        addBeanFromConstructor(lowResourceCheck);
         this._lowResourceChecks.add(lowResourceCheck);
     }
 

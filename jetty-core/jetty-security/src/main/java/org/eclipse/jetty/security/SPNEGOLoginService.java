@@ -67,7 +67,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     {
         _realm = realm;
         _loginService = loginService;
-        addBean(_loginService);
+        addBeanFromConstructor(_loginService);
     }
 
     /**

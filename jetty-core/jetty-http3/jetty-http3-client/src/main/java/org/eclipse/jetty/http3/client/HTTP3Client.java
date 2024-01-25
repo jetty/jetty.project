@@ -144,10 +144,10 @@ public class HTTP3Client extends ContainerLifeCycle
         QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator(this::configureConnection);
         this.connector = new ClientConnector(configurator);
         this.quicConfiguration = configurator.getQuicConfiguration();
-        addBean(connector);
-        addBean(quicConfiguration);
-        addBean(http3Configuration);
-        addBean(container);
+        addBeanFromConstructor(connector);
+        addBeanFromConstructor(quicConfiguration);
+        addBeanFromConstructor(http3Configuration);
+        addBeanFromConstructor(container);
         // Allow the mandatory unidirectional streams, plus pushed streams.
         quicConfiguration.setMaxUnidirectionalRemoteStreams(48);
         quicConfiguration.setUnidirectionalStreamRecvWindow(4 * 1024 * 1024);

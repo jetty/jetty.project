@@ -69,11 +69,11 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     public SessionHandler()
     {
         setSessionTrackingModes(DEFAULT_SESSION_TRACKING_MODES);
-        addBean(_sessionManager);
-        addBean(_cookieConfig);
-        addBean(_sessionListeners);
-        addBean(_sessionIdListeners);
-        addBean(_sessionAttributeListeners);
+        addBeanFromConstructor(_sessionManager);
+        addBeanFromConstructor(_cookieConfig);
+        addBeanFromConstructor(_sessionListeners);
+        addBeanFromConstructor(_sessionIdListeners);
+        addBeanFromConstructor(_sessionAttributeListeners);
     }
 
     public SessionManager getSessionManager()
