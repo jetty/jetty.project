@@ -191,7 +191,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
             if (compliance.getName().equals(name))
                 return compliance;
         }
-        LOG.warn("Unknown UriCompliance mode {}", name);
+        if (name.indexOf(',') == -1) // skip warning if delimited, will be handled by .from() properly as a CUSTOM mode.
+            LOG.warn("Unknown UriCompliance mode {}", name);
         return null;
     }
 
@@ -255,10 +256,6 @@ public final class UriCompliance implements ComplianceViolation.Mode
                 if (exclude)
                     element = element.substring(1);
 
-                // Ignore removed name. TODO: remove in future release.
-                if (element.equals("NON_CANONICAL_AMBIGUOUS_PATHS"))
-                    continue;
-
                 Violation section = Violation.valueOf(element);
                 if (exclude)
                     violations.remove(section);
@@ -268,8 +265,6 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
             compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         }
-        if (LOG.isDebugEnabled())
-            LOG.debug("UriCompliance from {}->{}", spec, compliance);
         return compliance;
     }
 
@@ -360,12 +355,14 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
-    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri)
+    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
     {
         for (UriCompliance.Violation violation : UriCompliance.Violation.values())
         {
             if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(violation)))
                 return violation.getDescription();
+            else if (listener != null)
+                listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
         }
         return null;
     }

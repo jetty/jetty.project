@@ -46,7 +46,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private final Connector connector;
     private long expireNanoTime = Long.MAX_VALUE;
 
-    protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
+    public ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
     {
         super(executor, scheduler, bufferPool, quicheConnection, connection, remoteAddress);
         this.connector = connector;

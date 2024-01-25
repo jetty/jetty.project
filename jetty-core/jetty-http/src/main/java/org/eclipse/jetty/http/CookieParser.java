@@ -26,6 +26,8 @@ public interface CookieParser
 {
     /**
      * <p>A factory method to create a new parser suitable for the compliance mode.</p>
+     *
+     * @param handler the handler for Cookie Parsing events
      * @param compliance The compliance mode to use for parsing.
      * @param complianceListener A listener for compliance violations or null.
      * @return A CookieParser instance.

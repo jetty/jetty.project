@@ -129,7 +129,7 @@ public class ResponseCompleteTest
                 @Override
                 public Connection newConnection(Connector connector, EndPoint endPoint)
                 {
-                    HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
+                    HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint)
                     {
                         @Override
                         protected HttpStreamOverHTTP1 newHttpStream(String method, String uri, HttpVersion version)

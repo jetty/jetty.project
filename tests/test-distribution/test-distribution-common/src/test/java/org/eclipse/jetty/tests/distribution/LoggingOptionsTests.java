@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +23,8 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -169,10 +169,10 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
                 }
             }
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + ".demo-jsp-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "test");
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + ".demo-jsp-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "test");
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             try (JettyHomeTester.Run requestRun = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(requestRun.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));

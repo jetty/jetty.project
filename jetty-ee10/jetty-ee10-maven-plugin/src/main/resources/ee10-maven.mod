@@ -12,7 +12,7 @@ ee10-webapp
 ee10-annotations
 
 [lib]
-lib/maven-ee10/**.jar
+lib/maven-ee10/*.jar
 
 [xml]
 etc/jetty-ee10-maven.xml

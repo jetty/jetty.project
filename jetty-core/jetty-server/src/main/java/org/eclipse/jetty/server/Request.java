@@ -589,12 +589,11 @@ public interface Request extends Attributes, Content.Source
         CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(CACHE_ATTRIBUTE);
         if (cookieCache == null)
         {
-            // TODO compliance listeners?
-            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), null);
+            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
             request.getComponents().getCache().setAttribute(CACHE_ATTRIBUTE, cookieCache);
         }
 
-        cookies = cookieCache.getCookies(request.getHeaders());
+        cookies = cookieCache.getCookies(request.getHeaders(), HttpChannel.from(request).getComplianceViolationListener());
         request.setAttribute(COOKIE_ATTRIBUTE, cookies);
         return cookies;
     }

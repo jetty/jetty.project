@@ -25,7 +25,8 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.Disabled;
@@ -69,7 +70,7 @@ public class StatsTests extends AbstractJettyHomeTest
             distribution.installBaseResource("stats-webapp-" + env + "/index.html", "webapps/demo/index.html");
             distribution.installBaseResource("stats-webapp-" + env + "/WEB-INF/web.xml", "webapps/demo/WEB-INF/web.xml");
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             String[] args2 = {
                 "jetty.http.port=" + port
             };
