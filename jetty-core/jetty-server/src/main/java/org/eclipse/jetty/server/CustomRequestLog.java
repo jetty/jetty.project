@@ -336,7 +336,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
         _formatString = formatString;
         _requestLogWriter = writer;
-        addBeanFromConstructor(_requestLogWriter);
+        installBean(_requestLogWriter);
 
         try
         {

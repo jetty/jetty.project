@@ -82,7 +82,7 @@ public class UnixDomainServerConnector extends AbstractConnector
     {
         super(server, executor, scheduler, bufferPool, acceptors, factories.length > 0 ? factories : new ConnectionFactory[]{new HttpConnectionFactory()});
         selectorManager = newSelectorManager(getExecutor(), getScheduler(), selectors);
-        addBeanFromConstructor(selectorManager, true);
+        installBean(selectorManager, true);
     }
 
     protected SelectorManager newSelectorManager(Executor executor, Scheduler scheduler, int selectors)

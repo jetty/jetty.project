@@ -57,9 +57,9 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     public CachingSessionDataStore(SessionDataMap cache, SessionDataStore store)
     {
         _cache = cache;
-        addBeanFromConstructor(_cache, true);
+        installBean(_cache, true);
         _store = store;
-        addBeanFromConstructor(_store, true);
+        installBean(_store, true);
     }
 
     /**

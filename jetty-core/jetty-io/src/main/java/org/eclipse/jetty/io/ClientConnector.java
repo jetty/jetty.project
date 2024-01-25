@@ -116,7 +116,7 @@ public class ClientConnector extends ContainerLifeCycle
     public ClientConnector(Configurator configurator)
     {
         this.configurator = Objects.requireNonNull(configurator);
-        addBeanFromConstructor(configurator);
+        installBean(configurator);
         configurator.addBean(this, false);
     }
 

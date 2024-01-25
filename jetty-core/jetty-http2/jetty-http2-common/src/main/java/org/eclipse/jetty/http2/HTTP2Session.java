@@ -126,8 +126,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.writeThreshold = 32 * 1024;
         this.pushEnabled = true; // SPEC: by default, push is enabled.
-        addBeanFromConstructor(flowControl);
-        addBeanFromConstructor(flusher);
+        installBean(flowControl);
+        installBean(flusher);
     }
 
     @Override

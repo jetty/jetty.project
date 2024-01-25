@@ -136,7 +136,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         if (this.issuer == null)
             throw new IllegalArgumentException("Issuer was not configured");
 
-        addBeanFromConstructor(this.httpClient);
+        installBean(this.httpClient);
     }
 
     @Override

@@ -53,7 +53,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     public WebSocketCoreClient(HttpClient httpClient, WebSocketComponents webSocketComponents)
     {
         client = Objects.requireNonNullElse(httpClient, HttpClientProvider.get());
-        addBeanFromConstructor(client);
+        installBean(client);
         if (webSocketComponents == null)
         {
             if (client.isStarted())
@@ -62,7 +62,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
                 webSocketComponents = new WebSocketComponents();
         }
         components = webSocketComponents;
-        addBeanFromConstructor(components);
+        installBean(components);
         if (!client.isStarted())
         {
             if (client.getByteBufferPool() == null)

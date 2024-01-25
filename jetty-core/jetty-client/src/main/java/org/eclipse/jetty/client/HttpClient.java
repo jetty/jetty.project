@@ -150,11 +150,11 @@ public class HttpClient extends ContainerLifeCycle
     public HttpClient(HttpClientTransport transport)
     {
         this.transport = Objects.requireNonNull(transport);
-        addBeanFromConstructor(transport);
+        installBean(transport);
         this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
-        addBeanFromConstructor(requestListeners);
-        addBeanFromConstructor(handlers);
-        addBeanFromConstructor(decoderFactories);
+        installBean(requestListeners);
+        installBean(handlers);
+        installBean(decoderFactories);
     }
 
     public HttpClientTransport getTransport()

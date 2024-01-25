@@ -84,7 +84,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     protected SecurityHandler()
     {
-        addBeanFromConstructor(new DumpableCollection("knownAuthenticatorFactories", __knownAuthenticatorFactories));
+        installBean(new DumpableCollection("knownAuthenticatorFactories", __knownAuthenticatorFactories));
     }
 
     /**

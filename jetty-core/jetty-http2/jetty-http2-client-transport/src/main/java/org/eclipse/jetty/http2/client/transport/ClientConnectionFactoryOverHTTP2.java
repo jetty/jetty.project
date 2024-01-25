@@ -42,7 +42,7 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
     public ClientConnectionFactoryOverHTTP2(HTTP2Client client)
     {
         this.client = client;
-        addBeanFromConstructor(client);
+        installBean(client);
     }
 
     @Override

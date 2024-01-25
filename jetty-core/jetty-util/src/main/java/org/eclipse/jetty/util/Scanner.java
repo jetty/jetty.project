@@ -371,7 +371,7 @@ public class Scanner extends ContainerLifeCycle
     {
         //Create the scheduler and start it
         _scheduler = scheduler == null ? new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1) : scheduler;
-        addBeanFromConstructor(_scheduler);
+        installBean(_scheduler);
         _linkOptions = reportRealPaths ? new LinkOption[0] : new LinkOption[] {LinkOption.NOFOLLOW_LINKS};
     }
 

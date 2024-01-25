@@ -90,7 +90,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     protected ScanningAppProvider(FilenameFilter filter)
     {
         _filenameFilter = filter;
-        addBeanFromConstructor(_appMap);
+        installBean(_appMap);
     }
 
     @Override

@@ -58,8 +58,8 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     {
         this.configuration = Objects.requireNonNull(configuration);
         this.loginService = loginService;
-        addBeanFromConstructor(this.configuration);
-        addBeanFromConstructor(this.loginService);
+        installBean(this.configuration);
+        installBean(this.loginService);
 
         setAuthenticateNewUsers(configuration.isAuthenticateNewUsers());
     }

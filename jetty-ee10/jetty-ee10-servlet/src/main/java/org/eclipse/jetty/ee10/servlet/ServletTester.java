@@ -220,7 +220,7 @@ public class ServletTester extends ContainerLifeCycle
         _context = new ServletContextHandler(contextPath, options);
         _server.setHandler(_context);
         _server.setConnectors(new Connector[]{_connector});
-        addBeanFromConstructor(_server);
+        installBean(_server);
     }
 
     public ServletContextHandler getContext()

@@ -173,7 +173,7 @@ public class ServletContextHandler extends ContextHandler
         _servletHandler = servletHandler;
 
         _objFactory = new DecoratedObjectFactory();
-        addBeanFromConstructor(_objFactory, true);
+        installBean(_objFactory, true);
 
         // Link the handlers
         relinkHandlers();

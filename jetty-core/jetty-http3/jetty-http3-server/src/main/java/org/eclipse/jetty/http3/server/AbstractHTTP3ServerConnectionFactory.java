@@ -40,9 +40,9 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
     public AbstractHTTP3ServerConnectionFactory(HttpConfiguration httpConfiguration, Session.Server.Listener listener)
     {
         super("h3");
-        addBeanFromConstructor(configuration);
+        installBean(configuration);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
-        addBeanFromConstructor(httpConfiguration);
+        installBean(httpConfiguration);
         this.listener = listener;
         configuration.setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
         configuration.setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());

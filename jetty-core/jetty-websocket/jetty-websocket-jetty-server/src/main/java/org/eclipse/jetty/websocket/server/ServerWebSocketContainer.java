@@ -112,7 +112,14 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         this.mappings = mappings;
         this.factory = new ServerFrameHandlerFactory(this, mappings.getWebSocketComponents());
         addSessionListener(sessionTracker);
-        addBeanFromConstructor(sessionTracker);
+        installBean(sessionTracker);
+        installBean(mappings);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        mappings.clear();
     }
 
     @Override

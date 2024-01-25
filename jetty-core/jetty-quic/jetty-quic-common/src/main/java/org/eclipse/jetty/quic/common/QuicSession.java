@@ -82,7 +82,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         this.quicheConnection = quicheConnection;
         this.connection = connection;
         this.flusher = new Flusher(scheduler);
-        addBeanFromConstructor(flusher);
+        installBean(flusher);
         this.remoteAddress = remoteAddress;
         Arrays.setAll(ids, i -> new AtomicLong());
     }

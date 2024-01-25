@@ -114,7 +114,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
                 .distinct()
                 .map(p -> p.toLowerCase(Locale.ENGLISH))
                 .collect(Collectors.toList());
-        Arrays.stream(factoryInfos).forEach(this::addBeanFromConstructor);
+        Arrays.stream(factoryInfos).forEach(this::installBean);
         setConnectionPoolFactory(destination ->
                 new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1));
     }

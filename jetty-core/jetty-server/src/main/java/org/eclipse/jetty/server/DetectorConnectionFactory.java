@@ -49,7 +49,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         _detectingConnectionFactories = Arrays.asList(detectingConnectionFactories);
         for (Detecting detectingConnectionFactory : detectingConnectionFactories)
         {
-            addBeanFromConstructor(detectingConnectionFactory);
+            installBean(detectingConnectionFactory);
         }
     }
 

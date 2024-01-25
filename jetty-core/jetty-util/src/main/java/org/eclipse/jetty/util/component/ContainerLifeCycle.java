@@ -424,9 +424,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * @param o The bean to add
      * @return true if the bean was added
      */
-    protected boolean addBeanFromConstructor(Object o)
+    protected boolean installBean(Object o)
     {
-        return addBeanFromConstructor(o, o instanceof LifeCycle l ? (l.isRunning() ? Managed.UNMANAGED : Managed.AUTO) : Managed.POJO);
+        return installBean(o, o instanceof LifeCycle l ? (l.isRunning() ? Managed.UNMANAGED : Managed.AUTO) : Managed.POJO);
     }
 
     /**
@@ -439,14 +439,14 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * @param managed true if the bean is to be managed.
      * @return true if the bean was added
      */
-    protected boolean addBeanFromConstructor(Object o, boolean managed)
+    protected boolean installBean(Object o, boolean managed)
     {
-        return addBeanFromConstructor(o, o instanceof LifeCycle
+        return installBean(o, o instanceof LifeCycle
             ? (managed ? Managed.MANAGED : Managed.UNMANAGED)
             : (managed ? Managed.POJO : Managed.UNMANAGED));
     }
 
-    private boolean addBeanFromConstructor(Object o, Managed managed)
+    private boolean installBean(Object o, Managed managed)
     {
         if (o == null || contains(o))
             return false;

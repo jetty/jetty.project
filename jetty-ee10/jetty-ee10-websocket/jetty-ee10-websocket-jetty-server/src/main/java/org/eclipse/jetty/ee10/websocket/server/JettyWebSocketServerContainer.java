@@ -134,10 +134,10 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         this.components = components;
         this.executor = executor;
         this.frameHandlerFactory = new JettyServerFrameHandlerFactory(this, components);
-        addBeanFromConstructor(frameHandlerFactory);
+        installBean(frameHandlerFactory);
 
         addSessionListener(sessionTracker);
-        addBeanFromConstructor(sessionTracker);
+        installBean(sessionTracker);
     }
 
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
