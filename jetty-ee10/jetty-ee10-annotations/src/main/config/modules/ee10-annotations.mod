@@ -9,9 +9,17 @@ ee10
 [depend]
 ee10-plus
 
+[ini]
+ee10.asm.version?=@asm.version@
+ee10.jakarta.annotation.api.version?=@jakarta.annotation.api.version@
+
 [lib]
 lib/jetty-ee10-annotations-${jetty.version}.jar
-lib/ee10-annotations/*.jar
+lib/ee10-annotations/asm-${ee10.asm.version}.jar
+lib/ee10-annotations/asm-analysis-${ee10.asm.version}.jar
+lib/ee10-annotations/asm-commons-${ee10.asm.version}.jar
+lib/ee10-annotations/asm-tree-${ee10.asm.version}.jar
+lib/ee10-annotations/jakarta.annotation-api-${ee10.jakarta.annotation.api.version}.jar
 
 [jpms]
 add-modules:org.objectweb.asm

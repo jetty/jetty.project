@@ -9,7 +9,7 @@ unixdomain
 server
 
 [lib]
-lib/jetty-unixdomain-server-*.jar
+lib/jetty-unixdomain-server-${jetty.version}.jar
 
 [xml]
 etc/jetty-unixdomain-http.xml

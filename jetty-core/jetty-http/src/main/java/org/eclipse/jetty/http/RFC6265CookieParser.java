@@ -444,7 +444,7 @@ public class RFC6265CookieParser implements CookieParser
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         if (_complianceListener != null)
-            _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
+            _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
     }
 
 }

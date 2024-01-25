@@ -176,7 +176,7 @@
     <conscrypt.version>2.5.2</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.7.10</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
-    <disruptor.version>3.4.2</disruptor.version>
+    <eclipse.jdt.ecj.version>3.33.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.5.0</flatten.maven.plugin.version>
@@ -569,6 +569,11 @@
         <version>${conscrypt.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jdt</groupId>
+        <artifactId>ecj</artifactId>
+        <version>${eclipse.jdt.ecj.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-client</artifactId>
         <version>${project.version}</version>
@@ -868,12 +873,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-home-tester</artifactId>
+        <artifactId>jetty-test-session-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-test-session-common</artifactId>
+        <artifactId>jetty-testers</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

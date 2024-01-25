@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -52,10 +53,10 @@ public class OsgiAppTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-felix-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "test");
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-felix-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "test");
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
