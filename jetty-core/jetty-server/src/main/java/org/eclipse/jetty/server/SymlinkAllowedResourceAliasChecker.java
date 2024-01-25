@@ -24,7 +24,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An extension of {@link AllowedResourceAliasChecker} which will allow symlinks alias to arbitrary
- * targets, so long as the symlink file itself is an allowed resource.
+ * targets, so long as the symlink file itself is an allowed resource. Unlike {@link AllowedResourceAliasChecker}
+ * this will only not approve any alias which resolves to an allowed resource, it must contain an allowed symlink or
+ * the alias will not be allowed.
  */
 public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChecker
 {
@@ -69,7 +71,6 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                 for (Resource r : fromBase)
                 {
                     Path p = r.getPath();
-                    String realURI = p.toRealPath(NO_FOLLOW_LINKS).getFileName().toString();
 
                     // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
                     // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
@@ -93,13 +94,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
             return false;
         }
 
-        // No symlink found, so must be allowed. Double check it is the right path we checked.
-        Resource fromBase = _baseResource.resolve(segmentPath.toString());
-        for (Resource r : fromBase)
-        {
-            if (isSameFile(r.getPath(), path))
-                return true;
-        }
+        // No symlink found, so must not be allowed.
         return false;
     }
 }
