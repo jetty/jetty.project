@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quickstart;
 
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -52,10 +51,12 @@ public class PreconfigureSpecWar
 
         LOG.info("Preconfigured in {}ms", NanoTime.millisSince(__start));
 
+        /*
         Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
         try (InputStream in = Files.newInputStream(quickStartXml))
         {
             IO.copy(in, System.out);
         }
+         */
     }
 }
