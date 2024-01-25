@@ -75,12 +75,7 @@ public class AliasCheckerSymlinkTest
 
     private static void setAliasChecker(ContextHandler contextHandler, AliasCheck aliasChecker) throws Exception
     {
-        // TODO: why do I need to manually manage the lifecycle???
-        if (_hotSwapHandler.getHandler() != null)
-            _hotSwapHandler.getHandler().stop();
         _hotSwapHandler.setHandler(contextHandler);
-        contextHandler.start();
-
         contextHandler.clearAliasChecks();
         if (aliasChecker != null)
             contextHandler.addAliasCheck(aliasChecker);
