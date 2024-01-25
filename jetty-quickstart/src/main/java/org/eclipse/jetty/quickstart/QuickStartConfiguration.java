@@ -139,6 +139,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("No quickstart-web.xml found, starting webapp {} normally", context);
+                    super.preConfigure(context);
                 }
                 break;
             }
