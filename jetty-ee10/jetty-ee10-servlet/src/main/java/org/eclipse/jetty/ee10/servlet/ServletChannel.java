@@ -537,28 +537,29 @@ public class ServletChannel
 
                     case COMPLETE:
                     {
-                        if (!getServletContextResponse().isCommitted())
+                        ServletContextResponse response = getServletContextResponse();
+                        if (!response.isCommitted())
                         {
                             // Indicate Connection:close if we can't consume all.
-                            if (getServletContextResponse().getStatus() >= 200)
-                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
+                            if (response.getStatus() >= 200)
+                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, response);
                         }
 
                         // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.
-                        if (!_servletContextRequest.isHead() && getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304)
+                        if (!_servletContextRequest.isHead() && response.getStatus() != HttpStatus.NOT_MODIFIED_304)
                         {
                             // Compare the bytes written by the application, even if
                             // they might be compressed (or changed) by child Handlers.
-                            long written = getHttpOutput().getWritten();
-                            if (getServletContextResponse().isContentIncomplete(written))
+                            long written = response.getContentBytesWritten();
+                            if (response.isContentIncomplete(written))
                             {
-                                sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, getServletContextResponse().getContentLength()));
+                                sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, response.getContentLength()));
                                 break;
                             }
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        getServletContextResponse().completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
+                        response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
                         break;
                     }
 

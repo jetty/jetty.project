@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -63,6 +65,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     private ResponseWriter _writer;
     private long _contentLength = -1;
     private Supplier<Map<String, String>> _trailers;
+    private long _written;
 
     public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
@@ -276,6 +279,18 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public long getContentLength()
     {
         return _contentLength;
+    }
+
+    @Override
+    public void write(boolean last, ByteBuffer content, Callback callback)
+    {
+        _written += BufferUtil.length(content);
+        super.write(last, content, callback);
+    }
+
+    public long getContentBytesWritten()
+    {
+        return _written;
     }
 
     public void closeOutput() throws IOException
