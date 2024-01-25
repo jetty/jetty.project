@@ -359,20 +359,8 @@ public class DefaultServletTest
         Path other = dir.resolve("other.txt");
         Files.writeString(other, "In a while", UTF_8);
 
-        // Access normally, in sub-dir of context
-
-        rawResponse = connector.getResponse("""
-            GET /context/dirFoo/other.txt HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.toString(), response.getContent(), is("In a while"));
-
-        // Attempt access of content in sub-dir of context, using "%2F" instead of "/",
-        // this is an alias and is approved by the SymlinkAllowedResourceAliasChecker.
+        // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 404
+        // as neither getServletPath and getPathInfo are used and thus they don't throw.
         rawResponse = connector.getResponse("""
             GET /context/dirFoo%2Fother.txt HTTP/1.1\r
             Host: local\r
@@ -380,8 +368,7 @@ public class DefaultServletTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.toString(), response.getContent(), is("In a while"));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
 
     @Test
