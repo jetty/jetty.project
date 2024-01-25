@@ -458,7 +458,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         _beans.add(newBean);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{}@{} added {}", getClass().getSimpleName, hashCode(), newBean);
+            LOG.debug("{}@{} added {}", getClass().getSimpleName(), hashCode(), newBean);
         return true;
     }
 
