@@ -53,6 +53,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     {
         // Create new metadata for every request as the local or remote address may have changed.
         HttpChannel httpChannel = httpChannelFactory.newHttpChannel(new MetaData());
+        httpChannel.initialize();
         HttpStreamOverHTTP3 httpStream = new HttpStreamOverHTTP3(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);

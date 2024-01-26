@@ -31,6 +31,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -270,6 +271,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
+        if (!getBeans(ComplianceViolation.Listener.class).isEmpty() ||
+            !getServer().getBeans(ComplianceViolation.Listener.class).isEmpty())
+            LOG.warn("ComplianceViolation.Listeners must now be set on HttpConfiguration");
+
         getConnectionFactories().stream()
             .filter(ConnectionFactory.Configuring.class::isInstance)
             .map(ConnectionFactory.Configuring.class::cast)

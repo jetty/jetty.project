@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -30,6 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class AutoLock implements AutoCloseable, Serializable
 {
+    @Serial
     private static final long serialVersionUID = 3300696774541816341L;
 
     private final ReentrantLock _lock = new ReentrantLock();
@@ -46,8 +48,24 @@ public class AutoLock implements AutoCloseable, Serializable
     }
 
     /**
-     * @see ReentrantLock#isHeldByCurrentThread()
+     * <p>Tries to acquire the lock.</p>
+     * <p>Whether the lock was acquired can be tested
+     * with {@link #isHeldByCurrentThread()}.</p>
+     * <p>Typical usage of this method is in {@code toString()},
+     * to avoid deadlocks when the implementation needs to lock
+     * to retrieve a consistent state to produce the string.</p>
+     *
+     * @return this AutoLock for unlocking
+     */
+    public AutoLock tryLock()
+    {
+        _lock.tryLock();
+        return this;
+    }
+
+    /**
      * @return whether this lock is held by the current thread
+     * @see ReentrantLock#isHeldByCurrentThread()
      */
     public boolean isHeldByCurrentThread()
     {
@@ -71,7 +89,8 @@ public class AutoLock implements AutoCloseable, Serializable
     @Override
     public void close()
     {
-        _lock.unlock();
+        if (isHeldByCurrentThread())
+            _lock.unlock();
     }
 
     /**
@@ -101,6 +120,12 @@ public class AutoLock implements AutoCloseable, Serializable
             return (WithCondition)super.lock();
         }
 
+        @Override
+        public AutoLock.WithCondition tryLock()
+        {
+            return (WithCondition)super.tryLock();
+        }
+
         /**
          * @see Condition#signal()
          */
@@ -118,8 +143,8 @@ public class AutoLock implements AutoCloseable, Serializable
         }
 
         /**
-         * @see Condition#await()
          * @throws InterruptedException if the current thread is interrupted
+         * @see Condition#await()
          */
         public void await() throws InterruptedException
         {
@@ -127,11 +152,11 @@ public class AutoLock implements AutoCloseable, Serializable
         }
 
         /**
-         * @see Condition#await(long, TimeUnit)
          * @param time the time to wait
          * @param unit the time unit
          * @return false if the waiting time elapsed
          * @throws InterruptedException if the current thread is interrupted
+         * @see Condition#await(long, TimeUnit)
          */
         public boolean await(long time, TimeUnit unit) throws InterruptedException
         {

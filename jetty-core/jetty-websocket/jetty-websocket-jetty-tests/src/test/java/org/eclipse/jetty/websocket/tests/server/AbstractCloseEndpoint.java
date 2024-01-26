@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.nullValue;
 public abstract class AbstractCloseEndpoint extends Session.Listener.AbstractAutoDemanding
 {
     public final Logger log;
-    public CountDownLatch connectLatch = new CountDownLatch(1);
+    public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public String closeReason = null;
     public int closeStatusCode = -1;
@@ -45,7 +45,7 @@ public abstract class AbstractCloseEndpoint extends Session.Listener.AbstractAut
     {
         super.onWebSocketOpen(sess);
         log.debug("onWebSocketOpen({})", sess);
-        connectLatch.countDown();
+        openLatch.countDown();
     }
 
     @Override

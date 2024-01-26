@@ -15,11 +15,14 @@ package org.eclipse.jetty.server;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.annotation.Name;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Connection Factory for HTTP Connections.
@@ -29,8 +32,8 @@ import org.eclipse.jetty.util.annotation.Name;
  */
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionFactory.class);
     private final HttpConfiguration _config;
-    private boolean _recordHttpComplianceViolations;
     private boolean _useInputDirectByteBuffers;
     private boolean _useOutputDirectByteBuffers;
 
@@ -54,14 +57,25 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
+    /**
+     * @deprecated use {@link HttpConfiguration#getComplianceViolationListeners()} instead to know if there
+     * are any {@link ComplianceViolation.Listener} to notify.  this method will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public boolean isRecordHttpComplianceViolations()
     {
-        return _recordHttpComplianceViolations;
+        return !_config.getComplianceViolationListeners().isEmpty();
     }
 
+    /**
+     * Does nothing.
+     * @deprecated use {@link HttpConfiguration#addComplianceViolationListener(ComplianceViolation.Listener)} instead.
+     * this method will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
     {
-        this._recordHttpComplianceViolations = recordHttpComplianceViolations;
+        _config.addComplianceViolationListener(new ComplianceViolation.LoggingListener());
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -87,7 +101,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        HttpConnection connection = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
+        HttpConnection connection = new HttpConnection(_config, connector, endPoint);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         return configure(connection, connector, endPoint);

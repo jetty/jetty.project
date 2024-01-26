@@ -14,7 +14,14 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,26 +31,37 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -56,13 +74,21 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RequestTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RequestTest.class);
     private Server _server;
     private LocalConnector _connector;
 
     private void startServer(HttpServlet servlet) throws Exception
+    {
+        startServer(null, servlet);
+    }
+
+    private void startServer(Consumer<Server> configureServer, HttpServlet servlet) throws Exception
     {
         _server = new Server();
 
@@ -80,6 +106,9 @@ public class RequestTest
         servletContextHandler.addServlet(servlet, "/*").getRegistration().setMultipartConfig(new MultipartConfigElement("here"));
 
         _server.setHandler(servletContextHandler);
+
+        if (configureServer != null)
+            configureServer.accept(_server);
         _server.start();
     }
 
@@ -472,5 +501,75 @@ public class RequestTest
                 """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    public static Stream<Arguments> requestHostHeaders()
+    {
+        List<String> hostHeader = new ArrayList<>();
+        hostHeader.add("localhost");
+        hostHeader.add("127.0.0.1");
+        try
+        {
+            InetAddress localhost = InetAddress.getLocalHost();
+            hostHeader.add(localhost.getHostName());
+            hostHeader.add(localhost.getHostAddress());
+        }
+        catch (UnknownHostException e)
+        {
+            LOG.debug("Unable to obtain InetAddress.LocalHost", e);
+        }
+        return hostHeader.stream().map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("requestHostHeaders")
+    public void testDateResponseHeader(String hostHeader) throws Exception
+    {
+        startServer(
+            (server) ->
+            {
+                HttpConfiguration httpConfiguration = new HttpConfiguration();
+                // httpConfiguration.setSendDateHeader(true);
+                ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
+                connector.setPort(0);
+                server.addConnector(connector);
+            },
+            new HttpServlet()
+            {
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+                {
+                    resp.setCharacterEncoding("utf-8");
+                    resp.setContentType("text/plain");
+                    resp.getWriter().println("Foo");
+                }
+            });
+
+        URI serverURI = _server.getURI();
+
+        String rawRequest = """
+            GET /foo HTTP/1.1
+            Host: %s
+            Connection: close
+            
+            """.formatted(hostHeader);
+
+        try (Socket client = new Socket(hostHeader, serverURI.getPort()))
+        {
+            OutputStream out = client.getOutputStream();
+            out.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+
+            InputStream in = client.getInputStream();
+            HttpTester.Response response = HttpTester.parseResponse(in);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            String date = response.get(HttpHeader.DATE);
+            assertNotNull(date);
+            // asserting an exact value is tricky as the Date header is dynamic,
+            // so we just assert that it has some content and isn't blank
+            assertTrue(StringUtil.isNotBlank(date));
+            assertThat(date, containsString(","));
+            assertThat(date, containsString(":"));
+        }
     }
 }

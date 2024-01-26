@@ -3252,7 +3252,7 @@ public class HttpParserTest
     private boolean _messageCompleted;
     private final List<ComplianceViolation> _complianceViolation = new ArrayList<>();
 
-    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, ComplianceViolation.Listener
+    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler
     {
         @Override
         public boolean content(ByteBuffer ref)
@@ -3352,9 +3352,9 @@ public class HttpParserTest
         }
 
         @Override
-        public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String reason)
+        public void onViolation(ComplianceViolation.Event event)
         {
-            _complianceViolation.add(violation);
+            _complianceViolation.add(event.violation());
         }
     }
 
