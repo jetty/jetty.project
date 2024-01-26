@@ -380,11 +380,7 @@ public class GzipHandlerTest
         assertThat(response.get("ETag"), is(__contentETagGzip));
         assertThat(response.getCSV("Vary", false), hasItems("Accept-Encoding", "Other"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
+        assertEquals(__content, ungzip(response.getContentBytes()));
     }
 
     @ParameterizedTest
@@ -448,11 +444,7 @@ public class GzipHandlerTest
         assertThat(response.get("Content-Encoding"), equalToIgnoringCase("gzip"));
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
+        assertEquals(__content, ungzip(response.getContentBytes()));
     }
 
     @ParameterizedTest
@@ -476,11 +468,7 @@ public class GzipHandlerTest
         assertThat(response.get("Content-Encoding"), equalToIgnoringCase("gzip"));
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
+        assertEquals(__content, ungzip(response.getContentBytes()));
     }
 
     @ParameterizedTest
@@ -508,7 +496,6 @@ public class GzipHandlerTest
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
-
         byte[] bytes = testOut.toByteArray();
 
         for (int i = 0; i < writes; i++)
@@ -565,11 +552,7 @@ public class GzipHandlerTest
         assertThat(response.get("ETag"), is(__contentETagGzip));
         assertThat(response.getCSV("Vary", false), hasItems("Accept-Encoding", "Other"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
+        assertEquals(__content, ungzip(response.getContentBytes()));
     }
 
     @ParameterizedTest
@@ -625,11 +608,7 @@ public class GzipHandlerTest
         assertThat(response.get("Content-Encoding"), containsString("gzip"));
         assertThat(response.get("Vary"), is("Accept-Encoding"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(__micro, testOut.toString(StandardCharsets.UTF_8));
+        assertEquals(__micro, ungzip(response.getContentBytes()));
     }
 
     @ParameterizedTest
@@ -734,11 +713,7 @@ public class GzipHandlerTest
         assertThat(response.get("ETag"), is(__contentETagGzip));
         assertThat(response.get("Vary"), is("Accept-Encoding"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-        IO.copy(testIn, testOut);
-
-        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
+        assertEquals(__content, ungzip(response.getContentBytes()));
     }
 
     @ParameterizedTest
@@ -763,11 +738,15 @@ public class GzipHandlerTest
         assertThat(response.get("ETag"), nullValue());
         assertThat(response.get("Vary"), is("Accept-Encoding"));
 
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        assertEquals(__icontent, ungzip(response.getContentBytes()));
+    }
+
+    private static String ungzip(byte[] bytes) throws IOException
+    {
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(bytes));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
-
-        assertEquals(__icontent, testOut.toString(StandardCharsets.UTF_8));
+        return testOut.toString(StandardCharsets.UTF_8);
     }
 
     @ParameterizedTest
@@ -924,6 +903,24 @@ public class GzipHandlerTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is("name: value\n"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipResponse(boolean gzipInContext) throws Exception
+    {
+        init(gzipInContext);
+
+        String request = """
+            GET /ctx/content HTTP/1.1
+            Host: localhost
+            Accept-Encoding: gzip
+                        
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+
+        assertThat(response.getStatus(), is(200));
+        assertEquals(__content, ungzip(response.getContentBytes()));
     }
 
     @ParameterizedTest

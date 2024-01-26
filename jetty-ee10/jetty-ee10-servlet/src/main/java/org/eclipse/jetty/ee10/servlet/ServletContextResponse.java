@@ -288,7 +288,13 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         super.write(last, content, callback);
     }
 
-    public long getContentBytesWritten()
+    /**
+     * <p>Returns the number of bytes written via this class {@link #write(boolean, ByteBuffer, Callback)} method.</p>
+     * <p>The number of bytes written to the network may be different.</p>
+     *
+     * @return the number of bytes written via this class {@link #write(boolean, ByteBuffer, Callback)} method.
+     */
+    long getContentBytesWritten()
     {
         return _written;
     }

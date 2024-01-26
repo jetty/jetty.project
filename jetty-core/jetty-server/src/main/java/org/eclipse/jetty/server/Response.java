@@ -621,7 +621,7 @@ public interface Response extends Content.Sink
 
     /**
      * @param response the HTTP response
-     * @return the number of response content bytes written so far,
+     * @return the number of response content bytes written to the network so far,
      * or {@code -1} if the number is unknown
      */
     static long getContentBytesWritten(Response response)
