@@ -117,12 +117,6 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
-        mappings.clear();
-    }
-
-    @Override
     public Executor getExecutor()
     {
         return mappings.getWebSocketComponents().getExecutor();

@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * wrap that POJO with a {@link FrameHandler} and the customizer is used to configure the resulting
  * {@link CoreSession}.</p>
  */
-public class WebSocketMappings implements Dumpable
+public class WebSocketMappings implements Dumpable, LifeCycle.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketMappings.class);
     public static final String WEBSOCKET_MAPPING_ATTRIBUTE = WebSocketMappings.class.getName();
@@ -75,7 +75,6 @@ public class WebSocketMappings implements Dumpable
                     contextHandler.removeAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
                     contextHandler.removeEventListener(this);
                     contextHandler.removeBean(m);
-                    m.clear();
                 }
             });
         }
@@ -144,6 +143,12 @@ public class WebSocketMappings implements Dumpable
     public Handshaker getHandshaker()
     {
         return handshaker;
+    }
+
+    @Override
+    public void lifeCycleStopping(LifeCycle event)
+    {
+        clear();
     }
 
     public void clear()

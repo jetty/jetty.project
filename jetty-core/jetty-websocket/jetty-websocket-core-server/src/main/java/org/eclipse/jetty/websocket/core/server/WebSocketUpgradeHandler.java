@@ -79,12 +79,6 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         super.doStart();
     }
 
-    @Override
-    protected void doStop() throws Exception
-    {
-        _mappings.clear();
-    }
-
     public Configuration getConfiguration()
     {
         return _customizer;
