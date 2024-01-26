@@ -417,8 +417,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
     /**
      * Add a bean in a way that is safe to call from a super constructor of this {@code ContainerLifeCycle}:
-     * there are no {@link LifeCycle.Listener}s registered;
-     * the object itself is not a {@link LifeCycle.Listener};
+     * there are no {@link Container.Listener}s registered;
+     * the object itself is not a {@link Container.Listener};
      * this {@link LifeCycle} is not started or starting;
      * and the is no debugging call to {@code this.toString()}.
      * @param o The bean to add
@@ -431,8 +431,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
     /**
      * Add a bean in a way that is safe to call from a super constructor of this {@code ContainerLifeCycle}:
-     * there are no {@link LifeCycle.Listener}s registered;
-     * the object itself is not a {@link LifeCycle.Listener};
+     * there are no {@link Container.Listener}s registered;
+     * the object itself is not a {@link Container.Listener};
      * this {@link LifeCycle} is not started or starting;
      * and the is no debugging call to {@code this.toString()}.
      * @param o The bean to add
@@ -450,7 +450,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         if (o == null || contains(o))
             return false;
-        if (o instanceof LifeCycle.Listener || !_listeners.isEmpty())
+        if (o instanceof Container.Listener || !_listeners.isEmpty())
             throw new IllegalArgumentException("Cannot call Listeners from constructor");
 
         Bean newBean = new Bean(o);
