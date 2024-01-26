@@ -14,21 +14,35 @@ updates:
     groups:
       build-deps:
         patterns:
-          - "org.apache.maven.plugins:*"
           - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
           - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
       integration-deps:
         patterns:
           - "org.infinispan*"
           - "org.mongodb*"
           - "org.wildfly*"
           - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
       spec-deps:
         patterns:
           - "jakarta.*"
           - "org.jboss.weld.*"
           - "com.sun.xml*"
           - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
       dev-dependencies:
         patterns:
           - "*"
@@ -71,6 +85,8 @@ updates:
         versions: [ ">=3.0.0"]
       - dependency-name: "ch.qos.logback:*"
         versions: [ ">=1.4.0"]
+      - dependency-name: "org.mortbay.jasper:*"
+        versions: [ ">=10.0.0"]
 
   - package-ecosystem: "maven"
     directory: "/"
@@ -86,21 +102,35 @@ updates:
     groups:
       build-deps:
         patterns:
-          - "org.apache.maven.plugins:*"
           - "org.apache.maven:*"
+          - "org.apache.maven.plugins:*"
+          - "org.apache.maven.plugin-tools:*"
+          - "org.apache.felix:*-plugin"
+          - "org.apache.servicemix.tooling:*"
+          - "org.asciidoctor:*"
+          - "org.codehaus.mojo:*"
+          - "org.eclipse.jetty.toolchain:*-maven-plugin"
+          - "org.jacoco:*"
+          - "org.mortbay:*-maven-plugin"
           - "org.testcontainers:*"
+          - "com.diffplug.spotless:*"
+          - "com.github.spotbugs:*"
+          - "com.mycila:*"
       integration-deps:
         patterns:
           - "org.infinispan*"
           - "org.mongodb*"
           - "org.wildfly*"
           - "org.eclipse.platform*"
+          - "com.google.cloud:*"
+          - "org.hawtio:*"
       spec-deps:
         patterns:
           - "jakarta.*"
           - "org.jboss.weld.*"
           - "com.sun.xml*"
           - "org.glassfish.jaxb*"
+          - "org.mortbay.jasper:*"
       dev-dependencies:
         patterns:
           - "*"
@@ -149,6 +179,8 @@ updates:
         versions: [ ">=5.0.0" ]
       - dependency-name: "org.infinispan:*"
         versions: [ ">=12" ]
+      - dependency-name: "org.mortbay.jasper:*"
+        versions: [ ">=10.1.0"]
 
   - package-ecosystem: "maven"
     directory: "/"
@@ -159,6 +191,7 @@ updates:
       day: "saturday"
       time: "10:00"
       timezone: "Australia/Brisbane"
+    # Associate with milestone 9.4.x
     milestone: 3
     groups:
       dev-dependencies:
