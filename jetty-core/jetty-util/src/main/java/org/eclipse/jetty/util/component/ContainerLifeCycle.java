@@ -453,6 +453,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         if (o instanceof Container.Listener || !_listeners.isEmpty())
             throw new IllegalArgumentException("Cannot call Listeners from constructor");
 
+        if (o instanceof EventListener eventListener)
+            addEventListener(eventListener);
+
         Bean newBean = new Bean(o);
         newBean._managed = managed;
         _beans.add(newBean);
