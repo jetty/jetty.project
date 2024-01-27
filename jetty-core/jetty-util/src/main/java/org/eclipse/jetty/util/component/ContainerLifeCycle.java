@@ -451,7 +451,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         if (o == null || contains(o))
             return false;
         if (o instanceof Container.Listener || !_listeners.isEmpty())
-            throw new IllegalArgumentException("Cannot call Listeners from constructor");
+            throw new IllegalArgumentException("Cannot call Container.Listeners from constructor");
 
         if (o instanceof EventListener eventListener)
             addEventListener(eventListener);
