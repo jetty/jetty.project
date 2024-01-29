@@ -11,6 +11,8 @@ updates:
       timezone: "Australia/Brisbane"
     # Associate with milestone 10.0.x
     milestone: 6
+    commit-message:
+      prefix: "[10.0.x] "
     groups:
       build-deps:
         patterns:
@@ -99,6 +101,8 @@ updates:
       timezone: "Australia/Brisbane"
     # Associate with milestone 11.0.x
     milestone: 7
+    commit-message:
+      prefix: "[11.0.x] "
     groups:
       build-deps:
         patterns:
@@ -193,6 +197,8 @@ updates:
       timezone: "Australia/Brisbane"
     # Associate with milestone 9.4.x
     milestone: 3
+    commit-message:
+      prefix: "[9.4.x] "
     groups:
       dev-dependencies:
         patterns:
@@ -201,3 +207,4 @@ updates:
       # Restrict updates in this branch to jetty in the 9.4.x space
       - dependency-name: "org.infinispan:*"
         versions: [ ">=12" ]
+      - dependency-name: "org.apache.directory*"
