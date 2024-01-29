@@ -14,7 +14,6 @@
 package org.eclipse.jetty.xml;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
@@ -54,6 +53,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.Pool;
@@ -67,7 +67,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 /**
  * <p>Configures objects from XML.</p>
@@ -252,10 +251,9 @@ public class XmlConfiguration
      * Reads and parses the XML configuration file.
      *
      * @param resource the Resource to the XML configuration
-     * @throws IOException if the configuration could not be read
-     * @throws SAXException if the configuration could not be parsed
+     * @throws XmlConfigurationException if configuration was not able to loaded from XML provided
      */
-    public XmlConfiguration(Resource resource) throws SAXException, IOException
+    public XmlConfiguration(Resource resource)
     {
         this(resource, null, null);
     }
@@ -266,10 +264,9 @@ public class XmlConfiguration
      * @param resource the Resource to the XML configuration
      * @param idMap Map of objects with IDs
      * @param properties Map of properties
-     * @throws IOException if the configuration could not be read
-     * @throws SAXException if the configuration could not be parsed
+     * @throws XmlConfigurationException if configuration was not able to loaded from XML provided
      */
-    public XmlConfiguration(Resource resource, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
+    public XmlConfiguration(Resource resource, Map<String, Object> idMap, Map<String, String> properties)
     {
         XmlParser parser = getXmlParser();
         try (InputStream inputStream = resource.newInputStream())
@@ -280,10 +277,14 @@ public class XmlConfiguration
             _idMap = idMap == null ? new HashMap<>() : idMap;
             _propertyMap = properties == null ? new HashMap<>() : properties;
         }
+        catch (Throwable t)
+        {
+            throw new XmlConfigurationException("Bad Xml Config in " + this, t);
+        }
         finally
         {
-            if (parser instanceof Closeable)
-                ((Closeable)parser).close();
+            if (parser instanceof Closeable closable)
+                IO.close(closable);
         }
     }
 
@@ -312,7 +313,7 @@ public class XmlConfiguration
                     break;
             }
             if (_processor == null)
-                throw new IllegalStateException("Unknown configuration type: " + config.getTag() + " in " + this);
+                throw new IllegalStateException("Unknown configuration type: " + config.getTag());
         }
         else
         {
@@ -429,7 +430,7 @@ public class XmlConfiguration
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader() == obj.getClass().getClassLoader()) ? "" : "Object Class and type Class are from different loaders.";
-                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders + " in " + _configuration);
+                throw new XmlConfigurationException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders);
             }
             String id = _root.getAttribute("id");
             if (id != null)
@@ -438,7 +439,7 @@ public class XmlConfiguration
             AttrOrElementNode aoeNode = new AttrOrElementNode(obj, _root, "Id", "Class", "Arg");
             // The Object already existed, if it has <Arg> nodes, warn about them not being used.
             aoeNode.getNodes("Arg")
-                .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
+                .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, _configuration));
             configure(obj, _root, aoeNode.getNext());
             return obj;
         }
@@ -465,14 +466,14 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException(String.format("No matching constructor %s in %s", oClass, _configuration));
+                    throw new XmlConfigurationException("No matching constructor " + oClass);
                 }
             }
             else
             {
                 // The Object already existed, if it has <Arg> nodes, warn about them not being used.
                 aoeNode.getNodes("Arg")
-                    .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
+                    .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, _configuration));
             }
 
             _configuration.initializeDefaults(obj);
@@ -550,7 +551,7 @@ public class XmlConfiguration
                             envObj(node);
                             break;
                         default:
-                            throw new IllegalStateException("Unknown tag: " + tag + " in " + _configuration);
+                            throw new IllegalStateException("Unknown tag: " + tag);
                     }
                 }
                 catch (Exception e)
