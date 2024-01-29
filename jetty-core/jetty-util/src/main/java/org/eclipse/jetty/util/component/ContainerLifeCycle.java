@@ -304,6 +304,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * The {@link #addBean(Object, boolean)}
      * method should be used if this is not correct, or the {@link #manage(Object)} and {@link #unmanage(Object)}
      * methods may be used after an add to change the status.
+     * <p>This method should not be called from a constructor, instead use {@link #installBean(Object)}</p>
      *
      * @param o the bean object to add
      * @return true if the bean was added, false if it was already present
@@ -315,10 +316,11 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     }
 
     /**
-     * Adds the given bean, explicitly managing it or not.
+     * <p>Adds the given bean, explicitly managing it or not.</p>
+     * <p>This method should not be called from a constructor, instead use {@link #installBean(Object)}</p>
      *
      * @param o The bean object to add
-     * @param managed whether to managed the lifecycle of the bean
+     * @param managed whether to manage the lifecycle of the bean
      * @return true if the bean was added, false if it was already present
      */
     @Override
