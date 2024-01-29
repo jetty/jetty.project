@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -76,17 +77,42 @@ public class MessageReaderErrorTest
     @WebSocket
     public static class ReaderErrorEndpoint
     {
+        public final int toRead;
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
         public volatile String closeReason;
         public volatile int closeCode = StatusCode.UNDEFINED;
         public volatile Throwable error = null;
 
+        public ReaderErrorEndpoint()
+        {
+            this(-1);
+        }
+
+        public ReaderErrorEndpoint(int read)
+        {
+            toRead = read;
+        }
+
         @OnWebSocketMessage
         public void onMessage(Reader reader) throws Exception
         {
-            // Block and consume all frames for the message.
-            textMessages.add(IO.toString(reader));
+            if (toRead < 0)
+            {
+                textMessages.add(IO.toString(reader));
+            }
+            else
+            {
+                Utf8StringBuilder sb = new Utf8StringBuilder();
+                for (int i = 0; i < toRead; i++)
+                {
+                    int read = reader.read();
+                    if (read < 0)
+                        break;
+                    sb.append((byte)read);
+                }
+                textMessages.add(sb.build());
+            }
 
             // This reader will be dispatched to another thread and won't be the thread reading from the connection,
             // however throwing from here should still fail the websocket connection.
@@ -119,13 +145,41 @@ public class MessageReaderErrorTest
         EventSocket clientEndpoint = new EventSocket();
         Session session = _client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
         session.sendPartialText("hel", false, Callback.NOOP);
-        session.sendPartialText("lo", false, Callback.NOOP);
-        session.sendPartialText(" ", false, Callback.NOOP);
+        session.sendPartialText("lo ", false, Callback.NOOP);
         session.sendPartialText("wor", false, Callback.NOOP);
         session.sendPartialText("ld", false, Callback.NOOP);
         session.sendPartialText(null, true, Callback.NOOP);
 
         assertThat(serverEndpoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("hello world"));
+
+        assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverEndpoint.closeCode, equalTo(StatusCode.SERVER_ERROR));
+        assertThat(serverEndpoint.closeReason, containsString("failed from test"));
+        assertThat(serverEndpoint.error, instanceOf(IllegalStateException.class));
+
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeCode, equalTo(StatusCode.SERVER_ERROR));
+        assertThat(clientEndpoint.closeReason, containsString("failed from test"));
+        assertNull(clientEndpoint.error);
+    }
+
+    @Test
+    public void testReaderOnErrorPartialRead() throws Exception
+    {
+        ReaderErrorEndpoint serverEndpoint = new ReaderErrorEndpoint(5);
+        _upgradeHandler.getServerWebSocketContainer()
+            .addMapping("/", (req, resp, cb) -> serverEndpoint);
+
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
+        EventSocket clientEndpoint = new EventSocket();
+        Session session = _client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
+        session.sendPartialText("hel", false, Callback.NOOP);
+        session.sendPartialText("lo ", false, Callback.NOOP);
+        session.sendPartialText("wor", false, Callback.NOOP);
+        session.sendPartialText("ld", false, Callback.NOOP);
+        session.sendPartialText(null, true, Callback.NOOP);
+
+        assertThat(serverEndpoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("hello"));
 
         assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverEndpoint.closeCode, equalTo(StatusCode.SERVER_ERROR));
