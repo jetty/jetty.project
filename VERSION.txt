@@ -1,4 +1,12 @@
-jetty-10.0.20-SNAPSHOT
+jetty-10.0.20 - 29 January 2024
+ + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
+   handling
+ + 11223 WebSocketClient.connect with URI including query parameters don't work
+   for HTTP2 connector
+ + 11260 QuickStartConfiguration cannot be mixed with contexts that do not have
+   a `WEB-INF/quickstart-web.xml`
+ + 11273 Support BSD expr in startup script
+ + 11349 Update quiche to 0.20.0
 
 jetty-10.0.19 - 15 December 2023
  + 9900 Improve `Request.getBeginNanoTime()` accuracy
