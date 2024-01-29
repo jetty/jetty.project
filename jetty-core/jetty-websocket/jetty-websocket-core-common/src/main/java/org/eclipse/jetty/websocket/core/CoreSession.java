@@ -121,20 +121,34 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
     void flush(Callback callback);
 
     /**
-     * Initiate close handshake, no payload (no declared status code or reason phrase)
+     * Initiate close handshake, no payload (no declared status code or reason phrase).
      *
-     * @param callback the callback to track close frame sent (or failed)
+     * @param callback the callback to track close frame sent (or failed).
      */
     void close(Callback callback);
 
     /**
-     * Initiate close handshake with provide status code and optional reason phrase.
+     * Initiate close handshake with provided status code and optional reason phrase.
      *
-     * @param statusCode the status code (should be a valid status code that can be sent)
-     * @param reason optional reason phrase (will be truncated automatically by implementation to fit within limits of protocol)
-     * @param callback the callback to track close frame sent (or failed)
+     * @param statusCode the status code (should be a valid status code that can be sent).
+     * @param reason optional reason phrase (will be truncated automatically by implementation to fit within limits of protocol).
+     * @param callback the callback to track close frame sent (or failed).
      */
     void close(int statusCode, String reason, Callback callback);
+
+    /**
+     * Initiate close handshake with a provided {@link CloseStatus}.
+     *
+     * @param closeStatus the close status containing (statusCode, reason, and optional {@link Throwable} cause).
+     * @param callback the callback to track close frame sent (or failed).
+     */
+    default void close(CloseStatus closeStatus, Callback callback)
+    {
+        if (this instanceof WebSocketCoreSession coreSession)
+            coreSession.close(closeStatus, callback);
+        else
+            close(closeStatus.getCode(), closeStatus.getReason(), callback);
+    }
 
     /**
      * Issue a harsh abort of the underlying connection.
@@ -283,6 +297,12 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
 
         @Override
         public void close(int statusCode, String reason, Callback callback)
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        public void close(CloseStatus closeStatus, Callback callback)
         {
             callback.succeeded();
         }
