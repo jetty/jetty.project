@@ -317,11 +317,21 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
 
         CloseStatus closeStatus = new CloseStatus(code, cause);
         if (CloseStatus.isTransmittableStatusCode(code))
+        {
             close(closeStatus, callback);
+        }
         else
         {
             if (sessionState.onClosed(closeStatus))
+            {
                 closeConnection(closeStatus, callback);
+            }
+            else
+            {
+                // We are already closed because of a previous failure.
+                // Succeed because failing might re-enter this branch if it's the Frame callback.
+                callback.succeeded();
+            }
         }
     }
 
@@ -351,11 +361,21 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
 
         CloseStatus closeStatus = new CloseStatus(code, cause);
         if (CloseStatus.isTransmittableStatusCode(code))
+        {
             close(closeStatus, callback);
+        }
         else
         {
             if (sessionState.onClosed(closeStatus))
+            {
                 closeConnection(closeStatus, callback);
+            }
+            else
+            {
+                // We are already closed because of a previous failure.
+                // Succeed because failing might re-enter this branch if it's the Frame callback.
+                callback.succeeded();
+            }
         }
     }
 
