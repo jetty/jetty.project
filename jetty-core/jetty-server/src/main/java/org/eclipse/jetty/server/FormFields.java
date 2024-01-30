@@ -52,9 +52,23 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (request.getLength() == 0 || StringUtil.isBlank(contentType))
             return null;
 
-        MimeTypes.Type type = MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
-        if (MimeTypes.Type.FORM_ENCODED != type)
-            return null;
+        String contentTypeWithoutCharset = MimeTypes.getContentTypeWithoutCharset(contentType);
+        MimeTypes.Type type = MimeTypes.CACHE.get(contentTypeWithoutCharset);
+        if (type != null)
+        {
+            if (type != MimeTypes.Type.FORM_ENCODED)
+                return null;
+        }
+        else
+        {
+            // Could be a non-cached Content-Type with other parameters such as "application/x-www-form-urlencoded; p=v".
+            // Verify that it is actually application/x-www-form-urlencoded.
+            int semi = contentTypeWithoutCharset.indexOf(';');
+            if (semi > 0)
+                contentTypeWithoutCharset = contentTypeWithoutCharset.substring(0, semi);
+            if (!MimeTypes.Type.FORM_ENCODED.is(contentTypeWithoutCharset.trim()))
+                return null;
+        }
 
         String cs = MimeTypes.getCharsetFromContentType(contentType);
         return StringUtil.isEmpty(cs) ? StandardCharsets.UTF_8 : Charset.forName(cs);

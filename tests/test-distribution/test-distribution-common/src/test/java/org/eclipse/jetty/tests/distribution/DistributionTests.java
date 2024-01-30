@@ -1756,7 +1756,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            int httpPort = distribution.freePort();
+            int httpPort = Tester.freePort();
             List<String> args = List.of(
                 "jetty.http.port=" + httpPort,
                 "jetty.httpConfig.sendDateHeader=true"

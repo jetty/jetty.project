@@ -29,8 +29,8 @@
 [cols="1a,1a", options="header"]
 |===
 | Jetty 11.0.x | Jetty 12.0.x
-| org.eclipse.jetty.fcgi:**fcgi-client** | org.eclipse.jetty.http2:**jetty-fcgi-client**
-| org.eclipse.jetty.fcgi:**fcgi-server** | org.eclipse.jetty.http2:**jetty-fcgi-server**
+| org.eclipse.jetty.fcgi:**fcgi-client** | org.eclipse.jetty.fcgi:**jetty-fcgi-client**
+| org.eclipse.jetty.fcgi:**fcgi-server** | org.eclipse.jetty.fcgi:**jetty-fcgi-server**
 | org.eclipse.jetty.http2:**http2-client** | org.eclipse.jetty.http2:**jetty-http2-client**
 | org.eclipse.jetty.http2:**http2-common** | org.eclipse.jetty.http2:**jetty-http2-common**
 | org.eclipse.jetty.http2:**http2-hpack** | org.eclipse.jetty.http2:**jetty-http2-hpack**
@@ -69,16 +69,16 @@
 | org.eclipse.jetty:**jetty-ant** | Removed -- No Replacement
 | org.eclipse.jetty:**jetty-cdi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-cdi**
 | org.eclipse.jetty:**glassfish-jstl** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-glassfish-jstl**
-| org.eclipse.jetty:**jetty-jaspi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jaspi**
-| org.eclipse.jetty:**jetty-jndi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jndi**
-| org.eclipse.jetty:**jetty-jspc-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jspc-maven-plugin**
-| org.eclipse.jetty:**jetty-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-maven-plugin**
-| org.eclipse.jetty:**jetty-plus** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-plus**
-| org.eclipse.jetty:**jetty-quickstart** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-quickstart**
-| org.eclipse.jetty:**jetty-runner** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-runner**
-| org.eclipse.jetty:**jetty-servlet** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-servlet**
-| org.eclipse.jetty:**jetty-servlets** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-servlets**
-| org.eclipse.jetty:**jetty-webapp** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-webapp**
+| org.eclipse.jetty:**jetty-jaspi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jaspi**
+| org.eclipse.jetty:**jetty-jndi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jndi**
+| org.eclipse.jetty:**jetty-jspc-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jspc-maven-plugin**
+| org.eclipse.jetty:**jetty-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-maven-plugin**
+| org.eclipse.jetty:**jetty-plus** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-plus**
+| org.eclipse.jetty:**jetty-quickstart** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-quickstart**
+| org.eclipse.jetty:**jetty-runner** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-runner**
+| org.eclipse.jetty:**jetty-servlet** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-servlet**
+| org.eclipse.jetty:**jetty-servlets** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-servlets**
+| org.eclipse.jetty:**jetty-webapp** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-webapp**
 |===
 
 [[pg-migration-11-to-12-class-packages-names]]

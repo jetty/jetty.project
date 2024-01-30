@@ -203,7 +203,7 @@ public class DirectUpgradeTest
         assertEquals("HELLO", response.getContentAsString());
     }
 
-    private static class EchoListener implements Session.Listener
+    public static class EchoListener implements Session.Listener
     {
         private Session session;
 

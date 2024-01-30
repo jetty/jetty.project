@@ -226,7 +226,10 @@ public class MultiPart
 
         public long getLength()
         {
-            return getContentSource().getLength();
+            Content.Source source = getContentSource();
+            if (source != null)
+                return source.getLength();
+            return -1;
         }
 
         /**
@@ -320,16 +323,19 @@ public class MultiPart
         {
             try
             {
-                getContentSource().fail(t);
+                Content.Source source;
                 Path path = null;
                 try (AutoLock ignored = lock.lock())
                 {
+                    source = contentSource;
                     if (temporary)
                     {
                         path = this.path;
                         this.path = null;
                     }
                 }
+                if (source != null)
+                    source.fail(t);
                 if (path != null)
                     Files.delete(path);
             }
