@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Method;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * <p>Utility class to use to query the runtime for virtual thread support,
@@ -38,7 +39,11 @@ public class VirtualThreads
     {
         try
         {
-            return (Executor)Executors.class.getMethod("newVirtualThreadPerTaskExecutor").invoke(null);
+            Class<?> builderClass = Class.forName("java.lang.Thread$Builder");
+            Object threadBuilder = Thread.class.getMethod("ofVirtual").invoke(null);
+            threadBuilder = builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, "jetty-vt-", 0L);
+            ThreadFactory factory = (ThreadFactory) builderClass.getMethod("factory").invoke(threadBuilder);
+            return (Executor) Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
         }
         catch (Throwable x)
         {
