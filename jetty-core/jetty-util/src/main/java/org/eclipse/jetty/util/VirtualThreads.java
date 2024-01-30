@@ -42,8 +42,8 @@ public class VirtualThreads
             Class<?> builderClass = Class.forName("java.lang.Thread$Builder");
             Object threadBuilder = Thread.class.getMethod("ofVirtual").invoke(null);
             threadBuilder = builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, "jetty-vt-", 0L);
-            ThreadFactory factory = (ThreadFactory) builderClass.getMethod("factory").invoke(threadBuilder);
-            return (Executor) Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
+            ThreadFactory factory = (ThreadFactory)builderClass.getMethod("factory").invoke(threadBuilder);
+            return (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
         }
         catch (Throwable x)
         {
