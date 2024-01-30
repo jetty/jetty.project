@@ -1,16 +1,55 @@
-jetty-12.0.6-SNAPSHOT
+jetty-12.0.6 - 29 January 2024
+ + 10220 Implement CrossOriginHandler
+ + 10870 How to set HttpConfiguration.securePort when the HTTPS port is
+   dynamic?
+ + 11080 Can't able to make multipart request and getting error.
+ + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
+   handling
+ + 11095 Jetty 12.0.5 (ee10) throws IllegalStateException for completed
+   requests when Gzip Handler is used
+ + 11096 IllegalAccessException when invoking WebSocket end point methods in
+   Jetty 12
+ + 11098 Sporadic NPE in ArrayByteBufferPool.evict()
+ + 11213 Improve programming guide WebSocket JPMS documentation
+ + 11220 ContextHandler(anyHandler) NPE during .<init> logging  'because
+   "this._vhosts" is null'
+ + 11223 WebSocketClient.connect with URI including query parameters don't work
+   for HTTP2 connector
+ + 11230 Problem with parsing of form parameters without values in Jetty 12?
+ + 11253 Jetty 12 ComplianceViolation.Listener not notified for URI, Cookie,
+   and Multipart violations.
+ + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
+ + 11260 QuickStartConfiguration cannot be mixed with contexts that do not have
+   a `WEB-INF/quickstart-web.xml`
+ + 11263 Using `jetty.version` override from jetty-start does not use version
+   for various environment libs.
+ + 11273 Support BSD expr in startup script
+ + 11275 Jakarta websocket @OnMessage with Reader parameter stops working when
+   there is an unhandled exception
+ + 11280 Jetty 12 EE10 OSGi Boot invalid jetty.xml Handler configuration
+ + 11281 Failed LOG.debug() with MultiPart
+ + 11282 Deadlocks with DEBUG logging enabled in jetty-server testing
+ + 11290 HTTP 400 and NPE in HttpParser for blank header value in Jetty 12.x
+ + 11296 AbstractLoginModule porting issue
+ + 11299 EE8/9 `DefaultServlet.doPost()` doesn't behave like Jetty 10/11
+ + 11303 `JettyWebSocketFrameHandler` incorrectly relies on `autoDemand` when
+   handlers are not registered
+ + 11312 baseResource/resourceBase is no longer extracted from ServletContext
+ + 11317 Cleanup usages of `addBean(Object)` from constructors
+ + 11329 Jetty 11->12 migration guide has incorrect new artifact names
+ + 11339 Content-type additional parameters
+ + 11349 Update quiche to 0.20.0
 
 jetty-12.0.5 - 18 December 2023
  + 10277 Review read failures impacting writes
  + 10852 `ResourceHandler` could use a `.setUseFileMapping(boolean)` option
  + 10933 Review ServletChannelState.asyncError()
  + 10956 100 Continue handling
- + 11009 Add deployment exception for non Jakarta WebSocket endpoints used
-   in ServerEndpointConfig
+ + 11009 Add deployment exception for non Jakarta WebSocket endpoints used in
+   ServerEndpointConfig
  + 11014 RedirectRegexRule and RewritePatternRule should consider
    relativeRedirectAllowed
- + 11016 IllegalStateException when stopping Server with pending
-   requests
+ + 11016 IllegalStateException when stopping Server with pending requests
  + 11021 Do not call afterResponse() in case of failures
  + 11024 Properly scope jetty-security optional / test dependencies
  + 11031 HttpClient should expose Connection/EndPoint used by HTTP requests
