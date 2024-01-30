@@ -38,6 +38,8 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Resource Handler.
@@ -56,6 +58,8 @@ import org.eclipse.jetty.util.resource.Resources;
  */
 public class ResourceHandler extends Handler.Wrapper
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
+
     private final ResourceService _resourceService = newResourceService();
     private ByteBufferPool _byteBufferPool;
     private Resource _baseResource;
@@ -92,6 +96,10 @@ public class ResourceHandler extends Handler.Wrapper
         {
             if (context != null)
                 _baseResource = context.getBaseResource();
+        }
+        else if (_baseResource.isAlias())
+        {
+            LOG.warn("Base Resource should not be an alias");
         }
 
         setMimeTypes(context == null ? MimeTypes.DEFAULTS : context.getMimeTypes());
