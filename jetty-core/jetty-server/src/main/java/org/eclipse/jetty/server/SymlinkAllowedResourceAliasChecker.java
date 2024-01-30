@@ -24,9 +24,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An extension of {@link AllowedResourceAliasChecker} which will allow symlinks alias to arbitrary
- * targets, so long as the symlink file itself is an allowed resource. Unlike {@link AllowedResourceAliasChecker}
- * this will only not approve any alias which resolves to an allowed resource, it must contain an allowed symlink or
- * the alias will not be allowed.
+ * targets, so long as the symlink file itself is an allowed resource. Non symlinked paths are never
+ * allowed by this {@link AliasCheck}.
  */
 public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChecker
 {
