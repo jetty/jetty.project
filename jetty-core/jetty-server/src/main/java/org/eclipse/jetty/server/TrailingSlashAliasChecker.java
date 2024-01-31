@@ -20,8 +20,8 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * <p>This will approve an alias where the only difference is a trailing slash.</p>
- * <p>For example a path to <code>/context/dir/index.html/</code> can be approved as an alias to
- * <code>/context/dir/index.html</code>.</p>
+ * <p>For example, a request for a file containing a trailing slash like <code>/context/dir/index.html/</code>,
+ * can be approved as an alias to the file <code>/context/dir/index.html</code> which exists.</p>
  */
 public class TrailingSlashAliasChecker extends AbstractLifeCycle implements AliasCheck
 {
