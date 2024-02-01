@@ -33,6 +33,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1185,6 +1187,24 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     /**
+     * Blocking send of resource.
+     *
+     * @param resource The resource content to send
+     * @throws IOException if the send fails
+     */
+    public void sendContent(Resource resource) throws IOException
+    {
+        try (Blocker blocker = _writeBlocker.acquire())
+        {
+            IOResources.copy(resource,
+                _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
+                (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb),
+                blocker);
+            blocker.block();
+        }
+    }
+
+    /**
      * Blocking send of HTTP content.
      *
      * @param content The HTTP content to send
@@ -1324,8 +1344,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         try
         {
-            ReadableByteChannel rbc = httpContent.getResource().newReadableByteChannel();
-            sendContent(rbc, callback);
+            if (prepareSendContent(0, callback))
+                IOResources.copy(httpContent.getResource(),
+                    _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
+                    (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb),
+                    callback);
         }
         catch (Throwable x)
         {

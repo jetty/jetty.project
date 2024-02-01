@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -31,6 +30,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -91,7 +91,6 @@ public class HttpOutputTest
     public void destroy() throws Exception
     {
         IO.close(_handler._contentInputStream);
-        IO.close(_handler._contentChannel);
         _server.stop();
         _server.join();
     }
@@ -138,7 +137,7 @@ public class HttpOutputTest
     public void testSendInputStreamSimple() throws Exception
     {
         Resource simple = ResourceFactory.of(_contextHandler).newClassPathResource("simple/simple.txt");
-        _handler._contentInputStream = simple.newInputStream();
+        _handler._contentInputStream = IOResources.asInputStream(simple);
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length: 11"));
@@ -148,7 +147,7 @@ public class HttpOutputTest
     public void testSendInputStreamBig() throws Exception
     {
         Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
-        _handler._contentInputStream = big.newInputStream();
+        _handler._contentInputStream = IOResources.asInputStream(big);
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
@@ -159,7 +158,7 @@ public class HttpOutputTest
     public void testSendInputStreamBigChunked() throws Exception
     {
         Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
-        _handler._contentInputStream = new FilterInputStream(big.newInputStream())
+        _handler._contentInputStream = new FilterInputStream(IOResources.asInputStream(big))
         {
             @Override
             public int read(byte[] b, int off, int len) throws IOException
@@ -187,20 +186,21 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testSendChannelSimple() throws Exception
+    public void testSendResourceSimple() throws Exception
     {
         Resource simple = ResourceFactory.of(_contextHandler).newClassPathResource("simple/simple.txt");
-        _handler._contentChannel = simple.newReadableByteChannel();
+        _handler._contentResource = simple;
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length: 11"));
+        assertThat(response, endsWith(toUTF8String(simple)));
     }
 
     @Test
-    public void testSendChannelBig() throws Exception
+    public void testSendResourceBig() throws Exception
     {
         Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
-        _handler._contentChannel = big.newReadableByteChannel();
+        _handler._contentResource = big;
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.not(containsString("Content-Length")));
@@ -227,59 +227,6 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
         assertThat(response, endsWith(toUTF8String(big)));
-    }
-
-    @Test
-    public void testSendChannelBigChunked() throws Exception
-    {
-        Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
-        final ReadableByteChannel channel = big.newReadableByteChannel();
-        _handler._contentChannel = new ReadableByteChannel()
-        {
-            @Override
-            public boolean isOpen()
-            {
-                return channel.isOpen();
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                channel.close();
-            }
-
-            @Override
-            public int read(ByteBuffer dst) throws IOException
-            {
-                int filled = 0;
-                if (dst.position() == 0 && dst.limit() > 2000)
-                {
-                    int limit = dst.limit();
-                    dst.limit(2000);
-                    filled = channel.read(dst);
-                    dst.limit(limit);
-                }
-                else
-                    filled = channel.read(dst);
-                return filled;
-            }
-        };
-
-        LocalEndPoint endp = _connector.executeRequest(
-            "GET / HTTP/1.1\nHost: localhost:80\n\n" +
-                "GET / HTTP/1.1\nHost: localhost:80\nConnection: close\n\n"
-        );
-
-        String response = endp.getResponse();
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("Transfer-Encoding: chunked"));
-        assertThat(response, containsString("1\tThis is a big file"));
-        assertThat(response, containsString("400\tThis is a big file"));
-        assertThat(response, containsString("\r\n0\r\n"));
-
-        response = endp.getResponse();
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("Connection: close"));
     }
 
     @Test
@@ -1191,7 +1138,7 @@ public class HttpOutputTest
         ByteBuffer _byteBuffer;
         byte[] _arrayBuffer;
         InputStream _contentInputStream;
-        ReadableByteChannel _contentChannel;
+        Resource _contentResource;
         ByteBuffer _content;
         ChainedInterceptor _interceptor;
         final FuturePromise<Boolean> _closedAfterWrite = new FuturePromise<>();
@@ -1219,10 +1166,10 @@ public class HttpOutputTest
                 return;
             }
 
-            if (_contentChannel != null)
+            if (_contentResource != null)
             {
-                out.sendContent(_contentChannel);
-                _contentChannel = null;
+                out.sendContent(_contentResource);
+                _contentResource = null;
                 _closedAfterWrite.succeeded(out.isClosed());
                 return;
             }

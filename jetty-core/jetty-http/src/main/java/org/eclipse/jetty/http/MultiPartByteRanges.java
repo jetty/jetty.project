@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.resource.Resource;
@@ -238,7 +239,8 @@ public class MultiPartByteRanges
 
             try
             {
-                return new InputStreamContentSource(resource.newInputStream(), byteRange);
+                // TODO optimize
+                return new InputStreamContentSource(IOResources.asInputStream(resource), byteRange);
             }
             catch (IOException e)
             {

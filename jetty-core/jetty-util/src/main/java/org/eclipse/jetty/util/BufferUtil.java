@@ -1099,19 +1099,24 @@ public class BufferUtil
         if (len < 0)
             throw new IllegalArgumentException("invalid resource: " + resource + " len=" + len);
 
-        ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
-
-        int pos = BufferUtil.flipToFill(buffer);
-        try (ReadableByteChannel channel = resource.newReadableByteChannel())
+        byte[] b;
+        try (InputStream is = resource.newInputStream())
         {
-            long needed = len;
-            while (needed > 0 && buffer.hasRemaining())
-            {
-                needed = needed - channel.read(buffer);
-            }
+            b = is.readAllBytes();
         }
-        BufferUtil.flipToFlush(buffer, pos);
 
+        ByteBuffer buffer;
+        if (direct)
+        {
+            buffer = BufferUtil.allocateDirect(len);
+            int pos = BufferUtil.flipToFill(buffer);
+            buffer.put(b);
+            BufferUtil.flipToFlush(buffer, pos);
+        }
+        else
+        {
+            buffer = ByteBuffer.wrap(b);
+        }
         return buffer;
     }
 

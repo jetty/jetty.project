@@ -22,8 +22,6 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
@@ -39,7 +37,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -469,31 +466,6 @@ public class FileSystemResourceTest
         {
             IO.copy(reader, writer);
             assertThat("Stream", writer.toString(), is(content));
-        }
-    }
-
-    @Test
-    public void testReadableByteChannel(WorkDir workDir) throws Exception
-    {
-        Path dir = workDir.getEmptyPathDir();
-        Path file = dir.resolve("foo");
-        String content = "Foo is here";
-
-        try (StringReader reader = new StringReader(content);
-             BufferedWriter writer = Files.newBufferedWriter(file))
-        {
-            IO.copy(reader, writer);
-        }
-
-        Resource base = ResourceFactory.root().newResource(dir);
-        Resource foo = base.resolve("foo");
-        try (ReadableByteChannel channel = foo.newReadableByteChannel())
-        {
-            ByteBuffer buf = ByteBuffer.allocate(256);
-            channel.read(buf);
-            buf.flip();
-            String actual = BufferUtil.toUTF8String(buf);
-            assertThat("ReadableByteChannel content", actual, is(content));
         }
     }
 

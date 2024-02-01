@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -233,20 +232,6 @@ public abstract class Resource implements Iterable<Resource>
         if (path == null)
             return null;
         return Files.newInputStream(path, StandardOpenOption.READ);
-    }
-
-    /**
-     * Readable ByteChannel for the resource.
-     *
-     * @return a readable {@link java.nio.channels.ByteChannel} to the resource or null if one is not available.
-     * @throws IOException if unable to open the readable bytechannel for the resource.
-     */
-    public ReadableByteChannel newReadableByteChannel() throws IOException
-    {
-        Path path = getPath();
-        if (path == null)
-            return null;
-        return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
 
     /**

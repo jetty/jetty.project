@@ -19,7 +19,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Tag;
@@ -186,12 +186,8 @@ public class UrlResourceFactoryTest
 
         assertThat(resource.isDirectory(), is(false));
 
-        try (ReadableByteChannel channel = resource.newReadableByteChannel())
-        {
-            ByteBuffer buffer = ByteBuffer.allocate(fileSize);
-            int read = channel.read(buffer);
-            assertThat(read, is(fileSize));
-        }
+        ByteBuffer buffer = BufferUtil.toBuffer(resource, false);
+        assertThat(buffer.remaining(), is(fileSize));
     }
 
     @Test
@@ -213,12 +209,8 @@ public class UrlResourceFactoryTest
 
         assertThat(resource.isDirectory(), is(false));
 
-        try (ReadableByteChannel channel = resource.newReadableByteChannel())
-        {
-            ByteBuffer buffer = ByteBuffer.allocate(fileSize);
-            int read = channel.read(buffer);
-            assertThat(read, is(fileSize));
-        }
+        ByteBuffer buffer = BufferUtil.toBuffer(resource, false);
+        assertThat(buffer.remaining(), is(fileSize));
     }
 
     @Test

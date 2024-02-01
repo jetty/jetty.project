@@ -75,6 +75,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
@@ -2834,7 +2835,7 @@ public class ServletContextHandler extends ContextHandler
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;
-                return r.newInputStream();
+                return IOResources.asInputStream(r);
             }
             catch (Exception e)
             {

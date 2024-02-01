@@ -103,7 +103,7 @@ public class URLResourceFactory implements ResourceFactory
         }
     }
 
-    private static class URLResource extends Resource
+    public static class URLResource extends Resource
     {
         private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
         private static final Cleaner CLEANER = Cleaner.create();

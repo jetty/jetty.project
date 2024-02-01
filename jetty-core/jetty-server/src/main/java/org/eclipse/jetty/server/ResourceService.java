@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -46,12 +45,9 @@ import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -717,9 +713,16 @@ public class ResourceService
         {
             ByteBuffer buffer = content.getByteBuffer(); // this buffer is going to be consumed by response.write()
             if (buffer != null)
+            {
                 response.write(true, buffer, callback);
+            }
             else
-                new ContentWriterIteratingCallback(content, response, callback).iterate();
+            {
+                ByteBufferPool bufferPool = request.getComponents().getByteBufferPool();
+                int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+                boolean useOutputDirectByteBuffers = request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+                IOResources.copy(content.getResource(), bufferPool, outputBufferSize, useOutputDirectByteBuffers, response, callback);
+            }
         }
         catch (Throwable x)
         {
@@ -916,58 +919,5 @@ public class ResourceService
          * if no welcome target was found
          */
         String getWelcomeTarget(HttpContent content, Request request) throws IOException;
-    }
-
-    private static class ContentWriterIteratingCallback extends IteratingCallback
-    {
-        private final ReadableByteChannel source;
-        private final Content.Sink sink;
-        private final Callback callback;
-        private final RetainableByteBuffer buffer;
-
-        public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
-        {
-            this.source = content.getResource().newReadableByteChannel();
-            this.sink = target;
-            this.callback = callback;
-            ByteBufferPool bufferPool = target.getRequest().getComponents().getByteBufferPool();
-            int outputBufferSize = target.getRequest().getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-            boolean useOutputDirectByteBuffers = target.getRequest().getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-            this.buffer = bufferPool.acquire(outputBufferSize, useOutputDirectByteBuffers);
-        }
-
-        @Override
-        protected Action process() throws Throwable
-        {
-            if (!source.isOpen())
-                return Action.SUCCEEDED;
-
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            BufferUtil.clearToFill(byteBuffer);
-            int read = source.read(byteBuffer);
-            if (read == -1)
-            {
-                IO.close(source);
-                sink.write(true, BufferUtil.EMPTY_BUFFER, this);
-                return Action.SCHEDULED;
-            }
-            BufferUtil.flipToFlush(byteBuffer, 0);
-            sink.write(false, byteBuffer, this);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            buffer.release();
-            callback.succeeded();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable x)
-        {
-            buffer.release();
-            callback.failed(x);
-        }
     }
 }

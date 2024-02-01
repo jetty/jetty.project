@@ -15,7 +15,6 @@ package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.time.Instant;
 import java.util.Set;
 import java.util.SortedSet;
@@ -31,9 +30,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.Retainable;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -296,7 +296,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
     protected class CachedHttpContent extends HttpContent.Wrapper implements CachingHttpContent
     {
-        private final RetainableByteBuffer _buffer;
+        private final Content.Chunk _chunk;
         private final String _cacheKey;
         private final HttpField _etagField;
         private final long _contentLengthValue;
@@ -329,43 +329,72 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             boolean isValid = true;
 
             // Read the content into memory if the HttpContent does not already have a buffer.
-            RetainableByteBuffer buffer;
+            Content.Chunk chunk;
             ByteBuffer byteBuffer = httpContent.getByteBuffer();
             if (byteBuffer == null)
             {
-                buffer = _bufferPool.acquire((int)_contentLengthValue, _useDirectByteBuffers);
+                try (Blocker.Callback blocker = Blocker.callback())
+                {
+                    IOResources.copy(httpContent.getResource(),
+                        _bufferPool, (int)_contentLengthValue, _useDirectByteBuffers,
+                        (last, b, callback) ->
+                        {
+
+                        },
+                        blocker);
+                    blocker.block();
+                }
+                catch (Throwable t)
+                {
+                    isValid = false;
+                    LOG.warn("Failed to read Resource: " + httpContent.getResource(), t);
+                }
+
                 try
                 {
                     if (_contentLengthValue <= _maxCachedFileSize)
                     {
-                        try (ReadableByteChannel readableByteChannel = httpContent.getResource().newReadableByteChannel())
+                        Content.Source contentSource = IOResources.asContentSource(httpContent.getResource(), _bufferPool, (int)_contentLengthValue, _useDirectByteBuffers);
+                        chunk = contentSource.read();
+                        if (chunk == null || Content.Chunk.isFailure(chunk))
                         {
-                            byteBuffer = buffer.getByteBuffer();
-                            int read = BufferUtil.readFrom(readableByteChannel, byteBuffer);
-                            if (read != _contentLengthValue)
-                            {
-                                buffer.release();
-                                buffer = null;
-                                isValid = false;
-                            }
+                            contentSource.fail(new IOException("invalid chunk: " + chunk));
+                            isValid = false;
                         }
+                        else if (chunk.remaining() != _contentLengthValue)
+                        {
+                            chunk.release();
+                            contentSource.fail(new IOException("chunk size != " + _contentLengthValue));
+                            chunk = null;
+                            isValid = false;
+                        }
+                        if (chunk != null && !chunk.isLast())
+                        {
+                            Content.Chunk lastChunk = contentSource.read();
+                            if (lastChunk == null || !lastChunk.isLast())
+                                contentSource.fail(new IOException("chunk is not last"));
+                            if (lastChunk != null)
+                                lastChunk.release();
+                        }
+                    }
+                    else
+                    {
+                        chunk = null;
                     }
                 }
                 catch (Throwable t)
                 {
-                    if (buffer != null)
-                        buffer.release();
-                    buffer = null;
+                    chunk = null;
                     isValid = false;
-                    LOG.warn("Failed to read Resource", t);
+                    LOG.warn("Failed to read Resource: " + httpContent.getResource(), t);
                 }
             }
             else
             {
-                buffer = RetainableByteBuffer.wrap(byteBuffer);
+                chunk = Content.Chunk.from(byteBuffer, true);
             }
 
-            _buffer = buffer;
+            _chunk = chunk;
             _isValid = isValid;
             _bytesOccupied = httpContent.getBytesOccupied();
             _lastModifiedValue = httpContent.getLastModifiedValue();
@@ -387,7 +416,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public ByteBuffer getByteBuffer()
         {
-            return _buffer == null ? null : _buffer.getByteBuffer().asReadOnlyBuffer();
+            return _chunk == null ? null : _chunk.getByteBuffer().asReadOnlyBuffer();
         }
 
         @Override
@@ -425,8 +454,8 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         {
             if (_referenceCount.release())
             {
-                if (_buffer != null)
-                    _buffer.release();
+                if (_chunk != null)
+                    _chunk.release();
                 super.release();
             }
         }
