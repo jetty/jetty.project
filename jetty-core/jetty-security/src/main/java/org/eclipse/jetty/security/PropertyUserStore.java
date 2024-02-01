@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,7 +155,7 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
         if (LOG.isDebugEnabled())
             LOG.debug("Loading {} from {}", this, config);
 
-        if (org.eclipse.jetty.util.resource.Resources.missing(config))
+        if (Resources.missing(config))
             throw new IllegalStateException("Config does not exist: " + config);
 
         Properties properties = new Properties();

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -682,14 +681,8 @@ public class ResourceService
             response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
 
-            // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
-            Path path = content.getResource().getPath();
-            Content.Source source;
-            if (path != null)
-                source = new MultiPartByteRanges.PathContentSource(path, range);
-            else
-                source = new MultiPartByteRanges.InputStreamContentSource(content.getResource().newInputStream(), range);
-
+            // TODO use a buffer pool
+            Content.Source source = IOResources.asContentSource(content.getResource(), null, 0, false, range.first(), range.getLength());
             Content.copy(source, response, callback);
             return;
         }

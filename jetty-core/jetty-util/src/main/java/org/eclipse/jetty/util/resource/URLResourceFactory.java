@@ -20,8 +20,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
@@ -103,7 +101,7 @@ public class URLResourceFactory implements ResourceFactory
         }
     }
 
-    public static class URLResource extends Resource
+    private static class URLResource extends Resource
     {
         private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
         private static final Cleaner CLEANER = Cleaner.create();
@@ -291,12 +289,6 @@ public class URLResourceFactory implements ResourceFactory
             {
                 return -1;
             }
-        }
-
-        @Override
-        public ReadableByteChannel newReadableByteChannel() throws IOException
-        {
-            return Channels.newChannel(newInputStream());
         }
 
         @Override

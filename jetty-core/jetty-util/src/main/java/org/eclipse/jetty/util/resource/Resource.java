@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -235,6 +236,19 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
+     * Readable ByteChannel for the resource.
+     *
+     * @return a readable {@link java.nio.channels.ByteChannel} to the resource or null if one is not available.
+     * @throws IOException if unable to open the readable bytechannel for the resource.
+     * @deprecated use {@code IOResources} instead.
+     */
+    @Deprecated(since = "12.0.7", forRemoval = true)
+    public ReadableByteChannel newReadableByteChannel() throws IOException
+    {
+       return null;
+    }
+
+    /**
      * <p>List of contents of a directory {@link Resource}.</p>
      *
      * <p>Ordering is {@link java.nio.file.FileSystem} dependent, so callers may wish to sort the return value to ensure deterministic behavior.</p>
@@ -294,6 +308,7 @@ public abstract class Resource implements Iterable<Resource>
             if (!isDirectory())
             {
                 // use old school stream based copy
+                // TODO this is very inefficient as copy() allocates a 64K buffer
                 try (InputStream in = newInputStream(); OutputStream out = Files.newOutputStream(destination))
                 {
                     IO.copy(in, out);

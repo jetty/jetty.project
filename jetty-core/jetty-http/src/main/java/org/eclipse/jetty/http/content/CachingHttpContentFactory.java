@@ -33,7 +33,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.Retainable;
-import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -333,23 +332,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             ByteBuffer byteBuffer = httpContent.getByteBuffer();
             if (byteBuffer == null)
             {
-                try (Blocker.Callback blocker = Blocker.callback())
-                {
-                    IOResources.copy(httpContent.getResource(),
-                        _bufferPool, (int)_contentLengthValue, _useDirectByteBuffers,
-                        (last, b, callback) ->
-                        {
-
-                        },
-                        blocker);
-                    blocker.block();
-                }
-                catch (Throwable t)
-                {
-                    isValid = false;
-                    LOG.warn("Failed to read Resource: " + httpContent.getResource(), t);
-                }
-
                 try
                 {
                     if (_contentLengthValue <= _maxCachedFileSize)

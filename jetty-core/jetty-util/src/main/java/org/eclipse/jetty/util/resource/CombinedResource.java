@@ -311,6 +311,7 @@ public class CombinedResource extends Resource
                     // use old school stream based copy
                     try (InputStream in = r.newInputStream(); OutputStream out = Files.newOutputStream(pathTo))
                     {
+                        // TODO this is very inefficient as copy() allocates a 64K buffer.
                         IO.copy(in, out);
                     }
                 }

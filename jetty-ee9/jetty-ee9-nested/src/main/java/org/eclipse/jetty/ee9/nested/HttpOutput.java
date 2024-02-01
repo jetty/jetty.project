@@ -1176,7 +1176,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      *
      * @param in The channel content to send
      * @throws IOException if the send fails
+     * @deprecated use {@link #sendContent(Resource)} instead.
      */
+    @Deprecated(since = "12.0.7", forRemoval = true)
     public void sendContent(ReadableByteChannel in) throws IOException
     {
         try (Blocker blocker = _writeBlocker.acquire())
@@ -1196,10 +1198,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (Blocker blocker = _writeBlocker.acquire())
         {
-            IOResources.copy(resource,
-                _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
-                (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb),
-                blocker);
+            sendContent(resource, blocker);
             blocker.block();
         }
     }
@@ -1218,6 +1217,22 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             blocker.block();
         }
     }
+
+    /**
+     * Asynchronous send of whole resource.
+     *
+     * @param resource The resource content to send
+     * @param callback The callback to use to notify success or failure
+     * @throws IOException if the send fails
+     */
+    public void sendContent(Resource resource, Callback callback) throws IOException
+    {
+        IOResources.copy(resource,
+            _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
+            (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb),
+            callback);
+    }
+
 
     /**
      * Asynchronous send of whole content.

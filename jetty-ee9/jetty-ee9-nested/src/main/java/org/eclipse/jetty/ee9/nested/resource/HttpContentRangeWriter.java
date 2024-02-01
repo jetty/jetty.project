@@ -41,6 +41,7 @@ public class HttpContentRangeWriter
         if (buffer != null)
             return new ByteBufferRangeWriter(buffer);
 
+        // TODO IOResources should be able to do this as efficiently
         // Try path's SeekableByteChannel
         Path path = content.getResource().getPath();
         if (path != null)
