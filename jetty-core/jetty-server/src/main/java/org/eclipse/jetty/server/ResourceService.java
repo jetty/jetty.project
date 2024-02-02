@@ -42,7 +42,6 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -711,10 +710,13 @@ public class ResourceService
             }
             else
             {
-                ByteBufferPool bufferPool = request.getComponents().getByteBufferPool();
-                int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-                boolean useOutputDirectByteBuffers = request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-                IOResources.copy(content.getResource(), bufferPool, outputBufferSize, useOutputDirectByteBuffers, response, callback);
+                IOResources.copy(
+                    content.getResource(),
+                    request.getComponents().getByteBufferPool(),
+                    request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize(),
+                    request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers(),
+                    response,
+                    callback);
             }
         }
         catch (Throwable x)
