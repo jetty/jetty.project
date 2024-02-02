@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.TransportProtocol;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -115,12 +116,13 @@ public class UnixDomainTest
             }
         });
 
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic());
+        // Use the deprecated APIs for backwards compatibility testing.
+        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
         httpClient.start();
         try
         {
             ContentResponse response = httpClient.newRequest(uri)
-                .transportProtocol(new TransportProtocol.TCPUnix(unixDomainPath))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 

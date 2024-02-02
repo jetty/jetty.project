@@ -81,7 +81,7 @@ import org.slf4j.LoggerFactory;
  * for cases where this is needed.</p>
  * <p>HttpClient also acts as a central configuration point for cookies, via {@link #getHttpCookieStore()}.</p>
  * <p>Typical usage:</p>
- * <pre>
+ * <pre>{@code
  * HttpClient httpClient = new HttpClient();
  * httpClient.start();
  *
@@ -95,15 +95,12 @@ import org.slf4j.LoggerFactory;
  * int status = response.status();
  *
  * // Asynchronously
- * httpClient.newRequest("http://localhost:8080").send(new Response.CompleteListener()
+ * httpClient.newRequest("http://localhost:8080").send(result ->
  * {
- *     &#64;Override
- *     public void onComplete(Result result)
- *     {
- *         ...
- *     }
+ *     Response response = result.getResponse();
+ *     ...
  * });
- * </pre>
+ * }</pre>
  */
 @ManagedObject("The HTTP client")
 public class HttpClient extends ContainerLifeCycle

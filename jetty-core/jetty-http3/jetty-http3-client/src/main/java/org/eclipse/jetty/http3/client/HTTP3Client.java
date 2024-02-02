@@ -38,31 +38,30 @@ import org.slf4j.LoggerFactory;
  * <p>HTTP3Client provides an asynchronous, non-blocking implementation to send
  * HTTP/3 frames to a server.</p>
  * <p>Typical usage:</p>
- * <pre>
- * // HTTP3Client setup.
+ * <pre> {@code
+ * // Client-side QUIC configuration to configure QUIC properties.
+ * ClientQuicConfiguration quicConfig = new ClientQuicConfiguration(sslClient, null);
  *
- * HTTP3Client client = new HTTP3Client();
- *
- * // To configure QUIC properties.
- * QuicConfiguration quicConfig = client.getQuicConfiguration();
+ * // Create the HTTP3Client instance.
+ * HTTP3Client http3Client = new HTTP3Client(quicConfig);
  *
  * // To configure HTTP/3 properties.
- * HTTP3Configuration h3Config = client.getHTTP3Configuration();
+ * HTTP3Configuration h3Config = http3Client.getHTTP3Configuration();
  *
- * client.start();
+ * http3Client.start();
  *
  * // HTTP3Client request/response usage.
  *
  * // Connect to host.
  * String host = "webtide.com";
  * int port = 443;
- * Session.Client session = client
+ * Session.Client session = http3Client
  *     .connect(new InetSocketAddress(host, port), new Session.Client.Listener() {})
  *     .get(5, TimeUnit.SECONDS);
  *
  * // Prepare the HTTP request headers.
- * HttpFields requestFields = new HttpFields();
- * requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
+ * HttpFields.Mutable requestFields = HttpFields.build();
+ * requestFields.put("User-Agent", http3Client.getClass().getName() + "/" + Jetty.VERSION);
  *
  * // Prepare the HTTP request object.
  * MetaData.Request request = new MetaData.Request("PUT", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_3, requestFields);
@@ -73,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * // Send the HEADERS frame to create a request stream.
  * Stream stream = session.newRequest(headersFrame, new Stream.Listener()
  * {
- *     &#64;Override
+ *     @Override
  *     public void onResponse(Stream stream, HeadersFrame frame)
  *     {
  *         // Inspect the response status and headers.
@@ -83,7 +82,7 @@ import org.slf4j.LoggerFactory;
  *         stream.demand();
  *     }
  *
- *     &#64;Override
+ *     @Override
  *     public void onDataAvailable(Stream stream)
  *     {
  *         Stream.Data data = stream.readData();
@@ -97,15 +96,15 @@ import org.slf4j.LoggerFactory;
  * }).get(5, TimeUnit.SECONDS);
  *
  * // Use the Stream object to send request content, if any, using a DATA frame.
- * ByteBuffer requestChunk1 = ...;
+ * ByteBuffer requestChunk1 = UTF_8.encode("hello");
  * stream.data(new DataFrame(requestChunk1, false))
  *     // Subsequent sends must wait for previous sends to complete.
- *     .thenCompose(s -&gt;
+ *     .thenCompose(s ->
  *     {
- *         ByteBuffer requestChunk2 = ...;
- *         s.data(new DataFrame(requestChunk2, true)));
- *     }
- * </pre>
+ *         ByteBuffer requestChunk2 = UTF_8.encode("world");
+ *         s.data(new DataFrame(requestChunk2, true));
+ *     });
+ * }</pre>
  *
  * <p>IMPLEMENTATION NOTES.</p>
  * <p>Each call to {@link #connect(SocketAddress, Session.Client.Listener)} creates a new
@@ -114,14 +113,14 @@ import org.slf4j.LoggerFactory;
  * corresponding {@link ClientHTTP3Session}.</p>
  * <p>Each {@link ClientHTTP3Session} manages the mandatory encoder, decoder and control
  * streams, plus zero or more request/response streams.</p>
- * <pre>
+ * <pre>{@code
  * GENERIC, TCP-LIKE, SETUP FOR HTTP/1.1 AND HTTP/2
  * HTTP3Client - dgramEP - ClientQuiConnection - ClientQuicSession - ClientProtocolSession - TCPLikeStream
  *
  * SPECIFIC SETUP FOR HTTP/3
  *                                                                                      /- [Control|Decoder|Encoder]Stream
  * HTTP3Client - dgramEP - ClientQuiConnection - ClientQuicSession - ClientHTTP3Session -* HTTP3Streams
- * </pre>
+ * }</pre>
  *
  * <p>HTTP/3+QUIC support is experimental and not suited for production use.
  * APIs may change incompatibly between releases.</p>

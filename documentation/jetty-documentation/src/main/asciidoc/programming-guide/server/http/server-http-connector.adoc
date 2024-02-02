@@ -25,35 +25,43 @@ The available implementations are:
 
 `ServerConnector` and `UnixDomainServerConnector` use a `java.nio.channels.ServerSocketChannel` to listen to a socket address and to accept socket connections.
 `QuicServerConnector` uses a `java.nio.channels.DatagramChannel` to listen to incoming UDP packets.
-`MemoryConnector` uses memory for the communication between client and server, avoiding the use of sockets
+`MemoryConnector` uses memory for the communication between client and server, avoiding the use of sockets.
 
 Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a similar way, for example the TCP port to listen to, the IP address to bind to, etc.:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnector]
 ----
 
 `UnixDomainServerConnector` also wraps a `ServerSocketChannel` and can be configured with the Unix-Domain path to listen to:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectorUnix]
 ----
 
 [IMPORTANT]
 ====
-You can use Unix-Domain sockets support only when you run your server with Java 16 or later.
+You can use Unix-Domain sockets only when you run your server with Java 16 or later.
 ====
 
-`QuicServerConnector` wraps a `DatagramChannel` and can be configured in a similar way:
+`QuicServerConnector` wraps a `DatagramChannel` and can be configured in a similar way, as shown in the example below.
+Since the communication via UDP does not require to "accept" connections like TCP does, the number of xref:pg-server-http-connector-acceptors[acceptors] is set to `0` and there is no API to configure their number.
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectorQuic]
 ----
 
-// TODO: add a section on MemoryConnector.
+`MemoryConnector` uses in-process memory, not sockets, for the communication between client and server, that therefore must be in the same process.
+
+Typical usage of `MemoryConnector` is the following:
+
+[source,java,indent=0,options=nowrap]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=memoryConnector]
+----
 
 [[pg-server-http-connector-acceptors]]
 ===== Acceptors
@@ -65,13 +73,13 @@ When a TCP connection is accepted, `ServerConnector` wraps the accepted `SocketC
 Therefore, there is a little moment where the acceptor thread is not accepting new connections because it is busy wrapping the just accepted connection to pass it to the `SelectorManager`.
 Connections that are ready to be accepted but are not accepted yet are queued in a bounded queue (at the OS level) whose capacity can be configured with the `acceptQueueSize` parameter.
 
-If your application must withstand a very high rate of connections opened, configuring more than one acceptor thread may be beneficial: when one acceptor thread accepts one connection, another acceptor thread can take over accepting connections.
+If your application must withstand a very high rate of connection opening, configuring more than one acceptor thread may be beneficial: when one acceptor thread accepts one connection, another acceptor thread can take over accepting connections.
 
 [[pg-server-http-connector-selectors]]
 ===== Selectors
 
 The _selectors_ are components that manage a set of accepted TCP sockets, implemented by xref:pg-arch-io-selector-manager[`ManagedSelector`].
-For QUIC or HTTP/3, there are no accepted TCP sockets, but only one `DatagramChannel` and therefore there is only 1 selector.
+For QUIC or HTTP/3, there are no accepted TCP sockets, but only one `DatagramChannel` and therefore there is only one selector.
 
 Each selector requires one thread and uses the Java NIO mechanism to efficiently handle a set of registered channels.
 
@@ -87,25 +95,26 @@ In this case a single selector may be able to manage less TCP sockets because ch
 
 It is possible to configure more than one `Connector` per `Server`.
 Typical cases are a `ServerConnector` for clear-text HTTP, and another `ServerConnector` for secure HTTP.
-Another case could be a publicly exposed `ServerConnector` for secure HTTP, and an internally exposed `UnixDomainServerConnector` for clear-text HTTP.
-Yet another example could be a `ServerConnector` for clear-text HTTP, a `ServerConnector` for secure HTTP/2, and an `HTTP3ServerConnector` for QUIC+HTTP/3.
+Another case could be a publicly exposed `ServerConnector` for secure HTTP, and an internally exposed `UnixDomainServerConnector` or `MemoryConnector` for clear-text HTTP.
+Yet another example could be a `ServerConnector` for clear-text HTTP, a `ServerConnector` for secure HTTP/2, and an `QuicServerConnector` for QUIC+HTTP/3.
 
 For example:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectors]
 ----
 
 If you do not specify the port the connector listens to explicitly, the OS will allocate one randomly when the connector starts.
 
-You may need to use the randomly allocated port to configure other components, for example the port to use for secure redirects (when redirecting from a URI with the `http` scheme to the `https` scheme).
-Another example is to bind both the HTTP/2 connector and the HTTP/3 connector to the same port.
-This is possible since the HTTP/2 connector uses TCP, while the HTTP/3 connector uses UDP.
+You may need to use the randomly allocated port to configure other components.
+One example is to use the randomly allocated port to configure secure redirects (when redirecting from a URI with the `http` scheme to the `https` scheme).
+Another example is to bind both the HTTP/2 connector and the HTTP/3 connector to the same randomly allocated port.
+It is possible that the HTTP/2 connector and the HTTP/3 connector share the same port, because one uses TCP, while the other uses UDP.
 
 For example:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=sameRandomPort]
 ----
@@ -125,7 +134,7 @@ If no `ConnectionFactory` is specified then `HttpConnectionFactory` is implicitl
 
 This is how you configure Jetty to support clear-text HTTP/1.1:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=http11]
 ----
@@ -135,7 +144,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 
 Supporting encrypted HTTP/1.1 (that is, requests with the `https` scheme) is supported by configuring an `SslContextFactory` that has access to the KeyStore containing the private server key and public server certificate, in this way:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsHttp11]
 ----
@@ -154,7 +163,7 @@ Therefore, with HTTP/2, clients that connect to port `80` (or to a specific Unix
 
 Jetty can support both HTTP/1.1 and HTTP/2 on the same clear-text port by configuring both the HTTP/1.1 and the HTTP/2 ``ConnectionFactory``s:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=http11H2C]
 ----
@@ -172,7 +181,7 @@ When using encrypted HTTP/2, the unencrypted protocol is negotiated by client an
 
 Jetty supports ALPN and encrypted HTTP/2 with this configuration:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsALPNHTTP]
 ----
@@ -235,7 +244,7 @@ The code necessary to configure HTTP/2 is described in xref:pg-server-http-conne
 
 To setup HTTP/3, for example on port `843`, you need the following code (some of which could be shared with other connectors such as HTTP/2's):
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=h3]
 ----
@@ -247,7 +256,7 @@ The use of the Quiche native library requires the private key and public certifi
 It is therefore mandatory to configure the PEM directory as shown above.
 
 The PEM directory must also be adequately protected using file system permissions, because it stores the private key PEM file.
-You want to grant as few permissions as possible, typically only the equivalent of POSIX `rwx` to the user that runs the Jetty process. Using `/tmp` or any other directory accessible by any user is not a secure choice.
+You want to grant as few permissions as possible, typically the equivalent of POSIX `rwx` only to the user that runs the Jetty process. Using `/tmp` or any other directory accessible by any user is not a secure choice.
 ====
 
 [[pg-server-http-connector-protocol-tls-conscrypt]]
@@ -267,7 +276,7 @@ To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty 
 
 Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=conscrypt]
 ----
@@ -283,7 +292,7 @@ NOTE: The PROXY protocol is widely supported by load balancers such as link:http
 
 To support this case, Jetty can be configured in this way:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyHTTP]
 ----
@@ -297,7 +306,7 @@ Therefore the `ProxyConnection` will handle the PROXY protocol bytes and `HttpCo
 The load balancer may be configured to communicate with Jetty backend servers via Unix-Domain sockets (requires Java 16 or later).
 For example:
 
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyHTTPUnix]
 ----

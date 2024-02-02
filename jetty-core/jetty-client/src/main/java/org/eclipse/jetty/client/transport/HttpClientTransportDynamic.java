@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * it supports, in order of preference. The typical case is when the server supports both HTTP/1.1 and
  * HTTP/2, but the client does not know that. In this case, the application will create a
  * HttpClientTransportDynamic in this way:</p>
- * <pre>
+ * <pre>{@code
  * ClientConnector clientConnector = new ClientConnector();
  * // Configure the clientConnector.
  *
@@ -60,7 +61,7 @@ import org.slf4j.LoggerFactory;
  *
  * // Create the HttpClient.
  * client = new HttpClient(transport);
- * </pre>
+ * }</pre>
  * <p>Note how in the code above the HttpClientTransportDynamic has been created with the <em>application
  * protocols</em> {@code h2} and {@code h1}, without the need to specify TLS (which is implied by the request
  * scheme) or ALPN (which is implied by HTTP/2 over TLS).</p>
@@ -75,6 +76,7 @@ import org.slf4j.LoggerFactory;
  * version, or request headers, or request attributes, or even request path) by overriding
  * {@link HttpClientTransport#newOrigin(Request)}.</p>
  */
+@ManagedObject("The HTTP client transport that supports many HTTP versions")
 public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTransport
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportDynamic.class);

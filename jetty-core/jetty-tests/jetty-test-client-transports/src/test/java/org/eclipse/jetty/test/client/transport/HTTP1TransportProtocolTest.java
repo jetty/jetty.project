@@ -143,7 +143,7 @@ public class HTTP1TransportProtocolTest
     public void testUnixDomainTransportProtocol() throws Exception
     {
         UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, new HttpConnectionFactory());
-        connector.setUnixDomainPath(Path.of(System.getProperty("java.io.tmpdir"), "jetty.sock"));
+        connector.setUnixDomainPath(newUnixDomainPath());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
         server.start();
@@ -185,5 +185,11 @@ public class HTTP1TransportProtocolTest
             .send();
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    private static Path newUnixDomainPath()
+    {
+        String unixDomainDir = System.getProperty("jetty.unixdomain.dir", System.getProperty("java.io.tmpdir"));
+        return Path.of(unixDomainDir, "jetty.sock");
     }
 }

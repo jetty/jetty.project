@@ -45,40 +45,39 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <p>HTTP2Client provides an asynchronous, non-blocking implementation
  * to send HTTP/2 frames to a server.</p>
  * <p>Typical usage:</p>
- * <pre>
+ * <pre> {@code
  * // Create and start HTTP2Client.
- * HTTP2Client client = new HTTP2Client();
- * client.start();
- * SslContextFactory sslContextFactory = client.getClientConnector().getSslContextFactory();
+ * HTTP2Client http2Client = new HTTP2Client();
+ * http2Client.start();
+ * SslContextFactory sslContextFactory = http2Client.getClientConnector().getSslContextFactory();
  *
  * // Connect to host.
  * String host = "webtide.com";
  * int port = 443;
  *
- * FuturePromise&lt;Session&gt; sessionPromise = new FuturePromise&lt;&gt;();
- * client.connect(sslContextFactory, new InetSocketAddress(host, port), new ServerSessionListener() {}, sessionPromise);
+ * CompletableFuture<Session> sessionPromise = http2Client.connect(sslContextFactory, new InetSocketAddress(host, port), new ServerSessionListener() {});
  *
- * // Obtain the client Session object.
+ * // Obtain the client-side Session object.
  * Session session = sessionPromise.get(5, TimeUnit.SECONDS);
  *
  * // Prepare the HTTP request headers.
- * HttpFields requestFields = HttpFields.build();
- * requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
+ * HttpFields.Mutable requestFields = HttpFields.build();
+ * requestFields.put("User-Agent", http2Client.getClass().getName() + "/" + Jetty.VERSION);
  * // Prepare the HTTP request object.
  * MetaData.Request request = new MetaData.Request("PUT", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
  * // Create the HTTP/2 HEADERS frame representing the HTTP request.
  * HeadersFrame headersFrame = new HeadersFrame(request, null, false);
  *
  * // Prepare the listener to receive the HTTP response frames.
- * Stream.Listener responseListener = new new Stream.Listener()
+ * Stream.Listener responseListener = new Stream.Listener()
  * {
- *      &#64;Override
+ *      @Override
  *      public void onHeaders(Stream stream, HeadersFrame frame)
  *      {
  *          System.err.println(frame);
  *      }
  *
- *      &#64;Override
+ *      @Override
  *      public void onData(Stream stream, DataFrame frame, Callback callback)
  *      {
  *          System.err.println(frame);
@@ -87,18 +86,17 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * };
  *
  * // Send the HEADERS frame to create a stream.
- * FuturePromise&lt;Stream&gt; streamPromise = new FuturePromise&lt;&gt;();
- * session.newStream(headersFrame, streamPromise, responseListener);
+ * CompletableFuture<Stream> streamPromise = session.newStream(headersFrame, responseListener);
  * Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
  *
  * // Use the Stream object to send request content, if any, using a DATA frame.
- * ByteBuffer content = ...;
+ * ByteBuffer content = UTF_8.encode("hello");
  * DataFrame requestContent = new DataFrame(stream.getId(), content, true);
  * stream.data(requestContent, Callback.NOOP);
  *
- * // When done, stop the client.
- * client.stop();
- * </pre>
+ * // When done, stop the HTTP2Client.
+ * http2Client.stop();
+ *} </pre>
  */
 @ManagedObject
 public class HTTP2Client extends ContainerLifeCycle

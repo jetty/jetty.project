@@ -29,6 +29,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -60,6 +62,8 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.MemoryConnector;
+import org.eclipse.jetty.server.MemoryTransportProtocol;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -237,6 +241,31 @@ public class HTTPServerDocs
         server.addConnector(connector);
         server.start();
         // end::configureConnectorQuic[]
+    }
+
+    public void memoryConnector() throws Exception
+    {
+        // tag::memoryConnector[]
+        Server server = new Server();
+
+        // Create a MemoryConnector instance that speaks HTTP/1.1.
+        MemoryConnector connector = new MemoryConnector(server, new HttpConnectionFactory());
+
+        server.addConnector(connector);
+        server.start();
+
+        // The code above is the server-side.
+        // ----
+        // The code below is the client-side.
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        ContentResponse response = httpClient.newRequest("http://localhost/")
+            // Use the memory TransportProtocol to communicate with the server-side.
+            .transportProtocol(new MemoryTransportProtocol(connector))
+            .send();
+        // end::memoryConnector[]
     }
 
     public void configureConnectors() throws Exception
