@@ -35,7 +35,7 @@ public class MemoryResource extends Resource
 {
     private final URI _uri;
     private final Instant _created = Instant.now();
-    private final byte[] _bytes;
+    private final byte[] _bytes; // TODO a ByteBuffer would be nicer
 
     MemoryResource(URL url)
     {

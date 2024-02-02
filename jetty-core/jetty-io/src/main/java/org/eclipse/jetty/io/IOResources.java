@@ -33,6 +33,17 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class IOResources
 {
+    /**
+     * Gets a {@link Content.Source} with the contents of a resource, if possible.
+     * Non-existent and directory resources have no content, so calling this method on such resource
+     * throws {@link IllegalArgumentException}.
+     *
+     * @param resource the resource from which to get a {@link Content.Source}.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value < 1 means use a default value.
+     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is < 1.
+     * @return the {@link Content.Source}.
+     */
     public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct)
     {
         if (resource.isDirectory() || !resource.exists())
@@ -67,6 +78,19 @@ public class IOResources
         }
     }
 
+    /**
+     * Gets a {@link Content.Source} with a range of the contents of a resource, if possible.
+     * Non-existent and directory resources have no content, so calling this method on such resource
+     * throws {@link IllegalArgumentException}.
+     *
+     * @param resource the resource from which to get a {@link Content.Source}.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value < 1 means use a default value.
+     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is < 1.
+     * @param first the first byte from which to read from.
+     * @param length the length of the content to read.
+     * @return the {@link Content.Source}.
+     */
     public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length)
     {
         // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
@@ -101,6 +125,14 @@ public class IOResources
         }
     }
 
+    /**
+     * Gets an {@link InputStream} with the contents of a resource, if possible.
+     * Non-existent and directory resources do not have an associated stream, so calling this method on such resource
+     * throws {@link IllegalArgumentException}.
+     *
+     * @param resource the resource from which to get an {@link InputStream}.
+     * @return the {@link InputStream}.
+     */
     public static InputStream asInputStream(Resource resource)
     {
         if (resource.isDirectory() || !resource.exists())
@@ -115,21 +147,52 @@ public class IOResources
         }
     }
 
+    /**
+     * Performs an asynchronous copy of the contents of a resource to a sink, using the given buffer pool and buffer characteristics.
+     *
+     * @param resource the resource to copy from.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value < 1 means use a default value.
+     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is < 1.
+     * @param sink the sink to copy to.
+     * @param callback the callback to notify when the copy is done.
+     */
     public static void copy(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct, Content.Sink sink, Callback callback)
     {
         copy(asContentSource(resource, bufferPool, bufferSize, direct), sink, callback);
     }
 
+    /**
+     * Performs an asynchronous copy of the contents of a source to a sink.
+     * Transient errors are ignored.
+     *
+     * @param source the source to copy from.
+     * @param sink the sink to copy to.
+     * @param callback the callback to notify when the copy is done.
+     */
     public static void copy(Content.Source source, Content.Sink sink, Callback callback)
     {
         copy(source, sink, x -> false, callback);
     }
 
+    /**
+     * Performs an asynchronous copy of the contents of a source to a sink, with a specific transient error handler.
+     *
+     * @param source the source to copy from.
+     * @param sink the sink to copy to.
+     * @param onTransientError a {@link Predicate} that is called when a transient error is reported by the source;
+     *  when the predicate returns false, the error is considered handled and the copy process goes on while when the
+     *  predicate returns true the error is considered permanent and the copy is aborted.
+     * @param callback the callback to notify when the copy is done.
+     */
     public static void copy(Content.Source source, Content.Sink sink, Predicate<Throwable> onTransientError, Callback callback)
     {
         new ContentCopierIteratingCallback(source, sink, onTransientError, callback).iterate();
     }
 
+    /**
+     * {@link IteratingCallback} implementation that performs a copy from a {@link Content.Source} to a {@link Content.Sink}.
+     */
     private static class ContentCopierIteratingCallback extends IteratingCallback
     {
         private final Content.Source source;
@@ -201,6 +264,7 @@ public class IOResources
         public RangedPathContentSource(Path path, ByteBufferPool bufferPool, long first, long length)
         {
             super(path, bufferPool);
+            // TODO perform sanity checks on first and length?
             this.first = first;
             this.length = length;
         }
@@ -246,6 +310,7 @@ public class IOResources
         {
             super(inputStream, bufferPool);
             inputStream.skipNBytes(first);
+            // TODO perform sanity checks on length?
             this.toRead = length;
         }
 
