@@ -73,7 +73,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      */
     public static ServerWebSocketContainer ensure(Server server, ContextHandler contextHandler)
     {
-        Context context = contextHandler.getContext();
+        Context context = contextHandler == null ? server.getContext() : contextHandler.getContext();
         ServerWebSocketContainer container = get(context);
         if (container == null)
         {
@@ -100,16 +100,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      */
     public static ServerWebSocketContainer ensure(Server server)
     {
-        ServerWebSocketContainer container = get(server.getContext());
-        if (container == null)
-        {
-            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server);
-            WebSocketMappings mappings = new WebSocketMappings(components);
-            container = new ServerWebSocketContainer(mappings);
-            container.addBean(mappings);
-            server.getContext().setAttribute(WebSocketContainer.class.getName(), container);
-        }
-        return container;
+        return ensure(server, null);
     }
 
     /**
