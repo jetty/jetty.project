@@ -40,8 +40,8 @@ public class IOResources
      *
      * @param resource the resource from which to get a {@link Content.Source}.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value < 1 means use a default value.
-     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is < 1.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @return the {@link Content.Source}.
      */
     public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct)
@@ -85,8 +85,8 @@ public class IOResources
      *
      * @param resource the resource from which to get a {@link Content.Source}.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value < 1 means use a default value.
-     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is < 1.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param first the first byte from which to read from.
      * @param length the length of the content to read.
      * @return the {@link Content.Source}.
@@ -152,8 +152,8 @@ public class IOResources
      *
      * @param resource the resource to copy from.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-     * @param bufferSize the size of the buffer to be used for the copy. Any value < 1 means use a default value.
-     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is < 1.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param sink the sink to copy to.
      * @param callback the callback to notify when the copy is done.
      */
