@@ -867,20 +867,27 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public Content.Chunk read()
         {
-            HttpStream stream;
-            try (AutoLock ignored = _lock.lock())
+            Content.Chunk chunk;
+            try
             {
-                HttpChannelState httpChannel = lockedGetHttpChannelState();
+                HttpStream stream;
+                try (AutoLock ignored = _lock.lock())
+                {
+                    HttpChannelState httpChannel = lockedGetHttpChannelState();
 
-                Content.Chunk error = httpChannel._readFailure;
-                httpChannel._readFailure = Content.Chunk.next(error);
-                if (error != null)
-                    return error;
+                    Content.Chunk error = httpChannel._readFailure;
+                    httpChannel._readFailure = Content.Chunk.next(error);
+                    if (error != null)
+                        return error;
 
-                stream = httpChannel._stream;
+                    stream = httpChannel._stream;
+                }
+                chunk = stream.read();
             }
-
-            Content.Chunk chunk = stream.read();
+            catch (Throwable t)
+            {
+                return Content.Chunk.from(t, true);
+            }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("read {}", chunk);
