@@ -14,11 +14,11 @@
 [[pg-client-http-transport]]
 ==== HttpClient Pluggable Transports
 
-Jetty's `HttpClient` can be configured to use different transport protocols to carry the semantic of HTTP requests and responses.
+Jetty's `HttpClient` can be configured to use different HTTP formats to carry the semantic of HTTP requests and responses, by specifying different `HttpClientTransport` implementations.
 
-This means that the intention of a client to request resource `/index.html` using the `GET` method can be carried over the network in different formats.
+This means that the intention of a client to request resource `/index.html` using the `GET` method can be carried over a xref:pg-client-http-api-protocol[low-level transport] in different formats.
 
-An `HttpClient` transport is the component that is in charge of converting a high-level, semantic, HTTP requests such as " ``GET`` resource ``/index.html`` " into the specific format understood by the server (for example, HTTP/2 or HTTP/3), and to convert the server response from the specific format (HTTP/2 or HTTP/3) into high-level, semantic objects that can be used by applications.
+An `HttpClientTransport` is the component that is in charge of converting a high-level, semantic, HTTP requests such as " ``GET`` resource ``/index.html`` " into the specific format understood by the server (for example, HTTP/2 or HTTP/3), and to convert the server response from the specific format (HTTP/2 or HTTP/3) into high-level, semantic objects that can be used by applications.
 
 The most common protocol format is HTTP/1.1, a textual protocol with lines separated by `\r\n`:
 
@@ -44,25 +44,25 @@ x0C x0B  D   O   C   U   M   E
 ...
 ----
 
-Similarly, HTTP/2 is a binary protocol that transports the same information in a yet different format via TCP, while HTTP/3 is a binary protocol that transports the same information in yet another format via UDP.
+Similarly, HTTP/2 is a binary protocol that transports the same information in a yet different format via TCP, while HTTP/3 is a binary protocol that transports the same information in yet another format via QUIC.
 
-A protocol may be _negotiated_ between client and server.
+The HTTP protocol version may be _negotiated_ between client and server.
 A request for a resource may be sent using one protocol (for example, HTTP/1.1), but the response may arrive in a different protocol (for example, HTTP/2).
 
-`HttpClient` supports these static transports, each speaking only one protocol:
+`HttpClient` supports these `HttpClientTransport` implementations, each speaking only one protocol:
 
-* xref:pg-client-http-transport-http11[HTTP/1.1] (both clear-text and TLS encrypted)
-* xref:pg-client-http-transport-http2[HTTP/2] (both clear-text and TLS encrypted)
-* xref:pg-client-http-transport-http3[HTTP/3] (only encrypted via QUIC+TLS)
-* xref:pg-client-http-transport-fcgi[FastCGI] (both clear-text and TLS encrypted)
+* `HttpClientTransportOverHTTP`, for xref:pg-client-http-transport-http11[HTTP/1.1] (both clear-text and TLS encrypted)
+* `HttpClientTransportOverHTTP2`, for xref:pg-client-http-transport-http2[HTTP/2] (both clear-text and TLS encrypted)
+* `HttpClientTransportOverHTTP3`, for xref:pg-client-http-transport-http3[HTTP/3] (only encrypted via QUIC)
+* `HttpClientTransportOverFCGI`, for xref:pg-client-http-transport-fcgi[FastCGI] (both clear-text and TLS encrypted)
 
-`HttpClient` also supports one xref:pg-client-http-transport-dynamic[dynamic transport], that can speak different protocols and can select the right protocol by negotiating it with the server or by explicit indication from applications.
+`HttpClient` also supports `HttpClientTransportDynamic`, a xref:pg-client-http-transport-dynamic[dynamic transport] that can speak different HTTP formats and can select the right protocol by negotiating it with the server or by explicit indication from applications.
 
-Furthermore, every transport protocol can be sent either over the network or via Unix-Domain sockets.
+Furthermore, every HTTP format can be sent over different xref:pg-client-http-api-protocol[low-level transports] such as TCP, Unix-Domain, QUIC or memory.
 Supports for Unix-Domain sockets requires Java 16 or later, since Unix-Domain sockets support has been introduced in OpenJDK with link:https://openjdk.java.net/jeps/380[JEP 380].
 
-Applications are typically not aware of the actual protocol being used.
-This allows them to write their logic against a high-level API that hides the details of the specific protocol being used over the network.
+Applications are typically not aware of the actual HTTP format or low-level transport being used.
+This allows them to write their logic against a high-level API that hides the details of the specific HTTP format and low-level transport being used.
 
 [[pg-client-http-transport-http11]]
 ===== HTTP/1.1 Transport
@@ -93,7 +93,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 
 `HTTP2Client` is the lower-level client that provides an API based on HTTP/2 concepts such as _sessions_, _streams_ and _frames_ that are specific to HTTP/2. See xref:pg-client-http2[the HTTP/2 client section] for more information.
 
-`HttpClientTransportOverHTTP2` uses `HTTP2Client` to format high-level semantic HTTP requests (like "GET resource /index.html") into the HTTP/2 specific format.
+`HttpClientTransportOverHTTP2` uses `HTTP2Client` to format high-level semantic HTTP requests into the HTTP/2 specific format.
 
 [[pg-client-http-transport-http3]]
 ===== HTTP/3 Transport
@@ -107,7 +107,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 
 `HTTP3Client` is the lower-level client that provides an API based on HTTP/3 concepts such as _sessions_, _streams_ and _frames_ that are specific to HTTP/3. See xref:pg-client-http3[the HTTP/3 client section] for more information.
 
-`HttpClientTransportOverHTTP3` uses `HTTP3Client` to format high-level semantic HTTP requests (like "GET resource /index.html") into the HTTP/3 specific format.
+`HttpClientTransportOverHTTP3` uses `HTTP3Client` to format high-level semantic HTTP requests into the HTTP/3 specific format.
 
 [[pg-client-http-transport-fcgi]]
 ===== FastCGI Transport
@@ -126,14 +126,15 @@ The FastCGI transport is primarily used by Jetty's xref:pg-server-fastcgi[FastCG
 [[pg-client-http-transport-dynamic]]
 ===== Dynamic Transport
 
-The static transports work well if you know in advance the protocol you want to speak with the server, or if the server only supports one protocol (such as FastCGI).
+The static `HttpClientTransport` implementations work well if you know in advance the protocol you want to speak with the server, or if the server only supports one protocol (such as FastCGI).
 
-With the advent of HTTP/2 and HTTP/3, however, servers are now able to support multiple protocols, at least both HTTP/1.1 and HTTP/2.
+With the advent of HTTP/2 and HTTP/3, however, servers are now able to support multiple protocols.
 
 The HTTP/2 protocol is typically negotiated between client and server.
 This negotiation can happen via ALPN, a TLS extension that allows the client to tell the server the list of protocol that the client supports, so that the server can pick one of the client supported protocols that also the server supports; or via HTTP/1.1 upgrade by means of the `Upgrade` header.
 
-Applications can configure the dynamic transport with one or more _application_ protocols such as HTTP/1.1 or HTTP/2. The implementation will take care of using TLS for HTTPS URIs, using ALPN if necessary, negotiating protocols, upgrading from one protocol to another, etc.
+Applications can configure the dynamic transport with one or more HTTP versions such as HTTP/1.1, HTTP/2 or HTTP/3.
+The implementation will take care of using TLS for HTTPS URIs, using ALPN if necessary, negotiating protocols, upgrading from one protocol to another, etc.
 
 By default, the dynamic transport only speaks HTTP/1.1:
 
@@ -149,58 +150,52 @@ The dynamic transport can be configured with just one protocol, making it equiva
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicOneProtocol]
 ----
 
-The dynamic transport, however, has been implemented to support multiple transports, in particular both HTTP/1.1 and HTTP/2:
+The dynamic transport, however, has been implemented to support multiple transports, in particular HTTP/1.1, HTTP/2 and HTTP/3:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicH1H2]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicH1H2H3]
 ----
 
-NOTE: The order in which the protocols are specified to `HttpClientTransportDynamic` indicates what is the client preference.
+The order in which the protocols are specified to `HttpClientTransportDynamic` indicates what is the client preference.
 
-IMPORTANT: When using TLS (i.e. URIs with the `https` scheme), the application protocol is _negotiated_ between client and server via ALPN, and it is the server that decides what is the application protocol to use for the communication, regardless of the client preference.
+When clear-text communication is used (i.e. URIs with the `http` scheme) there is no HTTP protocol version negotiation, and therefore the application must know _a priori_ whether the server supports the HTTP version or not.
+For example, if the server only supports clear-text HTTP/2, and `HttpClientTransportDynamic` is configured as in the example above, where HTTP/1.1 has precedence over HTTP/2, the client will send, by default, a clear-text HTTP/1.1 request to a clear-text HTTP/2 only server, which will result in a communication failure.
 
-When clear-text communication is used (i.e. URIs with the `http` scheme) there is no application protocol negotiation, and therefore the application must know _a priori_ whether the server supports the protocol or not.
-For example, if the server only supports clear-text HTTP/2, and `HttpClientTransportDynamic` is configured as in the example above, the client will send, by default, a clear-text HTTP/1.1 request to a clear-text HTTP/2 only server, which will result in a communication failure.
+When using TLS (i.e. URIs with the `https` scheme), the HTTP protocol version is _negotiated_ between client and server via ALPN, and it is the server that decides what is the application protocol to use for the communication, regardless of the client preference.
 
-Provided that the server supports both HTTP/1.1 and HTTP/2 clear-text, client applications can explicitly hint the version they want to use:
+[IMPORTANT]
+====
+HTTP/1.1 and HTTP/2 are _compatible_ because they both use TCP, while HTTP/3 is incompatible with previous HTTP versions because it uses QUIC.
 
-[source,java,indent=0]
+Only compatible HTTP versions can negotiate the HTTP protocol version to use via ALPN, and only compatible HTTP versions can be upgraded from an older version to a newer version.
+====
+
+Provided that the server supports HTTP/1.1, HTTP/2 and HTTP/3, client applications can explicitly hint the version they want to use:
+
+[source,java,indent=0,options=nowrap]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicClearText]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicExplicitVersion]
 ----
-
-In case of TLS encrypted communication using the `https` scheme, things are a little more complicated.
 
 If the client application explicitly specifies the HTTP version, then ALPN is not used by the client.
 By specifying the HTTP version explicitly, the client application has prior-knowledge of what HTTP version the server supports, and therefore ALPN is not needed.
 If the server does not support the HTTP version chosen by the client, then the communication will fail.
 
-If the client application does not explicitly specify the HTTP version, then ALPN will be used by the client.
+If the client application does not explicitly specify the HTTP version, then ALPN will be used by the client, but only for compatible protocols.
 If the server also supports ALPN, then the protocol will be negotiated via ALPN and the server will choose the protocol to use.
 If the server does not support ALPN, the client will try to use the first protocol configured in `HttpClientTransportDynamic`, and the communication may succeed or fail depending on whether the server supports the protocol chosen by the client.
 
-[[pg-client-http-transport-unix-domain]]
-===== Unix-Domain Configuration
+For example, HTTP/3 is not compatible with previous HTTP version; if `HttpClientTransportDynamic` is configured to prefer HTTP/3, it will be the only protocol attempted by the client:
 
-All the transports can be configured with a `ClientConnector`, the component that is responsible for the transmission of the bytes generated by the transport to the server.
-
-By default, `ClientConnector` uses TCP networking to send bytes to the server and receive bytes from the server.
-
-When you are using Java 16 or later, `ClientConnector` also support xref:pg-client-io-arch-unix-domain[Unix-Domain sockets].
-
-Unix-Domain sockets can be used for HTTP/1.1 and HTTP/2 but not for HTTP/3, because HTTP/3 is based on UDP and there is currently no support in Java for UDP over Unix-Domain sockets.
-
-You can send requests to a Unix-Domain sockets server in the following way:
-
-[source,java,indent=0]
+[source,java,indent=0,options=nowrap]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=unixDomain]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicPreferH3]
 ----
 
-[IMPORTANT]
-====
-You can use Unix-Domain sockets support only when you run your client application with Java 16 or later.
-====
+When the client application configures `HttpClientTransportDynamic` to prefer HTTP/2, there could be ALPN negotiation between HTTP/2 and HTTP/1.1 (but not HTTP/3 because it is incompatible); HTTP/3 will only be possible by specifying the HTTP version explicitly:
 
-You can configure a Jetty server to use Unix-Domain sockets, as explained in xref:pg-server-http-connector[this section].
+[source,java,indent=0,options=nowrap]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicPreferH2]
+----

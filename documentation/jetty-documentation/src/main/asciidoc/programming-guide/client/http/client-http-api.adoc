@@ -270,3 +270,33 @@ An application that implements a forwarder between two servers can be implemente
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=forwardContent]
 ----
+
+[[pg-client-http-api-protocol]]
+===== Request `TransportProtocol`
+
+The communication between client and server happens over a xref:pg-client-io-arch-transport[low-level transport], and applications can specify the low-level transport to use for each request.
+
+This gives client applications great flexibility, because they can use the same `HttpClient` instance to communicate, for example, with an external third party web application via TCP, to a different process via Unix-Domain sockets, and efficiently to the same process via memory.
+
+Client application can also choose more esoteric configurations such as using QUIC, typically used to transport HTTP/3, to transport HTTP/1.1 or HTTP/2, because QUIC provides reliable and ordered communication like TCP does.
+
+Provided you have configured a xref:pg-server-http-connector[`UnixDomainServerConnector`] on the server, this is how you can configure a request to use Unix-Domain sockets:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=unixDomain]
+----
+
+In the same way, if you have configured a xref:pg-server-http-connector[`MemoryConnector`] on the server, this is how you can configure a request to use memory for communication:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=memory]
+----
+
+This is a fancy example of how to mix HTTP versions and low-level transports:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=mixedTransportProtocols]
+----
