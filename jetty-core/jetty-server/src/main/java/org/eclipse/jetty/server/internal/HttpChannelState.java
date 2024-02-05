@@ -867,7 +867,6 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public Content.Chunk read()
         {
-            Content.Chunk chunk;
             try
             {
                 HttpStream stream;
@@ -882,7 +881,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                     stream = httpChannel._stream;
                 }
-                chunk = stream.read();
+                Content.Chunk chunk = stream.read();
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("read {}", chunk);
