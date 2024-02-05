@@ -883,22 +883,22 @@ public class HttpChannelState implements HttpChannel, Components
                     stream = httpChannel._stream;
                 }
                 chunk = stream.read();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read {}", chunk);
+
+                if (chunk != null && chunk.hasRemaining())
+                    _contentBytesRead.add(chunk.getByteBuffer().remaining());
+
+                if (chunk instanceof Trailers trailers)
+                    _trailers = trailers.getTrailers();
+
+                return chunk;
             }
             catch (Throwable t)
             {
                 return Content.Chunk.from(t, true);
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("read {}", chunk);
-
-            if (chunk != null && chunk.hasRemaining())
-                _contentBytesRead.add(chunk.getByteBuffer().remaining());
-
-            if (chunk instanceof Trailers trailers)
-                _trailers = trailers.getTrailers();
-
-            return chunk;
         }
 
         @Override
