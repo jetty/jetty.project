@@ -38,7 +38,7 @@ public class DumpableMap implements Dumpable
     public static DumpableMap from(String name, Map<?, ?> items, boolean ordered)
     {
         items = items == null ? Collections.emptyMap() : items;
-        if (ordered && !(items instanceof SortedMap<?,?>))
+        if (ordered && !(items instanceof SortedMap<?, ?>))
             items = new TreeMap<>(items);
         return new DumpableMap(name, items);
     }
