@@ -46,7 +46,8 @@ public class DumpableMap implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, _name + " size=" + (_map == null ? 0 : _map.size()), _map);
+        Object[] array = _map == null ? null : _map.entrySet().toArray();
+        Dumpable.dumpObjects(out, indent, _name + " size=" + (array == null ? 0 : array.length), array);
     }
 }
 

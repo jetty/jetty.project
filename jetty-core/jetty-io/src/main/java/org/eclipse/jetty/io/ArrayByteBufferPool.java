@@ -70,7 +70,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final AtomicLong _currentHeapMemory = new AtomicLong();
     private final AtomicLong _currentDirectMemory = new AtomicLong();
     private final IntUnaryOperator _bucketIndexFor;
-    private final ConcurrentMap<Integer, Long> _requestedBufferSizes = new ConcurrentHashMap<>();
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
@@ -266,12 +265,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private RetainedBucket bucketFor(int capacity, boolean direct)
     {
-        _requestedBufferSizes.compute(capacity, (key, oldValue) ->
-        {
-            if (oldValue == null)
-                return 1L;
-            return oldValue + 1L;
-        });
         if (capacity < _minCapacity)
             return null;
         int idx = _bucketIndexFor.applyAsInt(capacity);
@@ -472,7 +465,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             out,
             indent,
             this,
-            DumpableMap.from("requested buffer sizes", _requestedBufferSizes, true),
             DumpableCollection.fromArray("direct", _direct),
             DumpableCollection.fromArray("indirect", _indirect));
     }
@@ -589,6 +581,68 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public long getLastNanoTime()
         {
             return lastNanoTime.getOpaque();
+        }
+    }
+
+    /**
+     * A variant of the {@link ArrayByteBufferPool} that
+     * collects statistics about the requested buffer sizes.
+     */
+    public static class Statistical extends ArrayByteBufferPool
+    {
+        private final ConcurrentMap<Integer, Long> _requestedBufferSizes = new ConcurrentHashMap<>();
+
+        public Statistical()
+        {
+        }
+
+        public Statistical(int minCapacity, int factor, int maxCapacity)
+        {
+            super(minCapacity, factor, maxCapacity);
+        }
+
+        public Statistical(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize);
+        }
+
+        public Statistical(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
+        }
+
+        public Statistical(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, bucketIndexFor, bucketCapacity);
+        }
+
+        public Statistical(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity, int concurrentPoolSize)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, bucketIndexFor, bucketCapacity, concurrentPoolSize);
+        }
+
+        @Override
+        public RetainableByteBuffer acquire(int size, boolean direct)
+        {
+            _requestedBufferSizes.compute(size, (key, oldValue) ->
+            {
+                if (oldValue == null)
+                    return 1L;
+                return oldValue + 1L;
+            });
+            return super.acquire(size, direct);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(
+                out,
+                indent,
+                this,
+                DumpableMap.from("requested buffer sizes", _requestedBufferSizes, true),
+                DumpableCollection.fromArray("direct", super._direct),
+                DumpableCollection.fromArray("indirect", super._indirect));
         }
     }
 

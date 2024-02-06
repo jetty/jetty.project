@@ -363,6 +363,28 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
+    public void testStatisticalPool()
+    {
+        ArrayByteBufferPool pool = new ArrayByteBufferPool.Statistical();
+
+        pool.acquire(1, true).release();
+        pool.acquire(100, true).release();
+        pool.acquire(1_000, true).release();
+        pool.acquire(10_000, true).release();
+        pool.acquire(10_000, true).release();
+        pool.acquire(10_000, true).release();
+        pool.acquire(100_000, true).release();
+
+        String dump = pool.dump();
+        assertThat(dump, containsString("requested buffer sizes size=5"));
+        assertThat(dump, containsString("1=1"));
+        assertThat(dump, containsString("100=1"));
+        assertThat(dump, containsString("1000=1"));
+        assertThat(dump, containsString("10000=3"));
+        assertThat(dump, containsString("100000=1"));
+    }
+
+    @Test
     public void testEndiannessResetOnRelease()
     {
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool();

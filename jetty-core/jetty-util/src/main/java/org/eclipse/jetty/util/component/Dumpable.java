@@ -256,7 +256,7 @@ public interface Dumpable
     {
         for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext(); )
         {
-            Map.Entry entry = i.next();
+            Map.Entry<?, ?> entry = i.next();
             String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
             out.append(indent).append("+@ ").append(String.valueOf(entry.getKey())).append(" = ");
             Object item = entry.getValue();
