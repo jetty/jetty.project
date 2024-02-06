@@ -135,8 +135,8 @@ You can add as beans many `Connection.Listener` objects, each with its own logic
 
 The Jetty I/O library provides useful `Connection.Listener` implementations that you should evaluate before writing your own:
 
-* link:{javadoc-url}/org/eclipse/jetty/io/ConnectionStatistics[`ConnectionStatistics`]
-* link:{javadoc-url}/org/eclipse/jetty/server/ConnectionLimit[`ConnectionLimit`]
+* link:{javadoc-url}/org/eclipse/jetty/io/ConnectionStatistics.html[`ConnectionStatistics`]
+* link:{javadoc-url}/org/eclipse/jetty/server/ConnectionLimit.html[`ConnectionLimit`]
 
 Here is a simple example of a `Connection.Listener` used both on the client and on the server:
 
