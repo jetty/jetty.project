@@ -359,7 +359,7 @@ public class ArrayByteBufferPoolTest
 
         b3.release();
         b4.getByteBuffer().limit(b4.getByteBuffer().capacity() - 2);
-        assertThat(pool.dump(), containsString("{capacity=4,inuse=3(75%)"));
+        assertThat(pool.dump(), containsString("{capacity=4,entries=4,inuse=3(75%)"));
     }
 
     @Test
