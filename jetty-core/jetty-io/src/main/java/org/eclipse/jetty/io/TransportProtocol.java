@@ -87,6 +87,12 @@ public interface TransportProtocol
 
     /**
      * <p>Establishes a connection to the given socket address.</p>
+     * <p>For transport protocols that {@link #requiresDomainNamesResolution()
+     * require domain name resolution}, this is the IP address resolved from
+     * the domain name.
+     * For transport protocols that do not require domain name resolution
+     * (for example Unix-Domain sockets, or memory) this is the socket address
+     * to connect to.</p>
      *
      * @param socketAddress the socket address to connect to
      * @param context the context information to establish the connection
@@ -96,7 +102,7 @@ public interface TransportProtocol
     }
 
     /**
-     * @return the socket address to use in case domain name resolution is not required
+     * @return the socket address to connect to in case domain name resolution is not required
      */
     default SocketAddress getSocketAddress()
     {

@@ -24,71 +24,45 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
- * <p>EndPoint is the abstraction for an I/O channel that transports bytes.</p>
+ * <p>EndPoint is the abstraction for I/O communication using bytes.</p>
+ * <p>All the I/O methods are non-blocking; reads may return {@code 0}
+ * bytes read, and flushes/writes may write {@code 0} bytes.</p>
+ * <p>Applications are notified of read readiness by registering a
+ * {@link Callback} via {@link #fillInterested(Callback)}, and then
+ * using {@link #fill(ByteBuffer)} to read the available bytes.</p>
+ * <p>Application may use {@link #flush(ByteBuffer...)} to transmit bytes;
+ * if the flush does not transmit all the bytes, applications must
+ * arrange to resume flushing when it will be possible to transmit more
+ * bytes.
+ * Alternatively, applications may use {@link #write(Callback, ByteBuffer...)}
+ * and be notified via the {@link Callback} when the write completes,
+ * either successfully or with a failure.</p>
+ * <p>Connection-less reads are performed using {@link #receive(ByteBuffer)}.
+ * Similarly, connection-less flushes are performed using
+ * {@link #send(SocketAddress, ByteBuffer...)} and connection-less writes
+ * using {@link #write(Callback, SocketAddress, ByteBuffer...)}.</p>
+ * <p>While all the I/O methods are non-blocking, they can be easily
+ * converted to blocking using {@link org.eclipse.jetty.util.Blocker} or
+ * {@link Callback.Completable}:</p>
+ * <pre>{@code
+ * EndPoint endPoint = ...;
  *
- * <p>Asynchronous Methods</p>
- * <p>The asynchronous scheduling methods of {@link EndPoint}
- * has been influenced by NIO.2 Futures and Completion
- * handlers, but does not use those actual interfaces because they have
- * some inefficiencies.</p>
- * <p>This class will frequently be used in conjunction with some of the utility
- * implementations of {@link Callback}, such as {@link FutureCallback} and
- * {@link IteratingCallback}.</p>
- *
- * <p>Reads</p>
- * <p>A {@link FutureCallback} can be used to block until an endpoint is ready
- * to fill bytes - the notification will be emitted by the NIO subsystem:</p>
- * <pre>
- * FutureCallback callback = new FutureCallback();
- * endPoint.fillInterested(callback);
- *
- * // Blocks until read to fill bytes.
- * callback.get();
- *
- * // Now bytes can be filled in a ByteBuffer.
- * int filled = endPoint.fill(byteBuffer);
- * </pre>
- *
- * <p>Asynchronous Reads</p>
- * <p>A {@link Callback} can be used to read asynchronously in its own dispatched
- * thread:</p>
- * <pre>
- * endPoint.fillInterested(new Callback()
+ * // Block until read ready with Blocker.
+ * try (Blocker.Callback blocker = Blocker.callback())
  * {
- *   public void onSucceeded()
- *   {
- *     executor.execute(() -&gt;
- *     {
- *       // Fill bytes in a different thread.
- *       int filled = endPoint.fill(byteBuffer);
- *     });
- *   }
- *   public void onFailed(Throwable failure)
- *   {
- *     endPoint.close();
- *   }
- * });
- * </pre>
+ *     endPoint.fillInterested(blocker);
+ *     blocker.block();
+ * }
  *
- * <p>Blocking Writes</p>
- * <p>The write contract is that the callback is completed when all the bytes
- * have been written or there is a failure.
- * Blocking writes look like this:</p>
- * <pre>
- * FutureCallback callback = new FutureCallback();
- * endpoint.write(callback, headerBuffer, contentBuffer);
- *
- * // Blocks until the write succeeds or fails.
- * future.get();
- * </pre>
- * <p>Note also that multiple buffers may be passed in {@link #write(Callback, ByteBuffer...)}
- * so that gather writes can be performed for efficiency.</p>
+ * // Block until write complete with Callback.Completable.
+ * Callback.Completable completable = new Callback.Completable();
+ * endPoint.write(completable, byteBuffer);
+ * completable.get();
+ * }</pre>
  */
 public interface EndPoint extends Closeable
 {
@@ -153,39 +127,39 @@ public interface EndPoint extends Closeable
     long getCreatedTimeStamp();
 
     /**
-     * Shutdown the output.
-     * <p>This call indicates that no more data will be sent on this endpoint that
-     * that the remote end should read an EOF once all previously sent data has been
-     * consumed. Shutdown may be done either at the TCP/IP level, as a protocol exchange (Eg
-     * TLS close handshake) or both.
-     * <p>
-     * If the endpoint has {@link #isInputShutdown()} true, then this call has the same effect
-     * as {@link #close()}.
+     * <p>Shuts down the output.</p>
+     * <p>This call indicates that no more data will be sent from this endpoint and
+     * that the remote endpoint should read an EOF once all previously sent data has been
+     * read. Shutdown may be done either at the TCP/IP level, as a protocol exchange
+     * (for example, TLS close handshake) or both.</p>
+     * <p>If the endpoint has {@link #isInputShutdown()} true, then this call has the
+     * same effect as {@link #close()}.</p>
      */
     void shutdownOutput();
 
     /**
-     * Test if output is shutdown.
-     * The output is shutdown by a call to {@link #shutdownOutput()}
-     * or {@link #close()}.
+     * <p>Tests if output is shutdown.</p>
+     * <p>The output is shutdown by a call to {@link #shutdownOutput()}
+     * or {@link #close()}.</p>
      *
      * @return true if the output is shutdown or the endpoint is closed.
      */
     boolean isOutputShutdown();
 
     /**
-     * Test if the input is shutdown.
-     * The input is shutdown if an EOF has been read while doing
-     * a {@link #fill(ByteBuffer)}.   Once the input is shutdown, all calls to
+     * <p>Tests if the input is shutdown.</p>
+     * <p>The input is shutdown if an EOF has been read while doing
+     * a {@link #fill(ByteBuffer)}.
+     * Once the input is shutdown, all calls to
      * {@link #fill(ByteBuffer)} will  return -1, until such time as the
-     * end point is close, when they will return {@link EofException}.
+     * end point is close, when they will return {@link EofException}.</p>
      *
-     * @return True if the input is shutdown or the endpoint is closed.
+     * @return true if the input is shutdown or the endpoint is closed.
      */
     boolean isInputShutdown();
 
     /**
-     * Close any backing stream associated with the endpoint
+     * <p>Closes any backing stream associated with the endpoint.</p>
      */
     @Override
     default void close()
@@ -194,16 +168,18 @@ public interface EndPoint extends Closeable
     }
 
     /**
-     * Close any backing stream associated with the endpoint, passing a cause
+     * <p>Closes any backing stream associated with the endpoint, passing a
+     * possibly {@code null} failure cause.</p>
      *
      * @param cause the reason for the close or null
      */
     void close(Throwable cause);
 
     /**
-     * Fill the passed buffer with data from this endpoint.  The bytes are appended to any
-     * data already in the buffer by writing from the buffers limit up to it's capacity.
-     * The limit is updated to include the filled bytes.
+     * <p>Fills the passed buffer with data from this endpoint.</p>
+     * <p>The bytes are appended to any data already in the buffer
+     * by writing from the buffers limit up to its capacity.
+     * The limit is updated to include the filled bytes.</p>
      *
      * @param buffer The buffer to fill. The position and limit are modified during the fill. After the
      * operation, the position is unchanged and the limit is increased to reflect the new data filled.
@@ -235,9 +211,11 @@ public interface EndPoint extends Closeable
     }
 
     /**
-     * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
-     * are taken from the header/buffer position up until the buffer limit.  The header/buffers position
-     * is updated to indicate how many bytes have been consumed.
+     * <p>Flushes data from the passed header/buffer to this endpoint.</p>
+     * As many bytes as can be consumed are taken from the header/buffer
+     * position up until the buffer limit.
+     * The header/buffers position is updated to indicate how many bytes
+     * have been consumed.</p>
      *
      * @param buffer the buffers to flush
      * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its
@@ -270,16 +248,17 @@ public interface EndPoint extends Closeable
     Object getTransport();
 
     /**
-     * Get the max idle time in ms.
-     * <p>The max idle time is the time the endpoint can be idle before
-     * extraordinary handling takes place.
+     * <p>Returns the idle timeout in ms.</p>
+     * <p>The idle timeout is the time the endpoint can be idle before
+     * its close is initiated.</p>
+     * <p>A timeout less than or equal to {@code 0} implies an infinite timeout.</p>
      *
-     * @return the max idle time in ms or if ms &lt;= 0 implies an infinite timeout
+     * @return the idle timeout in ms
      */
     long getIdleTimeout();
 
     /**
-     * Set the idle timeout.
+     * <p>Sets the idle timeout.</p>
      *
      * @param idleTimeout the idle timeout in MS. Timeout &lt;= 0 implies an infinite timeout
      */
@@ -383,7 +362,8 @@ public interface EndPoint extends Closeable
     void upgrade(Connection newConnection);
 
     /**
-     * Get the SslSessionData of a secure end point.
+     * <p>Returns the SslSessionData of a secure end point.</p>
+     *
      * @return A {@link SslSessionData} instance (with possibly null field values) if secure, else {@code null}.
      */
     default SslSessionData getSslSessionData()
