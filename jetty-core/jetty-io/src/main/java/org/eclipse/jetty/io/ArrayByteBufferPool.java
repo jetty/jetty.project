@@ -199,7 +199,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (entry == null)
             return newRetainableByteBuffer(bucket._capacity, direct, this::reserve);
 
-        return entry.getPooled();
+        RetainableByteBuffer pooled = entry.getPooled();
+        if (pooled instanceof Buffer buffer)
+            buffer.acquire();
+        return pooled;
     }
 
     protected ByteBuffer allocate(int capacity)
@@ -212,28 +215,28 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return ByteBuffer.allocateDirect(capacity);
     }
 
-    protected void reserve(RetainableByteBuffer retainedBuffer)
+    protected void reserve(RetainableByteBuffer nonPooledBuffer)
     {
         // This is called when a non pooled buffer is released, so we try to reserve an entry for it.
 
-        int size = retainedBuffer.capacity();
-        boolean direct = retainedBuffer.isDirect();
+        int size = nonPooledBuffer.capacity();
+        boolean direct = nonPooledBuffer.isDirect();
 
         RetainedBucket bucket = bucketFor(size, direct);
         if (bucket == null)
         {
-            removed(retainedBuffer);
+            removed(nonPooledBuffer);
             return;
         }
 
         Pool.Entry<RetainableByteBuffer> reservedEntry = bucket.getPool().reserve();
         if (reservedEntry == null)
         {
-            removed(retainedBuffer);
+            removed(nonPooledBuffer);
             return;
         }
 
-        RetainableByteBuffer pooledBuffer = newRetainableByteBuffer(size, direct, b ->
+        Buffer pooledBuffer = new Buffer(nonPooledBuffer.getByteBuffer(), b ->
         {
             BufferUtil.reset(b.getByteBuffer());
             if (!reservedEntry.release())
@@ -530,12 +533,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private static class Buffer extends AbstractRetainableByteBuffer
     {
-        private final Consumer<RetainableByteBuffer> releaser;
+        private final Consumer<RetainableByteBuffer> _releaser;
 
         private Buffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
         {
             super(buffer);
-            this.releaser = releaser;
+            this._releaser = releaser;
         }
 
         @Override
@@ -543,8 +546,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             boolean released = super.release();
             if (released)
-                releaser.accept(this);
+                _releaser.accept(this);
             return released;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s{%s}".formatted(super.toString(), _releaser);
         }
     }
 
