@@ -147,6 +147,10 @@ public class ArrayByteBufferPoolTest
         ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
         RetainableByteBuffer buf1 = pool.acquire(10, true);
+        assertThat(pool.getDirectMemory(), is(0L));
+        buf1.release();
+        assertThat(pool.getDirectMemory(), is(10L));
+        buf1 = pool.acquire(10, true);
 
         assertThat(pool.getDirectMemory(), is(10L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
@@ -224,6 +228,9 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
+        pool.acquire(10, true).release();
+        pool.acquire(20, true).release();
+
         pool.acquire(1, true);  // not pooled, < minCapacity
         pool.acquire(10, true); // pooled
         pool.acquire(20, true); // pooled
@@ -240,7 +247,11 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool();
 
+        RetainableByteBuffer b1 = pool.acquire(10, true);
+        RetainableByteBuffer b2 = pool.acquire(10, true);
+        b1.release();
         pool.acquire(10, true);
+        b2.release();
         pool.acquire(10, true);
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
@@ -261,6 +272,9 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool();
         RetainableByteBuffer buf1 = pool.acquire(10, true);
+        buf1.release();
+        buf1 = pool.acquire(10, true);
+
         assertThat(pool.getDirectByteBufferCount(), is(1L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(buf1.release(), is(true));
@@ -273,7 +287,7 @@ public class ArrayByteBufferPoolTest
         RetainableByteBuffer buf2 = pool.acquire(10, true);
         assertThat(pool.getDirectByteBufferCount(), is(1L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
-        assertThat(buf2 == buf1, is(true)); // make sure it's not a new instance
+        assertThat(buf2, sameInstance(buf1)); // make sure it's not a new instance
         assertThat(buf1.release(), is(true));
         assertThat(pool.getDirectByteBufferCount(), is(1L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(1L));
