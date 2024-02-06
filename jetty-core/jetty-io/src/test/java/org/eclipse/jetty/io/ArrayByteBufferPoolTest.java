@@ -376,12 +376,15 @@ public class ArrayByteBufferPoolTest
         pool.acquire(100_000, true).release();
 
         String dump = pool.dump();
+        System.out.println(dump);
+
         assertThat(dump, containsString("requested buffer sizes size=5"));
         assertThat(dump, containsString("1=1"));
         assertThat(dump, containsString("100=1"));
         assertThat(dump, containsString("1000=1"));
         assertThat(dump, containsString("10000=3"));
         assertThat(dump, containsString("100000=1"));
+        assertThat(dump, containsString("direct=16384/")); // total in pool: one 4K buffer + one 12K buffer
     }
 
     @Test

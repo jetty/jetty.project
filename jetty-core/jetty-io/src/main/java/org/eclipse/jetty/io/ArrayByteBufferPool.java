@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentPool;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -219,11 +218,19 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 // A reserved entry may become old and be evicted before it is enabled.
                 if (reservedEntry.enable(buffer, true))
                 {
-                    if (direct)
-                        _currentDirectMemory.addAndGet(buffer.capacity());
+                    if (!releaseExcessMemory(buffer.capacity(), direct))
+                    {
+                        // if capacity could not be freed, mark this entry as removed and
+                        // do not account for its size.
+                        reservedEntry.remove();
+                    }
                     else
-                        _currentHeapMemory.addAndGet(buffer.capacity());
-                    releaseExcessMemory(direct);
+                    {
+                        if (direct)
+                            _currentDirectMemory.addAndGet(buffer.capacity());
+                        else
+                            _currentHeapMemory.addAndGet(buffer.capacity());
+                    }
                     return buffer;
                 }
             }
@@ -383,56 +390,60 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private void releaseExcessMemory(boolean direct)
+    /**
+     * @return true if there is no excess memory, false otherwise.
+     */
+    private boolean releaseExcessMemory(int capacity, boolean direct)
     {
         long maxMemory = direct ? _maxDirectMemory : _maxHeapMemory;
         if (maxMemory > 0)
         {
-            long excess = getMemory(direct) - maxMemory;
+            long excess = getMemory(direct) - maxMemory + capacity;
             if (excess > 0)
-                evict(direct, excess);
+                return evict(direct, excess);
         }
+        return true;
     }
 
     /**
-     * This eviction mechanism searches for the RetainableByteBuffers that were released the longest time ago.
-     *
      * @param direct true to search in the direct buffers buckets, false to search in the heap buffers buckets.
-     * @param excess the amount of bytes to evict. At least this much will be removed from the buckets.
+     * @param excess the amount of bytes to evict. A best attempt to remove least this much from the buckets is done.
+     * @return true if at least the given {@code excess} amount was freed, false otherwise.
      */
-    private void evict(boolean direct, long excess)
+    private boolean evict(boolean direct, long excess)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("evicting {} bytes from {} pools", excess, (direct ? "direct" : "heap"));
-        long now = NanoTime.now();
         long totalClearedCapacity = 0L;
 
         RetainedBucket[] buckets = direct ? _direct : _indirect;
 
+        int counter = 3; // Run through the buckets at most 3 times before bailing out.
         while (totalClearedCapacity < excess)
         {
+            if (counter-- == 0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("eviction aborted, cleared {} bytes from {} pools", totalClearedCapacity, (direct ? "direct" : "heap"));
+                return false;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("excess {} capacity to clear: {}, currently cleared: {}", (direct ? "direct" : "heap"), excess, totalClearedCapacity);
             // Run through all the buckets to avoid removing
             // the buffers only from the first bucket(s).
             for (RetainedBucket bucket : buckets)
             {
-                Pool.Entry<RetainableByteBuffer> oldestEntry = findOldestEntry(now, bucket.getPool());
-                if (oldestEntry == null)
+                Pool.Entry<RetainableByteBuffer> evictableEntry = findEvictionCandidate(bucket.getPool());
+                if (evictableEntry == null)
                     continue;
 
-                // Get the pooled buffer now in case we can evict below.
-                // The buffer may be null if the entry has been reserved but
-                // not yet enabled, or the entry has been removed by a concurrent
-                // thread, that may also have nulled-out the pooled buffer.
-                RetainableByteBuffer buffer = oldestEntry.getPooled();
-                if (buffer == null)
-                    continue;
-
-                // A concurrent thread evicted the same entry.
-                // A successful Entry.remove() call may null-out the pooled buffer.
-                if (!oldestEntry.remove())
-                    continue;
+                // Calling remove() may mark as removed an entry in use,
+                // it is up to findEvictionCandidate() to make that unlikely.
+                evictableEntry.remove();
 
                 // We can evict, clear the buffer capacity.
+                RetainableByteBuffer buffer = evictableEntry.getPooled();
                 int clearedCapacity = buffer.capacity();
                 if (direct)
                     _currentDirectMemory.addAndGet(-clearedCapacity);
@@ -444,7 +455,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("eviction done, cleared {} bytes from {} pools", totalClearedCapacity, (direct ? "direct" : "heap"));
+            LOG.debug("eviction successful, cleared {} bytes from {} pools", totalClearedCapacity, (direct ? "direct" : "heap"));
+
+        return true;
     }
 
     @Override
@@ -469,31 +482,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             DumpableCollection.fromArray("indirect", _indirect));
     }
 
-    private Pool.Entry<RetainableByteBuffer> findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
+    private Pool.Entry<RetainableByteBuffer> findEvictionCandidate(Pool<RetainableByteBuffer> bucket)
     {
-        // This method may be in the hot path, do not use Java streams.
-
-        Pool.Entry<RetainableByteBuffer> oldestEntry = null;
-        RetainableByteBuffer oldestBuffer = null;
-        long oldestAge = 0;
-        // TODO: improve Pool APIs to avoid stream().toList().
-        for (Pool.Entry<RetainableByteBuffer> entry : bucket.stream().toList())
-        {
-            Buffer buffer = (Buffer)entry.getPooled();
-            // A null buffer means the entry is reserved
-            // but not acquired yet, try the next.
-            if (buffer != null)
-            {
-                long age = NanoTime.elapsed(buffer.getLastNanoTime(), now);
-                if (oldestBuffer == null || age > oldestAge)
-                {
-                    oldestEntry = entry;
-                    oldestBuffer = buffer;
-                    oldestAge = age;
-                }
-            }
-        }
-        return oldestEntry;
+        return bucket.stream().filter(Pool.Entry::isIdle).findFirst().orElse(null);
     }
 
     private static class RetainedBucket
@@ -558,7 +549,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private static class Buffer extends AbstractRetainableByteBuffer
     {
         private final Consumer<RetainableByteBuffer> releaser;
-        private final AtomicLong lastNanoTime = new AtomicLong(NanoTime.now());
 
         private Buffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
         {
@@ -571,16 +561,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             boolean released = super.release();
             if (released)
-            {
-                lastNanoTime.setOpaque(NanoTime.now());
                 releaser.accept(this);
-            }
             return released;
-        }
-
-        public long getLastNanoTime()
-        {
-            return lastNanoTime.getOpaque();
         }
     }
 

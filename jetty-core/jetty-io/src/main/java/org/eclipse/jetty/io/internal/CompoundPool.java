@@ -79,6 +79,9 @@ public class CompoundPool<P> implements Pool<P>
     @Override
     public Stream<Entry<P>> stream()
     {
-        return Stream.concat(primaryPool.stream(), secondaryPool.stream());
+        // Stream the secondary pool first as the 1st idle object returned by the stream
+        // is used as an eviction candidate, and it is preferable to prioritize evicting
+        // from the secondary pool.
+        return Stream.concat(secondaryPool.stream(), primaryPool.stream());
     }
 }
