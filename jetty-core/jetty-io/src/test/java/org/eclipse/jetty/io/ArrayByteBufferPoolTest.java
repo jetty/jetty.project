@@ -107,8 +107,11 @@ public class ArrayByteBufferPoolTest
         ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
         RetainableByteBuffer buf1 = pool.acquire(10, true);
-
+        assertThat(pool.getDirectMemory(), is(0L));
+        buf1.release();
         assertThat(pool.getDirectMemory(), is(10L));
+
+        buf1 = pool.acquire(10, true);
         assertThat(pool.getAvailableDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectByteBufferCount(), is(1L));
@@ -127,7 +130,9 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectByteBufferCount(), is(1L));
 
+        assertThat(pool.getDirectMemory(), is(10L));
         assertThat(buf1.release(), is(true));
+        assertThat(pool.getDirectMemory(), is(10L));
         assertThat(buf1.isRetained(), is(false));
 
         assertThat(pool.getDirectMemory(), is(10L));

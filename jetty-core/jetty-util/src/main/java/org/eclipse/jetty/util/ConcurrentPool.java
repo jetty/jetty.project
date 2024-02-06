@@ -143,11 +143,16 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         return maxMultiplex.applyAsInt(pooled);
     }
 
+    protected void leaked()
+    {
+    }
+
     private void leaked(Holder<P> holder)
     {
         leaked.increment();
         if (LOG.isDebugEnabled())
             LOG.debug("Leaked " + holder);
+        leaked();
     }
 
     @Override
