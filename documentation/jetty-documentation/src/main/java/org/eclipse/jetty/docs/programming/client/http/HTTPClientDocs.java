@@ -148,7 +148,6 @@ public class HTTPClientDocs
         // end::tlsAppValidation[]
     }
 
-
     public void sslHandshakeListener()
     {
         // tag::sslHandshakeListener[]
