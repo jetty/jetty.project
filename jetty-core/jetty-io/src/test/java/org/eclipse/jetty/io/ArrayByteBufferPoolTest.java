@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.lang.ref.Reference;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,7 @@ public class ArrayByteBufferPoolTest
 
         RetainableByteBuffer rbb = pool.acquire(100, true);
         assertThat(pool.getDirectMemory(), is(4096L));
+        Reference.reachabilityFence(rbb);
         rbb = null;
 
         await().atMost(5, TimeUnit.SECONDS).until(() ->
