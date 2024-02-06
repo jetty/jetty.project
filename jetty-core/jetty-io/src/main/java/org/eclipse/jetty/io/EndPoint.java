@@ -39,15 +39,16 @@ import org.eclipse.jetty.util.thread.Invocable;
  * arrange to resume flushing when it will be possible to transmit more
  * bytes.
  * Alternatively, applications may use {@link #write(Callback, ByteBuffer...)}
- * and be notified via the {@link Callback} when the write completes,
- * either successfully or with a failure.</p>
+ * and be notified via the {@link Callback} when the write completes
+ * (i.e. all the buffers have been flushed), either successfully or
+ * with a failure.</p>
  * <p>Connection-less reads are performed using {@link #receive(ByteBuffer)}.
  * Similarly, connection-less flushes are performed using
  * {@link #send(SocketAddress, ByteBuffer...)} and connection-less writes
  * using {@link #write(Callback, SocketAddress, ByteBuffer...)}.</p>
  * <p>While all the I/O methods are non-blocking, they can be easily
- * converted to blocking using {@link org.eclipse.jetty.util.Blocker} or
- * {@link Callback.Completable}:</p>
+ * converted to blocking using either {@link org.eclipse.jetty.util.Blocker}
+ * or {@link Callback.Completable}:</p>
  * <pre>{@code
  * EndPoint endPoint = ...;
  *
@@ -212,7 +213,7 @@ public interface EndPoint extends Closeable
 
     /**
      * <p>Flushes data from the passed header/buffer to this endpoint.</p>
-     * As many bytes as can be consumed are taken from the header/buffer
+     * <p>As many bytes as can be consumed are taken from the header/buffer
      * position up until the buffer limit.
      * The header/buffers position is updated to indicate how many bytes
      * have been consumed.</p>
