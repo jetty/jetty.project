@@ -194,31 +194,20 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         this.connection = connection;
     }
 
-    /**
-     * Send Close Frame with no payload.
-     *
-     * @param callback the callback on successful send of close frame
-     */
     @Override
     public void close(Callback callback)
     {
         close(NO_CODE, callback);
     }
 
-    /**
-     * Send Close Frame with specified Status Code and optional Reason
-     *
-     * @param statusCode a valid WebSocket status code
-     * @param reason an optional reason phrase
-     * @param callback the callback on successful send of close frame
-     */
     @Override
     public void close(int statusCode, String reason, Callback callback)
     {
         close(new CloseStatus(statusCode, reason), callback);
     }
 
-    private void close(CloseStatus closeStatus, Callback callback)
+    @Override
+    public void close(CloseStatus closeStatus, Callback callback)
     {
         sendFrame(closeStatus.toFrame(), callback, false);
     }

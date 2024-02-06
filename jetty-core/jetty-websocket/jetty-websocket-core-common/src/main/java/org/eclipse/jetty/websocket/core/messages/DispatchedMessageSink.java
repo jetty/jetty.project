@@ -18,10 +18,12 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
@@ -100,7 +102,17 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
                 // frame, while this MessageSink manages the demand when both
                 // the last frame and the dispatched thread are completed.
                 if (failure == null)
+                {
                     autoDemand();
+                }
+                else
+                {
+                    if (failure instanceof CompletionException completionException)
+                        failure = completionException.getCause();
+
+                    CloseStatus closeStatus = new CloseStatus(CloseStatus.SERVER_ERROR, failure);
+                    getCoreSession().close(closeStatus, Callback.NOOP);
+                }
             });
         }
 

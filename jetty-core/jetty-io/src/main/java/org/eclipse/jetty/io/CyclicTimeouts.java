@@ -119,7 +119,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
                     continue;
                 }
                 long newExpiresAt = expirable.getExpireNanoTime();
-                if (newExpiresAt == expiresAt)
+                if (newExpiresAt == Long.MAX_VALUE || newExpiresAt == expiresAt)
                     continue;
                 expiresAt = newExpiresAt;
             }
