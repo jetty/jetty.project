@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
@@ -66,8 +65,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final int _maxCapacity;
     private final long _maxHeapMemory;
     private final long _maxDirectMemory;
-    private final AtomicLong _currentHeapMemory = new AtomicLong();
-    private final AtomicLong _currentDirectMemory = new AtomicLong();
     private final IntUnaryOperator _bucketIndexFor;
 
     /**
@@ -224,13 +221,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                         // do not account for its size.
                         reservedEntry.remove();
                     }
-                    else
-                    {
-                        if (direct)
-                            _currentDirectMemory.addAndGet(buffer.capacity());
-                        else
-                            _currentHeapMemory.addAndGet(buffer.capacity());
-                    }
                     return buffer;
                 }
             }
@@ -331,12 +321,24 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return getMemory(false);
     }
 
+    void sweep(boolean direct)
+    {
+        RetainedBucket[] array = direct ? _direct : _indirect;
+        for (RetainedBucket retainedBucket : array)
+        {
+            retainedBucket._concurrentPool.sweep();
+        }
+    }
+
     private long getMemory(boolean direct)
     {
-        if (direct)
-            return _currentDirectMemory.get();
-        else
-            return _currentHeapMemory.get();
+        RetainedBucket[] array = direct ? _direct : _indirect;
+        long memory = 0L;
+        for (RetainedBucket retainedBucket : array)
+        {
+            memory += (long)retainedBucket._capacity * retainedBucket._pool.size();
+        }
+        return memory;
     }
 
     @ManagedAttribute("The available bytes retained by direct ByteBuffers")
@@ -366,11 +368,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
     public void clear()
     {
-        clearArray(_direct, _currentDirectMemory);
-        clearArray(_indirect, _currentHeapMemory);
+        clearArray(_direct);
+        clearArray(_indirect);
     }
 
-    private void clearArray(RetainedBucket[] poolArray, AtomicLong memoryCounter)
+    private void clearArray(RetainedBucket[] poolArray)
     {
         for (RetainedBucket bucket : poolArray)
         {
@@ -381,10 +383,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     RetainableByteBuffer pooled = entry.getPooled();
                     // Calling getPooled can return null if the entry was not yet enabled.
                     if (pooled != null)
-                    {
-                        memoryCounter.addAndGet(-pooled.capacity());
                         removed(pooled);
-                    }
                 }
             });
         }
@@ -445,10 +444,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 // We can evict, clear the buffer capacity.
                 RetainableByteBuffer buffer = evictableEntry.getPooled();
                 int clearedCapacity = buffer.capacity();
-                if (direct)
-                    _currentDirectMemory.addAndGet(-clearedCapacity);
-                else
-                    _currentHeapMemory.addAndGet(-clearedCapacity);
                 totalClearedCapacity += clearedCapacity;
                 removed(buffer);
             }
@@ -467,8 +462,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             super.toString(),
             _minCapacity, _maxCapacity,
             _direct.length,
-            _currentHeapMemory.get(), _maxHeapMemory,
-            _currentDirectMemory.get(), _maxDirectMemory);
+            getHeapMemory(), _maxHeapMemory,
+            getDirectMemory(), _maxDirectMemory);
     }
 
     @Override

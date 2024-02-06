@@ -201,7 +201,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         }
     }
 
-    void sweep()
+    public void sweep()
     {
         for (int i = 0; i < entries.size(); i++)
         {

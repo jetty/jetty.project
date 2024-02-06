@@ -16,10 +16,12 @@ package org.eclipse.jetty.io;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -33,6 +35,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ArrayByteBufferPoolTest
 {
+    @Test
+    public void testLeakRecovery()
+    {
+        ArrayByteBufferPool pool = new ArrayByteBufferPool();
+
+        RetainableByteBuffer rbb = pool.acquire(100, true);
+        assertThat(pool.getDirectMemory(), is(4096L));
+        rbb = null;
+
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            // Concurrent pool.acquire() calls would sweep,
+            // but we don't want to accumulate RBBs here.
+            pool.sweep(true);
+
+            System.gc();
+            return pool.getDirectMemory() == 0L;
+        });
+    }
+
     @Test
     public void testMaxMemoryEviction()
     {
@@ -376,8 +398,6 @@ public class ArrayByteBufferPoolTest
         pool.acquire(100_000, true).release();
 
         String dump = pool.dump();
-        System.out.println(dump);
-
         assertThat(dump, containsString("requested buffer sizes size=5"));
         assertThat(dump, containsString("1=1"));
         assertThat(dump, containsString("100=1"));
