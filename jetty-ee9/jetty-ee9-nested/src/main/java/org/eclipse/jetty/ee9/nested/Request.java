@@ -78,6 +78,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -198,7 +199,7 @@ public class Request implements HttpServletRequest
     private Charset _queryEncoding;
     private UserIdentityScope _scope;
     private long _timeStamp;
-    private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
+    private MultiPart.Parser _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
     private String _lastPathInContext;
     private ContextHandler.APIContext _lastContext;
@@ -1916,7 +1917,9 @@ public class Request implements HttpServletRequest
                 maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
             }
 
-            _multiParts = newMultiParts(config, maxFormKeys);
+            MultiPartCompliance multiPartCompliance = getHttpChannel().getHttpConfiguration().getMultiPartCompliance();
+
+            _multiParts = newMultiParts(multiPartCompliance, config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
             reportComplianceViolations();
 
@@ -1987,15 +1990,15 @@ public class Request implements HttpServletRequest
     private void reportComplianceViolations()
     {
         ComplianceViolation.Listener complianceViolationListener = org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
-        List<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
-        for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
-            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.detail()));
+        List<ComplianceViolation.Event> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
+        for (ComplianceViolation.Event nc : nonComplianceWarnings)
+            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.details()));
     }
 
-    private MultiPartFormInputStream newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
+    private MultiPart.Parser newMultiParts(MultiPartCompliance multiPartCompliance, MultipartConfigElement config, int maxParts) throws IOException
     {
-        return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null), maxParts);
+        File contextTmpDir = (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null);
+        return MultiPart.newParser(multiPartCompliance, getInputStream(), getContentType(), config, contextTmpDir, maxParts);
     }
 
     @Override

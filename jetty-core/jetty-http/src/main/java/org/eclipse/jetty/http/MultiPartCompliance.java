@@ -25,7 +25,12 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
 {
     public enum Violation implements ComplianceViolation
     {
-        CONTENT_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "Content-Transfer-Encoding is deprecated");
+        CONTENT_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "Content-Transfer-Encoding header is deprecated"),
+        CR_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1", "CR only line termination is forbidden"),
+        LF_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1", "LF only line termination is forbidden"),
+        NO_CRLF_AFTER_PREAMBLE("https://tools.ietf.org/html/rfc2046#section-5.1.1", "CRLF sequence not allowed after preamble"),
+        BASE64_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "'base64' Content-Transfer-Encoding is deprecated"),
+        QUOTED_PRINTABLE_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "'quoted-printable' Content-Transfer-Encoding is deprecated");
 
         private final String url;
         private final String description;
@@ -55,8 +60,19 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
         }
     }
 
+    /**
+     * RFC7578 {@code multiPart/form-data} compliant strict parsing.
+     */
     public static final MultiPartCompliance RFC7578 = new MultiPartCompliance(
         "RFC7578", EnumSet.of(Violation.CONTENT_TRANSFER_ENCODING));
+
+    /**
+     * Legacy {@code multiPart/form-data} parsing which is slow, buggy, but forgiving to a fault.
+     * This mode is not recommended for websites on the public internet.
+     * It will accept non-compliant preambles and inconsistent line termination that are in violation of RFC7578.
+     */
+    public static final MultiPartCompliance LEGACY =  new MultiPartCompliance(
+        "LEGACY", EnumSet.noneOf(Violation.class));
 
     private static final List<MultiPartCompliance> KNOWN_MODES = Arrays.asList(RFC7578);
 
