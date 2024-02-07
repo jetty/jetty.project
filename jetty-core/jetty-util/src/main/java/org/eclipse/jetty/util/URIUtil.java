@@ -1409,11 +1409,13 @@ public final class URIUtil
         {
             switch (scheme)
             {
+                case "ws":
                 case "http":
                     if (port != 80)
                         url.append(':').append(port);
                     break;
 
+                case "wss":
                 case "https":
                     if (port != 443)
                         url.append(':').append(port);
@@ -1441,11 +1443,13 @@ public final class URIUtil
         {
             switch (scheme)
             {
+                case "ws":
                 case "http":
                     if (port != 80)
                         url.append(':').append(port);
                     break;
 
+                case "wss":
                 case "https":
                     if (port != 443)
                         url.append(':').append(port);
