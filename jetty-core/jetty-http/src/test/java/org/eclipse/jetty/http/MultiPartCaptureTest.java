@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
@@ -31,17 +30,22 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,14 +59,14 @@ import static org.hamcrest.Matchers.notNullValue;
 
 public class MultiPartCaptureTest
 {
-    public static Stream<Arguments> data()
+    public static Stream<Arguments> forms()
     {
         return Stream.of(
             // == Arbitrary / Non-Standard Examples ==
 
             "multipart-uppercase",
-            // "multipart-base64",  // base64 transfer encoding deprecated
-            // "multipart-base64-long", // base64 transfer encoding deprecated
+            "multipart-base64",  // base64 transfer encoding deprecated
+            "multipart-base64-long", // base64 transfer encoding deprecated
 
             // == Capture of raw request body contents from Apache HttpClient 4.5.5 ==
 
@@ -104,17 +108,6 @@ public class MultiPartCaptureTest
             "browser-capture-form1-msie",
             "browser-capture-form1-osx-safari",
 
-            // form submitted as shift-jis
-            "browser-capture-sjis-form-edge",
-            "browser-capture-sjis-form-msie",
-            // TODO: these might be addressable via Issue #2398
-            // "browser-capture-sjis-form-android-chrome", // contains html encoded character and unspecified charset defaults to utf-8
-            // "browser-capture-sjis-form-android-firefox", // contains html encoded character and unspecified charset defaults to utf-8
-            // "browser-capture-sjis-form-chrome", // contains html encoded character and unspecified charset defaults to utf-8
-            // "browser-capture-sjis-form-firefox", // contains html encoded character and unspecified charset defaults to utf-8
-            // "browser-capture-sjis-form-ios-safari", // contains html encoded character and unspecified charset defaults to utf-8
-            // "browser-capture-sjis-form-safari", // contains html encoded character and unspecified charset defaults to utf-8
-
             // form submitted as shift-jis (with HTML5 specific hidden _charset_ field)
             "browser-capture-sjis-charset-form-android-chrome", // contains html encoded character
             "browser-capture-sjis-charset-form-android-firefox", // contains html encoded character
@@ -145,7 +138,7 @@ public class MultiPartCaptureTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("forms")
     public void testMultipartCapture(String fileName) throws Exception
     {
         Path rawPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".raw");
@@ -163,24 +156,124 @@ public class MultiPartCaptureTest
         listener.assertParts();
     }
 
+    @ParameterizedTest
+    @MethodSource("forms")
+    public void testMultiPartFormDataParse(String fileName) throws Exception
+    {
+        Path rawPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".raw");
+        Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".expected.txt");
+        MultiPartExpectations expectations = new MultiPartExpectations(expectationPath);
+
+        String boundaryAttribute = "boundary=";
+        int boundaryIndex = expectations.contentType.indexOf(boundaryAttribute);
+        assertThat(boundaryIndex, greaterThan(0));
+        String boundary = HttpField.PARAMETER_TOKENIZER.unquote(expectations.contentType.substring(boundaryIndex + boundaryAttribute.length()));
+
+        Path tempDir = MavenPaths.targetTestDir(MultiPartCaptureTest.class.getSimpleName() + "-temp");
+        FS.ensureDirExists(tempDir);
+
+        MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+        parser.setUseFilesForPartsWithoutFileName(false);
+        parser.setFilesDirectory(tempDir);
+        ByteBufferContentSource contentSource = new ByteBufferContentSource(ByteBuffer.wrap(Files.readAllBytes(rawPath)));
+        MultiPartFormData.Parts parts = parser.parse(contentSource).get();
+        expectations.assertParts(parts, parser.getDefaultCharset());
+    }
+
+    /**
+     * Forms that were submitted without {@code _charset_} named part (as specified by the HTML5 spec).
+     * <p>
+     *     This is a flaky and buggy part of the HTML spec in various browsers.
+     *     This technique used to be common, but is being replaced by using
+     *     the {@code _charset_} named part instead.
+     * </p>
+     */
+    public static Stream<Arguments> formsAltCharset()
+    {
+        return Stream.of(
+            // form parts submitted as UTF-8
+            Arguments.of("browser-capture-sjis-form-edge", "UTF-8"),
+            Arguments.of("browser-capture-sjis-form-msie", "UTF-8"),
+            Arguments.of("browser-capture-sjis-jetty-client", "UTF-8"),
+            // form parts submitted at Shift_JIS (also contains html encoded character entities)
+            Arguments.of("browser-capture-sjis-form-android-chrome", "Shift_JIS"),
+            Arguments.of("browser-capture-sjis-form-android-firefox", "Shift_JIS"),
+            Arguments.of("browser-capture-sjis-form-chrome", "Shift_JIS"),
+            Arguments.of("browser-capture-sjis-form-firefox", "Shift_JIS"),
+            Arguments.of("browser-capture-sjis-form-ios-safari", "Shift_JIS"),
+            Arguments.of("browser-capture-sjis-form-safari", "Shift_JIS")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("formsAltCharset")
+    public void testMultipartCaptureAltCharset(String fileName, String altCharset) throws Exception
+    {
+        Path rawPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".raw");
+        Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".expected.txt");
+        Charset charset = Charset.forName(altCharset);
+        MultiPartExpectations expectations = new MultiPartExpectations(expectationPath);
+
+        String boundaryAttribute = "boundary=";
+        int boundaryIndex = expectations.contentType.indexOf(boundaryAttribute);
+        assertThat(boundaryIndex, greaterThan(0));
+        String boundary = HttpField.PARAMETER_TOKENIZER.unquote(expectations.contentType.substring(boundaryIndex + boundaryAttribute.length()));
+
+        TestPartsListener listener = new TestPartsListener(expectations);
+        MultiPart.Parser parser = new MultiPart.Parser(boundary, listener);
+        parser.parse(Content.Chunk.from(ByteBuffer.wrap(Files.readAllBytes(rawPath)), true));
+        listener.setDefaultCharset(charset);
+        listener.assertParts();
+    }
+
+    @ParameterizedTest
+    @MethodSource("formsAltCharset")
+    public void testMultiPartFormDataParseAltCharset(String fileName, String altCharset) throws Exception
+    {
+        Path rawPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".raw");
+        Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + fileName + ".expected.txt");
+        Charset charset = Charset.forName(altCharset);
+        MultiPartExpectations expectations = new MultiPartExpectations(expectationPath);
+
+        String boundaryAttribute = "boundary=";
+        int boundaryIndex = expectations.contentType.indexOf(boundaryAttribute);
+        assertThat(boundaryIndex, greaterThan(0));
+        String boundary = HttpField.PARAMETER_TOKENIZER.unquote(expectations.contentType.substring(boundaryIndex + boundaryAttribute.length()));
+
+        Path tempDir = MavenPaths.targetTestDir(MultiPartCaptureTest.class.getSimpleName() + "-temp");
+        FS.ensureDirExists(tempDir);
+
+        MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+        parser.setUseFilesForPartsWithoutFileName(false);
+        parser.setFilesDirectory(tempDir);
+        parser.setDefaultCharset(charset);
+        ByteBufferContentSource contentSource = new ByteBufferContentSource(ByteBuffer.wrap(Files.readAllBytes(rawPath)));
+        MultiPartFormData.Parts parts = parser.parse(contentSource).get();
+        expectations.assertParts(parts, parser.getDefaultCharset());
+    }
+
     private record NameValue(String name, String value)
     {
     }
 
     private static class MultiPartExpectations
     {
+        public final String testfilename;
         public final String contentType;
         public final int partCount;
         public final List<NameValue> partFilenames = new ArrayList<>();
         public final List<NameValue> partSha1Sums = new ArrayList<>();
         public final List<NameValue> partContainsContents = new ArrayList<>();
+        public final List<NameValue> partContainsHex = new ArrayList<>();
 
         public MultiPartExpectations(Path expectationsPath) throws IOException
         {
+            String filename = expectationsPath.getFileName().toString();
+            testfilename = filename.replaceFirst(".expected.txt$", "");
             String parsedContentType = null;
             String parsedPartCount = "-1";
 
-            try (BufferedReader reader = Files.newBufferedReader(expectationsPath))
+            try (BufferedReader reader = Files.newBufferedReader(expectationsPath, UTF_8))
             {
                 String line;
                 while ((line = reader.readLine()) != null)
@@ -213,6 +306,12 @@ public class MultiPartCaptureTest
                             partContainsContents.add(pair);
                             break;
                         }
+                        case "Part-ContainsHex":
+                        {
+                            NameValue pair = new NameValue(split[1], split[2]);
+                            partContainsHex.add(pair);
+                            break;
+                        }
                         case "Part-Filename":
                         {
                             NameValue pair = new NameValue(split[1], split[2]);
@@ -236,47 +335,94 @@ public class MultiPartCaptureTest
             this.partCount = Integer.parseInt(parsedPartCount);
         }
 
-        private void assertParts(Map<String, List<MultiPart.Part>> allParts) throws Exception
+        public boolean hasPartName(String name)
+        {
+            for (NameValue nameValue: partContainsContents)
+            {
+                if (nameValue.name.equals(name))
+                    return true;
+            }
+            return false;
+        }
+
+        private void assertParts(Map<String, List<MultiPart.Part>> allParts, Charset formCharset) throws Exception
+        {
+            assertParts(() -> allParts.values().stream().mapToInt(List::size).sum(),
+                (name) -> allParts.get(name),
+                formCharset);
+        }
+
+        private void assertParts(MultiPartFormData.Parts parts, Charset formCharset) throws Exception
+        {
+            assertParts(() -> parts.size(),
+                (name) -> parts.getAll(name),
+                formCharset);
+        }
+
+        private void assertParts(Supplier<Integer> partCountSupplier,
+                                 Function<String, List<MultiPart.Part>> namedPartsFunction,
+                                 Charset formCharset) throws Exception
         {
             if (partCount >= 0)
-                assertThat(allParts.values().stream().mapToInt(List::size).sum(), is(partCount));
+                assertThat(partCountSupplier.get(), is(partCount));
 
-            String defaultCharset = UTF_8.toString();
-            List<MultiPart.Part> charSetParts = allParts.get("_charset_");
-            if (charSetParts != null)
-            {
-                defaultCharset = Promise.Completable.<String>with(p -> Content.Source.asString(charSetParts.get(0).getContentSource(), StandardCharsets.US_ASCII, p))
-                    .get();
-            }
+            Charset defaultCharset = UTF_8;
+            if (formCharset != null)
+                defaultCharset = formCharset;
 
             for (NameValue expected : partContainsContents)
             {
-                List<MultiPart.Part> parts = allParts.get(expected.name);
+                List<MultiPart.Part> parts = namedPartsFunction.apply(expected.name);
+                assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
+                assertThat("Part count for [" + expected.name + "]", parts.size(), is(1));
+                MultiPart.Part part = parts.get(0);
+                // Parse part with charset.
+                Charset charset = getCharsetFromContentType(part.getHeaders().get(HttpHeader.CONTENT_TYPE), defaultCharset);
+                ByteBuffer partBuffer = Content.Source.asByteBuffer(part.newContentSource());
+                assertThat("part[" + expected.name + "].newContentSource", partBuffer, is(notNullValue()));
+                String partBufferAsString = BufferUtil.toString(partBuffer, charset);
+                assertThat("Part[" + expected.name + "].contents", partBufferAsString, containsString(expected.value));
+                String partContent = Content.Source.asString(part.newContentSource(), charset);
+                assertThat("Part[" + expected.name + "].contents", partContent, containsString(expected.value));
+            }
+
+            for (NameValue expected : partContainsHex)
+            {
+                List<MultiPart.Part> parts = namedPartsFunction.apply(expected.name);
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
-                String charset = getCharsetFromContentType(part.getHeaders().get(HttpHeader.CONTENT_TYPE), defaultCharset);
-                String partContent = Content.Source.asString(part.newContentSource(), Charset.forName(charset));
-                assertThat("Part[" + expected.name + "].contents", partContent, containsString(expected.value));
+                // Parse part with charset.
+                Charset charset = getCharsetFromContentType(part.getHeaders().get(HttpHeader.CONTENT_TYPE), defaultCharset);
+                ByteBuffer partBuffer = Content.Source.asByteBuffer(part.newContentSource());
+                String partAsHex = Hex.asHex(partBuffer.slice());
+                assertThat("Part[" + expected.name + "].contents", partAsHex, containsString(expected.value));
             }
 
             // Evaluate expected filenames
             for (NameValue expected : partFilenames)
             {
-                List<MultiPart.Part> parts = allParts.get(expected.name);
+                List<MultiPart.Part> parts = namedPartsFunction.apply(expected.name);
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
                 assertThat("Part[" + expected.name + "]", part.getFileName(), is(expected.value));
             }
 
+            Path debugPath = MavenPaths.targetTestDir("multipart-debug");
+            FS.ensureDirExists(debugPath);
+
             // Evaluate expected contents checksums
             for (NameValue expected : partSha1Sums)
             {
-                List<MultiPart.Part> parts = allParts.get(expected.name);
+                List<MultiPart.Part> parts = namedPartsFunction.apply(expected.name);
                 assertThat("Part[" + expected.name + "]", parts, is(notNullValue()));
                 MultiPart.Part part = parts.get(0);
                 MessageDigest digest = MessageDigest.getInstance("SHA1");
+
+                Path debugFile = debugPath.resolve(testfilename + ".part." + expected.name + ".debug");
+
                 try (InputStream partInputStream = Content.Source.asInputStream(part.newContentSource());
-                     DigestOutputStream digester = new DigestOutputStream(OutputStream.nullOutputStream(), digest))
+                     OutputStream debugOutput = Files.newOutputStream(debugFile);
+                     DigestOutputStream digester = new DigestOutputStream(debugOutput, digest))
                 {
                     IO.copy(partInputStream, digester);
                     String actualSha1sum = Hex.asHex(digest.digest()).toLowerCase(Locale.US);
@@ -285,7 +431,7 @@ public class MultiPartCaptureTest
             }
         }
 
-        private String getCharsetFromContentType(String contentType, String defaultCharset)
+        private Charset getCharsetFromContentType(String contentType, Charset defaultCharset)
         {
             if (StringUtil.isBlank(contentType))
                 return defaultCharset;
@@ -296,7 +442,7 @@ public class MultiPartCaptureTest
                 String str = i.next().trim();
                 if (str.startsWith("charset="))
                 {
-                    return str.substring("charset=".length());
+                    return Charset.forName(str.substring("charset=".length()));
                 }
             }
 
@@ -307,6 +453,8 @@ public class MultiPartCaptureTest
     private static class TestPartsListener extends MultiPart.AbstractPartsListener
     {
         // Preserve parts order.
+        private Charset defaultCharset = UTF_8;
+        private Charset formCharset;
         private final Map<String, List<MultiPart.Part>> parts = new LinkedHashMap<>();
         private final List<ByteBuffer> partByteBuffers = new ArrayList<>();
         private final MultiPartExpectations expectations;
@@ -326,14 +474,37 @@ public class MultiPartCaptureTest
         @Override
         public void onPart(String name, String fileName, HttpFields headers)
         {
-            MultiPart.Part newPart = new MultiPart.ByteBufferPart(name, fileName, headers, List.copyOf(partByteBuffers));
+            List<ByteBuffer> copyOfByteBuffers = new ArrayList<>();
+            for (ByteBuffer capture: partByteBuffers)
+            {
+                copyOfByteBuffers.add(BufferUtil.copy(capture));
+            }
+            MultiPart.Part newPart = new MultiPart.ByteBufferPart(name, fileName, headers, copyOfByteBuffers);
             partByteBuffers.clear();
             parts.compute(newPart.getName(), (k, v) -> v == null ? new ArrayList<>() : v).add(newPart);
         }
 
+        public void setDefaultCharset(Charset charset)
+        {
+            this.defaultCharset = charset;
+        }
+
+        public Charset getFormCharset()
+        {
+            List<MultiPart.Part> formCharset = parts.get("_charset_");
+            if (formCharset == null || formCharset.isEmpty())
+            {
+                if (expectations.hasPartName("_charset_"))
+                    Assertions.fail("Unexpected form parse: expecting _charset_, but part not found");
+                else
+                    return defaultCharset;
+            }
+            return Charset.forName(formCharset.get(0).getContentAsString(UTF_8));
+        }
+
         private void assertParts() throws Exception
         {
-            expectations.assertParts(parts);
+            expectations.assertParts(parts, getFormCharset());
         }
     }
 }

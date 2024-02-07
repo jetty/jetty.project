@@ -11,4 +11,6 @@ Request-Header|User-Agent|Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 Parts-Count|3
 Part-ContainsContents|_charset_|utf-8
 Part-ContainsContents|japanese|健治
+Part-ContainsHex|japanese|E581A5E6B2BB
 Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsHex|hello|E383A3E383A6E68886E382BF
