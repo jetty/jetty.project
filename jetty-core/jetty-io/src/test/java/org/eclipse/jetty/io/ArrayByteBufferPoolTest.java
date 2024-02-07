@@ -202,6 +202,8 @@ public class ArrayByteBufferPoolTest
     public void testBufferReleaseRepools()
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 20, 1);
+        pool.acquire(1, true).release();
+        pool.acquire(11, true).release();
 
         List<RetainableByteBuffer> all = new ArrayList<>();
 

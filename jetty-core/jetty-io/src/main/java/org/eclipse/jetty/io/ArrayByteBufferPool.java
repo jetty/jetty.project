@@ -19,12 +19,12 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
@@ -64,8 +64,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final int _maxCapacity;
     private final long _maxHeapMemory;
     private final long _maxDirectMemory;
-    private final AtomicLong _currentHeapMemory = new AtomicLong();
-    private final AtomicLong _currentDirectMemory = new AtomicLong();
     private final IntUnaryOperator _bucketIndexFor;
     private final AtomicBoolean _evictor = new AtomicBoolean(false);
 
@@ -154,8 +152,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         for (int i = 0; i < directArray.length; i++)
         {
             int capacity = Math.min(bucketCapacity.applyAsInt(i), maxCapacity);
-            directArray[i] = new RetainedBucket(true, capacity, maxBucketSize);
-            indirectArray[i] = new RetainedBucket(false, capacity, maxBucketSize);
+            directArray[i] = new RetainedBucket(capacity, maxBucketSize);
+            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize);
         }
 
         _minCapacity = minCapacity;
@@ -245,10 +243,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         if (reservedEntry.enable(pooledBuffer, false))
         {
-            if (direct)
-                _currentDirectMemory.addAndGet(size);
-            else
-                _currentHeapMemory.addAndGet(size);
             releaseExcessMemory(direct);
         }
     }
@@ -332,10 +326,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private long getMemory(boolean direct)
     {
-        if (direct)
-            return _currentDirectMemory.get();
-        else
-            return _currentHeapMemory.get();
+        long memory = 0;
+        for (RetainedBucket bucket : direct ? _direct : _indirect)
+        {
+            memory += (long)bucket.getPool().size() * bucket._capacity;
+        }
+        return memory;
     }
 
     @ManagedAttribute("The available bytes retained by direct ByteBuffers")
@@ -365,11 +361,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
     public void clear()
     {
-        clearArray(_direct, _currentDirectMemory);
-        clearArray(_indirect, _currentHeapMemory);
+        clearArray(_direct);
+        clearArray(_indirect);
     }
 
-    private void clearArray(RetainedBucket[] poolArray, AtomicLong memoryCounter)
+    private void clearArray(RetainedBucket[] poolArray)
     {
         for (RetainedBucket bucket : poolArray)
         {
@@ -380,10 +376,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     RetainableByteBuffer pooled = entry.getPooled();
                     // Calling getPooled can return null if the entry was not yet enabled.
                     if (pooled != null)
-                    {
-                        memoryCounter.addAndGet(-pooled.capacity());
                         removed(pooled);
-                    }
                 }
             });
         }
@@ -402,12 +395,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             {
                 RetainedBucket[] buckets = direct ? _direct : _indirect;
 
-                while (true)
+                long excess = getMemory(direct) - maxMemory;
+                while (excess > 0)
                 {
-                    long excess = getMemory(direct) - maxMemory;
-                    if (excess <= 0)
-                        break;
-
                     // find the bucket with the most idle memory
                     RetainedBucket mostIdleBucket = null;
                     long mostIdleSize = -1;
@@ -422,7 +412,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     }
 
                     if (mostIdleBucket != null)
-                        mostIdleBucket.evict(excess);
+                        excess -= mostIdleBucket.evict(excess);
                 }
             }
             finally
@@ -439,8 +429,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             super.toString(),
             _minCapacity, _maxCapacity,
             _direct.length,
-            _currentHeapMemory.get(), _maxHeapMemory,
-            _currentDirectMemory.get(), _maxDirectMemory);
+            getMemory(false), _maxHeapMemory,
+            getMemory(true), _maxDirectMemory);
     }
 
     @Override
@@ -454,18 +444,18 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             DumpableCollection.fromArray("indirect", _indirect));
     }
 
-    private class RetainedBucket
+    private static class RetainedBucket
     {
         private final Pool<RetainableByteBuffer> _pool;
         private final int _capacity;
 
-        private RetainedBucket(boolean direct, int capacity, int poolSize)
+        private RetainedBucket(int capacity, int poolSize)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
-                _pool = new BucketPool(poolSize, direct);
+                _pool = new BucketPool(poolSize);
             else
                 _pool = new CompoundPool<>(
-                    new BucketPool(ConcurrentPool.OPTIMAL_MAX_SIZE, direct),
+                    new BucketPool(ConcurrentPool.OPTIMAL_MAX_SIZE),
                     new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
                 );
             _capacity = capacity;
@@ -476,22 +466,22 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return _pool;
         }
 
-        private void evict(long excess)
+        private long evict(long excess)
         {
-            List<Pool.Entry<RetainableByteBuffer>> idle = _pool.stream().filter(Pool.Entry::isIdle).toList();
-            for (Pool.Entry<RetainableByteBuffer> entry : idle)
+            long evicted = 0;
+            for (Iterator<Pool.Entry<RetainableByteBuffer>> i = _pool.stream().filter(Pool.Entry::isIdle).iterator(); i.hasNext();)
             {
+                Pool.Entry<RetainableByteBuffer> entry = i.next();
                 RetainableByteBuffer retainableByteBuffer = entry.getPooled();
-                boolean direct = retainableByteBuffer.isDirect();
                 int size = retainableByteBuffer.capacity();
                 if (entry.remove())
                 {
-                    (direct ? _currentDirectMemory : _currentHeapMemory).addAndGet(-1 * size);
-                    excess -= size;
-                    if (excess < 0)
+                    evicted += size;
+                    if (evicted > excess)
                         break;
                 }
             }
+            return evicted;
         }
 
         @Override
@@ -513,20 +503,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 entries > 0 ? (inUse * 100) / entries : 0);
         }
 
-        private class BucketPool extends ConcurrentPool<RetainableByteBuffer>
+        private static class BucketPool extends ConcurrentPool<RetainableByteBuffer>
         {
-            private final boolean _direct;
-
-            public BucketPool(int poolSize, boolean direct)
+            public BucketPool(int poolSize)
             {
                 super(StrategyType.THREAD_ID, poolSize, e -> 1);
-                _direct = direct;
-            }
-
-            @Override
-            protected void leaked()
-            {
-                (_direct ? ArrayByteBufferPool.this._currentDirectMemory : ArrayByteBufferPool.this._currentHeapMemory).addAndGet(-1 * _capacity);
             }
         }
     }
