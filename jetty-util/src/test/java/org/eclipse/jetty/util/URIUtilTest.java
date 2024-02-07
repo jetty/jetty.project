@@ -788,4 +788,43 @@ public class URIUtilTest
     {
         assertFalse(URIUtil.isValidHostRegisteredName(token), "Token [" + token + "] should be an invalid reg-name");
     }
+
+    public static Stream<Arguments> appendSchemeHostPortCases()
+    {
+        return Stream.of(
+            // Default behaviors of stripping a port number based on scheme
+            Arguments.of("http", "example.org", 80, "http://example.org"),
+            Arguments.of("https", "example.org", 443, "https://example.org"),
+            Arguments.of("ws", "example.org", 80, "ws://example.org"),
+            Arguments.of("wss", "example.org", 443, "wss://example.org"),
+            // Mismatches between scheme and port
+            Arguments.of("http", "example.org", 443, "http://example.org:443"),
+            Arguments.of("https", "example.org", 80, "https://example.org:80"),
+            Arguments.of("ws", "example.org", 443, "ws://example.org:443"),
+            Arguments.of("wss", "example.org", 80, "wss://example.org:80"),
+            // Odd ports
+            Arguments.of("http", "example.org", 12345, "http://example.org:12345"),
+            Arguments.of("https", "example.org", 54321, "https://example.org:54321"),
+            Arguments.of("ws", "example.org", 6666, "ws://example.org:6666"),
+            Arguments.of("wss", "example.org", 7777, "wss://example.org:7777")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("appendSchemeHostPortCases")
+    public void testAppendSchemeHostPortBuilder(String scheme, String server, int port, String expectedStr)
+    {
+        StringBuilder actual = new StringBuilder();
+        URIUtil.appendSchemeHostPort(actual, scheme, server, port);
+        assertEquals(expectedStr, actual.toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource("appendSchemeHostPortCases")
+    public void testAppendSchemeHostPortBuffer(String scheme, String server, int port, String expectedStr)
+    {
+        StringBuffer actual = new StringBuffer();
+        URIUtil.appendSchemeHostPort(actual, scheme, server, port);
+        assertEquals(expectedStr, actual.toString());
+    }
 }
