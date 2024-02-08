@@ -73,6 +73,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -1178,7 +1179,7 @@ public class Request implements HttpServletRequest
     public StringBuilder getRootURL()
     {
         StringBuilder url = new StringBuilder(128);
-        URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
+        HttpScheme.appendNormalizedUri(url, getScheme(), getServerName(), getServerPort());
         return url;
     }
 

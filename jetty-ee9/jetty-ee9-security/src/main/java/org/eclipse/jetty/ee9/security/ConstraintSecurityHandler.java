@@ -36,6 +36,7 @@ import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -44,7 +45,6 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -652,9 +652,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 String scheme = httpConfig.getSecureScheme();
                 int port = httpConfig.getSecurePort();
 
-                String url = URIUtil.newURI(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
+                String url = HttpScheme.normalizeUri(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
                 response.setContentLength(0);
-                response.sendRedirect(url, true);
+                response.sendRedirect(url.toString(), true);
             }
             else
                 response.sendError(HttpStatus.FORBIDDEN_403, "!Secure");

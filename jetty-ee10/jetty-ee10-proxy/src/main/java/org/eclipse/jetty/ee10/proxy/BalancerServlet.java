@@ -27,7 +27,7 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.http.HttpScheme;
 
 public class BalancerServlet extends ProxyServlet
 {
@@ -217,7 +217,8 @@ public class BalancerServlet extends ProxyServlet
             URI locationURI = URI.create(headerValue).normalize();
             if (locationURI.isAbsolute() && isBackendLocation(locationURI))
             {
-                StringBuilder newURI = URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
+                StringBuilder newURI = new StringBuilder();
+                HttpScheme.appendNormalizedUri(newURI, request.getScheme(), request.getServerName(), request.getServerPort());
                 String component = locationURI.getRawPath();
                 if (component != null)
                     newURI.append(component);
