@@ -154,7 +154,6 @@ public class QueuedPool<P> implements Pool<P>
             Collection<Entry<P>> copy = new ArrayList<>(queue);
             queue.clear();
             queueSize.set(0);
-            copy.forEach(Entry::remove);
             return copy;
         }
         finally
