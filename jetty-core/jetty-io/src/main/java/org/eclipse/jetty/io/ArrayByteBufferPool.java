@@ -224,6 +224,15 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     }
                     return buffer;
                 }
+                else
+                {
+                    // Cannot enable, keep the allocated ByteBuffer, wrap it in another RBB with
+                    // a different releaser and remove the reserved entry from the pool.
+                    Buffer retainableByteBuffer = new Buffer(buffer.getByteBuffer(), this::removed);
+                    retainableByteBuffer.acquire();
+                    reservedEntry.remove();
+                    return retainableByteBuffer;
+                }
             }
             return newRetainableByteBuffer(size, direct, this::removed);
         }
