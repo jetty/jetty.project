@@ -616,7 +616,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             // check compliance of preamble
             if (Character.isWhitespace(untrimmed.charAt(0)))
                 nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                    MultiPartCompliance.Violation.NO_CRLF_AFTER_PREAMBLE,
+                    MultiPartCompliance.Violation.WHITESPACE_AFTER_PREAMBLE,
                     String.format("0x%02x", untrimmed.charAt(0))));
 
             // Read each part
