@@ -19,6 +19,7 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -518,8 +519,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             int entries = 0;
             int inUse = 0;
-            for (Pool.Entry<RetainableByteBuffer> entry : getPool().stream().toList())
+            Iterator<Pool.Entry<RetainableByteBuffer>> it = getPool().stream().iterator();
+            while (it.hasNext())
             {
+                Pool.Entry<RetainableByteBuffer> entry = it.next();
                 entries++;
                 if (entry.isInUse())
                     inUse++;
