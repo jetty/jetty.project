@@ -10,7 +10,7 @@ Request-Header|Upgrade-Insecure-Requests|1
 Request-Header|User-Agent|Mozilla/5.0 (Android 8.1.0; Mobile; rv:59.0) Gecko/59.0 Firefox/59.0
 Parts-Count|2
 # Parts were submitted in Shift_JIS encoding by Firefox
-#Part-ContainsContents|japanese|健治
+Part-ContainsContents|japanese|健治
 Part-ContainsHex|japanese|8C928EA1
-#Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsContents|hello|ャユ&#25094;タ
 Part-ContainsHex|hello|83838386262332353039343B835E

@@ -13,7 +13,7 @@ Request-Header|Upgrade-Insecure-Requests|1
 Request-Header|User-Agent|Mozilla/5.0 (Linux; Android 8.1.0; Pixel 2 XL Build/OPM1.171019.021) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.109 Mobile Safari/537.36
 Parts-Count|2
 # Parts were submitted in Shift_JIS encoding by Chrome on Android
-# Part-ContainsContents|japanese|健治
+Part-ContainsContents|japanese|健治
 Part-ContainsHex|japanese|8C928EA1
-# Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsContents|hello|ャユ&#25094;タ
 Part-ContainsHex|hello|83838386262332353039343B835E

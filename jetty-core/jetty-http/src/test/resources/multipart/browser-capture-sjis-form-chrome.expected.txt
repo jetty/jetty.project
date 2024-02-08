@@ -14,7 +14,7 @@ Request-Header|Upgrade-Insecure-Requests|1
 Request-Header|User-Agent|Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36
 Parts-Count|2
 # Parts were submitted in Shift_JIS encoding by Chrome
-#Part-ContainsContents|japanese|健治
+Part-ContainsContents|japanese|健治
 Part-ContainsHex|japanese|8C928EA1
-#Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsContents|hello|ャユ&#25094;タ
 Part-ContainsHex|hello|83838386262332353039343B835E
