@@ -1368,7 +1368,9 @@ public final class URIUtil
      * @param path the URI path
      * @param query the URI query
      * @return A String URI
+     * @deprecated use {@code HttpScheme} from {@code jetty-http} instead (as it does a proper job with normalization).  Will be removed in Jetty 12.1.0.
      */
+    @Deprecated(forRemoval = true, since = "12.0.7")
     public static String newURI(String scheme, String server, int port, String path, String query)
     {
         StringBuilder builder = newURIBuilder(scheme, server, port);
@@ -1385,7 +1387,9 @@ public final class URIUtil
      * @param server the URI server
      * @param port the URI port
      * @return a StringBuilder containing URI prefix
+     * @deprecated use {@code HttpScheme} from {@code jetty-http} instead (as it does a proper job with normalization).  Will be removed in Jetty 12.1.0.
      */
+    @Deprecated(forRemoval = true, since = "12.0.7")
     public static StringBuilder newURIBuilder(String scheme, String server, int port)
     {
         StringBuilder builder = new StringBuilder();
@@ -1400,7 +1404,9 @@ public final class URIUtil
      * @param scheme the URI scheme
      * @param server the URI server
      * @param port the URI port
+     * @deprecated use {@code HttpScheme} from {@code jetty-http} instead (as it does a proper job with normalization).  Will be removed in Jetty 12.1.0.
      */
+    @Deprecated(forRemoval = true, since = "12.0.7")
     public static void appendSchemeHostPort(StringBuilder url, String scheme, String server, int port)
     {
         url.append(scheme).append("://").append(HostPort.normalizeHost(server));
@@ -1434,7 +1440,9 @@ public final class URIUtil
      * @param scheme the URI scheme
      * @param server the URI server
      * @param port the URI port
+     * @deprecated use {@code HttpScheme} from {@code jetty-http} instead (as it does a proper job with normalization).  Will be removed in Jetty 12.1.0.
      */
+    @Deprecated(forRemoval = true, since = "12.0.7")
     public static void appendSchemeHostPort(StringBuffer url, String scheme, String server, int port)
     {
         url.append(scheme).append("://").append(HostPort.normalizeHost(server));

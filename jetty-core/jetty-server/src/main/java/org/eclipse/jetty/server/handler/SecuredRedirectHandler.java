@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.server.handler;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.URIUtil;
 
 /**
  * Forces a redirect to the secure form of the resource before allowed to access the resource.
@@ -99,11 +98,8 @@ public class SecuredRedirectHandler extends Handler.Wrapper
         if (securePort > 0)
         {
             String secureScheme = httpConfig.getSecureScheme();
-            String url = URIUtil.newURI(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
-            // TODO need a utility for this
-            response.getHeaders().put(HttpHeader.LOCATION, url);
-            response.setStatus(_redirectCode);
-            response.write(true, null, callback);
+            String url = HttpScheme.normalizeUri(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+            Response.sendRedirect(request, response, callback, _redirectCode, url, false);
         }
         else
         {

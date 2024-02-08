@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -357,7 +358,7 @@ public interface Response extends Content.Sink
             {
                 // make the location an absolute URI
                 StringBuilder url = new StringBuilder(128);
-                URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
+                HttpScheme.appendNormalizedUri(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
                 url.append(location);
                 location = url.toString();
             }

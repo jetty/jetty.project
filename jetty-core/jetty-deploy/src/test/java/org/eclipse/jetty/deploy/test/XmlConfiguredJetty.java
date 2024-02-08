@@ -16,7 +16,6 @@ package org.eclipse.jetty.deploy.test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -45,7 +44,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -249,9 +247,7 @@ public class XmlConfiguredJetty
 
     public URI getServerURI() throws UnknownHostException
     {
-        StringBuilder uri = new StringBuilder();
-        URIUtil.appendSchemeHostPort(uri, getScheme(), InetAddress.getLocalHost().getHostAddress(), getServerPort());
-        return URI.create(uri.toString());
+        return _server.getURI().resolve("/");
     }
 
     public Path getJettyBasePath()
