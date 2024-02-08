@@ -201,8 +201,13 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         }
     }
 
-    public void sweep()
+    /**
+     * Sweep the pool, removing any leaked entry.
+     * @return the leaked entries count.
+     */
+    public int sweep()
     {
+        int leakedCount = 0;
         for (int i = 0; i < entries.size(); i++)
         {
             Holder<P> holder = entries.get(i);
@@ -210,8 +215,10 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             {
                 leaked(holder);
                 entries.remove(i--);
+                leakedCount++;
             }
         }
+        return leakedCount;
     }
 
     @Override

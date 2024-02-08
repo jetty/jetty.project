@@ -331,6 +331,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return getMemory(false);
     }
 
+    // For testing only.
     void sweep(boolean direct)
     {
         RetainedBucket[] array = direct ? _direct : _indirect;
@@ -346,7 +347,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         long memory = 0L;
         for (RetainedBucket retainedBucket : array)
         {
-            memory += (long)retainedBucket._capacity * retainedBucket._pool.size();
+            memory += retainedBucket.memory();
         }
         return memory;
     }
@@ -424,26 +425,25 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("evicting {} bytes from {} pools", excess, (direct ? "direct" : "heap"));
         long totalClearedCapacity = 0L;
-
         RetainedBucket[] buckets = direct ? _direct : _indirect;
 
-        int counter = 3; // Run through the buckets at most 3 times before bailing out.
-        while (totalClearedCapacity < excess)
+        eviction:
+        for (int i = 0; i < 3; i++)
         {
-            if (counter-- == 0)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("eviction aborted, cleared {} bytes from {} pools", totalClearedCapacity, (direct ? "direct" : "heap"));
-                return false;
-            }
-
             if (LOG.isDebugEnabled())
-                LOG.debug("excess {} capacity to clear: {}, currently cleared: {}", (direct ? "direct" : "heap"), excess, totalClearedCapacity);
+                LOG.debug("excess {} capacity to clear: {}, currently cleared: {} (attempt #{})", (direct ? "direct" : "heap"), excess, totalClearedCapacity, i + 1);
             // Run through all the buckets to avoid removing
             // the buffers only from the first bucket(s).
             for (RetainedBucket bucket : buckets)
             {
-                Pool.Entry<RetainableByteBuffer> evictableEntry = findEvictionCandidate(bucket.getPool());
+                // Sweeping might remove some entries, account for the swept entries' buffer capacity.
+                long freedBySweep = (long)bucket._concurrentPool.sweep() * bucket._capacity;
+                totalClearedCapacity += freedBySweep;
+                if (totalClearedCapacity >= excess)
+                    break eviction;
+
+                // Find an eviction candidate.
+                Pool.Entry<RetainableByteBuffer> evictableEntry = bucket.getPool().stream().filter(Pool.Entry::isIdle).findFirst().orElse(null);
                 if (evictableEntry == null)
                     continue;
 
@@ -451,18 +451,20 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 // it is up to findEvictionCandidate() to make that unlikely.
                 evictableEntry.remove();
 
-                // We can evict, clear the buffer capacity.
+                // We can evict, account for the buffer capacity.
                 RetainableByteBuffer buffer = evictableEntry.getPooled();
                 int clearedCapacity = buffer.capacity();
                 totalClearedCapacity += clearedCapacity;
                 removed(buffer);
+                if (totalClearedCapacity >= excess)
+                    break eviction;
             }
         }
 
+        boolean success = totalClearedCapacity >= excess;
         if (LOG.isDebugEnabled())
-            LOG.debug("eviction successful, cleared {} bytes from {} pools", totalClearedCapacity, (direct ? "direct" : "heap"));
-
-        return true;
+            LOG.debug("eviction {}, cleared {} bytes from {} buckets", (success ? "successful" : "aborted"), totalClearedCapacity, (direct ? "direct" : "heap"));
+        return success;
     }
 
     @Override
@@ -485,11 +487,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             this,
             DumpableCollection.fromArray("direct", _direct),
             DumpableCollection.fromArray("indirect", _indirect));
-    }
-
-    private Pool.Entry<RetainableByteBuffer> findEvictionCandidate(Pool<RetainableByteBuffer> bucket)
-    {
-        return bucket.stream().filter(Pool.Entry::isIdle).findFirst().orElse(null);
     }
 
     private static class RetainedBucket
@@ -521,6 +518,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             _acquisitions.increment();
             _waste.add(_capacity - capacity);
+        }
+
+        private long memory()
+        {
+            return (long)_capacity * _pool.size();
         }
 
         @Override
