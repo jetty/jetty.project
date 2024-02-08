@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.ContentSourceRequestContent;
 import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.EarlyHintsProtocolHandler;
 import org.eclipse.jetty.client.HttpClient;
@@ -347,7 +348,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                 .flatMap(field -> Stream.of(field.getValues()))
                 .filter(value -> !StringUtil.isBlank(value))
                 .collect(Collectors.joining(separator));
-            if (newValue.length() > 0)
+            if (!newValue.isEmpty())
                 newValue += separator;
             newValue += viaHeaderValue;
             return new HttpField(HttpHeader.VIA, newValue);
@@ -578,52 +579,26 @@ public abstract class ProxyHandler extends Handler.Abstract
         }
     }
 
-    protected static class ProxyRequestContent implements org.eclipse.jetty.client.Request.Content
+    protected static class ProxyRequestContent extends ContentSourceRequestContent
     {
-        private final Request clientToProxyRequest;
-
         public ProxyRequestContent(Request clientToProxyRequest)
         {
-            this.clientToProxyRequest = clientToProxyRequest;
+            super(clientToProxyRequest, clientToProxyRequest.getHeaders().get(HttpHeader.CONTENT_TYPE));
         }
 
         @Override
-        public long getLength()
+        public Request getContentSource()
         {
-            return clientToProxyRequest.getLength();
+            return (Request)super.getContentSource();
         }
 
         @Override
         public Content.Chunk read()
         {
-            Content.Chunk chunk = clientToProxyRequest.read();
+            Content.Chunk chunk = super.read();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} C2P read content {}", requestId(clientToProxyRequest), chunk);
+                LOG.debug("{} C2P read content {}", requestId(getContentSource()), chunk);
             return chunk;
-        }
-
-        @Override
-        public void demand(Runnable demandCallback)
-        {
-            clientToProxyRequest.demand(demandCallback);
-        }
-
-        @Override
-        public void fail(Throwable failure)
-        {
-            clientToProxyRequest.fail(failure);
-        }
-
-        @Override
-        public String getContentType()
-        {
-            return clientToProxyRequest.getHeaders().get(HttpHeader.CONTENT_TYPE);
-        }
-
-        @Override
-        public boolean rewind()
-        {
-            return clientToProxyRequest.rewind();
         }
     }
 
