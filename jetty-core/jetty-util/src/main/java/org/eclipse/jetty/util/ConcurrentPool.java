@@ -148,6 +148,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         leaked.increment();
         if (LOG.isDebugEnabled())
             LOG.debug("Leaked " + holder);
+        leaked();
+    }
+
+    protected void leaked()
+    {
     }
 
     @Override
@@ -194,8 +199,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             Holder<P> holder = entries.get(i);
             if (holder.getEntry() == null)
             {
-                leaked(holder);
                 entries.remove(i--);
+                leaked(holder);
             }
         }
     }
@@ -222,8 +227,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     ConcurrentEntry<P> entry = (ConcurrentEntry<P>)holder.getEntry();
                     if (entry == null)
                     {
-                        leaked(holder);
                         entries.remove(index);
+                        leaked(holder);
                         continue;
                     }
 
@@ -231,6 +236,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("returning entry {} for {}", entry, this);
+                        onAcquired(entry);
                         return entry;
                     }
                 }
@@ -263,12 +269,22 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         };
     }
 
+    protected void onAcquired(Entry<P> entry)
+    {
+    }
+
     private boolean release(Entry<P> entry)
     {
         boolean released = ((ConcurrentEntry<P>)entry).tryRelease();
         if (LOG.isDebugEnabled())
             LOG.debug("released {} {} for {}", released, entry, this);
+        if (released)
+            onReleased(entry);
         return released;
+    }
+
+    protected void onReleased(Entry<P> entry)
+    {
     }
 
     private boolean remove(Entry<P> entry)

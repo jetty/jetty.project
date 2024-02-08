@@ -35,6 +35,16 @@ public class CompoundPool<P> implements Pool<P>
         this.secondaryPool = secondaryPool;
     }
 
+    public Pool<P> getPrimaryPool()
+    {
+        return primaryPool;
+    }
+
+    public Pool<P> getSecondaryPool()
+    {
+        return secondaryPool;
+    }
+
     @Override
     public Entry<P> reserve()
     {
