@@ -588,6 +588,48 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     }
 
     /**
+     * A variant of the {@link ArrayByteBufferPool} that
+     * uses buckets of buffers that increase linearly in size by a fixed factor
+     * (eg 2k, 4k, 6k, 8k, etc.).
+     */
+    public static class Linear extends ArrayByteBufferPool
+    {
+        public Linear()
+        {
+            this(0, -1, Integer.MAX_VALUE);
+        }
+
+        public Linear(int minCapacity, int maxCapacity, int maxBucketSize)
+        {
+            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+        }
+
+        public Linear(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            this(minCapacity,
+                DEFAULT_FACTOR,
+                maxCapacity,
+                maxBucketSize,
+                maxHeapMemory,
+                maxDirectMemory);
+        }
+
+        private Linear(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity,
+                factor,
+                maxCapacity,
+                maxBucketSize,
+                maxHeapMemory,
+                maxDirectMemory,
+
+                c -> (c - 1) / factor,
+                i -> (i + 1) * factor
+            );
+        }
+    }
+
+    /**
      * <p>A variant of {@link ArrayByteBufferPool} that tracks buffer
      * acquires/releases, useful to identify buffer leaks.</p>
      * <p>Use {@link #getLeaks()} when the system is idle to get
