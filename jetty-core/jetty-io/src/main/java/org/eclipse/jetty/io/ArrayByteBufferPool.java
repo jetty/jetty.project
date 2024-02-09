@@ -64,6 +64,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final int _maxCapacity;
     private final long _maxHeapMemory;
     private final long _maxDirectMemory;
+    private final AtomicLong _heapMemory = new AtomicLong();
+    private final AtomicLong _directMemory = new AtomicLong();
     private final IntUnaryOperator _bucketIndexFor;
 
     /**
@@ -151,8 +153,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         for (int i = 0; i < directArray.length; i++)
         {
             int capacity = Math.min(bucketCapacity.applyAsInt(i), maxCapacity);
-            directArray[i] = new RetainedBucket(capacity, maxBucketSize);
-            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize);
+            directArray[i] = new RetainedBucket(capacity, maxBucketSize, true);
+            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize, false);
         }
 
         _minCapacity = minCapacity;
@@ -203,30 +205,34 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return buffer;
         }
 
-        // No pooled entry available, try to reserve.
-        Pool.Entry<RetainableByteBuffer> reservedEntry = bucket.getPool().reserve();
-        // Cannot reserve, return non-pooled.
-        if (reservedEntry == null)
-            return newRetainableByteBuffer(size, direct, null);
+        return newRetainableByteBuffer(bucket.getCapacity(), direct, buffer -> reserve(bucket, buffer, direct));
+    }
 
-        // Allocate the buffer that will be pooled.
-        RetainableByteBuffer buffer = newRetainableByteBuffer(bucket.getCapacity(), direct, retainedBuffer ->
-        {
-            BufferUtil.reset(retainedBuffer.getByteBuffer());
-            release(bucket, reservedEntry, direct);
-        });
+    private void reserve(RetainedBucket bucket, RetainableByteBuffer buffer, boolean direct)
+    {
+        // Discard the buffer if maxMemory is exceeded.
+        if (isMaxMemoryExceeded(bucket, direct))
+            return;
 
-        reservedEntry.enable(buffer, true);
+        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().reserve();
+        // Cannot reserve, discard the buffer.
+        if (entry == null)
+            return;
 
-        return buffer;
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.reset(byteBuffer);
+        Buffer pooledBuffer = new Buffer(byteBuffer, b -> release(bucket, entry, direct));
+        // Discard the buffer if the entry cannot be enabled.
+        if (entry.enable(pooledBuffer, false))
+            updateMemory(bucket.getCapacity(), direct);
+        else
+            entry.remove();
     }
 
     private void release(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer> entry, boolean direct)
     {
-        long maxMemory = direct ? _maxDirectMemory : _maxHeapMemory;
-        // Account also for the entry that is about to be released.
-        long memory = getMemory(direct) + bucket.getCapacity();
-        if (maxMemory > 0 && memory > maxMemory)
+        BufferUtil.reset(entry.getPooled().getByteBuffer());
+        if (isMaxMemoryExceeded(bucket, direct))
         {
             bucket.evict(entry);
         }
@@ -235,6 +241,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             if (!entry.release())
                 entry.remove();
         }
+    }
+
+    private boolean isMaxMemoryExceeded(RetainedBucket bucket, boolean direct)
+    {
+        long maxMemory = direct ? _maxDirectMemory : _maxHeapMemory;
+        // Account also for the entry that is about to be released.
+        long memory = getMemory(direct) + bucket.getCapacity();
+        return maxMemory > 0 && memory > maxMemory;
     }
 
     protected ByteBuffer allocate(int capacity)
@@ -322,13 +336,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private long getMemory(boolean direct)
     {
-        long memory = 0;
-        RetainedBucket[] buckets = direct ? _direct : _indirect;
-        for (RetainedBucket bucket : buckets)
-        {
-            memory += bucket.getMemory();
-        }
-        return memory;
+        AtomicLong memory = direct ? _directMemory : _heapMemory;
+        return memory.get();
+    }
+
+    private void updateMemory(int amount, boolean direct)
+    {
+        AtomicLong memory = direct ? _directMemory : _heapMemory;
+        memory.addAndGet(amount);
     }
 
     @ManagedAttribute("The available bytes retained by direct ByteBuffers")
@@ -392,13 +407,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             getMemory(true), _maxDirectMemory);
     }
 
-    private static class RetainedBucket
+    private class RetainedBucket
     {
-        private final AtomicLong _memory = new AtomicLong();
         private final Pool<RetainableByteBuffer> _pool;
         private final int _capacity;
+        private final boolean _direct;
 
-        private RetainedBucket(int capacity, int poolSize)
+        private RetainedBucket(int capacity, int poolSize, boolean direct)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
                 _pool = new ConcurrentBucket(ConcurrentPool.StrategyType.THREAD_ID, poolSize, e -> 1);
@@ -408,16 +423,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     new QueuedBucket(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
                 );
             _capacity = capacity;
+            _direct = direct;
         }
 
         private int getCapacity()
         {
             return _capacity;
-        }
-
-        private long getMemory()
-        {
-            return _memory.get();
         }
 
         private Pool<RetainableByteBuffer> getPool()
@@ -438,7 +449,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             getPool().stream().forEach(entry ->
             {
                 if (entry.remove())
-                    _memory.addAndGet(-_capacity);
+                    updateMemory(-_capacity, _direct);
             });
         }
 
@@ -505,14 +516,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             protected void onAcquired(Entry<RetainableByteBuffer> entry)
             {
                 super.onAcquired(entry);
-                _memory.addAndGet(-_capacity);
+                updateMemory(-_capacity, _direct);
             }
 
             @Override
             protected void onReleased(Entry<RetainableByteBuffer> entry)
             {
                 super.onReleased(entry);
-                _memory.addAndGet(_capacity);
+                updateMemory(_capacity, _direct);
             }
         }
 
@@ -527,14 +538,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             protected void onAcquired(Entry<RetainableByteBuffer> entry)
             {
                 super.onAcquired(entry);
-                _memory.addAndGet(-_capacity);
+                updateMemory(-_capacity, _direct);
             }
 
             @Override
             protected void onReleased(Entry<RetainableByteBuffer> entry)
             {
                 super.onReleased(entry);
-                _memory.addAndGet(_capacity);
+                updateMemory(_capacity, _direct);
             }
         }
     }
