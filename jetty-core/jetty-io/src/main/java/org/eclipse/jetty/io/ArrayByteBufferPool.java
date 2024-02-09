@@ -496,10 +496,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     inUse++;
             }
 
-            return String.format("%s{capacity=%d,inuse=%d(%d%%)}",
+            return String.format("%s{capacity=%d,inuse=%d/%d(%d%%)}",
                 super.toString(),
                 _capacity,
                 inUse,
+                entries,
                 entries > 0 ? (inUse * 100) / entries : 0);
         }
 
