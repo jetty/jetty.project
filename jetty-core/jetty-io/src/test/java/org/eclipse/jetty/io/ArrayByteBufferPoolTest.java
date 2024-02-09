@@ -340,7 +340,6 @@ public class ArrayByteBufferPoolTest
         for (int i = 0; i < 3; i++)
         {
             RetainableByteBuffer buf1 = pool.acquire(10, true);
-            System.err.println(buf1);
             assertThat(buf1, is(notNullValue()));
             assertThat(buf1.capacity(), is(ArrayByteBufferPool.DEFAULT_FACTOR));
             RetainableByteBuffer buf2 = pool.acquire(10, true);

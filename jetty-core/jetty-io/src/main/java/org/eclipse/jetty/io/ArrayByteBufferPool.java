@@ -67,6 +67,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final long _maxDirectMemory;
     private final IntUnaryOperator _bucketIndexFor;
     private final AtomicBoolean _evictor = new AtomicBoolean(false);
+    private final AtomicBoolean _overSize = new AtomicBoolean(false);
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
@@ -242,12 +243,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             BufferUtil.reset(b.getByteBuffer());
             if (!reservedEntry.release())
                 reservedEntry.remove();
+            if (_overSize.compareAndSet(true, false))
+                releaseExcessMemory(b.isDirect());
         });
 
         if (reservedEntry.enable(pooledBuffer, false))
-        {
             releaseExcessMemory(direct);
-        }
     }
 
     protected void removed(RetainableByteBuffer retainedBuffer)
@@ -399,7 +400,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 RetainedBucket[] buckets = direct ? _direct : _indirect;
 
                 long excess = getMemory(direct) - maxMemory;
-                while (excess > 0)
+                if (excess > 0)
                 {
                     // find the bucket with the most idle memory
                     RetainedBucket mostIdleBucket = null;
@@ -415,7 +416,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     }
 
                     if (mostIdleBucket != null)
-                        excess -= mostIdleBucket.evict(excess);
+                        mostIdleBucket.evict(excess);
+                    excess = getMemory(direct) - maxMemory;
+                    if (excess > 0)
+                        _overSize.set(true);
                 }
             }
             finally
@@ -466,7 +470,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return _pool;
         }
 
-        private long evict(long excess)
+        private void evict(long excess)
         {
             long evicted = 0;
             Stream<Pool.Entry<RetainableByteBuffer>> stream = _pool instanceof BucketCompoundPool bcp ? bcp.streamSecondaryFirst() : _pool.stream();
@@ -482,7 +486,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                         break;
                 }
             }
-            return evicted;
         }
 
         @Override
