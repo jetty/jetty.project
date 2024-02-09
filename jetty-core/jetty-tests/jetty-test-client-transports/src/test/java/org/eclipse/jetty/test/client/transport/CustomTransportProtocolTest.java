@@ -132,7 +132,7 @@ public class CustomTransportProtocolTest
                     {
                         // Copy the response headers.
                         response.getHeaders().add(r.getHeaders());
-                        // Remote Content-Encoding, as the content has already been decoded.
+                        // Remove Content-Encoding, as the content has already been decoded.
                         response.getHeaders().remove(HttpHeader.CONTENT_ENCODING);
                         // Copy the response content.
                         response.write(true, ByteBuffer.wrap(r.getContent()), callback);

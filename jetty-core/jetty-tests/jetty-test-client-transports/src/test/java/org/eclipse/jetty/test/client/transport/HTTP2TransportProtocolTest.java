@@ -45,53 +45,36 @@ import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransportProtocol;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(WorkDirExtension.class)
-public class HTTP2TransportProtocolTest
+public class HTTP2TransportProtocolTest extends AbstractTransportProtocolTest
 {
-    private Server server;
     private HttpClient httpClient;
     private HTTP2Client http2Client;
 
     @BeforeEach
     public void prepare()
     {
-        QueuedThreadPool serverThreads = new QueuedThreadPool();
-        serverThreads.setName("server");
-        server = new Server(serverThreads);
-
         ClientConnector clientConnector = new ClientConnector();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
-        serverThreads.setName("client");
+        clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSelectors(1);
         http2Client = new HTTP2Client(clientConnector);
         httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
         server.addBean(httpClient);
-    }
-
-    @AfterEach
-    public void dispose()
-    {
-        LifeCycle.stop(server);
     }
 
     @Test
@@ -355,11 +338,5 @@ public class HTTP2TransportProtocolTest
         });
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    private static Path newUnixDomainPath()
-    {
-        String unixDomainDir = System.getProperty("jetty.unixdomain.dir", System.getProperty("java.io.tmpdir"));
-        return Path.of(unixDomainDir, "jetty.sock");
     }
 }

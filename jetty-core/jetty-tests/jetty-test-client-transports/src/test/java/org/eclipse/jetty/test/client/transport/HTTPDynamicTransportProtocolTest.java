@@ -61,37 +61,29 @@ import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransportProtocol;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@ExtendWith(WorkDirExtension.class)
-public class HTTPDynamicTransportProtocolTest
+public class HTTPDynamicTransportProtocolTest extends AbstractTransportProtocolTest
 {
     private SslContextFactory.Server sslServer;
     private Path pemServerDir;
-    private Server server;
     private ClientConnector clientConnector;
     private HTTP2Client http2Client;
     private HTTP3Client http3Client;
@@ -105,13 +97,9 @@ public class HTTPDynamicTransportProtocolTest
         pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
-        QueuedThreadPool serverThreads = new QueuedThreadPool();
-        serverThreads.setName("server");
-        server = new Server(serverThreads);
-
         clientConnector = new ClientConnector();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
-        serverThreads.setName("client");
+        clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSelectors(1);
 
@@ -120,12 +108,6 @@ public class HTTPDynamicTransportProtocolTest
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         ClientQuicConfiguration quicConfiguration = new ClientQuicConfiguration(sslClient, null);
         http3Client = new HTTP3Client(quicConfiguration, clientConnector);
-    }
-
-    @AfterEach
-    public void dispose()
-    {
-        LifeCycle.stop(server);
     }
 
     @Test
@@ -536,13 +518,6 @@ public class HTTPDynamicTransportProtocolTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
-    @Test
-    public void testHighLevelH1OverProxyProtocolOverQUICOverMemory()
-    {
-        // TODO: UGH! :)
-        assumeTrue(false);
-    }
-
     private static int freePort() throws IOException
     {
         try (ServerSocket server = new ServerSocket())
@@ -551,11 +526,5 @@ public class HTTPDynamicTransportProtocolTest
             server.bind(new InetSocketAddress("localhost", 0));
             return server.getLocalPort();
         }
-    }
-
-    private static Path newUnixDomainPath()
-    {
-        String unixDomainDir = System.getProperty("jetty.unixdomain.dir", System.getProperty("java.io.tmpdir"));
-        return Path.of(unixDomainDir, "jetty.sock");
     }
 }
