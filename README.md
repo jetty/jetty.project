@@ -53,7 +53,7 @@ $ cd jetty.project
 $ mvn -Pfast clean install # fast build bypasses tests and other checks
 ```
 
-For more detailed information on building and contributing to the Jetty project, please see the [Contribution Guide](https://eclipse.dev/jetty/documentation/jetty-12/contribution-guide/index.html).
+For more detailed information on building and contributing to the Jetty project, please see the [Contribution Guide](https://eclipse.dev/jetty/documentation/contribution-guide/index.html).
 
 # Documentation
 
@@ -65,7 +65,7 @@ The documentation is divided into three guides, based on use case:
 
 * The [Programming Guide](https://eclipse.dev/jetty/documentation/jetty-12/programming-guide/index.html) targets developers who want to use the Eclipse Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.
 
-* The [Contribution Guide](https://eclipse.dev/jetty/documentation/jetty-12/contribution-guide/index.html) targets developers that wish to contribute to the Jetty Project with code patches or documentation improvements.
+* The [Contribution Guide](https://eclipse.dev/jetty/documentation/contribution-guide/index.html) targets developers that wish to contribute to the Jetty Project with code patches or documentation improvements.
 
 
 # Commercial Support
