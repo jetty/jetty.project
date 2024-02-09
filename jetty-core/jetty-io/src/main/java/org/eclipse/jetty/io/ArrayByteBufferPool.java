@@ -235,7 +235,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return;
         }
 
-        Buffer pooledBuffer = new Buffer(nonPooledBuffer.getByteBuffer(), b ->
+        ByteBuffer byteBuffer = nonPooledBuffer.getByteBuffer();
+        BufferUtil.reset(byteBuffer);
+        Buffer pooledBuffer = new Buffer(byteBuffer, b ->
         {
             BufferUtil.reset(b.getByteBuffer());
             if (!reservedEntry.release())
