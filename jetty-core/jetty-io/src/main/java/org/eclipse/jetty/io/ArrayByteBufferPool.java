@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
@@ -454,10 +455,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
                 _pool = new BucketPool(poolSize);
             else
-                _pool = new CompoundPool<>(
-                    new BucketPool(ConcurrentPool.OPTIMAL_MAX_SIZE),
-                    new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
-                );
+                _pool = new BucketCompoundPool(poolSize);
             _capacity = capacity;
         }
 
@@ -469,7 +467,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private long evict(long excess)
         {
             long evicted = 0;
-            for (Iterator<Pool.Entry<RetainableByteBuffer>> i = _pool.stream().filter(Pool.Entry::isIdle).iterator(); i.hasNext();)
+            Stream<Pool.Entry<RetainableByteBuffer>> stream = _pool instanceof BucketCompoundPool bcp ? bcp.streamSecondaryFirst() : _pool.stream();
+            for (Iterator<Pool.Entry<RetainableByteBuffer>> i = stream.filter(Pool.Entry::isIdle).iterator(); i.hasNext();)
             {
                 Pool.Entry<RetainableByteBuffer> entry = i.next();
                 RetainableByteBuffer retainableByteBuffer = entry.getPooled();
@@ -509,6 +508,19 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             public BucketPool(int poolSize)
             {
                 super(StrategyType.THREAD_ID, poolSize, e -> 1);
+            }
+        }
+
+        private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer>
+        {
+            public BucketCompoundPool(int poolSize)
+            {
+                super(new BucketPool(ConcurrentPool.OPTIMAL_MAX_SIZE), new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE));
+            }
+
+            public Stream<Entry<RetainableByteBuffer>> streamSecondaryFirst()
+            {
+                return Stream.concat(secondaryPool.stream(), primaryPool.stream());
             }
         }
     }

@@ -26,8 +26,8 @@ import org.eclipse.jetty.util.Pool;
  */
 public class CompoundPool<P> implements Pool<P>
 {
-    private final Pool<P> primaryPool;
-    private final Pool<P> secondaryPool;
+    protected final Pool<P> primaryPool;
+    protected final Pool<P> secondaryPool;
 
     public CompoundPool(Pool<P> primaryPool, Pool<P> secondaryPool)
     {
