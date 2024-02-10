@@ -65,9 +65,10 @@ public class ArrayByteBufferPoolTest
 
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectByteBufferCount(), greaterThan(0L));
-        assertThat(pool.getDirectMemory(), greaterThan(0L));
+        assertThat(pool.getDirectMemory(), is(0L));
 
         buffers.forEach(RetainableByteBuffer::release);
+        assertThat(pool.getDirectMemory(), greaterThan(0L));
 
         assertThat(pool.getAvailableDirectByteBufferCount(), greaterThan(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), lessThan((long)buffers.size()));
@@ -131,12 +132,11 @@ public class ArrayByteBufferPoolTest
         assertThat(buf1.release(), is(false));
         assertThat(buf1.isRetained(), is(false));
 
-        assertThat(pool.getDirectMemory(), is(10L));
+        assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectByteBufferCount(), is(1L));
 
-        assertThat(pool.getDirectMemory(), is(10L));
         assertThat(buf1.release(), is(true));
         assertThat(pool.getDirectMemory(), is(10L));
         assertThat(buf1.isRetained(), is(false));
@@ -158,7 +158,7 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getDirectMemory(), is(10L));
         buf1 = pool.acquire(10, true);
 
-        assertThat(pool.getDirectMemory(), is(10L));
+        assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectByteBufferCount(), is(1L));
@@ -198,7 +198,7 @@ public class ArrayByteBufferPoolTest
         assertThat(buf3.capacity(), is(10));
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectMemory(), is(20L));
+        assertThat(pool.getDirectMemory(), is(0L));
 
         for (int s : new int[] {11, 11})
             buffers.add(pool.acquire(s, true));
@@ -222,7 +222,11 @@ public class ArrayByteBufferPoolTest
         Reference.reachabilityFence(buf6);
 
         assertThat(pool.getDirectByteBufferCount(), is(4L));
-        assertThat(pool.getDirectMemory(), is(60L));
+        assertThat(pool.getDirectMemory(), is(0L));
+        buf4.release();
+        buf5.release();
+        buf6.release();
+        assertThat(pool.getDirectMemory(), is(40L));
     }
 
     @Test
@@ -240,7 +244,7 @@ public class ArrayByteBufferPoolTest
         all.add(pool.acquire(11, true));  // not pooled, bucket is full
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectMemory(), is(30L));
+        assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
 
@@ -266,9 +270,15 @@ public class ArrayByteBufferPoolTest
         RetainableByteBuffer b4 = pool.acquire(30, true); // not pooled, > maxCapacity
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectMemory(), is(30L));
+        assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
+
+        b1.release();
+        b2.release();
+        b3.release();
+        b4.release();
+        assertThat(pool.getDirectMemory(), is(30L));
 
         // Need to keep the references around past the asserts above.
         Reference.reachabilityFence(b1);
@@ -285,14 +295,19 @@ public class ArrayByteBufferPoolTest
         RetainableByteBuffer b1 = pool.acquire(10, true);
         RetainableByteBuffer b2 = pool.acquire(10, true);
         b1.release();
-        pool.acquire(10, true);
+        b1 = pool.acquire(10, true);
         b2.release();
-        pool.acquire(10, true);
+        b2 = pool.acquire(10, true);
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
-        assertThat(pool.getDirectMemory(), is(2L * ArrayByteBufferPool.DEFAULT_FACTOR));
+        assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
+
+        b1.release();
+        b2.release();
+        assertThat(pool.getDirectMemory(), is(2L * ArrayByteBufferPool.DEFAULT_FACTOR));
+
 
         // Need to keep the references around past the asserts above.
         Reference.reachabilityFence(b1);
