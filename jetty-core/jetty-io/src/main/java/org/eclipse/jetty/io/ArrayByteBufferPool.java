@@ -55,7 +55,6 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ArrayByteBufferPool.class);
     static final int DEFAULT_FACTOR = 4096;
     static final int DEFAULT_MAX_CAPACITY_BY_FACTOR = 16;
 
@@ -193,7 +192,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         RetainedBucket bucket = bucketFor(size, direct);
         if (bucket == null)
-            return newRetainableByteBuffer(size, direct, this::removed);
+            return newRetainableByteBuffer(size, direct, null);
 
         Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().acquire();
         if (entry == null)
@@ -224,17 +223,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         RetainedBucket bucket = bucketFor(size, direct);
         if (bucket == null)
-        {
-            removed(nonPooledBuffer);
             return;
-        }
 
         Pool.Entry<RetainableByteBuffer> reservedEntry = bucket.getPool().reserve();
         if (reservedEntry == null)
-        {
-            removed(nonPooledBuffer);
             return;
-        }
 
         ByteBuffer byteBuffer = nonPooledBuffer.getByteBuffer();
         BufferUtil.reset(byteBuffer);
@@ -249,10 +242,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         if (reservedEntry.enable(pooledBuffer, false))
             releaseExcessMemory(direct);
-    }
-
-    protected void removed(RetainableByteBuffer retainedBuffer)
-    {
     }
 
     private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer> releaser)
@@ -372,18 +361,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private void clearArray(RetainedBucket[] poolArray)
     {
         for (RetainedBucket bucket : poolArray)
-        {
-            bucket.getPool().stream().forEach(entry ->
-            {
-                if (entry.remove())
-                {
-                    RetainableByteBuffer pooled = entry.getPooled();
-                    // Calling getPooled can return null if the entry was not yet enabled.
-                    if (pooled != null)
-                        removed(pooled);
-                }
-            });
-        }
+            bucket.getPool().stream().forEach(Pool.Entry::remove);
     }
 
     private void releaseExcessMemory(boolean direct)
@@ -544,7 +522,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public boolean release()
         {
             boolean released = super.release();
-            if (released)
+            if (released && _releaser != null)
                 _releaser.accept(this);
             return released;
         }
