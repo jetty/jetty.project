@@ -126,6 +126,70 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
     }
 
+    @Override
+    public int getReservedCount()
+    {
+        int count = 0;
+        for (Holder<P> holder : entries)
+        {
+            Entry<P> entry = holder.getEntry();
+            if (entry != null && entry.isReserved())
+                count++;
+        }
+        return count;
+    }
+
+    @Override
+    public int getIdleCount()
+    {
+        int count = 0;
+        for (Holder<P> holder : entries)
+        {
+            Entry<P> entry = holder.getEntry();
+            if (entry != null && entry.isIdle())
+                count++;
+        }
+        return count;
+    }
+
+    @Override
+    public boolean hasIdle()
+    {
+        for (Holder<P> holder : entries)
+        {
+            Entry<P> entry = holder.getEntry();
+            if (entry != null && entry.isIdle())
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int getInUseCount()
+    {
+        int count = 0;
+        for (Holder<P> holder : entries)
+        {
+            Entry<P> entry = holder.getEntry();
+            if (entry != null && entry.isInUse())
+                count++;
+        }
+        return count;
+    }
+
+    @Override
+    public int getTerminatedCount()
+    {
+        int count = 0;
+        for (Holder<P> holder : entries)
+        {
+            Entry<P> entry = holder.getEntry();
+            if (entry != null && entry.isTerminated())
+                count++;
+        }
+        return count;
+    }
+
     @ManagedAttribute("number of entries leaked (not released nor referenced)")
     public long getLeaked()
     {

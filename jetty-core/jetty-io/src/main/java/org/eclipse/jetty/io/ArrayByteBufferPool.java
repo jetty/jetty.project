@@ -200,7 +200,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         RetainableByteBuffer pooled = entry.getPooled();
         updateAndCheckMemory(-pooled.capacity(), direct);
-        if (pooled instanceof Buffer buffer)
+        if (pooled instanceof AcquirableBuffer buffer)
             buffer.acquire();
         return pooled;
     }
@@ -222,24 +222,24 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         int size = nonPooledBuffer.capacity();
         boolean direct = nonPooledBuffer.isDirect();
 
+        // If there isn't a bucket for the buffer size
         RetainedBucket bucket = bucketFor(size, direct);
         if (bucket == null)
-            return;
+            return; // don't add the buffer to the pool.
 
+        // If adding this buffer to the pool would overflow the max size, and the bucket for this size already has idle
+        long max = getMaxMemory(direct);
+        if (max > 0 && (getMemory(direct) + size) > max && bucket.getPool().hasIdle())
+            return; // don't add the buffer to the pool.
+
+        // If we can't reserve an entry in the bucket, then the bucket is at max size
         Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().reserve();
         if (entry == null)
-            return;
+            return; // don't add the buffer to the pool.
 
         ByteBuffer byteBuffer = nonPooledBuffer.getByteBuffer();
         BufferUtil.reset(byteBuffer);
-        Buffer pooledBuffer = new Buffer(byteBuffer, retainableByteBuffer ->
-        {
-            BufferUtil.reset(retainableByteBuffer.getByteBuffer());
-            if (!entry.release())
-                entry.remove();
-            else if (updateAndCheckMemory(byteBuffer.capacity(), direct))
-                releaseExcessMemory(retainableByteBuffer.isDirect());
-        });
+        PooledBuffer pooledBuffer = new PooledBuffer(byteBuffer, entry);
 
         if (entry.enable(pooledBuffer, false))
         {
@@ -327,11 +327,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return memory.get();
     }
 
+    private long getMaxMemory(boolean direct)
+    {
+        return direct ? _maxDirectMemory : _maxHeapMemory;
+    }
+
     private boolean updateAndCheckMemory(int amount, boolean direct)
     {
         AtomicLong memory = direct ? _directMemory : _heapMemory;
         long size = memory.addAndGet(amount);
-        long max = direct ? _maxDirectMemory : _maxHeapMemory;
+        long max = getMaxMemory(direct);
         return max > 0 && size > max;
     }
 
@@ -509,7 +514,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private static class Buffer extends AbstractRetainableByteBuffer
+    private interface AcquirableBuffer
+    {
+        void acquire();
+    }
+
+    private static class Buffer extends AbstractRetainableByteBuffer implements AcquirableBuffer
     {
         private final Consumer<RetainableByteBuffer> _releaser;
 
@@ -529,9 +539,54 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         @Override
+        public void acquire()
+        {
+            super.acquire();
+        }
+
+        @Override
         public String toString()
         {
             return "%s{%s}".formatted(super.toString(), _releaser);
+        }
+    }
+
+    private class PooledBuffer extends AbstractRetainableByteBuffer implements AcquirableBuffer
+    {
+        private final Pool.Entry<RetainableByteBuffer> _entry;
+
+        private PooledBuffer(ByteBuffer buffer, Pool.Entry<RetainableByteBuffer> entry)
+        {
+            super(buffer);
+            this._entry = entry;
+        }
+
+        @Override
+        public void acquire()
+        {
+            super.acquire();
+        }
+
+        @Override
+        public boolean release()
+        {
+            boolean released = super.release();
+            if (released)
+            {
+                ByteBuffer byteBuffer = getByteBuffer();
+                BufferUtil.reset(byteBuffer);
+                if (!_entry.release())
+                    _entry.remove();
+                else if (updateAndCheckMemory(byteBuffer.capacity(), byteBuffer.isDirect()))
+                    releaseExcessMemory(byteBuffer.isDirect());;
+            }
+            return released;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s{%s}".formatted(super.toString(), _entry);
         }
     }
 

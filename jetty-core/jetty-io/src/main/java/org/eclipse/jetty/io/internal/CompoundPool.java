@@ -71,6 +71,36 @@ public class CompoundPool<P> implements Pool<P>
     }
 
     @Override
+    public int getIdleCount()
+    {
+        return primaryPool.getIdleCount() + secondaryPool.getIdleCount();
+    }
+
+    @Override
+    public boolean hasIdle()
+    {
+        return secondaryPool.hasIdle() || primaryPool.hasIdle();
+    }
+
+    @Override
+    public int getInUseCount()
+    {
+        return primaryPool.getInUseCount() + secondaryPool.getInUseCount();
+    }
+
+    @Override
+    public int getReservedCount()
+    {
+        return primaryPool.getReservedCount() + secondaryPool.getReservedCount();
+    }
+
+    @Override
+    public int getTerminatedCount()
+    {
+        return primaryPool.getTerminatedCount() + secondaryPool.getTerminatedCount();
+    }
+
+    @Override
     public int getMaxSize()
     {
         return primaryPool.getMaxSize() + secondaryPool.getMaxSize();

@@ -143,6 +143,14 @@ public interface Pool<P>
     }
 
     /**
+     * @return true if there are idle entries
+     */
+    default boolean hasIdle()
+    {
+        return stream().anyMatch(Entry::isIdle);
+    }
+
+    /**
      * @return the number of in-use entries
      */
     @ManagedAttribute("The number of in-use entries")
