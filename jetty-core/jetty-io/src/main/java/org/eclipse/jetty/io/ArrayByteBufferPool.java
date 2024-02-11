@@ -397,7 +397,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 for (RetainedBucket bucket : buckets)
                 {
                     long idle = (long)bucket.getPool().getIdleCount() * bucket._capacity;
-                    if (idle > mostIdleSize)
+                    if (idle >= mostIdleSize)
                     {
                         mostIdleBucket = bucket;
                         mostIdleSize = idle;
