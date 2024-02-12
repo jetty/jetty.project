@@ -32,7 +32,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.server.Request;
@@ -65,7 +64,6 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
 {
     private SSLContext _sslContext;
     private ArrayByteBufferPool.Tracking _trackingBufferPool;
-    private HttpConfiguration _httpConfiguration;
 
     public ServerConnectorSslServerTest()
     {

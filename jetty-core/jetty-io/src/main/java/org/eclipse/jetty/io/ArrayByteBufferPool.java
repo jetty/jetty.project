@@ -578,7 +578,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 if (!_entry.release())
                     _entry.remove();
                 else if (updateAndCheckMemory(byteBuffer.capacity(), byteBuffer.isDirect()))
-                    releaseExcessMemory(byteBuffer.isDirect());;
+                    releaseExcessMemory(byteBuffer.isDirect());
             }
             return released;
         }
