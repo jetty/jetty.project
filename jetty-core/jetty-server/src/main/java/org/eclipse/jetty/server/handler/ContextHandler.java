@@ -1126,7 +1126,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             File tempDirectory = ContextHandler.this.getTempDirectory();
             if (tempDirectory == null)
-                tempDirectory = getServer().getTempDirectory();
+                tempDirectory = getServer().getContext().getTempDirectory();
             return tempDirectory;
         }
 
