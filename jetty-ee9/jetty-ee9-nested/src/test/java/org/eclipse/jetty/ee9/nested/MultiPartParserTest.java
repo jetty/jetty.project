@@ -38,6 +38,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+
 public class MultiPartParserTest
 {
     private static final int MAX_FILE_SIZE = 1_500_000;
@@ -63,9 +65,24 @@ public class MultiPartParserTest
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartParserLegacy(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartParserLegacyDefault(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
         testMultiPartParser(rawForm, defaultCharset, formExpectations, MultiPartCompliance.LEGACY);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(MultiPartFormArgumentsProvider.class)
+    public void testMultiPartParserLegacyAllowBase64(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    {
+        MultiPartCompliance legacyAllowBase64 = MultiPartCompliance.from("LEGACY_BASE64,BASE64_TRANSFER_ENCODING");
+
+        // Handle different sha1sum due to base64 auto decoding.
+        if (rawForm.getFormName().equals("multipart-base64.raw"))
+            formExpectations.setPartSha1Sum("png", "131e2fee6d4857f921b54c77f4231af52ad6bd7a");
+
+        assumeFalse(rawForm.getFormName().equals("multipart-base64-long.raw"), "Super long line BASE64 encoding not supported by LEGACY parser");
+
+        testMultiPartParser(rawForm, defaultCharset, formExpectations, legacyAllowBase64);
     }
 
     private void testMultiPartParser(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations, MultiPartCompliance multiPartCompliance) throws Exception

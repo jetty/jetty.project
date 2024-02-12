@@ -41,6 +41,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartExpectations
 {
@@ -128,6 +129,21 @@ public class MultiPartExpectations
         Objects.requireNonNull(parsedContentType, "Missing required 'Content-Type' declaration");
         this.contentType = parsedContentType;
         this.partCount = Integer.parseInt(parsedPartCount);
+    }
+
+    public void setPartSha1Sum(String name, String sha1)
+    {
+        List<NameValue> toremove = new ArrayList<>();
+
+        for (NameValue expected : partSha1Sums)
+            if (expected.name.equalsIgnoreCase(name))
+                toremove.add(expected);
+
+        if (toremove.isEmpty())
+            throw new IllegalStateException("Unable to find expected part with name [" + name + "]");
+
+        assertTrue(partSha1Sums.removeAll(toremove), "Unable to remove existing parts with namne [" + name + "]");
+        partSha1Sums.add(new NameValue(name, sha1));
     }
 
     public boolean hasPartName(String name)

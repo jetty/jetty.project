@@ -36,14 +36,10 @@ class MultiPart
                                        File contextTmpDir,
                                        int maxParts) throws IOException
     {
-        switch (multiPartCompliance.getName())
-        {
-            case "LEGACY":
-                return new MultiPartInputStreamLegacyParser(inputStream, contentType, config, contextTmpDir, maxParts);
-            case "RFC7578":
-            default:
-                return new MultiPartFormInputStream(inputStream, contentType, config, contextTmpDir, maxParts);
-        }
+        if (multiPartCompliance == MultiPartCompliance.RFC7578)
+            return new MultiPartFormInputStream(inputStream, contentType, config, contextTmpDir, maxParts);
+        else
+            return new MultiPartInputStreamLegacyParser(multiPartCompliance, inputStream, contentType, config, contextTmpDir, maxParts);
     }
 
     public interface Parser

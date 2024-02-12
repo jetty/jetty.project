@@ -85,6 +85,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
     protected boolean _writeFilesWithFilenames;
     protected boolean _parsed;
 
+    private final MultiPartCompliance _multiPartCompliance;
     private final List<ComplianceViolation.Event> nonComplianceWarnings = new ArrayList<>();
 
     /**
@@ -381,21 +382,11 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
      * @param contextTmpDir javax.servlet.context.tempdir
-     */
-    public MultiPartInputStreamLegacyParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
-    {
-        this (in, contentType, config, contextTmpDir, ContextHandler.DEFAULT_MAX_FORM_KEYS);
-    }
-
-    /**
-     * @param in Request input stream
-     * @param contentType Content-Type header
-     * @param config MultipartConfigElement
-     * @param contextTmpDir javax.servlet.context.tempdir
      * @param maxParts the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
      */
-    public MultiPartInputStreamLegacyParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)
+    public MultiPartInputStreamLegacyParser(MultiPartCompliance multiPartCompliance, InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)
     {
+        _multiPartCompliance = multiPartCompliance;
         _contentType = contentType;
         _config = config;
         _contextTmpDir = contextTmpDir;
@@ -721,7 +712,10 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 {
                     nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
                         MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, contentTransferEncoding));
-                    partInput = new Base64InputStream((ReadLineInputStream)_in);
+                    if (_multiPartCompliance.allows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING))
+                        partInput = new Base64InputStream((ReadLineInputStream)_in);
+                    else
+                        partInput = _in;
                 }
                 else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
                 {
@@ -940,11 +934,14 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
     // TODO: consider switching to Base64.getMimeDecoder().wrap(InputStream)
     private static class Base64InputStream extends InputStream
     {
+        private final byte[] CRLF = "\r\n".getBytes(StandardCharsets.UTF_8);
         ReadLineInputStream _in;
         String _line;
         byte[] _buffer;
         int _pos;
-        Base64.Decoder base64Decoder = Base64.getDecoder();
+        int _marklimit;
+        int _markpos;
+        Base64.Decoder base64Decoder = Base64.getMimeDecoder();
 
         public Base64InputStream(ReadLineInputStream rlis)
         {
@@ -956,23 +953,18 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
         {
             if (_buffer == null || _pos >= _buffer.length)
             {
-                //Any CR and LF will be consumed by the readLine() call.
-                //We need to put them back into the bytes returned from this
-                //method because the parsing of the multipart content uses them
-                //as markers to determine when we've reached the end of a part.
+                _markpos = 0;
                 _line = _in.readLine();
                 if (_line == null)
                     return -1;  //nothing left
                 if (_line.startsWith("--"))
-                    _buffer = (_line + "\r\n").getBytes(); //boundary marking end of part
-                else if (_line.length() == 0)
-                    _buffer = "\r\n".getBytes(); //blank line
+                    _buffer = ("\r\n" + _line + "\r\n").getBytes(StandardCharsets.UTF_8); //boundary marking end of part
+                else if (_line.isEmpty())
+                    _buffer = CRLF; //blank line
                 else
                 {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream((4 * _line.length() / 3) + 2);
                     baos.write(base64Decoder.decode(_line));
-                    baos.write(13);
-                    baos.write(10);
                     _buffer = baos.toByteArray();
                 }
 
@@ -980,6 +972,21 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             }
 
             return _buffer[_pos++] & 0xFF;
+        }
+
+        @Override
+        public synchronized void mark(int readlimit)
+        {
+            _marklimit = readlimit;
+            _markpos = _pos;
+        }
+
+        @Override
+        public synchronized void reset() throws IOException
+        {
+            if (_markpos < 0)
+                throw new IOException("Resetting to invalid mark");
+            _pos = _markpos;
         }
     }
 

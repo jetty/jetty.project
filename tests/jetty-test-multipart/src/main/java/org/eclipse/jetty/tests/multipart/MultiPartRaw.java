@@ -49,9 +49,14 @@ public class MultiPartRaw
         return rawForm.openStream();
     }
 
+    public String getFormName()
+    {
+        return FileID.getFileName(rawForm.getPath());
+    }
+
     @Override
     public String toString()
     {
-        return FileID.getFileName(rawForm.getPath());
+        return getFormName();
     }
 }
