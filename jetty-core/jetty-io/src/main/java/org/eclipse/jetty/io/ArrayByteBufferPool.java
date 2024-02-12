@@ -54,7 +54,6 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ArrayByteBufferPool.class);
     static final int DEFAULT_FACTOR = 4096;
     static final int DEFAULT_MAX_CAPACITY_BY_FACTOR = 16;
 
@@ -196,10 +195,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (bucket == null)
             return newRetainableByteBuffer(size, direct, null);
 
+        bucket._acquires.incrementAndGet();
+
         // Try to acquire a pooled entry.
         Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().acquire();
         if (entry != null)
         {
+            bucket._pooled.incrementAndGet();
             RetainableByteBuffer buffer = entry.getPooled();
             ((Buffer)buffer).acquire();
             return buffer;
@@ -210,38 +212,55 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private void reserve(RetainedBucket bucket, RetainableByteBuffer buffer)
     {
+        bucket._releases.incrementAndGet();
+
         boolean direct = buffer.isDirect();
 
         // Discard the buffer if maxMemory is exceeded.
         long excessMemory = getExcessMemory(bucket, direct);
         if (excessMemory > 0)
+        {
+            bucket._nonPooled.incrementAndGet();
             return;
+        }
 
         Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().reserve();
         // Cannot reserve, discard the buffer.
         if (entry == null)
+        {
+            bucket._nonPooled.incrementAndGet();
             return;
+        }
 
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.reset(byteBuffer);
         Buffer pooledBuffer = new Buffer(byteBuffer, b -> release(bucket, entry));
         // Discard the buffer if the entry cannot be enabled.
         if (entry.enable(pooledBuffer, false))
+        {
             updateMemory(bucket.getCapacity(), direct);
+        }
         else
+        {
+            bucket._nonPooled.incrementAndGet();
             entry.remove();
+        }
     }
 
     private void release(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer> entry)
     {
+        bucket._releases.incrementAndGet();
+
         RetainableByteBuffer buffer = entry.getPooled();
         BufferUtil.reset(buffer.getByteBuffer());
         long excessMemory = getExcessMemory(bucket, buffer.isDirect());
         if (excessMemory > 0)
         {
+            bucket._evicts.incrementAndGet();
             // If we cannot free enough space for the entry, remove it.
             if (!evict(excessMemory, buffer.isDirect()))
             {
+                bucket._removes.incrementAndGet();
                 entry.remove();
                 return;
             }
@@ -249,7 +268,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         // We have enough space for this entry, pool it.
         if (!entry.release())
+        {
+            bucket._evicts.incrementAndGet();
             entry.remove();
+        }
     }
 
     private long getExcessMemory(RetainedBucket bucket, boolean direct)
@@ -432,6 +454,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private class RetainedBucket
     {
+        private final AtomicLong _acquires = new AtomicLong();
+        private final AtomicLong _pooled = new AtomicLong();
+        private final AtomicLong _nonPooled = new AtomicLong();
+        private final AtomicLong _evicts = new AtomicLong();
+        private final AtomicLong _removes = new AtomicLong();
+        private final AtomicLong _releases = new AtomicLong();
         private final Pool<RetainableByteBuffer> _pool;
         private final int _capacity;
 
@@ -468,6 +496,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             if (entry == null)
                 return 0;
 
+            _removes.incrementAndGet();
             entry.remove();
 
             return getCapacity();
@@ -475,6 +504,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         public void clear()
         {
+            _acquires.set(0);
+            _pooled.set(0);
+            _nonPooled.set(0);
+            _evicts.set(0);
+            _removes.set(0);
+            _releases.set(0);
             getPool().stream().forEach(entry ->
             {
                 if (entry.remove())
@@ -494,11 +529,18 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     inUse++;
             }
 
-            return String.format("%s{capacity=%d,inuse=%d(%d%%)}",
+            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d,non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
                 super.toString(),
                 getCapacity(),
                 inUse,
-                entries > 0 ? (inUse * 100) / entries : 0);
+                entries,
+                _pooled.get(),
+                _acquires.get(),
+                _nonPooled.get(),
+                _evicts.get(),
+                _removes.get(),
+                _releases.get()
+            );
         }
 
         private class CompoundBucket extends CompoundPool<RetainableByteBuffer>
