@@ -95,7 +95,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
-    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().build();
+    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEscapeOnlyForQuotes().allowEmbeddedQuotes().build();
 
     private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
@@ -724,8 +724,6 @@ public class MultiPartFormInputStream implements MultiPart.Parser
                 {
                     throw new IOException("Missing content-disposition");
                 }
-
-                QUOTED_STRING_TOKENIZER.tokenize(contentDisposition);
 
                 String name = null;
                 String filename = null;

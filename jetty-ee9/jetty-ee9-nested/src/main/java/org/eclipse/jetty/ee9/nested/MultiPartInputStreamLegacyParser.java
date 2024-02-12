@@ -138,8 +138,8 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             }
             else
             {
-                //Write to a buffer in memory until we discover we've exceed the
-                //MultipartConfig fileSizeThreshold
+                // Write to a buffer in memory until we discover we've exceeded the
+                // MultipartConfig fileSizeThreshold
                 _out = _bout = new ByteArrayOutputStream2();
             }
         }
@@ -670,6 +670,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 }
 
                 QuotedStringTokenizer tok = QuotedStringTokenizer.builder()
+                    .legacy()
                     .delimiters(";")
                     .returnQuotes()
                     .build();
@@ -678,7 +679,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 Iterator<String> itok = tok.tokenize(contentDisposition);
                 while (itok.hasNext())
                 {
-                    String t = itok.next();
+                    String t = itok.next().trim();
                     String tl = t.toLowerCase(Locale.ENGLISH);
                     if (tl.startsWith("form-data"))
                         formData = true;
@@ -825,7 +826,6 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                         // Boundary match. If we've run out of input or we matched the entire final boundary marker, then this is the last part.
                         if (b > 0 || c == -1)
                         {
-
                             if (b == byteBoundary.length)
                                 lastPart = true;
                             if (state == 10)
