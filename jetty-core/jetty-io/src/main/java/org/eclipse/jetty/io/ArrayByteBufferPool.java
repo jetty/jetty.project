@@ -457,7 +457,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         private void evict()
         {
-            while (true)
+            for (int i = _pool.size(); i-- > 0;)
             {
                 Pool.Entry<RetainableByteBuffer> entry = _pool instanceof BucketCompoundPool bcp ? bcp.acquireSecondaryFirst() : _pool.acquire();
                 if (entry == null)
