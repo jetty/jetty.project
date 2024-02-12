@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,7 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
 import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,17 +60,20 @@ import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -114,6 +121,19 @@ public class MultiPartServletTest
             gzipHandler.setHandler(new EagerFormHandler());
 
         servletContextHandler.insertHandler(gzipHandler);
+
+        server.start();
+
+        client = new HttpClient();
+        client.start();
+    }
+
+    private void start(ContextHandlerCollection handler) throws Exception
+    {
+        server = new Server(null, null, null);
+        connector = new ServerConnector(server);
+        server.addConnector(connector);
+        server.setHandler(handler);
 
         server.start();
 
@@ -378,7 +398,7 @@ public class MultiPartServletTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response1) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 Collection<Part> parts = request.getParts();
                 assertNotNull(parts);
@@ -421,6 +441,100 @@ public class MultiPartServletTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
+    }
+
+    @Test
+    public void testDefaultTempDirectoryWithMultipleContexts() throws Exception
+    {
+        List<Object> tmpDirs = new CopyOnWriteArrayList<>();
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                Object attribute = request.getAttribute(ServletContext.TEMPDIR);
+                tmpDirs.add(attribute);
+                File tempDirectory = ServletContextRequest.getServletContextRequest(request).getServletContext().getTempDirectory();
+                tmpDirs.add(tempDirectory);
+
+                Collection<Part> parts = request.getParts();
+                assertNotNull(parts);
+                assertEquals(1, parts.size());
+                Part part = parts.iterator().next();
+                assertEquals("part1", part.getName());
+                Collection<String> headerNames = part.getHeaderNames();
+                assertNotNull(headerNames);
+                assertEquals(2, headerNames.size());
+                String content1 = IO.toString(part.getInputStream(), UTF_8);
+                assertEquals("content1", content1);
+            }
+        };
+        MultipartConfigElement config = new MultipartConfigElement(null, MAX_FILE_SIZE, -1, 0);
+
+        ServletContextHandler servletContextHandler1 = new ServletContextHandler("/ctx1");
+        ServletHolder servletHolder1 = new ServletHolder(servlet);
+        servletHolder1.getRegistration().setMultipartConfig(config);
+        servletContextHandler1.addServlet(servletHolder1, "/");
+
+        ServletContextHandler servletContextHandler2 = new ServletContextHandler("/ctx2");
+        ServletHolder servletHolder2 = new ServletHolder(servlet);
+        servletHolder2.getRegistration().setMultipartConfig(config);
+        servletContextHandler2.addServlet(servletHolder2, "/");
+
+        start(new ContextHandlerCollection(servletContextHandler1, servletContextHandler2));
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String content = """
+                --A1B2C3
+                Content-Disposition: form-data; name="part1"
+                Content-Type: text/plain; charset="UTF-8"
+                                
+                content1
+                --A1B2C3--
+                """;
+            String header1 = """
+                POST /ctx1/ HTTP/1.1
+                Host: localhost
+                Content-Type: multipart/form-data; boundary="A1B2C3"
+                Content-Length: $L
+                                
+                """.replace("$L", String.valueOf(content.length()));
+
+            output.write(header1.getBytes(UTF_8));
+            output.write(content.getBytes(UTF_8));
+            output.flush();
+
+            HttpTester.Response response1 = HttpTester.parseResponse(socket.getInputStream());
+            assertNotNull(response1);
+            assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+            String header2 = """
+                POST /ctx2/ HTTP/1.1
+                Host: localhost
+                Content-Type: multipart/form-data; boundary="A1B2C3"
+                Content-Length: $L
+                                
+                """.replace("$L", String.valueOf(content.length()));
+
+            output.write(header2.getBytes(UTF_8));
+            output.write(content.getBytes(UTF_8));
+            output.flush();
+
+            HttpTester.Response response2 = HttpTester.parseResponse(socket.getInputStream());
+            assertNotNull(response2);
+            assertEquals(HttpStatus.OK_200, response2.getStatus());
+        }
+
+        System.out.println(tmpDirs);
+        assertEquals(4, tmpDirs.size());
+        assertThat(tmpDirs.get(0).toString(), endsWith("/ctx1"));
+        assertThat(tmpDirs.get(1).toString(), equalTo(tmpDirs.get(0).toString()));
+        assertThat(tmpDirs.get(2).toString(), endsWith("/ctx2"));
+        assertThat(tmpDirs.get(3).toString(), equalTo(tmpDirs.get(2).toString()));
+
     }
 
     @ParameterizedTest

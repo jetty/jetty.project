@@ -1126,7 +1126,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             File tempDirectory = ContextHandler.this.getTempDirectory();
             if (tempDirectory == null)
-                tempDirectory = getServer().getContext().getTempDirectory();
+            {
+                // TODO save that file somewhere instead of recreating it and attempting mkdir each time
+                File tmp = new File(getServer().getContext().getTempDirectory(), _contextPath);
+                tmp.mkdirs();
+                tempDirectory = tmp;
+            }
             return tempDirectory;
         }
 
