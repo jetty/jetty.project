@@ -16,6 +16,9 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -34,8 +37,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.tests.multipart.MultiPartExpectations;
 import org.eclipse.jetty.tests.multipart.MultiPartFormArgumentsProvider;
@@ -59,7 +62,7 @@ import static org.hamcrest.Matchers.is;
 public class MultiPartRawServletTest
 {
     private Server server;
-    private LocalConnector localConnector;
+    private URI serverURI;
 
     private void startServer(Consumer<ServletContextHandler> configureContext) throws Exception
     {
@@ -67,8 +70,9 @@ public class MultiPartRawServletTest
         FS.ensureDirExists(tempDir);
         server = new Server();
 
-        localConnector = new LocalConnector(server);
-        server.addConnector(localConnector);
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
@@ -81,6 +85,7 @@ public class MultiPartRawServletTest
         contexts.addHandler(servletContextHandler);
 
         server.start();
+        serverURI = server.getURI().resolve("/");
     }
 
     @AfterEach
@@ -102,39 +107,41 @@ public class MultiPartRawServletTest
             servletContextHandler.addServlet(servletHolder, "/multipart/*");
         });
 
-        ByteBuffer bodyBuffer = formRequest.asByteBuffer();
-
-        StringBuilder reqBuilder = new StringBuilder();
-        reqBuilder.append("POST /app/multipart/");
-        reqBuilder.append(formRequest.getFormName());
-        reqBuilder.append(" HTTP/1.1\r\n");
-        reqBuilder.append("Host: local\r\n");
-        AtomicBoolean hasContentTypeHeader = new AtomicBoolean(false);
-        List<String> droppedHeaders = List.of("host", "content-length", "transfer-encoding");
-        formRequest.getHeaders().forEach((name, value) ->
+        try (Socket client = new Socket(serverURI.getHost(), serverURI.getPort());
+             OutputStream output = client.getOutputStream();
+             InputStream input = client.getInputStream())
         {
-            String namelower = name.toLowerCase(Locale.ENGLISH);
-            if (!droppedHeaders.contains(namelower))
+            ByteBuffer bodyBuffer = formRequest.asByteBuffer();
+
+            StringBuilder reqBuilder = new StringBuilder();
+            reqBuilder.append("POST /app/multipart/");
+            reqBuilder.append(formRequest.getFormName());
+            reqBuilder.append(" HTTP/1.1\r\n");
+            reqBuilder.append("Host: ").append(serverURI.getAuthority()).append("\r\n");
+            AtomicBoolean hasContentTypeHeader = new AtomicBoolean(false);
+            List<String> droppedHeaders = List.of("host", "content-length", "transfer-encoding");
+            formRequest.getHeaders().forEach((name, value) ->
             {
-                if (namelower.equals("content-type"))
-                    hasContentTypeHeader.set(true);
-                reqBuilder.append(name).append(": ").append(value).append("\r\n");
-            }
-        });
-        if (!hasContentTypeHeader.get())
-            reqBuilder.append("Content-Type: ").append(formExpectations.getContentType()).append("\r\n");
-        reqBuilder.append("Content-Length: ").append(bodyBuffer.remaining()).append("\r\n");
-        reqBuilder.append("\r\n");
+                String namelower = name.toLowerCase(Locale.ENGLISH);
+                if (!droppedHeaders.contains(namelower))
+                {
+                    if (namelower.equals("content-type"))
+                        hasContentTypeHeader.set(true);
+                    reqBuilder.append(name).append(": ").append(value).append("\r\n");
+                }
+            });
+            if (!hasContentTypeHeader.get())
+                reqBuilder.append("Content-Type: ").append(formExpectations.getContentType()).append("\r\n");
+            reqBuilder.append("Content-Length: ").append(bodyBuffer.remaining()).append("\r\n");
+            reqBuilder.append("\r\n");
 
-        ByteBuffer headerBuffer = BufferUtil.toBuffer(reqBuilder.toString(), StandardCharsets.UTF_8);
-        ByteBuffer reqBuffer = ByteBuffer.allocate(headerBuffer.remaining() + bodyBuffer.remaining());
+            output.write(reqBuilder.toString().getBytes(StandardCharsets.UTF_8));
+            output.write(BufferUtil.toArray(bodyBuffer));
+            output.flush();
 
-        reqBuffer.put(headerBuffer.slice());
-        reqBuffer.put(bodyBuffer.slice());
-        reqBuffer.flip();
-
-        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(reqBuffer));
-        assertThat(response.getStatus(), is(200));
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(200));
+        }
     }
 
     public static class MultiPartValidationServlet extends HttpServlet
