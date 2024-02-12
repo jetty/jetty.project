@@ -29,7 +29,7 @@ import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.tests.multipart.MultiPartExpectations;
 import org.eclipse.jetty.tests.multipart.MultiPartFormArgumentsProvider;
-import org.eclipse.jetty.tests.multipart.MultiPartRaw;
+import org.eclipse.jetty.tests.multipart.MultiPartRequest;
 import org.eclipse.jetty.tests.multipart.MultiPartResults;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -58,41 +58,41 @@ public class MultiPartParserTest
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartParserRFC7578(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartParserRFC7578(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
-        testMultiPartParser(rawForm, defaultCharset, formExpectations, MultiPartCompliance.RFC7578);
+        testMultiPartParser(formRequest, defaultCharset, formExpectations, MultiPartCompliance.RFC7578);
     }
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartParserLegacyDefault(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartParserLegacyDefault(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
-        testMultiPartParser(rawForm, defaultCharset, formExpectations, MultiPartCompliance.LEGACY);
+        testMultiPartParser(formRequest, defaultCharset, formExpectations, MultiPartCompliance.LEGACY);
     }
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartParserLegacyAllowBase64(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartParserLegacyAllowBase64(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
         MultiPartCompliance legacyAllowBase64 = MultiPartCompliance.from("LEGACY_BASE64,BASE64_TRANSFER_ENCODING");
 
         // Handle different sha1sum due to base64 auto decoding.
-        if (rawForm.getFormName().equals("multipart-base64.raw"))
+        if (formRequest.getFormName().equals("multipart-base64.raw"))
             formExpectations.setPartSha1Sum("png", "131e2fee6d4857f921b54c77f4231af52ad6bd7a");
 
-        assumeFalse(rawForm.getFormName().equals("multipart-base64-long.raw"), "Super long line BASE64 encoding not supported by LEGACY parser");
+        assumeFalse(formRequest.getFormName().equals("multipart-base64-long.raw"), "Super long line BASE64 encoding not supported by LEGACY parser");
 
-        testMultiPartParser(rawForm, defaultCharset, formExpectations, legacyAllowBase64);
+        testMultiPartParser(formRequest, defaultCharset, formExpectations, legacyAllowBase64);
     }
 
-    private void testMultiPartParser(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations, MultiPartCompliance multiPartCompliance) throws Exception
+    private void testMultiPartParser(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations, MultiPartCompliance multiPartCompliance) throws Exception
     {
-        String contentType = formExpectations.contentType;
+        String contentType = formExpectations.getContentType();
         MultipartConfigElement config = new MultipartConfigElement(tempDir.toString(), MAX_FILE_SIZE, MAX_REQUEST_SIZE, FILE_SIZE_THRESHOLD);
         File contextTmpDir = tempDir;
         int maxParts = MAX_PARTS;
 
-        try (InputStream inputStream = rawForm.asInputStream())
+        try (InputStream inputStream = formRequest.asInputStream())
         {
             MultiPart.Parser multipartParser = MultiPart.newParser(multiPartCompliance, inputStream, contentType, config, contextTmpDir, maxParts);
             formExpectations.assertParts(mapActualResults(multipartParser.getParts()), defaultCharset);

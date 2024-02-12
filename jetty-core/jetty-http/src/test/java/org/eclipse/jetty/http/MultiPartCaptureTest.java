@@ -27,7 +27,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.tests.multipart.MultiPartExpectations;
 import org.eclipse.jetty.tests.multipart.MultiPartFormArgumentsProvider;
-import org.eclipse.jetty.tests.multipart.MultiPartRaw;
+import org.eclipse.jetty.tests.multipart.MultiPartRequest;
 import org.eclipse.jetty.tests.multipart.MultiPartResults;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -39,21 +39,21 @@ public class MultiPartCaptureTest
 {
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultipartCapture(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultipartCapture(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
-        String boundary = MultiPart.extractBoundary(formExpectations.contentType);
+        String boundary = MultiPart.extractBoundary(formExpectations.getContentType());
         TestPartsListener listener = new TestPartsListener(formExpectations);
         MultiPart.Parser parser = new MultiPart.Parser(boundary, listener);
-        ByteBuffer rawByteBuffer = rawForm.asByteBuffer();
+        ByteBuffer rawByteBuffer = formRequest.asByteBuffer();
         parser.parse(Content.Chunk.from(rawByteBuffer, true));
         formExpectations.assertParts(mapActualResults(listener.parts), defaultCharset);
     }
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartFormDataParse(MultiPartRaw rawForm, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartFormDataParse(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
-        String boundary = MultiPart.extractBoundary(formExpectations.contentType);
+        String boundary = MultiPart.extractBoundary(formExpectations.getContentType());
         Path tempDir = MavenPaths.targetTestDir(MultiPartCaptureTest.class.getSimpleName() + "-temp");
         FS.ensureDirExists(tempDir);
 
@@ -62,7 +62,7 @@ public class MultiPartCaptureTest
         parser.setFilesDirectory(tempDir);
         if (defaultCharset != null)
             parser.setDefaultCharset(defaultCharset);
-        ByteBufferContentSource contentSource = new ByteBufferContentSource(rawForm.asByteBuffer());
+        ByteBufferContentSource contentSource = new ByteBufferContentSource(formRequest.asByteBuffer());
         MultiPartFormData.Parts parts = parser.parse(contentSource).get();
         formExpectations.assertParts(mapActualResults(parts), defaultCharset);
     }

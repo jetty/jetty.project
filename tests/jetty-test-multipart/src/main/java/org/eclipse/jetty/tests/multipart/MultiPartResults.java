@@ -19,6 +19,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
 
+/**
+ * Generic interface for access to MultiPart results across core / ee10 / ee9 / ee8 / etc ...
+ */
 public interface MultiPartResults
 {
     public int getCount();

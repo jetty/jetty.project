@@ -19,8 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -45,32 +43,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartExpectations
 {
-    record NameValue(String name, String value) {}
+    private final String contentType;
+    private final int partCount;
+    private final List<NameValue> partFilenames;
+    private final List<NameValue> partSha1Sums;
+    private final List<NameValue> partContainsContents;
+    private final List<NameValue> partContainsHex;
 
-    public final String contentType;
-    public final int partCount;
-    public final List<NameValue> partFilenames = new ArrayList<>();
-    public final List<NameValue> partSha1Sums = new ArrayList<>();
-    public final List<NameValue> partContainsContents = new ArrayList<>();
-    public final List<NameValue> partContainsHex = new ArrayList<>();
-
-    public static MultiPartExpectations from(BufferedReader reader) throws IOException
+    public MultiPartExpectations(String contentType, int partCount, List<NameValue> partFilenames, List<NameValue> partSha1Sums,
+                                 List<NameValue> partContainsContents, List<NameValue> partContainsHex)
     {
-        return new MultiPartExpectations(reader);
+        this.contentType = contentType;
+        this.partCount = partCount;
+        this.partFilenames = partFilenames;
+        this.partSha1Sums = partSha1Sums;
+        this.partContainsContents = partContainsContents;
+        this.partContainsHex = partContainsHex;
     }
 
-    public static MultiPartExpectations from(Path expectationsPath) throws IOException
-    {
-        try (BufferedReader reader = Files.newBufferedReader(expectationsPath))
-        {
-            return new MultiPartExpectations(reader);
-        }
-    }
-
-    private MultiPartExpectations(BufferedReader reader) throws IOException
+    public static MultiPartExpectations parse(BufferedReader reader, MultiPartRequest multiPartRequest) throws IOException
     {
         String parsedContentType = null;
         String parsedPartCount = "-1";
+        List<NameValue> partContainsContents = new ArrayList<>();
+        List<NameValue> partContainsHex = new ArrayList<>();
+        List<NameValue> partFilenames = new ArrayList<>();
+        List<NameValue> partSha1Sums = new ArrayList<>();
 
         String line;
         while ((line = reader.readLine()) != null)
@@ -86,9 +84,12 @@ public class MultiPartExpectations
             switch (split[0])
             {
                 case "Request-Header":
-                    if (split[1].equalsIgnoreCase("Content-Type"))
+                    String name = split[1];
+                    String value = split[2];
+                    multiPartRequest.addHeader(name, value);
+                    if (name.equalsIgnoreCase("Content-Type"))
                     {
-                        parsedContentType = split[2];
+                        parsedContentType = value;
                     }
                     break;
                 case "Content-Type":
@@ -127,33 +128,14 @@ public class MultiPartExpectations
         }
 
         Objects.requireNonNull(parsedContentType, "Missing required 'Content-Type' declaration");
-        this.contentType = parsedContentType;
-        this.partCount = Integer.parseInt(parsedPartCount);
-    }
 
-    public void setPartSha1Sum(String name, String sha1)
-    {
-        List<NameValue> toremove = new ArrayList<>();
-
-        for (NameValue expected : partSha1Sums)
-            if (expected.name.equalsIgnoreCase(name))
-                toremove.add(expected);
-
-        if (toremove.isEmpty())
-            throw new IllegalStateException("Unable to find expected part with name [" + name + "]");
-
-        assertTrue(partSha1Sums.removeAll(toremove), "Unable to remove existing parts with namne [" + name + "]");
-        partSha1Sums.add(new NameValue(name, sha1));
-    }
-
-    public boolean hasPartName(String name)
-    {
-        for (NameValue nameValue : partContainsContents)
-        {
-            if (nameValue.name.equals(name))
-                return true;
-        }
-        return false;
+        return new MultiPartExpectations(
+            parsedContentType,
+            Integer.parseInt(parsedPartCount),
+            partFilenames,
+            partSha1Sums,
+            partContainsContents,
+            partContainsHex);
     }
 
     public void assertParts(MultiPartResults multiPartResults, Charset defaultCharset) throws Exception
@@ -224,6 +206,42 @@ public class MultiPartExpectations
         }
     }
 
+    public String getContentType()
+    {
+        return contentType;
+    }
+
+    public boolean hasPartName(String name)
+    {
+        for (NameValue nameValue : partContainsContents)
+        {
+            if (nameValue.name.equals(name))
+                return true;
+        }
+        return false;
+    }
+
+    public void setPartSha1Sum(String name, String sha1)
+    {
+        List<NameValue> toremove = new ArrayList<>();
+
+        for (NameValue expected : partSha1Sums)
+            if (expected.name.equalsIgnoreCase(name))
+                toremove.add(expected);
+
+        if (toremove.isEmpty())
+            throw new IllegalStateException("Unable to find expected part with name [" + name + "]");
+
+        assertTrue(partSha1Sums.removeAll(toremove), "Unable to remove existing parts with namne [" + name + "]");
+        partSha1Sums.add(new NameValue(name, sha1));
+    }
+
+    @Override
+    public String toString()
+    {
+        return "expecting.multipart.count=" + partCount;
+    }
+
     private Charset getCharsetFromContentType(String contentType, Charset defaultCharset)
     {
         if (StringUtil.isBlank(contentType))
@@ -242,9 +260,5 @@ public class MultiPartExpectations
         return defaultCharset;
     }
 
-    @Override
-    public String toString()
-    {
-        return "expecting.multipart.count=" + partCount;
-    }
+    record NameValue(String name, String value) {}
 }

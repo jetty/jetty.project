@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
@@ -25,18 +27,32 @@ import org.eclipse.jetty.util.IO;
 /**
  * Represents a Raw Multipart Form
  */
-public class MultiPartRaw
+public class MultiPartRequest
 {
-    private final URL rawForm;
+    private Map<String, String> headers = new HashMap<>();
+    private final URL rawMultipartFormURL;
 
-    public MultiPartRaw(URL urlToForm)
+    public MultiPartRequest(URL rawMultipartFormURL)
     {
-        this.rawForm = urlToForm;
+        this.rawMultipartFormURL = rawMultipartFormURL;
+    }
+
+    public void addHeader(String name, String value)
+    {
+        String prev = headers.put(name, value);
+
+        if (prev != null)
+            throw new IllegalStateException("Lost previous header [" + name + ": " + prev + "] when setting value to " + value);
+    }
+
+    public Map<String, String> getHeaders()
+    {
+        return headers;
     }
 
     public ByteBuffer asByteBuffer() throws IOException
     {
-        try (InputStream in = rawForm.openStream();
+        try (InputStream in = rawMultipartFormURL.openStream();
              ByteArrayOutputStream baos = new ByteArrayOutputStream())
         {
             IO.copy(in, baos);
@@ -46,12 +62,12 @@ public class MultiPartRaw
 
     public InputStream asInputStream() throws IOException
     {
-        return rawForm.openStream();
+        return rawMultipartFormURL.openStream();
     }
 
     public String getFormName()
     {
-        return FileID.getFileName(rawForm.getPath());
+        return FileID.getFileName(rawMultipartFormURL.getPath());
     }
 
     @Override

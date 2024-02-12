@@ -48,9 +48,9 @@ public class MultiPartFormArgumentsProvider implements ArgumentsProvider
              InputStreamReader inputStreamReader = new InputStreamReader(input, UTF_8);
              BufferedReader bufferedReader = new BufferedReader(inputStreamReader))
         {
-            MultiPartRaw multiPartRaw = new MultiPartRaw(urlRaw);
-            MultiPartExpectations expectations = MultiPartExpectations.from(bufferedReader);
-            return Arguments.of(multiPartRaw, charset, expectations);
+            MultiPartRequest multiPartRequest = new MultiPartRequest(urlRaw);
+            MultiPartExpectations expectations = MultiPartExpectations.parse(bufferedReader, multiPartRequest);
+            return Arguments.of(multiPartRequest, charset, expectations);
         }
     }
 
