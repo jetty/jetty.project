@@ -122,6 +122,7 @@ public class MultiPartFormArgumentsProvider implements ArgumentsProvider
         args.add(asArgs("browser-capture-form-fileupload-ios-safari", null));
         args.add(asArgs("browser-capture-form-fileupload-msie", null));
         args.add(asArgs("browser-capture-form-fileupload-safari", null));
+        args.add(asArgs("browser-capture-whitespace-16-fileupload-chrome", null));
 
         // form submitted with 2 files (1 binary, 1 text) and 2 text fields
         args.add(asArgs("browser-capture-form-fileupload-alt-chrome", null));
