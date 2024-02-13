@@ -122,7 +122,7 @@ public class Origin
 
     public String asString()
     {
-        return HttpScheme.normalizeUri(scheme, address.host, address.port);
+        return HttpScheme.normalizeURI(scheme, address.host, address.port);
     }
 
     @Override

@@ -217,17 +217,14 @@ public class BalancerServlet extends ProxyServlet
             URI locationURI = URI.create(headerValue).normalize();
             if (locationURI.isAbsolute() && isBackendLocation(locationURI))
             {
-                StringBuilder newURI = new StringBuilder();
-                HttpScheme.appendNormalizedUri(newURI,
+                String newURI = HttpScheme.normalizeURI(
                     request.getScheme(),
                     request.getServerName(),
                     request.getServerPort(),
                     locationURI.getRawPath(),
-                    locationURI.getRawQuery());
-                String component = locationURI.getRawFragment();
-                if (component != null)
-                    newURI.append('#').append(component);
-                return URI.create(newURI.toString()).normalize().toString();
+                    locationURI.getRawQuery(),
+                    locationURI.getRawFragment());
+                return URI.create(newURI).normalize().toString();
             }
         }
         return headerValue;

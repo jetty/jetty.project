@@ -358,7 +358,7 @@ public interface Response extends Content.Sink
             {
                 // make the location an absolute URI
                 StringBuilder url = new StringBuilder(128);
-                HttpScheme.appendNormalizedUri(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
+                HttpScheme.concatNormalizedURI(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
                 url.append(location);
                 location = url.toString();
             }

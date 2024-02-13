@@ -652,9 +652,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 String scheme = httpConfig.getSecureScheme();
                 int port = httpConfig.getSecurePort();
 
-                String url = HttpScheme.normalizeUri(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
+                String url = HttpScheme.normalizeURI(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString(), null);
                 response.setContentLength(0);
-                response.sendRedirect(url.toString(), true);
+                response.sendRedirect(url, true);
             }
             else
                 response.sendError(HttpStatus.FORBIDDEN_403, "!Secure");

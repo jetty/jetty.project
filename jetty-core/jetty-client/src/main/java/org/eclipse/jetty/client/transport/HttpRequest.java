@@ -122,7 +122,7 @@ public class HttpRequest implements Request
     {
         if (newURI == null)
         {
-            newURI = URI.create(HttpScheme.normalizeUri(getScheme(), getHost(), getPort()));
+            newURI = URI.create(HttpScheme.normalizeURI(getScheme(), getHost(), getPort()));
         }
 
         HttpRequest newRequest = copyInstance(newURI);

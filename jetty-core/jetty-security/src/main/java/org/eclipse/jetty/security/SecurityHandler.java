@@ -604,7 +604,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             String scheme = httpConfig.getSecureScheme();
             int port = httpConfig.getSecurePort();
 
-            String url = HttpScheme.normalizeUri(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+            String url = HttpScheme.normalizeURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery(), null);
             response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
 
             Response.sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, url, true);

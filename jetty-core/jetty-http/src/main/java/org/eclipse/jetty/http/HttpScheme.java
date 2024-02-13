@@ -98,11 +98,11 @@ public enum HttpScheme
      * @param port the port
      * @return the String representation following the general format {@code <scheme>://<server>:<port>}, where
      * the returned String might not include a port, and will not include the ending {@code /} character.
-     * @see #appendNormalizedUri(StringBuilder, String, String, int)
+     * @see #concatNormalizedURI(StringBuilder, String, String, int)
      */
-    public static String normalizeUri(String scheme, String server, int port)
+    public static String normalizeURI(String scheme, String server, int port)
     {
-        return normalizeUri(scheme, server, port, null, null);
+        return normalizeURI(scheme, server, port, null, null, null);
     }
 
     /**
@@ -115,12 +115,12 @@ public enum HttpScheme
      * @param query the optional query, may be null (not included in output if path is null)
      * @return the String representation following the general format {@code <scheme>://<server>:<port>/<path>?<query>}, where
      * the returned String might not include a port.
-     * @see #appendNormalizedUri(StringBuilder, String, String, int)
+     * @see #concatNormalizedURI(StringBuilder, String, String, int)
      */
-    public static String normalizeUri(String scheme, String server, int port, String path, String query)
+    public static String normalizeURI(String scheme, String server, int port, String path, String query, String fragment)
     {
         StringBuilder builder = new StringBuilder();
-        appendNormalizedUri(builder, scheme, server, port, path, query);
+        concatNormalizedURI(builder, scheme, server, port, path, query, fragment);
         return builder.toString();
     }
 
@@ -141,12 +141,35 @@ public enum HttpScheme
      * @param server the server hostname, may not be blank or null.
      * @param port the port
      */
-    public static void appendNormalizedUri(StringBuilder url, String scheme, String server, int port)
+    public static void concatNormalizedURI(StringBuilder url, String scheme, String server, int port)
     {
-        appendNormalizedUri(url, scheme, server, port, null, null);
+        concatNormalizedURI(url, scheme, server, port, null, null, null);
     }
 
-    public static void appendNormalizedUri(StringBuilder url, String scheme, String server, int port, String path, String query)
+    /**
+     * Normalize a provided scheme, server, port, path, query, and fragment and append to StringBuilder.
+     *
+     * <p>
+     * Performing the following:
+     * </p>
+     * <ul>
+     *     <li>Scheme is reduced to lowercase</li>
+     *     <li>Server is normalized via {@link HostPort#normalizeHost(String)}</li>
+     *     <li>Port is only added if provided and it does not match the scheme default.</li>
+     *     <li>Path is only added if provided, no encoding is performed.</li>
+     *     <li>Query is only added if provided, and Path exists, no encoding is performed.</li>
+     *     <li>Fragment is only added if provided, and Path exists, no encoding is performed.</li>
+     * </ul>
+     *
+     * @param url the StringBuilder to build normalized URI into.
+     * @param scheme the scheme, may not be blank or null.
+     * @param server the server hostname, may not be blank or null.
+     * @param port the port (only numbers greater than 0 are considered)
+     * @param path the optional path to add (any encoding is assumed to be performed already)
+     * @param query the optional query (any encoding is assumed to be performed already)
+     * @param fragment the optional fragment (any encoding is assumed to be performed already)
+     */
+    public static void concatNormalizedURI(StringBuilder url, String scheme, String server, int port, String path, String query, String fragment)
     {
         if (StringUtil.isBlank(scheme))
             throw new IllegalArgumentException("scheme is blank");
@@ -175,9 +198,10 @@ public enum HttpScheme
         {
             url.append(path);
             if (StringUtil.isNotBlank(query))
-            {
                 url.append('?').append(query);
-            }
+
+            if (StringUtil.isNotBlank(fragment))
+                url.append("#").append(fragment);
         }
     }
 

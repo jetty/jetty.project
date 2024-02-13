@@ -294,7 +294,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             if (_logoutRedirectPath != null)
             {
                 StringBuilder sb = new StringBuilder(128);
-                HttpScheme.appendNormalizedUri(sb, request.getScheme(), request.getServerName(), request.getServerPort());
+                HttpScheme.concatNormalizedURI(sb, request.getScheme(), request.getServerName(), request.getServerPort());
                 sb.append(baseRequest.getContextPath());
                 sb.append(_logoutRedirectPath);
                 redirectUri = sb.toString();

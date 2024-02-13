@@ -1179,7 +1179,7 @@ public class Request implements HttpServletRequest
     public StringBuilder getRootURL()
     {
         StringBuilder url = new StringBuilder(128);
-        HttpScheme.appendNormalizedUri(url, getScheme(), getServerName(), getServerPort());
+        HttpScheme.concatNormalizedURI(url, getScheme(), getServerName(), getServerPort());
         return url;
     }
 

@@ -69,7 +69,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
         assertEquals(host, request.getHost());
         StringBuilder uri = new StringBuilder();
-        HttpScheme.appendNormalizedUri(uri, scenario.getScheme(), host, connector.getLocalPort());
+        HttpScheme.concatNormalizedURI(uri, scenario.getScheme(), host, connector.getLocalPort());
         assertEquals(uri.toString(), request.getURI().toString());
 
         assertEquals(HttpStatus.OK_200, request.send().getStatus());
