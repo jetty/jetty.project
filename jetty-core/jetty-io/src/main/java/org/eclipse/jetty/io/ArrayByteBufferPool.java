@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
@@ -287,8 +288,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private boolean evict(long excessMemory, boolean direct)
     {
         RetainedBucket[] buckets = direct ? _direct : _indirect;
-        for (RetainedBucket bucket : buckets)
+        int length = buckets.length;
+        int index = ThreadLocalRandom.current().nextInt(length);
+        for (int c = 0; c < length; ++c)
         {
+            RetainedBucket bucket = buckets[index++];
+            if (index == length)
+                index = 0;
             excessMemory -= bucket.evict();
             if (excessMemory <= 0)
                 return true;
