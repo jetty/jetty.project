@@ -446,16 +446,16 @@ public class MultiPartServletTest
     @Test
     public void testDefaultTempDirectoryWithMultipleContexts() throws Exception
     {
-        List<Object> tmpDirs = new CopyOnWriteArrayList<>();
+        List<File> tmpDirs = new CopyOnWriteArrayList<>();
         HttpServlet servlet = new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                Object attribute = request.getAttribute(ServletContext.TEMPDIR);
-                tmpDirs.add(attribute);
-                File tempDirectory = ServletContextRequest.getServletContextRequest(request).getServletContext().getTempDirectory();
-                tmpDirs.add(tempDirectory);
+                File tmpDirFromAttribute = (File)request.getAttribute(ServletContext.TEMPDIR);
+                tmpDirs.add(tmpDirFromAttribute);
+                File tmpDirFromContext = ServletContextRequest.getServletContextRequest(request).getServletContext().getTempDirectory();
+                tmpDirs.add(tmpDirFromContext);
 
                 Collection<Part> parts = request.getParts();
                 assertNotNull(parts);
