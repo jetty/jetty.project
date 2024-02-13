@@ -270,7 +270,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         // We have enough space for this entry, pool it.
         if (!entry.release())
         {
-            bucket._evicts.incrementAndGet();
+            bucket._removes.incrementAndGet();
             entry.remove();
         }
     }
@@ -425,7 +425,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     public void clear()
     {
         clearBuckets(_direct);
+        _directMemory.set(0);
         clearBuckets(_indirect);
+        _heapMemory.set(0);
     }
 
     private void clearBuckets(RetainedBucket[] buckets)
@@ -516,11 +518,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             _evicts.set(0);
             _removes.set(0);
             _releases.set(0);
-            getPool().stream().forEach(entry ->
-            {
-                if (entry.remove())
-                    updateMemory(-_capacity, entry.getPooled().isDirect());
-            });
+            getPool().stream().forEach(Pool.Entry::remove);
         }
 
         @Override
