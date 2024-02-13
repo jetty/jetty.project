@@ -934,7 +934,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
     // TODO: consider switching to Base64.getMimeDecoder().wrap(InputStream)
     private static class Base64InputStream extends InputStream
     {
-        private final byte[] CRLF = "\r\n".getBytes(StandardCharsets.UTF_8);
+        private static final byte[] CRLF = "\r\n".getBytes(StandardCharsets.UTF_8);
         ReadLineInputStream _in;
         String _line;
         byte[] _buffer;
