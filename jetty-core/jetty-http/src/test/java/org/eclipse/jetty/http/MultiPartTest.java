@@ -222,7 +222,7 @@ public class MultiPartTest
         assertEquals("begin", listener.events.poll());
         assertEquals("header name: value", listener.events.poll());
         assertEquals("headers", listener.events.poll());
-        for (int i = 0; i < 9; i++)
+        for (int i = 0; i < 10; i++)
         {
             assertEquals("content last: false length: 1", listener.events.poll());
         }
