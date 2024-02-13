@@ -44,6 +44,7 @@ import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextEvent;
@@ -1978,6 +1979,22 @@ public class ServletContextHandler extends ContextHandler
 
     public class ServletScopedContext extends ScopedContext
     {
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (ServletContext.TEMPDIR.equals(name))
+                return getTempDirectory();
+            return super.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> attributeNameSet = new HashSet<>(super.getAttributeNameSet());
+            attributeNameSet.add(ServletContext.TEMPDIR);
+            return Collections.unmodifiableSet(attributeNameSet);
+        }
+
         public ServletContextApi getServletContext()
         {
             return _servletContext;

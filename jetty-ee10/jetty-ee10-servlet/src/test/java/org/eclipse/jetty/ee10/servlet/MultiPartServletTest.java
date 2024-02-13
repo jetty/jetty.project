@@ -22,9 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -446,16 +444,17 @@ public class MultiPartServletTest
     @Test
     public void testDefaultTempDirectoryWithMultipleContexts() throws Exception
     {
-        List<File> tmpDirs = new CopyOnWriteArrayList<>();
-        HttpServlet servlet = new HttpServlet()
+        ServletContextHandler servletContextHandler1 = new ServletContextHandler("/ctx1");
+        var servlet1 = new HttpServlet()
         {
+            private File tmpDirFromAttribute;
+            private File tmpDirFromContext;
+
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                File tmpDirFromAttribute = (File)request.getAttribute(ServletContext.TEMPDIR);
-                tmpDirs.add(tmpDirFromAttribute);
-                File tmpDirFromContext = ServletContextRequest.getServletContextRequest(request).getServletContext().getTempDirectory();
-                tmpDirs.add(tmpDirFromContext);
+                tmpDirFromAttribute = (File)getServletContext().getAttribute(ServletContext.TEMPDIR);
+                tmpDirFromContext = ServletContextRequest.getServletContextRequest(request).getServletContext().getTempDirectory();
 
                 Collection<Part> parts = request.getParts();
                 assertNotNull(parts);
@@ -469,16 +468,36 @@ public class MultiPartServletTest
                 assertEquals("content1", content1);
             }
         };
-        MultipartConfigElement config = new MultipartConfigElement(null, MAX_FILE_SIZE, -1, 0);
-
-        ServletContextHandler servletContextHandler1 = new ServletContextHandler("/ctx1");
-        ServletHolder servletHolder1 = new ServletHolder(servlet);
-        servletHolder1.getRegistration().setMultipartConfig(config);
+        ServletHolder servletHolder1 = new ServletHolder(servlet1);
+        servletHolder1.getRegistration().setMultipartConfig(new MultipartConfigElement(null, MAX_FILE_SIZE, -1, 0));
         servletContextHandler1.addServlet(servletHolder1, "/");
 
         ServletContextHandler servletContextHandler2 = new ServletContextHandler("/ctx2");
-        ServletHolder servletHolder2 = new ServletHolder(servlet);
-        servletHolder2.getRegistration().setMultipartConfig(config);
+        var servlet2 = new HttpServlet()
+        {
+            private File tmpDirFromAttribute;
+            private File tmpDirFromContext;
+
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                tmpDirFromAttribute = (File)getServletContext().getAttribute(ServletContext.TEMPDIR);
+                tmpDirFromContext = ServletContextRequest.getServletContextRequest(request).getServletContext().getTempDirectory();
+
+                Collection<Part> parts = request.getParts();
+                assertNotNull(parts);
+                assertEquals(1, parts.size());
+                Part part = parts.iterator().next();
+                assertEquals("part1", part.getName());
+                Collection<String> headerNames = part.getHeaderNames();
+                assertNotNull(headerNames);
+                assertEquals(2, headerNames.size());
+                String content1 = IO.toString(part.getInputStream(), UTF_8);
+                assertEquals("content1", content1);
+            }
+        };
+        ServletHolder servletHolder2 = new ServletHolder(servlet2);
+        servletHolder2.getRegistration().setMultipartConfig(new MultipartConfigElement(null, MAX_FILE_SIZE, -1, 0));
         servletContextHandler2.addServlet(servletHolder2, "/");
 
         start(new ContextHandlerCollection(servletContextHandler1, servletContextHandler2));
@@ -528,13 +547,10 @@ public class MultiPartServletTest
             assertEquals(HttpStatus.OK_200, response2.getStatus());
         }
 
-        System.out.println(tmpDirs);
-        assertEquals(4, tmpDirs.size());
-        assertThat(tmpDirs.get(0).toString(), endsWith("/ctx1"));
-        assertThat(tmpDirs.get(1).toString(), equalTo(tmpDirs.get(0).toString()));
-        assertThat(tmpDirs.get(2).toString(), endsWith("/ctx2"));
-        assertThat(tmpDirs.get(3).toString(), equalTo(tmpDirs.get(2).toString()));
-
+        assertThat(servlet1.tmpDirFromAttribute.toString(), endsWith("/ctx1"));
+        assertThat(servlet1.tmpDirFromContext.toString(), equalTo(servlet1.tmpDirFromAttribute.toString()));
+        assertThat(servlet2.tmpDirFromAttribute.toString(), endsWith("/ctx2"));
+        assertThat(servlet2.tmpDirFromContext.toString(), equalTo(servlet2.tmpDirFromAttribute.toString()));
     }
 
     @ParameterizedTest
