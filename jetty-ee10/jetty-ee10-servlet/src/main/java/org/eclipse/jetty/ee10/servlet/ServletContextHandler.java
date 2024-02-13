@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -44,7 +45,6 @@ import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContainerInitializer;
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextEvent;
@@ -110,6 +110,8 @@ import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static jakarta.servlet.ServletContext.TEMPDIR;
 
 /**
  * Servlet Context.
@@ -286,6 +288,13 @@ public class ServletContextHandler extends ContextHandler
 
         // Link the handlers
         relinkHandlers();
+    }
+
+    @Override
+    public void setTempDirectory(File tempDirectory)
+    {
+        super.setTempDirectory(tempDirectory);
+        setAttribute(TEMPDIR, getTempDirectory());
     }
 
     public ServletContextApi newServletContextApi()
@@ -1979,22 +1988,6 @@ public class ServletContextHandler extends ContextHandler
 
     public class ServletScopedContext extends ScopedContext
     {
-        @Override
-        public Object getAttribute(String name)
-        {
-            if (ServletContext.TEMPDIR.equals(name))
-                return getTempDirectory();
-            return super.getAttribute(name);
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            Set<String> attributeNameSet = new HashSet<>(super.getAttributeNameSet());
-            attributeNameSet.add(ServletContext.TEMPDIR);
-            return Collections.unmodifiableSet(attributeNameSet);
-        }
-
         public ServletContextApi getServletContext()
         {
             return _servletContext;
