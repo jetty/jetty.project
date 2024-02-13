@@ -218,7 +218,7 @@ public class MultiPartTest
             parser.parse(Content.Chunk.from(ByteBuffer.wrap(new byte[]{bytes[i]}), i == bytes.length - 1));
         }
 
-        assertEquals(15, listener.events.size());
+        assertEquals(16, listener.events.size());
         assertEquals("begin", listener.events.poll());
         assertEquals("header name: value", listener.events.poll());
         assertEquals("headers", listener.events.poll());
