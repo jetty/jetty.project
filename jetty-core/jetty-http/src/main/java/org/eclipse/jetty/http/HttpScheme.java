@@ -120,7 +120,7 @@ public enum HttpScheme
     public static String normalizeUri(String scheme, String server, int port, String path, String query)
     {
         StringBuilder builder = new StringBuilder();
-        appendNormalizedUri(builder, scheme, server, port, null, null);
+        appendNormalizedUri(builder, scheme, server, port, path, query);
         return builder.toString();
     }
 
