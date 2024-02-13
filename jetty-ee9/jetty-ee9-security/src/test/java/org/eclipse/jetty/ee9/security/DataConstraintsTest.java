@@ -59,7 +59,7 @@ public class DataConstraintsTest
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.getHttpConfiguration().setSecurePort(9999);
-        http.getHttpConfiguration().setSecureScheme("BWTP");
+        http.getHttpConfiguration().setSecureScheme("bwtp");
         _connector = new LocalConnector(_server, http);
         _connector.setIdleTimeout(300000);
 
@@ -138,7 +138,7 @@ public class DataConstraintsTest
 
         response = _connector.getResponse("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
-        assertThat(response, Matchers.containsString("Location: BWTP://"));
+        assertThat(response, Matchers.containsString("Location: bwtp://"));
         assertThat(response, Matchers.containsString(":9999"));
 
         response = _connectorS.getResponse("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
@@ -166,7 +166,7 @@ public class DataConstraintsTest
 
         response = _connector.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
-        assertThat(response, Matchers.containsString("Location: BWTP://"));
+        assertThat(response, Matchers.containsString("Location: bwtp://"));
         assertThat(response, Matchers.containsString(":9999"));
 
         response = _connectorS.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
