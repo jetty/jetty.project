@@ -14,6 +14,7 @@
 package org.eclipse.jetty.xml;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
@@ -67,6 +68,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 /**
  * <p>Configures objects from XML.</p>
@@ -251,9 +253,11 @@ public class XmlConfiguration
      * Reads and parses the XML configuration file.
      *
      * @param resource the Resource to the XML configuration
+     * @throws IOException not thrown anymore (kept for signature backwards compat)
+     * @throws SAXException not thrown anymore (kept for signature backwards compat)
      * @throws XmlConfigurationException if configuration was not able to loaded from XML provided
      */
-    public XmlConfiguration(Resource resource)
+    public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
         this(resource, null, null);
     }
@@ -264,9 +268,11 @@ public class XmlConfiguration
      * @param resource the Resource to the XML configuration
      * @param idMap Map of objects with IDs
      * @param properties Map of properties
+     * @throws IOException not thrown anymore (kept for signature backwards compat)
+     * @throws SAXException not thrown anymore (kept for signature backwards compat)
      * @throws XmlConfigurationException if configuration was not able to loaded from XML provided
      */
-    public XmlConfiguration(Resource resource, Map<String, Object> idMap, Map<String, String> properties)
+    public XmlConfiguration(Resource resource, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
     {
         XmlParser parser = getXmlParser();
         try (InputStream inputStream = resource.newInputStream())
@@ -279,12 +285,12 @@ public class XmlConfiguration
         }
         catch (Throwable t)
         {
-            throw new XmlConfigurationException("Bad Xml Config in " + this, t);
+            throw new XmlConfigurationException("Bad Jetty XML configuration in " + this, t);
         }
         finally
         {
-            if (parser instanceof Closeable closable)
-                IO.close(closable);
+            if (parser instanceof Closeable closeable)
+                IO.close(closeable);
         }
     }
 
@@ -430,7 +436,7 @@ public class XmlConfiguration
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader() == obj.getClass().getClassLoader()) ? "" : "Object Class and type Class are from different loaders.";
-                throw new XmlConfigurationException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders);
+                throw new IllegalStateException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders);
             }
             String id = _root.getAttribute("id");
             if (id != null)
@@ -466,7 +472,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new XmlConfigurationException("No matching constructor " + oClass);
+                    throw new IllegalStateException("No matching constructor " + oClass);
                 }
             }
             else
