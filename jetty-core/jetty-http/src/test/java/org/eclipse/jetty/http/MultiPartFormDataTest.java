@@ -664,6 +664,79 @@ public class MultiPartFormDataTest
     }
 
     @Test
+    public void testChunkEndsWithCRNextChunkEndsWithLF() throws Exception
+    {
+        AsyncContent source = new TestContent();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
+        formData.setMaxMemoryFileSize(-1);
+
+        // First chunk must end with CR.
+        String chunk1 = """
+            --AaB03x\r
+            Content-Disposition: form-data; name="spaces"\r
+            Content-Type: text/plain\r
+            \r
+            ABC
+            """ + "\r";
+        // Second chunk must end with LF.
+        String chunk2 = """
+            DEF
+            """;
+        String terminator = """
+            \r
+            --AaB03x--\r
+            """;
+        Content.Sink.write(source, false, chunk1, Callback.NOOP);
+        Content.Sink.write(source, false, chunk2, Callback.NOOP);
+        Content.Sink.write(source, true, terminator, Callback.NOOP);
+
+        CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
+        try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
+        {
+            assertEquals(1, parts.size());
+
+            MultiPart.Part spaces = parts.get(0);
+            String content = spaces.getContentAsString(UTF_8);
+
+            assertEquals("ABC\n\rDEF\n", content);
+        }
+    }
+
+    @Test
+    public void testSecondChunkIsTerminator() throws Exception
+    {
+        AsyncContent source = new TestContent();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
+        formData.setMaxMemoryFileSize(-1);
+
+        // This chunk must end with \r.
+        String chunk1 = """
+            --AaB03x\r
+            Content-Disposition: form-data; name="j"\r
+            Content-Type: text/plain\r
+            \r
+            ABC
+            """ + "\r";
+        // Terminator must start with \n--Boundary.
+        String terminator = """
+            \n--AaB03x--\r
+            """;
+        Content.Sink.write(source, false, chunk1, Callback.NOOP);
+        Content.Sink.write(source, true, terminator, Callback.NOOP);
+
+        CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
+        try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
+        {
+            assertEquals(1, parts.size());
+
+            MultiPart.Part spaces = parts.get(0);
+            String content = spaces.getContentAsString(UTF_8);
+
+            assertEquals("ABC\n", content);
+        }
+    }
+
+    @Test
     public void testPartWithBackSlashInFileName() throws Exception
     {
         AsyncContent source = new TestContent();

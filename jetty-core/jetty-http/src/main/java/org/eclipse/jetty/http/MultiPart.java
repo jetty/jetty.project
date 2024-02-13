@@ -1392,6 +1392,7 @@ public class MultiPart
             partialBoundaryMatch = boundaryFinder.endsWith(buffer);
             if (partialBoundaryMatch > 0)
             {
+                notifyCRContent();
                 int limit = buffer.limit();
                 int sliceLimit = limit - partialBoundaryMatch;
                 // BoundaryFinder is configured to search for '\n--Boundary';
