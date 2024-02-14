@@ -92,7 +92,8 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     }
 
     /**
-     * <p>Creates a dynamic transport that speaks the given protocols.</p>
+     * <p>Creates a dynamic transport that speaks the given protocols, in order of preference
+     * (first the most preferred).</p>
      *
      * @param infos the protocols this dynamic transport speaks
      * @deprecated use {@link #HttpClientTransportDynamic(ClientConnector, ClientConnectionFactory.Info...)}
@@ -104,7 +105,8 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     }
 
     /**
-     * Creates a dynamic transport with the given {@link ClientConnector} and the given <em>application protocols</em>.
+     * <p>Creates a dynamic transport with the given {@link ClientConnector} and the given protocols,
+     * in order of preference (first the most preferred).</p>
      *
      * @param connector the ClientConnector used by this transport
      * @param infos the <em>application protocols</em> that this transport can speak

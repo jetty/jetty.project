@@ -157,7 +157,7 @@ The dynamic transport, however, has been implemented to support multiple transpo
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicH1H2H3]
 ----
 
-The order in which the protocols are specified to `HttpClientTransportDynamic` indicates what is the client preference.
+The order in which the protocols are specified to `HttpClientTransportDynamic` indicates what is the client preference (first the most preferred).
 
 When clear-text communication is used (i.e. URIs with the `http` scheme) there is no HTTP protocol version negotiation, and therefore the application must know _a priori_ whether the server supports the HTTP version or not.
 For example, if the server only supports clear-text HTTP/2, and `HttpClientTransportDynamic` is configured as in the example above, where HTTP/1.1 has precedence over HTTP/2, the client will send, by default, a clear-text HTTP/1.1 request to a clear-text HTTP/2 only server, which will result in a communication failure.

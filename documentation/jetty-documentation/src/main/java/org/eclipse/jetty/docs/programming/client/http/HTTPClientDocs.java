@@ -947,6 +947,8 @@ public class HTTPClientDocs
         ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client);
 
         // The order of the protocols indicates the client's preference.
+        // The first is the most preferred, the last is the least preferred, but
+        // the protocol version to use can be explicitly specified in the request.
         HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2, http3);
 
         HttpClient client = new HttpClient(transport);
