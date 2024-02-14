@@ -91,4 +91,28 @@ public class CompoundPool<P> implements Pool<P>
     {
         return Stream.concat(primaryPool.stream(), secondaryPool.stream());
     }
+
+    @Override
+    public int getReservedCount()
+    {
+        return primaryPool.getReservedCount() + secondaryPool.getReservedCount();
+    }
+
+    @Override
+    public int getIdleCount()
+    {
+        return primaryPool.getIdleCount() + secondaryPool.getIdleCount();
+    }
+
+    @Override
+    public int getInUseCount()
+    {
+        return primaryPool.getInUseCount() + secondaryPool.getInUseCount();
+    }
+
+    @Override
+    public int getTerminatedCount()
+    {
+        return primaryPool.getTerminatedCount() + secondaryPool.getTerminatedCount();
+    }
 }
