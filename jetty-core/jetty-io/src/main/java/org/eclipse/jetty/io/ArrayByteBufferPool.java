@@ -260,7 +260,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             bucket._evicts.incrementAndGet();
             // If we cannot free enough space for the entry, remove it.
-            if (!evict(excessMemory, direct))
+            if (!evict(excessMemory, bucket, direct))
             {
                 bucket._removes.incrementAndGet();
                 entry.remove();
@@ -290,7 +290,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return memory - maxMemory;
     }
 
-    private boolean evict(long excessMemory, boolean direct)
+    private boolean evict(long excessMemory, RetainedBucket target, boolean direct)
     {
         RetainedBucket[] buckets = direct ? _direct : _indirect;
         int length = buckets.length;
@@ -300,6 +300,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             RetainedBucket bucket = buckets[index++];
             if (index == length)
                 index = 0;
+            // Do not evict from the bucket the buffer is released into.
+            if (bucket == target)
+                continue;
 
             int evicted = bucket.evict();
             updateMemory(-evicted, direct);
