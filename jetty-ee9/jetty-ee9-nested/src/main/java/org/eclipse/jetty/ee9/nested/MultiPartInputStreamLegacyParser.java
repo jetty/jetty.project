@@ -605,6 +605,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 return;
 
             // check compliance of preamble
+            // this will show up as whitespace before the boundary that exists after the preamble
             if (Character.isWhitespace(untrimmed.charAt(0)))
                 nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
                     MultiPartCompliance.Violation.WHITESPACE_AFTER_PREAMBLE,

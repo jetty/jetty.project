@@ -546,8 +546,21 @@ public class MultiPartFormData
                     if (headers.contains("content-transfer-encoding"))
                     {
                         String value = headers.get("content-transfer-encoding");
+                        if ("base64".equals(value))
+                            complianceViolationListener.onComplianceViolation(
+                                new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
+                                    MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                                    value));
+                        if ("quoted-printable".equals(value))
+                            complianceViolationListener.onComplianceViolation(
+                                new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
+                                    MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
+                                    value));
                         if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
-                            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
+                            complianceViolationListener.onComplianceViolation(
+                                new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
+                                    MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
+                                    value));
                     }
 
                     MultiPart.Part part;
@@ -607,6 +620,14 @@ public class MultiPartFormData
             public void onFailure(Throwable failure)
             {
                 fail(failure);
+            }
+
+            @Override
+            public void onViolation(MultiPartCompliance.Violation violation)
+            {
+                complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(
+                    MultiPartCompliance.RFC7578, violation, "multipart spec violation"
+                ));
             }
 
             private void fail(Throwable cause)

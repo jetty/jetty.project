@@ -1186,6 +1186,7 @@ public class MultiPart
 
         private State parseHeaderStart(ByteBuffer buffer)
         {
+            boolean hadCR = false;
             while (buffer.hasRemaining())
             {
                 HttpTokens.Token token = next(buffer);
@@ -1194,9 +1195,12 @@ public class MultiPart
                     case CR ->
                     {
                         // Ignore CR and loop around;
+                        hadCR = true;
                     }
                     case LF ->
                     {
+                        if (!hadCR)
+                            notifyViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
                         // End of fields.
                         notifyPartHeaders();
                         // A part may have an empty content.
@@ -1542,6 +1546,19 @@ public class MultiPart
             }
         }
 
+        private void notifyViolation(MultiPartCompliance.Violation violation)
+        {
+            try
+            {
+                listener.onViolation(violation);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
+        }
+
         /**
          * <p>A listener for events emitted by a {@link Parser}.</p>
          */
@@ -1602,6 +1619,16 @@ public class MultiPart
              * @param failure the failure cause
              */
             default void onFailure(Throwable failure)
+            {
+            }
+
+            /**
+             * <p>Callback method invoked when the low level parser encounters
+             * a fundamental multipart violation</p>>
+             *
+             * @param violation the violation detected
+             */
+            default void onViolation(MultiPartCompliance.Violation violation)
             {
             }
         }

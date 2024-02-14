@@ -32,7 +32,7 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
         CONTENT_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "Content-Transfer-Encoding header is deprecated"),
         CR_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1", "CR only line termination is forbidden"),
         LF_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1", "LF only line termination is forbidden"),
-        WHITESPACE_AFTER_PREAMBLE("https://tools.ietf.org/html/rfc2046#section-5.1.1", "Whitespace not allowed after preamble"),
+        WHITESPACE_AFTER_PREAMBLE("https://tools.ietf.org/html/rfc2046#section-5.1.1", "Whitespace not allowed after preamble leading to initial boundary"),
         BASE64_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "'base64' Content-Transfer-Encoding is deprecated"),
         QUOTED_PRINTABLE_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "'quoted-printable' Content-Transfer-Encoding is deprecated");
 

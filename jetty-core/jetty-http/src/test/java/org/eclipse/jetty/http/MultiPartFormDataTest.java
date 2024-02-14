@@ -42,9 +42,11 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -239,6 +241,125 @@ public class MultiPartFormDataTest
             partContent = datafile.getContentSource();
             assertThat(partContent.getLength(), is(3L));
             assertThat(Content.Source.asString(partContent), is("000"));
+        }
+    }
+
+    @Test
+    public void testContentTransferEncodingQuotedPrintable() throws Exception
+    {
+        String boundary = "BEEF";
+        String str = """
+            --$B\r
+            Content-Disposition: form-data; name="greeting"\r
+            Content-Type: text/plain; charset=US-ASCII\r
+            Content-Transfer-Encoding: quoted-printable\r
+            \r
+            Hello World\r
+            --$B--\r
+            """.replace("$B", boundary);
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, true, str, Callback.NOOP);
+
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+
+            MultiPart.Part greeting = parts.getFirst("greeting");
+            assertThat(greeting, notNullValue());
+            Content.Source partContent = greeting.getContentSource();
+            assertThat(partContent.getLength(), is(11L));
+            assertThat(Content.Source.asString(partContent), is("Hello World"));
+
+            List<ComplianceViolation.Event> events = violations.getEvents();
+            assertThat(events.size(), is(2));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING));
+            event = events.get(1);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING));
+        }
+    }
+
+    @Test
+    public void testLFOnlyEOL() throws Exception
+    {
+        String boundary = "BEEF";
+        String str = """
+            --$B
+            Content-Disposition: form-data; name="greeting"
+            Content-Type: text/plain; charset=US-ASCII
+            
+            Hello World
+            --$B--
+            """.replace("$B", boundary);
+
+        assertThat("multipart str cannot contain CR for this test", str, not(containsString("\r")));
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, true, str, Callback.NOOP);
+
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+
+            MultiPart.Part greeting = parts.getFirst("greeting");
+            assertThat(greeting, notNullValue());
+            Content.Source partContent = greeting.getContentSource();
+            assertThat(partContent.getLength(), is(11L));
+            assertThat(Content.Source.asString(partContent), is("Hello World"));
+
+            List<ComplianceViolation.Event> events = violations.getEvents();
+            assertThat(events.size(), is(1));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
+        }
+    }
+
+    @Test
+    public void testContentTransferEncodingBase64() throws Exception
+    {
+        String boundary = "BEEF";
+        String str = """
+            --$B\r
+            Content-Disposition: form-data; name="greeting"\r
+            Content-Type: text/plain; charset=US-ASCII\r
+            Content-Transfer-Encoding: base64\r
+            \r
+            SGVsbG8gV29ybGQK\r
+            --$B--\r
+            """.replace("$B", boundary);
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, true, str, Callback.NOOP);
+
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+
+            MultiPart.Part greeting = parts.getFirst("greeting");
+            assertThat(greeting, notNullValue());
+            Content.Source partContent = greeting.getContentSource();
+            assertThat(partContent.getLength(), is(16L));
+            assertThat(Content.Source.asString(partContent), is("SGVsbG8gV29ybGQK"));
+
+            List<ComplianceViolation.Event> events = violations.getEvents();
+            assertThat(events.size(), is(2));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING));
+            event = events.get(1);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING));
         }
     }
 
@@ -1099,6 +1220,22 @@ public class MultiPartFormDataTest
         public void retain()
         {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class CaptureMultiPartViolations implements ComplianceViolation.Listener
+    {
+        private List<ComplianceViolation.Event> events = new ArrayList<>();
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Event event)
+        {
+            events.add(event);
+        }
+
+        public List<ComplianceViolation.Event> getEvents()
+        {
+            return events;
         }
     }
 }
