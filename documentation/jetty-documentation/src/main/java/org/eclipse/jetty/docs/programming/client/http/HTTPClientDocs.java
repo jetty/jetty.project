@@ -24,6 +24,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.Authentication;
@@ -71,6 +73,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
@@ -150,6 +153,35 @@ public class HTTPClientDocs
         // Only allow to connect to subdomains of domain.com.
         sslContextFactory.setHostnameVerifier((hostName, session) -> hostName.endsWith(".domain.com"));
         // end::tlsAppValidation[]
+    }
+
+    public void sslHandshakeListener()
+    {
+        // tag::sslHandshakeListener[]
+        // Create a SslHandshakeListener.
+        SslHandshakeListener listener = new SslHandshakeListener()
+        {
+            @Override
+            public void handshakeSucceeded(Event event) throws SSLException
+            {
+                SSLEngine sslEngine = event.getSSLEngine();
+                System.getLogger("tls").log(INFO, "TLS handshake successful to %s", sslEngine.getPeerHost());
+            }
+
+            @Override
+            public void handshakeFailed(Event event, Throwable failure)
+            {
+                SSLEngine sslEngine = event.getSSLEngine();
+                System.getLogger("tls").log(ERROR, "TLS handshake failure to %s", sslEngine.getPeerHost(), failure);
+            }
+        };
+
+        HttpClient httpClient = new HttpClient();
+
+        // Add the SslHandshakeListener as bean to HttpClient.
+        // The listener will be notified of TLS handshakes success and failure.
+        httpClient.addBean(listener);
+        // end::sslHandshakeListener[]
     }
 
     public void simpleBlockingGet() throws Exception

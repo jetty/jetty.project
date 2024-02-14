@@ -34,6 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -292,6 +294,49 @@ public class CyclicTimeoutsTest
         timeouts.schedule(entities.get(0));
 
         assertTrue(latch.await(3 * delay, TimeUnit.MILLISECONDS), latch.toString());
+    }
+
+    @Test
+    public void testExpiredEntityIsNotRescheduled() throws Exception
+    {
+        long timeout = 500;
+        DynamicExpirable entity = new DynamicExpirable(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout));
+        List<CyclicTimeouts.Expirable> entities = List.of(entity);
+
+        List<Long> schedules = new ArrayList<>();
+
+        timeouts = new CyclicTimeouts<>(scheduler)
+        {
+            @Override
+            protected Iterator<Expirable> iterator()
+            {
+                return entities.iterator();
+            }
+
+            @Override
+            protected boolean onExpired(Expirable expirable)
+            {
+                // Reset the expiration, but do not remove the entity.
+                entity.expireNanoTime = Long.MAX_VALUE;
+                return false;
+            }
+
+            @Override
+            boolean schedule(CyclicTimeout cyclicTimeout, long delay, TimeUnit unit)
+            {
+                schedules.add(unit.toMillis(delay));
+                return super.schedule(cyclicTimeout, delay, unit);
+            }
+        };
+
+        // Trigger the initial call to iterator().
+        timeouts.schedule(entities.get(0));
+
+        // Let the entity expire.
+        Thread.sleep(2 * timeout);
+
+        // Verify that after expiration the entity has not been rescheduled.
+        assertThat(schedules.toString(), schedules.size(), is(1));
     }
 
     private static class ConstantExpirable implements CyclicTimeouts.Expirable

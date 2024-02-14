@@ -23,6 +23,13 @@ Applications can register listeners to these components to be notified of the ev
 
 This section lists the listeners available in the Jetty components, but the events and listener APIs are discussed in the component specific sections.
 
+Listeners common to both client and server:
+
 * xref:pg-arch-bean-listener[]
 * xref:pg-arch-io-connection-listener[]
+* xref:pg-client-http-configuration-tls-listener[]
+* xref:pg-server-http-connector-protocol[]
+
+Listeners that are server specific:
+
 * xref:pg-server-http-request-processing-events[]

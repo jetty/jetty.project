@@ -122,10 +122,23 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 [[pg-server-http-connector-protocol]]
 ===== Configuring Protocols
 
-For each accepted socket connection, the server `Connector` asks a `ConnectionFactory` to create a `Connection` object that handles the traffic on that socket connection, parsing and generating bytes for a specific protocol (see xref:pg-arch-io[this section] for more details about `Connection` objects).
-
-A server `Connector` can be configured with one or more ``ConnectionFactory``s.
+A server `Connector` can be configured with one or more ``ConnectionFactory``s, and this list of ``ConnectionFactory``s represents the protocols that the `Connector` can understand.
 If no `ConnectionFactory` is specified then `HttpConnectionFactory` is implicitly configured.
+
+For each accepted connection, the server `Connector` asks a `ConnectionFactory` to create a `Connection` object that handles the traffic on that connection, parsing and generating bytes for a specific protocol (see xref:pg-arch-io[this section] for more details about `Connection` objects).
+
+TIP: You can listen for `Connection` open and close events as detailed in xref:pg-arch-io-connection-listener[this section].
+
+Secure protocols like secure HTTP/1.1, secure HTTP/2 or HTTP/3 (HTTP/3 is intrinsically secure -- there is no clear-text HTTP/3) require an `SslContextFactory.Server` to be configured with a KeyStore.
+
+For HTTP/1.1 and HTTP/2, `SslContextFactory.Server` is used in conjunction with `SSLEngine`, which drives the TLS handshake that establishes the secure communication.
+
+Applications may register a `org.eclipse.jetty.io.ssl.SslHandshakeListener` to be notified of TLS handshakes success or failure, by adding the `SslHandshakeListener` as a bean to the `Connector`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=sslHandshakeListener]
+----
 
 [[pg-server-http-connector-protocol-http11]]
 ====== Clear-Text HTTP/1.1

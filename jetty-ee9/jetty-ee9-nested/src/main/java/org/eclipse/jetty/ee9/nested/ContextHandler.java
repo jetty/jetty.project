@@ -69,6 +69,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -164,10 +165,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
     private static String __serverInfo = "jetty/" + Server.getVersion();
 
-    public static final String MAX_FORM_KEYS_KEY = "org.eclipse.jetty.server.Request.maxFormKeys";
-    public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
-    public static final int DEFAULT_MAX_FORM_KEYS = 1000;
-    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+    public static final String MAX_FORM_KEYS_KEY = FormFields.MAX_FIELDS_ATTRIBUTE;
+    public static final String MAX_FORM_CONTENT_SIZE_KEY = FormFields.MAX_LENGTH_ATTRIBUTE;
+    public static final int DEFAULT_MAX_FORM_KEYS = FormFields.MAX_FIELDS_DEFAULT;
+    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = FormFields.MAX_LENGTH_DEFAULT;
     private boolean _canonicalEncodingURIs = false;
     private boolean _usingSecurityManager = getSecurityManager() != null;
 

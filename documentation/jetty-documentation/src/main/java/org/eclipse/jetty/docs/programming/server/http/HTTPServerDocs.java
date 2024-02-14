@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
@@ -49,6 +51,7 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
@@ -95,6 +98,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
+import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -348,6 +352,37 @@ public class HTTPServerDocs
 
         server.start();
         // end::sameRandomPort[]
+    }
+
+    public void sslHandshakeListener() throws Exception
+    {
+        // tag::sslHandshakeListener[]
+        // Create a SslHandshakeListener.
+        SslHandshakeListener listener = new SslHandshakeListener()
+        {
+            @Override
+            public void handshakeSucceeded(Event event) throws SSLException
+            {
+                SSLEngine sslEngine = event.getSSLEngine();
+                System.getLogger("tls").log(INFO, "TLS handshake successful to %s", sslEngine.getPeerHost());
+            }
+
+            @Override
+            public void handshakeFailed(Event event, Throwable failure)
+            {
+                SSLEngine sslEngine = event.getSSLEngine();
+                System.getLogger("tls").log(ERROR, "TLS handshake failure to %s", sslEngine.getPeerHost(), failure);
+            }
+        };
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Add the SslHandshakeListener as bean to ServerConnector.
+        // The listener will be notified of TLS handshakes success and failure.
+        connector.addBean(listener);
+        // end::sslHandshakeListener[]
     }
 
     public void http11() throws Exception
