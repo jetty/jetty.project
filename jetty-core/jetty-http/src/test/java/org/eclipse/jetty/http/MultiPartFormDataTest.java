@@ -58,6 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartFormDataTest
 {
+    private static final String CR = "\r";
+    private static final String LF = "\n";
     private static final AtomicInteger testCounter = new AtomicInteger();
 
     private Path _tmpDir;
@@ -297,7 +299,7 @@ public class MultiPartFormDataTest
             --$B--
             """.replace("$B", boundary);
 
-        assertThat("multipart str cannot contain CR for this test", str, not(containsString("\r")));
+        assertThat("multipart str cannot contain CR for this test", str, not(containsString(CR)));
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
@@ -321,6 +323,122 @@ public class MultiPartFormDataTest
             ComplianceViolation.Event event = events.get(0);
             assertThat(event.violation(), is(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
         }
+    }
+
+    /**
+     * Test of parsing where there is whitespace before the boundary.
+     *
+     * @see MultiPartCompliance.Violation#WHITESPACE_BEFORE_BOUNDARY
+     */
+    @Test
+    @Disabled("This is unsupported by MultiPart.Parser")
+    public void testWhiteSpaceBeforeBoundary() throws Exception
+    {
+        String boundary = "BEEF";
+        String str = """
+            preamble\r
+             --$B\r
+            Content-Disposition: form-data; name="greeting"\r
+            Content-Type: text/plain; charset=US-ASCII\r
+            \r
+            Hello World\r
+             --$B--\r
+            """.replace("$B", boundary);
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, true, str, Callback.NOOP);
+
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+
+            MultiPart.Part greeting = parts.getFirst("greeting");
+            assertThat(greeting, notNullValue());
+            Content.Source partContent = greeting.getContentSource();
+            assertThat(partContent.getLength(), is(11L));
+            assertThat(Content.Source.asString(partContent), is("Hello World"));
+
+            List<ComplianceViolation.Event> events = violations.getEvents();
+            assertThat(events.size(), is(1));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY));
+        }
+    }
+
+    @Test
+    @Disabled("This is unsupported by MultiPart.Parser")
+    public void testCROnlyEOL() throws Exception
+    {
+        String boundary = "BEEF";
+        String str = """
+            --$B
+            Content-Disposition: form-data; name="greeting"
+            Content-Type: text/plain; charset=US-ASCII
+            
+            Hello World
+            --$B--
+            """.replace("$B", boundary);
+
+        // change every '\n' LF to a CR.
+        str = str.replace(LF, CR);
+
+        assertThat("multipart str cannot contain LF for this test", str, not(containsString(LF)));
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, true, str, Callback.NOOP);
+
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+
+            MultiPart.Part greeting = parts.getFirst("greeting");
+            assertThat(greeting, notNullValue());
+            Content.Source partContent = greeting.getContentSource();
+            assertThat(partContent.getLength(), is(11L));
+            assertThat(Content.Source.asString(partContent), is("Hello World"));
+
+            List<ComplianceViolation.Event> events = violations.getEvents();
+            assertThat(events.size(), is(1));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.CR_LINE_TERMINATION));
+        }
+    }
+
+    @Test
+    public void testTooManyCRs() throws Exception
+    {
+        String boundary = "BEEF";
+        String str = """
+            --$B
+            Content-Disposition: form-data; name="greeting"
+            Content-Type: text/plain; charset=US-ASCII
+            
+            Hello World
+            --$B--
+            """.replace("$B", boundary);
+
+        // change every '\n' LF to a multiple CR then a LF.
+        str = str.replace("\n", "\r\r\r\r\r\r\r\n");
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, true, str, Callback.NOOP);
+
+        ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
+        assertThat(ee.getCause(), instanceOf(BadMessageException.class));
+        BadMessageException bme = (BadMessageException)ee.getCause();
+        assertThat(bme.getMessage(), containsString("invalid EOL"));
     }
 
     @Test

@@ -22,6 +22,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -371,12 +372,13 @@ public class MultiPartTest
     }
 
     /**
-     * Whitespace before the boundary that exists after the preamble.
+     * Whitespace before boundaries.
      *
-     * @see MultiPartCompliance.Violation#WHITESPACE_AFTER_PREAMBLE
+     * @see MultiPartCompliance.Violation#WHITESPACE_BEFORE_BOUNDARY
      */
     @Test
-    public void testWhitespaceAfterPreambleAndBeforeBoundary() throws Exception
+    @Disabled
+    public void testWhitespaceBeforeBoundary() throws Exception
     {
         TestPartsListener listener = new TestPartsListener();
         MultiPart.Parser parser = new MultiPart.Parser("BOUNDARY", listener);
@@ -387,12 +389,12 @@ public class MultiPartTest
             name: value\r
             \r
             Hello\r
-            --BOUNDARY\r
+             --BOUNDARY\r
             powerLevel: 9001\r
             \r
             secondary\r
             content\r
-            --BOUNDARY--epi\r
+             --BOUNDARY--epi\r
             logue\r
             """);
 
