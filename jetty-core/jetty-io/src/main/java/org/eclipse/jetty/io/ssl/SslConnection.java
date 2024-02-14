@@ -1481,7 +1481,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             for (SslHandshakeListener listener : handshakeListeners)
             {
                 if (event == null)
-                    event = new SslHandshakeListener.Event(sslEngine);
+                    event = new SslHandshakeListener.Event(sslEngine, this);
                 try
                 {
                     listener.handshakeSucceeded(event);
@@ -1503,7 +1503,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             for (SslHandshakeListener listener : handshakeListeners)
             {
                 if (event == null)
-                    event = new SslHandshakeListener.Event(sslEngine);
+                    event = new SslHandshakeListener.Event(sslEngine, this);
                 try
                 {
                     listener.handshakeFailed(event, failure);
