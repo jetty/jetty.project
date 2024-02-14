@@ -17,10 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +25,7 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -645,7 +643,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             {
                 _tempDirectoryAutoChosen = true;
                 String contextPath = "/".equals(_contextPath) ? "ROOT" : _contextPath;
-                setTempDirectory(new File(getServer().getContext().getTempDirectory(), contextPath));
+                setTempDirectory(new File(getServer().getContext().getTempDirectory(), contextPath + "-" + UUID.randomUUID()));
             }
             createTempDirectory();
             _context.call(super::doStart, null);
@@ -680,33 +678,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 // Delete and recreate it to ensure it is empty
                 if (tempDirectory.exists() && !IO.delete(tempDirectory))
                     throw new IllegalArgumentException("Failed to delete temp dir: " + tempDirectory);
-                try
-                {
-                    Files.createDirectories(tempDirectory.toPath());
-                }
-                catch (IOException e)
-                {
-                    Path path = tempDirectory.toPath();
-                    while (!"/".equals(path.toString()))
-                    {
-                        System.out.println("Path '" + path + "' exists? " + Files.exists(path));
-                        if (Files.exists(path))
-                        {
-                            try
-                            {
-                                UserPrincipal owner = Files.getOwner(path);
-                                Set<PosixFilePermission> posixFilePermissions = Files.getPosixFilePermissions(path);
-                                System.out.println("  user name: " + System.getProperty("user.name") + " file owner: " + owner + " perm: " + posixFilePermissions);
-                            }
-                            catch (Exception ex)
-                            {
-                                ex.printStackTrace();
-                            }
-                        }
-                        path = path.getParent();
-                    }
-                    throw new IllegalArgumentException("Unable to create temp dir: " + tempDirectory, e);
-                }
+                if (!tempDirectory.mkdirs())
+                    throw new IllegalArgumentException("Unable to create temp dir: " + tempDirectory);
 
                 // ensure it is removed on exist
                 tempDirectory.deleteOnExit();
