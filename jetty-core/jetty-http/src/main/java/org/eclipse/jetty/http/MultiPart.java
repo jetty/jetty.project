@@ -1186,7 +1186,7 @@ public class MultiPart
 
         private State parseHeaderStart(ByteBuffer buffer)
         {
-            boolean hadCR = false;
+            boolean crFlag = false;
             while (buffer.hasRemaining())
             {
                 HttpTokens.Token token = next(buffer);
@@ -1195,11 +1195,11 @@ public class MultiPart
                     case CR ->
                     {
                         // Ignore CR and loop around;
-                        hadCR = true;
+                        crFlag = true;
                     }
                     case LF ->
                     {
-                        if (!hadCR)
+                        if (!crFlag)
                             notifyViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
                         // End of fields.
                         notifyPartHeaders();
@@ -1215,6 +1215,7 @@ public class MultiPart
                     {
                         if (Character.isWhitespace(token.getByte()))
                         {
+                            notifyViolation(MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY);
                             if (text.length() == 0)
                                 throw new BadMessageException("invalid leading whitespace before header");
                         }
