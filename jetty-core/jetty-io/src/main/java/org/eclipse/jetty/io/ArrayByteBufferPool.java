@@ -27,7 +27,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.internal.CompoundPool;
@@ -203,6 +202,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (entry != null)
         {
             bucket._pooled.incrementAndGet();
+            updateMemory(-bucket.getCapacity(), direct);
             RetainableByteBuffer buffer = entry.getPooled();
             ((Buffer)buffer).acquire();
             return buffer;
@@ -254,12 +254,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         RetainableByteBuffer buffer = entry.getPooled();
         BufferUtil.reset(buffer.getByteBuffer());
-        long excessMemory = getExcessMemory(bucket, buffer.isDirect());
+        boolean direct = buffer.isDirect();
+        long excessMemory = getExcessMemory(bucket, direct);
         if (excessMemory > 0)
         {
             bucket._evicts.incrementAndGet();
             // If we cannot free enough space for the entry, remove it.
-            if (!evict(excessMemory, buffer.isDirect()))
+            if (!evict(excessMemory, direct))
             {
                 bucket._removes.incrementAndGet();
                 entry.remove();
@@ -268,7 +269,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         // We have enough space for this entry, pool it.
-        if (!entry.release())
+        if (entry.release())
+        {
+            updateMemory(bucket.getCapacity(), direct);
+        }
+        else
         {
             bucket._removes.incrementAndGet();
             entry.remove();
@@ -295,7 +300,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             RetainedBucket bucket = buckets[index++];
             if (index == length)
                 index = 0;
-            excessMemory -= bucket.evict();
+
+            int evicted = bucket.evict();
+            updateMemory(-evicted, direct);
+
+            excessMemory -= evicted;
             if (excessMemory <= 0)
                 return true;
         }
@@ -460,7 +469,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             getMemory(true), _maxDirectMemory);
     }
 
-    private class RetainedBucket
+    private static class RetainedBucket
     {
         private final AtomicLong _acquires = new AtomicLong();
         private final AtomicLong _pooled = new AtomicLong();
@@ -474,11 +483,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private RetainedBucket(int capacity, int poolSize)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
-                _pool = new ConcurrentBucket(ConcurrentPool.StrategyType.THREAD_ID, poolSize, e -> 1);
+                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, e -> 1);
             else
-                _pool = new CompoundBucket(
-                    new ConcurrentBucket(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, e -> 1),
-                    new QueuedBucket(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
+                _pool = new BucketCompoundPool(
+                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, e -> 1),
+                    new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
                 );
             _capacity = capacity;
         }
@@ -493,11 +502,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return _pool;
         }
 
-        private long evict()
+        private int evict()
         {
             Pool.Entry<RetainableByteBuffer> entry;
-            if (_pool instanceof CompoundBucket compoundBucket)
-                entry = compoundBucket.evict();
+            if (_pool instanceof BucketCompoundPool compound)
+                entry = compound.evict();
             else
                 entry = _pool.acquire();
 
@@ -547,9 +556,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             );
         }
 
-        private class CompoundBucket extends CompoundPool<RetainableByteBuffer>
+        private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer>
         {
-            private CompoundBucket(ConcurrentBucket concurrentBucket, QueuedBucket queuedBucket)
+            private BucketCompoundPool(ConcurrentPool<RetainableByteBuffer> concurrentBucket, QueuedPool<RetainableByteBuffer> queuedBucket)
             {
                 super(concurrentBucket, queuedBucket);
             }
@@ -560,51 +569,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 if (entry == null)
                     entry = getPrimaryPool().acquire();
                 return entry;
-            }
-        }
-
-        private class ConcurrentBucket extends ConcurrentPool<RetainableByteBuffer>
-        {
-            private ConcurrentBucket(StrategyType strategyType, int maxSize, ToIntFunction<RetainableByteBuffer> maxMultiplex)
-            {
-                super(strategyType, maxSize, maxMultiplex);
-            }
-
-            @Override
-            protected void onAcquired(Entry<RetainableByteBuffer> entry)
-            {
-                super.onAcquired(entry);
-                updateMemory(-_capacity, entry.getPooled().isDirect());
-            }
-
-            @Override
-            protected void onReleased(Entry<RetainableByteBuffer> entry)
-            {
-                super.onReleased(entry);
-                updateMemory(_capacity, entry.getPooled().isDirect());
-            }
-        }
-
-        private class QueuedBucket extends QueuedPool<RetainableByteBuffer>
-        {
-            private QueuedBucket(int maxSize)
-            {
-                super(maxSize);
-            }
-
-            @Override
-            protected void onAcquired(Entry<RetainableByteBuffer> entry)
-            {
-                super.onAcquired(entry);
-                updateMemory(-_capacity, entry.getPooled().isDirect());
-            }
-
-            // TODO: really need this?
-            @Override
-            protected void onReleased(Entry<RetainableByteBuffer> entry)
-            {
-                super.onReleased(entry);
-                updateMemory(_capacity, entry.getPooled().isDirect());
             }
         }
     }
