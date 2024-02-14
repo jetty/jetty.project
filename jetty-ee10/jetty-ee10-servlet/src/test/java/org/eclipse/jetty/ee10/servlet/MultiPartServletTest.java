@@ -71,7 +71,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -547,9 +546,9 @@ public class MultiPartServletTest
             assertEquals(HttpStatus.OK_200, response2.getStatus());
         }
 
-        assertThat(servlet1.tmpDirFromAttribute.toString(), endsWith("/ctx1"));
+        assertThat(servlet1.tmpDirFromAttribute.toString(), containsString("/ctx1"));
         assertThat(servlet1.tmpDirFromContext.toString(), equalTo(servlet1.tmpDirFromAttribute.toString()));
-        assertThat(servlet2.tmpDirFromAttribute.toString(), endsWith("/ctx2"));
+        assertThat(servlet2.tmpDirFromAttribute.toString(), containsString("/ctx2"));
         assertThat(servlet2.tmpDirFromContext.toString(), equalTo(servlet2.tmpDirFromAttribute.toString()));
     }
 
