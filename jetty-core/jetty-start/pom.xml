@@ -44,6 +44,29 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
+            <id>build.properties</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-util</artifactId>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <includes>**/build.properties</includes>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FlattenFileMapper"></fileMapper>
+                  </fileMappers>
+                  <outputDirectory>${project.build.outputDirectory}/org/eclipse/jetty/start/</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
+          <execution>
             <id>unpack</id>
             <goals>
               <goal>unpack</goal>
