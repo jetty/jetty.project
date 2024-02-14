@@ -126,35 +126,46 @@ public class HttpSchemeTest
     {
         return Stream.of(
             // Default behaviors of stripping a port number based on scheme
-            Arguments.of("http", "example.org", 80, "/", null, null, "http://example.org"),
-            Arguments.of("https", "example.org", 443, "/", null, null, "https://example.org"),
-            Arguments.of("ws", "example.org", 80, "/", null, null, "ws://example.org"),
-            Arguments.of("wss", "example.org", 443, "/", null, null, "wss://example.org"),
+            Arguments.of("http", "example.org", 80, "/", null, null, "http://example.org/"),
+            Arguments.of("https", "example.org", 443, "/", null, null, "https://example.org/"),
+            Arguments.of("ws", "example.org", 80, "/", null, null, "ws://example.org/"),
+            Arguments.of("wss", "example.org", 443, "/", null, null, "wss://example.org/"),
             // Mismatches between scheme and port
-            Arguments.of("http", "example.org", 443, "/", null, null, "http://example.org:443"),
-            Arguments.of("https", "example.org", 80, "/", null, null, "https://example.org:80"),
-            Arguments.of("ws", "example.org", 443, "/", null, null, "ws://example.org:443"),
-            Arguments.of("wss", "example.org", 80, "/", null, null, "wss://example.org:80"),
+            Arguments.of("http", "example.org", 443, "/", null, null, "http://example.org:443/"),
+            Arguments.of("https", "example.org", 80, "/", null, null, "https://example.org:80/"),
+            Arguments.of("ws", "example.org", 443, "/", null, null, "ws://example.org:443/"),
+            Arguments.of("wss", "example.org", 80, "/", null, null, "wss://example.org:80/"),
             // Odd ports
-            Arguments.of("http", "example.org", 12345, "/", null, null, "http://example.org:12345"),
-            Arguments.of("https", "example.org", 54321, "/", null, null, "https://example.org:54321"),
-            Arguments.of("ws", "example.org", 6666, "/", null, null, "ws://example.org:6666"),
-            Arguments.of("wss", "example.org", 7777, "/", null, null, "wss://example.org:7777"),
+            Arguments.of("http", "example.org", 12345, "/", null, null, "http://example.org:12345/"),
+            Arguments.of("https", "example.org", 54321, "/", null, null, "https://example.org:54321/"),
+            Arguments.of("ws", "example.org", 6666, "/", null, null, "ws://example.org:6666/"),
+            Arguments.of("wss", "example.org", 7777, "/", null, null, "wss://example.org:7777/"),
             // Non-lowercase Schemes
-            Arguments.of("HTTP", "example.org", 8181, "/", null, null, "http://example.org:8181"),
-            Arguments.of("hTTps", "example.org", 443, "/", null, null, "https://example.org"),
-            Arguments.of("WS", "example.org", 8282, "/", null, null, "ws://example.org:8282"),
-            Arguments.of("wsS", "example.org", 8383, "/", null, null, "wss://example.org:8383"),
+            Arguments.of("HTTP", "example.org", 8181, "/", null, null, "http://example.org:8181/"),
+            Arguments.of("hTTps", "example.org", 443, "/", null, null, "https://example.org/"),
+            Arguments.of("WS", "example.org", 8282, "/", null, null, "ws://example.org:8282/"),
+            Arguments.of("wsS", "example.org", 8383, "/", null, null, "wss://example.org:8383/"),
             // Undefined Ports
-            Arguments.of("http", "example.org", 0, "/", null, null, "http://example.org"),
-            Arguments.of("https", "example.org", -1, "/", null, null, "https://example.org"),
-            Arguments.of("ws", "example.org", -80, "/", null, null, "ws://example.org"),
-            Arguments.of("wss", "example.org", -2, "/", null, null, "wss://example.org"),
+            Arguments.of("http", "example.org", 0, "/", null, null, "http://example.org/"),
+            Arguments.of("https", "example.org", -1, "/", null, null, "https://example.org/"),
+            Arguments.of("ws", "example.org", -80, "/", null, null, "ws://example.org/"),
+            Arguments.of("wss", "example.org", -2, "/", null, null, "wss://example.org/"),
             // Unrecognized (non-http) schemes
-            Arguments.of("foo", "example.org", 0, "/", null, null, "foo://example.org"),
-            Arguments.of("ssh", "example.org", 22, "/", null, null, "ssh://example.org:22"),
-            Arguments.of("ftp", "example.org", 21, "/", null, null, "ftp://example.org:21"),
-            Arguments.of("file", "etc", -1, "/", null, null, "file://etc")
+            Arguments.of("foo", "example.org", 0, "/", null, null, "foo://example.org/"),
+            Arguments.of("ssh", "example.org", 22, "/", null, null, "ssh://example.org:22/"),
+            Arguments.of("ftp", "example.org", 21, "/", null, null, "ftp://example.org:21/"),
+            // Path choices
+            Arguments.of("http", "example.org", 0, "/a/b/c/d", null, null, "http://example.org/a/b/c/d"),
+            Arguments.of("http", "example.org", 0, "/a%20b/c%20d", null, null, "http://example.org/a%20b/c%20d"),
+            // Query specified
+            Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
+            Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
+            // - no path specified == no query output
+            Arguments.of("http", "example.org", 0, null, "a=b", null, "http://example.org"),
+            // Fragment specified
+            Arguments.of("http", "example.org", 0, "/", null, "toc", "http://example.org/#toc"),
+            // - no path specified == no fragment output
+            Arguments.of("http", "example.org", 0, null, null, "toc", "http://example.org")
         );
     }
 
