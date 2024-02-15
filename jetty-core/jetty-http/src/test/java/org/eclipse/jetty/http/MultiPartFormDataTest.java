@@ -703,6 +703,48 @@ public class MultiPartFormDataTest
     }
 
     @Test
+    public void testOneByteChunks() throws Exception
+    {
+        String boundary = "AaB03x";
+        AsyncContent source = new TestContent();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
+        formData.setMaxMemoryFileSize(-1);
+
+        // Form
+        String form = """
+            --$B\r
+            Content-Disposition: form-data; name="spaces"\r
+            Content-Type: text/plain\r
+            \r
+            ABC\n\rDEF\n
+            --$B--
+            """.replace("$B", boundary);
+
+        CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
+        new Thread(() ->
+        {
+            ByteBuffer buf = BufferUtil.toBuffer(form, UTF_8);
+            for (int i = 0; i < buf.remaining(); i++)
+            {
+                ByteBuffer onebyte = buf.slice();
+                buf.position(i);
+                buf.limit(i + 1);
+                source.write(false, onebyte, Callback.NOOP);
+            }
+            source.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        }).run();
+        try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
+        {
+            assertEquals(1, parts.size());
+
+            MultiPart.Part spaces = parts.get(0);
+            String content = spaces.getContentAsString(UTF_8);
+
+            assertEquals("ABC\n\rDEF\n", content);
+        }
+    }
+
+    @Test
     public void testSecondChunkIsTerminator() throws Exception
     {
         AsyncContent source = new TestContent();
