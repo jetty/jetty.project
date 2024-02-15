@@ -199,7 +199,7 @@ public class Request implements HttpServletRequest
     private Charset _queryEncoding;
     private UserIdentityScope _scope;
     private long _timeStamp;
-    private MultiPart.Parser _multiParts; //if the request is a multi-part mime
+    private MultiPart.Parser _multiParts; // parser for multipart/form-data request content
     private AsyncContextState _async;
     private String _lastPathInContext;
     private ContextHandler.APIContext _lastContext;
