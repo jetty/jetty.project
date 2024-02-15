@@ -405,7 +405,7 @@ public class MultiPart
         @Override
         public Content.Source newContentSource()
         {
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 if (closed)
                     return null;
@@ -431,7 +431,7 @@ public class MultiPart
         public void fail(Throwable t)
         {
             List<Content.Source> contentSourcesToFail;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 closed = true;
                 content.forEach(Content.Chunk::release);
@@ -1339,7 +1339,8 @@ public class MultiPart
                     }
                     else
                     {
-                        // The boundary was partially matched.
+                        // The boundary was partially matched, but it
+                        // is not clear yet if it is content or boundary.
                         buffer.position(buffer.limit());
                         partialBoundaryMatch = boundaryMatch;
                         return false;
@@ -1378,7 +1379,7 @@ public class MultiPart
                 int position = buffer.position();
                 int length = boundaryOffset;
                 // BoundaryFinder is configured to search for '\n--Boundary';
-                // if we found '\r\n--Boundary' then the '\r' is not content.
+                // if '\r\n--Boundary' is found, then the '\r' is not content.
                 if (length > 0 && buffer.get(position + length - 1) == '\r')
                     --length;
                 Content.Chunk content = asSlice(chunk, position, length, true);
@@ -1392,11 +1393,20 @@ public class MultiPart
             partialBoundaryMatch = boundaryFinder.endsWith(buffer);
             if (partialBoundaryMatch > 0)
             {
+                if (partialBoundaryMatch == buffer.remaining())
+                {
+                    // The boundary was partially matched, but it
+                    // is not clear yet if it is content or boundary.
+                    buffer.position(buffer.limit());
+                    return false;
+                }
+
                 notifyCRContent();
+
                 int limit = buffer.limit();
                 int sliceLimit = limit - partialBoundaryMatch;
                 // BoundaryFinder is configured to search for '\n--Boundary';
-                // if we found '\r\n--Bo' then the '\r' may not be content,
+                // if '\r\n--Bo' is found, then the '\r' may not be content,
                 // but remember it in case there is a boundary mismatch.
                 if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
                 {
@@ -1670,7 +1680,7 @@ public class MultiPart
             if (value.matches(".??[a-zA-Z]:\\\\[^\\\\].*"))
             {
                 // Matched incorrectly escaped IE filenames that have the whole
-                // path, as in C:\foo, we just strip any leading & trailing quotes
+                // path, as in C:\foo, just strip any leading & trailing quotes.
                 char first = value.charAt(0);
                 if (first == '"' || first == '\'')
                     value = value.substring(1);
