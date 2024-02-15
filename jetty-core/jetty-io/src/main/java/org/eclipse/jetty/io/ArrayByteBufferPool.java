@@ -593,13 +593,17 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     inUse++;
             }
 
-            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d,non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
+            long pooled = _pooled.longValue();
+            long acquires = _acquires.longValue();
+            float hitRatio = acquires == 0 ? Float.NaN : pooled * 100F / acquires;
+            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d(%.3f%%),non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
                 super.toString(),
                 getCapacity(),
                 inUse,
                 entries,
-                _pooled.longValue(),
-                _acquires.longValue(),
+                pooled,
+                acquires,
+                hitRatio,
                 _nonPooled.longValue(),
                 _evicts.longValue(),
                 _removes.longValue(),
