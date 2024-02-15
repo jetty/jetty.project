@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public static final String ORIGIN_ATTRIBUTE = "org.eclipse.jetty.quickstart.origin";
     public static final String QUICKSTART_WEB_XML = "org.eclipse.jetty.quickstart.xml";
     public static final String MODE = "org.eclipse.jetty.quickstart.mode";
+    private static final Mode DEFAULT_MODE = Mode.AUTO;
 
     static
     {
@@ -59,11 +61,13 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     private ResourceFactory.Closeable _resourceFactory;
 
-    /** Configure the server for the quickstart mode.
+    /**
+     * Configure the server for the quickstart mode.
      * <p>In practise this means calling <code>server.setDryRun(true)</code> for GENERATE mode</p>
-     * @see Server#setDryRun(boolean)
+     *
      * @param server The server to configure
      * @param mode The quickstart mode
+     * @see Server#setDryRun(boolean)
      */
     public static void configureMode(Server server, String mode)
     {
@@ -74,13 +78,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public enum Mode
     {
         GENERATE,  // Generate quickstart-web.xml and then stop
-        AUTO,      // use or generate depending on the existance of quickstart-web.xml
+        AUTO,      // use quickstart depending on the existence of quickstart-web.xml
         QUICKSTART // Use quickstart-web.xml
     }
-
-    private Mode _mode = Mode.AUTO;
-    private boolean _quickStart;
-    private QuickStartDescriptorProcessor _quickStartDescriptorProcessor;
 
     public QuickStartConfiguration()
     {
@@ -89,40 +89,51 @@ public class QuickStartConfiguration extends AbstractConfiguration
         addDependents(WebXmlConfiguration.class);
     }
 
+    private static Mode getModeForContext(WebAppContext context)
+    {
+        Object o = context.getAttribute(MODE);
+        if (o instanceof Mode m)
+            return m;
+        if (o instanceof String s)
+            return Mode.valueOf(s);
+        else
+            return DEFAULT_MODE;
+    }
+
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
         _resourceFactory = ResourceFactory.closeable();
 
-        //check that webapp is suitable for quick start - it is not a packed war
+        // check that webapp is suitable for quick start - it is not a packed war
         String war = context.getWar();
-        if (war == null || war.length() <= 0 || !context.getBaseResource().isDirectory())
-            throw new IllegalStateException("Bad Quickstart location");
+        if (StringUtil.isBlank(war) || !context.getBaseResource().isDirectory())
+            throw new IllegalStateException("Invalid Quickstart location");
 
-        //look for quickstart-web.xml in WEB-INF of webapp
+        // look for quickstart-web.xml in WEB-INF of webapp
         Path quickStartWebXml = getQuickStartWebXml(context);
+
+        // Get the mode
+        Mode mode = getModeForContext(context);
+
         if (LOG.isDebugEnabled())
-            LOG.debug("quickStartWebXml={} exists={}", quickStartWebXml, Files.exists(quickStartWebXml));
+            LOG.debug("mode={} quickStartWebXml={} isReadableFile={} for {}",
+                mode,
+                quickStartWebXml,
+                Files.isRegularFile(quickStartWebXml),
+                context);
 
-        //Get the mode
-        Object o = context.getAttribute(MODE);
-        _mode = (o instanceof Mode m) 
-            ? m 
-            : (o instanceof String s) ? Mode.valueOf(s) : _mode;
-
-        _quickStart = false;
-
-        switch (_mode)
+        switch (mode)
         {
             case GENERATE:
             {
-                if (Files.exists(quickStartWebXml))
-                    LOG.info("Regenerating {}", quickStartWebXml);
+                if (Files.isRegularFile(quickStartWebXml))
+                    LOG.info("Regenerating {} for {}", quickStartWebXml, context);
                 else
-                    LOG.info("Generating {}", quickStartWebXml);
-                
+                    LOG.info("Generating {} for {}", quickStartWebXml, context);
+
                 super.preConfigure(context);
-                //generate the quickstart file then abort
+                // generate the quickstart file then abort
                 QuickStartGeneratorConfiguration generator = new QuickStartGeneratorConfiguration(true);
                 configure(generator, context);
                 context.addConfiguration(generator);
@@ -130,27 +141,32 @@ public class QuickStartConfiguration extends AbstractConfiguration
             }
             case AUTO:
             {
-                if (Files.exists(quickStartWebXml))
+                if (Files.isRegularFile(quickStartWebXml))
                 {
                     quickStart(context);
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("No quickstart xml file, starting webapp {} normally", context);
+                        LOG.debug("No quickstart-web.xml found, starting webapp {} normally", context);
                     super.preConfigure(context);
                 }
                 break;
             }
             case QUICKSTART:
-                if (Files.exists(quickStartWebXml))
+            {
+                if (Files.isRegularFile(quickStartWebXml))
+                {
                     quickStart(context);
+                }
                 else
-                    throw new IllegalStateException("No " + quickStartWebXml);
+                {
+                    throw new IllegalStateException("No WEB-INF/quickstart-web.xml file for " + context);
+                }
                 break;
-
+            }
             default:
-                throw new IllegalStateException(_mode.toString());
+                throw new IllegalStateException("Unhandled QuickStart.Mode: " + mode);
         }
     }
 
@@ -168,7 +184,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        if (!_quickStart)
+        Path quickStartWebXml = getQuickStartWebXml(context);
+        // Don't run configure() if quickstart-web.xml does not exist
+        if (!Files.isRegularFile(quickStartWebXml))
         {
             super.configure(context);
         }
@@ -178,8 +196,10 @@ public class QuickStartConfiguration extends AbstractConfiguration
             context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
 
             //add a processor to handle extended web.xml format
-            _quickStartDescriptorProcessor = new QuickStartDescriptorProcessor();
-            context.getMetaData().addDescriptorProcessor(_quickStartDescriptorProcessor);
+            QuickStartDescriptorProcessor quickStartDescriptorProcessor = new QuickStartDescriptorProcessor();
+            context.getMetaData().addDescriptorProcessor(quickStartDescriptorProcessor);
+
+            context.setAttribute(QuickStartDescriptorProcessor.class.getName(), quickStartDescriptorProcessor);
 
             //add a decorator that will find introspectable annotations
             context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
@@ -199,11 +219,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public void deconfigure(WebAppContext context) throws Exception
     {
         super.deconfigure(context);
-        if (_quickStartDescriptorProcessor != null)
-        {
-            _quickStartDescriptorProcessor.close();
-            _quickStartDescriptorProcessor = null;
-        }
+        QuickStartDescriptorProcessor quickStartDescriptorProcessor = (QuickStartDescriptorProcessor)context.getAttribute(QuickStartDescriptorProcessor.class.getName());
+        IO.close(quickStartDescriptorProcessor);
         IO.close(_resourceFactory);
         _resourceFactory = null;
     }
@@ -213,13 +230,12 @@ public class QuickStartConfiguration extends AbstractConfiguration
     {
         if (LOG.isDebugEnabled())
             LOG.info("Quickstarting {}", context);
-        _quickStart = true;
         context.setConfigurations(context.getConfigurations().stream()
             .filter(c -> !__replacedConfigurations.contains(c.replaces()))
             .filter(c -> !__replacedConfigurations.contains(c.getClass()))
             .toArray(Configuration[]::new));
         Path quickStartWebXml = getQuickStartWebXml(context);
-        if (!Files.exists(quickStartWebXml))
+        if (!Files.isRegularFile(quickStartWebXml))
             throw new IllegalStateException("Quickstart doesn't exist: " + quickStartWebXml);
         Resource quickStartWebResource = context.getResourceFactory().newResource(quickStartWebXml);
         context.getMetaData().setWebDescriptor(new WebDescriptor(quickStartWebResource));
@@ -287,15 +303,19 @@ public class QuickStartConfiguration extends AbstractConfiguration
         {
             Path baseResourcePath = findFirstWritablePath(context);
             webInfDir = baseResourcePath.resolve("WEB-INF");
-            if (!Files.exists(webInfDir))
-                Files.createDirectories(webInfDir);
+            // Only create directory if in GENERATE mode
+            if (getModeForContext(context) == Mode.GENERATE)
+            {
+                if (!Files.exists(webInfDir))
+                    Files.createDirectories(webInfDir);
+            }
         }
         return webInfDir;
     }
 
     private static Path findFirstWritablePath(WebAppContext context) throws IOException
     {
-        for (Resource resource: context.getBaseResource())
+        for (Resource resource : context.getBaseResource())
         {
             Path path = resource.getPath();
             if (path == null || !Files.isDirectory(path) || !Files.isWritable(path))

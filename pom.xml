@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.6-SNAPSHOT</version>
+  <version>12.0.7-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -165,7 +165,7 @@
     <build-helper.maven.plugin.version>3.5.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.12.7</checkstyle.version>
+    <checkstyle.version>10.13.0</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.25.0</commons.compress.version>
@@ -176,11 +176,11 @@
     <conscrypt.version>2.5.2</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.7.10</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
-    <disruptor.version>3.4.2</disruptor.version>
+    <eclipse.jdt.ecj.version>3.33.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.5.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.24.0</google.errorprone.version>
+    <google.errorprone.version>2.24.1</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
     <grpc.version>1.60.1</grpc.version>
     <gson.version>2.10.1</gson.version>
@@ -204,7 +204,7 @@
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.3.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.18.0</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.20.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -569,6 +569,11 @@
         <version>${conscrypt.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jdt</groupId>
+        <artifactId>ecj</artifactId>
+        <version>${eclipse.jdt.ecj.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-client</artifactId>
         <version>${project.version}</version>
@@ -868,12 +873,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-home-tester</artifactId>
+        <artifactId>jetty-test-session-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-test-session-common</artifactId>
+        <artifactId>jetty-testers</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1632,7 +1637,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.39.0</version>
+        <version>2.41.1</version>
         <configuration>
           <pom>
             <includes>

@@ -330,13 +330,13 @@ public class DefaultServlet extends HttpServlet
 
     private String getInitParameter(String name, String... deprecated)
     {
-        String value = super.getInitParameter(name);
+        String value = getInitParameter(name);
         if (value != null)
             return value;
 
         for (String d : deprecated)
         {
-            value = super.getInitParameter(d);
+            value = getInitParameter(d);
             if (value != null)
             {
                 LOG.warn("Deprecated {} used instead of {}", d, name);

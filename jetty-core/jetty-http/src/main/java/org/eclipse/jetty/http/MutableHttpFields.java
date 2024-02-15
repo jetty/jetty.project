@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
@@ -356,20 +355,6 @@ class MutableHttpFields implements HttpFields.Mutable
         return (value == null)
             ? remove(header)
             : put(new HttpField(header, value));
-    }
-
-    @Override
-    public Mutable put(String name, List<String> list)
-    {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(list);
-        remove(name);
-        for (String v : list)
-        {
-            if (v != null)
-                add(name, v);
-        }
-        return this;
     }
 
     @Override

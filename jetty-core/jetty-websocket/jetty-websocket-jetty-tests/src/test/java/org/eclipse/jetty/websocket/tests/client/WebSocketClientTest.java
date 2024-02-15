@@ -385,7 +385,7 @@ public class WebSocketClientTest
 
         try (Session ignored = future.get(5, TimeUnit.SECONDS))
         {
-            Assertions.assertTrue(cliSock.connectLatch.await(1, TimeUnit.SECONDS));
+            Assertions.assertTrue(cliSock.openLatch.await(1, TimeUnit.SECONDS));
 
             InetSocketAddress local = (InetSocketAddress)cliSock.getSession().getLocalSocketAddress();
             InetSocketAddress remote = (InetSocketAddress)cliSock.getSession().getRemoteSocketAddress();
