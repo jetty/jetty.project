@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -77,6 +78,15 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this, mappings);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        Server server = getServer();
+        for (MappedResource<Handler> mapping: mappings)
+            mapping.getResource().setServer(server);
+        super.doStart();
     }
 
     @Override
