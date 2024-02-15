@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,7 +179,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
             {
                 // If the path is the same file as the base, then it is contained in the base and
                 // is not protected.
-                if (isSameFile(path, _baseResource))
+                if (_baseResource.isSameFile(path))
                     return true;
 
                 // If the path is the same file as any protected resources, then it is protected.
@@ -191,7 +190,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
                         continue;
                     for (Resource r : p)
                     {
-                        if (isSameFile(path, r.getPath()))
+                        if (r.isSameFile(path))
                             return false;
                     }
                 }
@@ -206,26 +205,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         return false;
     }
 
-    protected boolean isSameFile(Path path, Resource resource)
-    {
-        if (resource == null)
-            return false;
-
-        if (resource instanceof CombinedResource combinedResource)
-        {
-            for (Resource r : combinedResource)
-            {
-                if (isSameFile(path, r.getPath()))
-                    return true;
-            }
-            return false;
-        }
-        else
-        {
-            return isSameFile(path, resource.getPath());
-        }
-    }
-
+    @Deprecated
     protected boolean isSameFile(Path path1, Path path2)
     {
         if (Objects.equals(path1, path2))

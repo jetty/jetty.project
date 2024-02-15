@@ -423,4 +423,22 @@ public abstract class Resource implements Iterable<Resource>
             throw new IllegalStateException(e);
         }
     }
+
+    public boolean isSameFile(Path path)
+    {
+        Path resourcePath = getPath();
+        if (Objects.equals(path, resourcePath))
+            return true;
+        try
+        {
+            if (Files.isSameFile(path, resourcePath))
+                return true;
+        }
+        catch (Throwable t)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ignored", t);
+        }
+        return false;
+    }
 }
