@@ -58,21 +58,21 @@ public class MultiPartParserTest
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartParserRFC7578(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartFormDataParserRFC7578(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
-        testMultiPartParser(formRequest, defaultCharset, formExpectations, MultiPartCompliance.RFC7578);
+        testMultiPartFormDataParser(formRequest, defaultCharset, formExpectations, MultiPartCompliance.RFC7578);
     }
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartParserLegacyDefault(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartFormDataParserLegacyDefault(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
-        testMultiPartParser(formRequest, defaultCharset, formExpectations, MultiPartCompliance.LEGACY);
+        testMultiPartFormDataParser(formRequest, defaultCharset, formExpectations, MultiPartCompliance.LEGACY);
     }
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartParserLegacyAllowBase64(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartFormDataParserLegacyAllowBase64(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
         MultiPartCompliance legacyAllowBase64 = MultiPartCompliance.from("LEGACY_BASE64,BASE64_TRANSFER_ENCODING");
 
@@ -82,10 +82,10 @@ public class MultiPartParserTest
 
         assumeFalse(formRequest.getFormName().equals("multipart-base64-long.raw"), "Super long line BASE64 encoding not supported by LEGACY parser");
 
-        testMultiPartParser(formRequest, defaultCharset, formExpectations, legacyAllowBase64);
+        testMultiPartFormDataParser(formRequest, defaultCharset, formExpectations, legacyAllowBase64);
     }
 
-    private void testMultiPartParser(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations, MultiPartCompliance multiPartCompliance) throws Exception
+    private void testMultiPartFormDataParser(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations, MultiPartCompliance multiPartCompliance) throws Exception
     {
         String contentType = formExpectations.getContentType();
         MultipartConfigElement config = new MultipartConfigElement(tempDir.toString(), MAX_FILE_SIZE, MAX_REQUEST_SIZE, FILE_SIZE_THRESHOLD);
@@ -94,7 +94,7 @@ public class MultiPartParserTest
 
         try (InputStream inputStream = formRequest.asInputStream())
         {
-            MultiPart.Parser multipartParser = MultiPart.newParser(multiPartCompliance, inputStream, contentType, config, contextTmpDir, maxParts);
+            MultiPart.Parser multipartParser = MultiPart.newFormDataParser(multiPartCompliance, inputStream, contentType, config, contextTmpDir, maxParts);
             formExpectations.assertParts(mapActualResults(multipartParser.getParts()), defaultCharset);
         }
     }

@@ -25,16 +25,27 @@ import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.MultiPartCompliance;
 
 /**
- * Generic MultiPart Parser
+ * Generic `multipart/*` interface
  */
 class MultiPart
 {
-    public static MultiPart.Parser newParser(MultiPartCompliance multiPartCompliance,
-                                       InputStream inputStream,
-                                       String contentType,
-                                       MultipartConfigElement config,
-                                       File contextTmpDir,
-                                       int maxParts) throws IOException
+    /**
+     * Create a new parser for `multipart/form-data` content.
+     *
+     * @param multiPartCompliance the compliance mode
+     * @param inputStream the input stream
+     * @param contentType the Request {@code Content-Type}
+     * @param config the servlet Multipart configuration
+     * @param contextTmpDir the temporary directory to use (if config has it unspecified)
+     * @param maxParts the maximum number of parts allowed
+     * @return the parser for `multipart/form-data` content
+     */
+    public static MultiPart.Parser newFormDataParser(MultiPartCompliance multiPartCompliance,
+                                                     InputStream inputStream,
+                                                     String contentType,
+                                                     MultipartConfigElement config,
+                                                     File contextTmpDir,
+                                                     int maxParts)
     {
         if (multiPartCompliance == MultiPartCompliance.RFC7578)
             return new MultiPartFormInputStream(inputStream, contentType, config, contextTmpDir, maxParts);

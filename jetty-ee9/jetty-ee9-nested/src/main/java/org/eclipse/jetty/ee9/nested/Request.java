@@ -1998,7 +1998,7 @@ public class Request implements HttpServletRequest
     private MultiPart.Parser newMultiParts(MultiPartCompliance multiPartCompliance, MultipartConfigElement config, int maxParts) throws IOException
     {
         File contextTmpDir = (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null);
-        return MultiPart.newParser(multiPartCompliance, getInputStream(), getContentType(), config, contextTmpDir, maxParts);
+        return MultiPart.newFormDataParser(multiPartCompliance, getInputStream(), getContentType(), config, contextTmpDir, maxParts);
     }
 
     @Override
