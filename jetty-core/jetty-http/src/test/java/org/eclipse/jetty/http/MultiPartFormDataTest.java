@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -331,7 +332,6 @@ public class MultiPartFormDataTest
      * @see MultiPartCompliance.Violation#WHITESPACE_BEFORE_BOUNDARY
      */
     @Test
-    @Disabled("This is unsupported by MultiPart.Parser")
     public void testWhiteSpaceBeforeBoundary() throws Exception
     {
         String boundary = "BEEF";
@@ -352,25 +352,13 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
-        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
-        {
-            assertThat(parts.size(), is(1));
-
-            MultiPart.Part greeting = parts.getFirst("greeting");
-            assertThat(greeting, notNullValue());
-            Content.Source partContent = greeting.getContentSource();
-            assertThat(partContent.getLength(), is(11L));
-            assertThat(Content.Source.asString(partContent), is("Hello World"));
-
-            List<ComplianceViolation.Event> events = violations.getEvents();
-            assertThat(events.size(), is(1));
-            ComplianceViolation.Event event = events.get(0);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY));
-        }
+        ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
+        assertThat(ee.getCause(), instanceOf(EOFException.class));
+        EOFException bme = (EOFException)ee.getCause();
+        assertThat(bme.getMessage(), containsString("unexpected EOF"));
     }
 
     @Test
-    @Disabled("This is unsupported by MultiPart.Parser")
     public void testCROnlyEOL() throws Exception
     {
         String boundary = "BEEF";
@@ -395,21 +383,10 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
-        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
-        {
-            assertThat(parts.size(), is(1));
-
-            MultiPart.Part greeting = parts.getFirst("greeting");
-            assertThat(greeting, notNullValue());
-            Content.Source partContent = greeting.getContentSource();
-            assertThat(partContent.getLength(), is(11L));
-            assertThat(Content.Source.asString(partContent), is("Hello World"));
-
-            List<ComplianceViolation.Event> events = violations.getEvents();
-            assertThat(events.size(), is(1));
-            ComplianceViolation.Event event = events.get(0);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.CR_LINE_TERMINATION));
-        }
+        ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
+        assertThat(ee.getCause(), instanceOf(BadMessageException.class));
+        BadMessageException bme = (BadMessageException)ee.getCause();
+        assertThat(bme.getMessage(), containsString("invalid EOL"));
     }
 
     @Test
