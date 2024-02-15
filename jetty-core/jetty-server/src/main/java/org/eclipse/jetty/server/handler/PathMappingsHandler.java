@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -26,13 +27,13 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * A Handler that delegates to other handlers through a configured {@link PathMappings}.
  */
-
 public class PathMappingsHandler extends Handler.AbstractContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappingsHandler.class);
@@ -57,7 +58,10 @@ public class PathMappingsHandler extends Handler.AbstractContainer
 
     public void addMapping(PathSpec pathSpec, Handler handler)
     {
-        if (isStarted())
+        Objects.requireNonNull(pathSpec, "PathSpec cannot be null");
+        Objects.requireNonNull(handler, "Handler cannot be null");
+
+        if (!isDynamic() && isStarted())
             throw new IllegalStateException("Cannot add mapping: " + this);
 
         // check that self isn't present
@@ -67,6 +71,19 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         // check for loops
         if (handler instanceof Handler.Container container && container.getDescendants().contains(this))
             throw new IllegalStateException("loop detected: " + handler);
+
+        Server server = getServer();
+        InvocationType serverInvocationType = server == null ? null : server.getInvocationType();
+        InvocationType invocationType = InvocationType.NON_BLOCKING;
+        invocationType = Invocable.combine(invocationType, handler.getInvocationType());
+        if (server != null)
+            handler.setServer(server);
+
+        // If the collection can be changed dynamically, then the risk is that if we switch from NON_BLOCKING to BLOCKING
+        // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
+        // never block, only for it to lose the race and find a newly added BLOCKING handler.
+        if (isDynamic() && server != null && server.isStarted() && serverInvocationType != invocationType && serverInvocationType != InvocationType.BLOCKING)
+            throw new IllegalArgumentException("Cannot change invocation type of started server");
 
         // add new mapping and remove any old
         Handler old = mappings.get(pathSpec);
@@ -78,15 +95,6 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this, mappings);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        Server server = getServer();
-        for (MappedResource<Handler> mapping: mappings)
-            mapping.getResource().setServer(server);
-        super.doStart();
     }
 
     @Override
