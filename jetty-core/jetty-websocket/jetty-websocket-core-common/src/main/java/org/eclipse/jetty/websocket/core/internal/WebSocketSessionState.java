@@ -90,7 +90,7 @@ public class WebSocketSessionState
     public boolean isInputOpen()
     {
         State state = getState();
-        return (state == State.CONNECTED || state == State.OPEN || state == State.OSHUT);
+        return (state == State.OPEN || state == State.OSHUT);
     }
 
     public boolean isOutputOpen()

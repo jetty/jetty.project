@@ -69,7 +69,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final Flusher flusher;
     private final Random random;
     private DemandState demand = DemandState.NOT_DEMANDING;
-    private boolean fillingAndParsing;
+    private boolean fillingAndParsing = true;
     private final LongAdder messagesIn = new LongAdder();
     private final LongAdder bytesIn = new LongAdder();
     // Read / Parse variables
@@ -197,6 +197,43 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    /**
+     * Extra bytes from the initial HTTP upgrade that need to
+     * be processed by the websocket parser before starting
+     * to read bytes from the connection
+     *
+     * @param initialBuffer the bytes of extra content encountered during upgrade
+     */
+    protected void setInitialBuffer(ByteBuffer initialBuffer)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Set initial buffer - {}", BufferUtil.toDetailString(initialBuffer));
+        try (AutoLock l = lock.lock())
+        {
+            networkBuffer = newNetworkBuffer(initialBuffer.remaining());
+        }
+        ByteBuffer buffer = networkBuffer.getByteBuffer();
+        BufferUtil.clearToFill(buffer);
+        BufferUtil.put(initialBuffer, buffer);
+        BufferUtil.flipToFlush(buffer, 0);
+    }
+
+    /**
+     * Physical connection Open.
+     */
+    @Override
+    public void onOpen()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen() {}", this);
+
+        // Open Session
+        super.onOpen();
+        coreSession.onOpen();
+        if (moreDemand())
+            fillAndParse();
     }
 
     /**
@@ -507,41 +544,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             }
             coreSession.processConnectionError(t, Callback.NOOP);
         }
-    }
-
-    /**
-     * Extra bytes from the initial HTTP upgrade that need to
-     * be processed by the websocket parser before starting
-     * to read bytes from the connection
-     *
-     * @param initialBuffer the bytes of extra content encountered during upgrade
-     */
-    protected void setInitialBuffer(ByteBuffer initialBuffer)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Set initial buffer - {}", BufferUtil.toDetailString(initialBuffer));
-        try (AutoLock l = lock.lock())
-        {
-            networkBuffer = newNetworkBuffer(initialBuffer.remaining());
-        }
-        ByteBuffer buffer = networkBuffer.getByteBuffer();
-        BufferUtil.clearToFill(buffer);
-        BufferUtil.put(initialBuffer, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
-    }
-
-    /**
-     * Physical connection Open.
-     */
-    @Override
-    public void onOpen()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onOpen() {}", this);
-
-        // Open Session
-        super.onOpen();
-        coreSession.onOpen();
     }
 
     @Override

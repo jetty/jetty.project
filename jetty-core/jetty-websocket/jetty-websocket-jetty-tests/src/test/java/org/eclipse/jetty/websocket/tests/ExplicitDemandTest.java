@@ -265,9 +265,13 @@ public class ExplicitDemandTest
         Session session = connect.get(5, TimeUnit.SECONDS);
         session.sendText("test-text", Callback.NOOP);
 
+        // We cannot receive messages in onOpen even if we have demanded.
+        assertNull(onOpenSocket.textMessages.poll(1, TimeUnit.SECONDS));
+
+        // Once we leave onOpen we receive the message.
+        onOpenSocket.onOpen.countDown();
         String received = onOpenSocket.textMessages.poll(5, TimeUnit.SECONDS);
         assertThat(received, equalTo("test-text"));
-        onOpenSocket.onOpen.countDown();
 
         session.close();
         assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
