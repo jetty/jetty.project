@@ -1408,7 +1408,7 @@ public class MultiPart
                 // BoundaryFinder is configured to search for '\n--Boundary';
                 // if '\r\n--Bo' is found, then the '\r' may not be content,
                 // but remember it in case there is a boundary mismatch.
-                if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
+                if (buffer.get(sliceLimit - 1) == '\r')
                 {
                     crContent = true;
                     --sliceLimit;
