@@ -1101,9 +1101,7 @@ public class HttpClient extends ContainerLifeCycle
 
     public static int normalizePort(String scheme, int port)
     {
-        if (port > 0)
-            return port;
-        return HttpScheme.getDefaultPort(scheme);
+        return HttpScheme.normalizePort(scheme, port);
     }
 
     public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)

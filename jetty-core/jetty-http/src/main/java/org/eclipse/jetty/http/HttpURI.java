@@ -510,7 +510,7 @@ public interface HttpURI
         {
             try
             {
-                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
+                return new URI(_scheme, null, _host, HttpScheme.normalizePort(_scheme, _port), _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
             }
             catch (URISyntaxException x)
             {
@@ -974,7 +974,7 @@ public interface HttpURI
 
         public Mutable scheme(String scheme)
         {
-            _scheme = scheme;
+            _scheme = StringUtil.asciiToLowerCase(scheme);
             _uri = null;
             return this;
         }

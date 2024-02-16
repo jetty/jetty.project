@@ -841,7 +841,7 @@ public class ProxyServletTest
         int serverPort = serverConnector.getLocalPort();
         if (HttpScheme.HTTPS.is(scheme))
             serverPort = tlsServerConnector.getLocalPort();
-        String proxyTo = scheme + "://localhost:" + serverPort;
+        String proxyTo = StringUtil.asciiToLowerCase(scheme) + "://localhost:" + serverPort;
         Map<String, String> params = new HashMap<>();
         params.put("proxyTo", proxyTo);
         params.put("prefix", prefix);

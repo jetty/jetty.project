@@ -60,6 +60,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.StringUtil;
 
 public class HttpRequest implements Request
 {
@@ -182,7 +183,7 @@ public class HttpRequest implements Request
     @Override
     public Request scheme(String scheme)
     {
-        this.scheme = scheme;
+        this.scheme = StringUtil.asciiToLowerCase(scheme);
         this.uri = null;
         return this;
     }

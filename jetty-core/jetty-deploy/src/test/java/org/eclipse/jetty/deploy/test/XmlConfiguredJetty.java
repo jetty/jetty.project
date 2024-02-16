@@ -46,6 +46,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -330,7 +331,7 @@ public class XmlConfiguredJetty
 
     public void setScheme(String scheme)
     {
-        this._scheme = scheme;
+        this._scheme = StringUtil.asciiToLowerCase(scheme);
     }
 
     public void start() throws Exception
