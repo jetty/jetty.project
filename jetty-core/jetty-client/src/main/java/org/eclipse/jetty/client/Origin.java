@@ -24,7 +24,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * <p>Class that groups the elements that uniquely identify a destination.</p>
@@ -75,7 +75,7 @@ public class Origin
 
     public Origin(String scheme, Address address, Object tag, Protocol protocol)
     {
-        this.scheme = StringUtil.asciiToLowerCase(Objects.requireNonNull(scheme));
+        this.scheme = URIUtil.normalizeScheme(Objects.requireNonNull(scheme));
         this.address = address;
         this.tag = tag;
         this.protocol = protocol;

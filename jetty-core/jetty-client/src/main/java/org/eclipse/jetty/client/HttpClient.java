@@ -56,6 +56,7 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -1109,7 +1110,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         if (port > 0)
             return port;
-        return HttpScheme.getDefaultPort(scheme);
+        return URIUtil.getDefaultPortForScheme(scheme);
     }
 
     public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)

@@ -16,9 +16,9 @@ package org.eclipse.jetty.server;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * Adds a missing {@code Host} header (for example, HTTP 1.0 or 2.0 requests).
@@ -58,7 +58,7 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
             return request;
 
         String host = serverName == null ? Request.getServerName(request) : serverName;
-        int port = HttpScheme.normalizePort(request.getHttpURI().getScheme(), serverPort == 0 ? Request.getServerPort(request) : serverPort);
+        int port = URIUtil.normalizePortForScheme(request.getHttpURI().getScheme(), serverPort == 0 ? Request.getServerPort(request) : serverPort);
 
         HttpURI uri = (serverName != null || serverPort > 0)
             ? HttpURI.build(request.getHttpURI()).authority(host, port).asImmutable()

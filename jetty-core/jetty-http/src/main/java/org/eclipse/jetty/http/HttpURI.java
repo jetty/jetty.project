@@ -345,7 +345,7 @@ public interface HttpURI
                     out.append(_host);
                 }
 
-                int normalizedPort = HttpScheme.normalizePort(_scheme, _port);
+                int normalizedPort = URIUtil.normalizePortForScheme(_scheme, _port);
                 if (normalizedPort > 0)
                     out.append(':').append(normalizedPort);
 
@@ -510,7 +510,7 @@ public interface HttpURI
         {
             try
             {
-                return new URI(_scheme, null, _host, HttpScheme.normalizePort(_scheme, _port), _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
+                return new URI(_scheme, null, _host, URIUtil.normalizePortForScheme(_scheme, _port), _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
             }
             catch (URISyntaxException x)
             {
@@ -622,7 +622,7 @@ public interface HttpURI
         {
             _uri = null;
 
-            _scheme = StringUtil.asciiToLowerCase(uri.getScheme());
+            _scheme = URIUtil.normalizeScheme(uri.getScheme());
             _host = uri.getHost();
             if (_host == null && uri.getRawSchemeSpecificPart().startsWith("//"))
                 _host = "";
@@ -639,7 +639,7 @@ public interface HttpURI
         {
             _uri = null;
 
-            _scheme = StringUtil.asciiToLowerCase(scheme);
+            _scheme = URIUtil.normalizeScheme(scheme);
             _host = host;
             _port = port;
 
@@ -651,7 +651,7 @@ public interface HttpURI
         {
             _uri = null;
 
-            _scheme = StringUtil.asciiToLowerCase(scheme);
+            _scheme = URIUtil.normalizeScheme(scheme);
             _host = host;
             _port = port;
             _path = path;
@@ -974,7 +974,7 @@ public interface HttpURI
 
         public Mutable scheme(String scheme)
         {
-            _scheme = StringUtil.asciiToLowerCase(scheme);
+            _scheme = URIUtil.normalizeScheme(scheme);
             _uri = null;
             return this;
         }
@@ -1136,7 +1136,7 @@ public interface HttpURI
                         {
                             case ':':
                                 // must have been a scheme
-                                _scheme = StringUtil.asciiToLowerCase(uri.substring(mark, i));
+                                _scheme = URIUtil.normalizeScheme(uri.substring(mark, i));
                                 // Start again with scheme set
                                 state = State.START;
                                 break;

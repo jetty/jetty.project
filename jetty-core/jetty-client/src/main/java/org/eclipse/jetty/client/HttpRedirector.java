@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -279,7 +279,7 @@ public class HttpRedirector
             Matcher matcher = URI_PATTERN.matcher(location);
             if (matcher.matches())
             {
-                String scheme = StringUtil.asciiToLowerCase(matcher.group(2));
+                String scheme = URIUtil.normalizeScheme(matcher.group(2));
                 String authority = matcher.group(3);
                 String path = matcher.group(4);
                 String query = matcher.group(5);

@@ -36,7 +36,6 @@ import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
@@ -293,12 +292,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String redirectUri = null;
             if (_logoutRedirectPath != null)
             {
-                redirectUri = HttpURI.from(
-                    request.getScheme(),
-                    request.getServerName(),
-                    request.getServerPort(),
-                    URIUtil.addPaths(baseRequest.getContextPath(), _logoutRedirectPath)
-                    ).asString();
+                StringBuilder sb = URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
+                sb.append(baseRequest.getContextPath());
+                sb.append(_logoutRedirectPath);
+                redirectUri = sb.toString();
             }
 
             HttpSession session = baseRequest.getSession(false);
@@ -616,12 +613,11 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     private String getRedirectUri(HttpServletRequest request)
     {
-        return HttpURI.from(
-            request.getScheme(),
-            request.getServerName(),
-            request.getServerPort(),
-            URIUtil.addPaths(request.getContextPath(), _redirectPath)
-        ).asString();
+        final StringBuilder redirectUri = URIUtil.newURIBuilder(request.getScheme(),
+            request.getServerName(), request.getServerPort());
+        redirectUri.append(request.getContextPath());
+        redirectUri.append(_redirectPath);
+        return redirectUri.toString();
     }
 
     protected String getChallengeUri(Request request)

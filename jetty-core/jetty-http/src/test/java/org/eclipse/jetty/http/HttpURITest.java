@@ -971,8 +971,10 @@ public class HttpURITest
             Arguments.of("wss", "example.org", -2, "wss://example.org"),
             // Unrecognized (non-http) schemes
             Arguments.of("foo", "example.org", 0, "foo://example.org"),
-            Arguments.of("ssh", "example.org", 22, "ssh://example.org:22"),
-            Arguments.of("ftp", "example.org", 21, "ftp://example.org:21"),
+            Arguments.of("ssh", "example.org", 22, "ssh://example.org"),
+            Arguments.of("ftp", "example.org", 21, "ftp://example.org"),
+            Arguments.of("ssh", "example.org", 2222, "ssh://example.org:2222"),
+            Arguments.of("ftp", "example.org", 2121, "ftp://example.org:2121"),
             Arguments.of("file", "etc", -1, "file://etc")
         );
     }
@@ -1015,8 +1017,10 @@ public class HttpURITest
             Arguments.of("wss", "example.org", -2, "/", null, null, "wss://example.org/"),
             // Unrecognized (non-http) schemes
             Arguments.of("foo", "example.org", 0, "/", null, null, "foo://example.org/"),
-            Arguments.of("ssh", "example.org", 22, "/", null, null, "ssh://example.org:22/"),
-            Arguments.of("ftp", "example.org", 21, "/", null, null, "ftp://example.org:21/"),
+            Arguments.of("ssh", "example.org", 22, "/", null, null, "ssh://example.org/"),
+            Arguments.of("ftp", "example.org", 21, "/", null, null, "ftp://example.org/"),
+            Arguments.of("ssh", "example.org", 2222, "/", null, null, "ssh://example.org:2222/"),
+            Arguments.of("ftp", "example.org", 2121, "/", null, null, "ftp://example.org:2121/"),
             // Path choices
             Arguments.of("http", "example.org", 0, "/a/b/c/d", null, null, "http://example.org/a/b/c/d"),
             Arguments.of("http", "example.org", 0, "/a%20b/c%20d", null, null, "http://example.org/a%20b/c%20d"),

@@ -1152,7 +1152,12 @@ public class Request implements HttpServletRequest
     @Override
     public StringBuffer getRequestURL()
     {
-        return new StringBuffer(HttpURI.from(getScheme(), getServerName(), getServerPort(), getRequestURI()).asString());
+        final StringBuffer url = new StringBuffer(128);
+        URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
+        String path = getRequestURI();
+        if (path != null)
+            url.append(path);
+        return url;
     }
 
     public Response getResponse()

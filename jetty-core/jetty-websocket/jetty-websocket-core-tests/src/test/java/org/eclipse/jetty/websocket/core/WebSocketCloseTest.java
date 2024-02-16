@@ -26,7 +26,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -78,7 +78,7 @@ public class WebSocketCloseTest extends WebSocketTester
     public void setup(State state, String scheme) throws Exception
     {
         boolean tls;
-        switch (StringUtil.asciiToLowerCase(scheme))
+        switch (URIUtil.normalizeScheme(scheme))
         {
             case "ws":
                 tls = false;

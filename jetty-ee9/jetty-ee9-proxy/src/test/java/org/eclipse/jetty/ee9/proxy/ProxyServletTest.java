@@ -89,6 +89,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -841,7 +842,7 @@ public class ProxyServletTest
         int serverPort = serverConnector.getLocalPort();
         if (HttpScheme.HTTPS.is(scheme))
             serverPort = tlsServerConnector.getLocalPort();
-        String proxyTo = StringUtil.asciiToLowerCase(scheme) + "://localhost:" + serverPort;
+        String proxyTo = URIUtil.normalizeScheme(scheme) + "://localhost:" + serverPort;
         Map<String, String> params = new HashMap<>();
         params.put("proxyTo", proxyTo);
         params.put("prefix", prefix);

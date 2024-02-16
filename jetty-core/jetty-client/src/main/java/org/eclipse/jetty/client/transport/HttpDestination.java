@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -80,7 +81,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
 
         String host = HostPort.normalizeHost(getHost());
         int port = getPort();
-        if (port != HttpScheme.getDefaultPort(getScheme()))
+        String scheme = getScheme();
+        if (port != URIUtil.getDefaultPortForScheme(scheme))
             host += ":" + port;
         hostField = new HttpField(HttpHeader.HOST, host);
 

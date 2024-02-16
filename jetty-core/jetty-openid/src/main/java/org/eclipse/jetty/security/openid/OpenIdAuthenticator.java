@@ -672,12 +672,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     private String getRedirectUri(Request request)
     {
-        return HttpURI.from(
-            request.getHttpURI().getScheme(),
-            Request.getServerName(request),
-            Request.getServerPort(request),
-            URIUtil.addPaths(request.getContext().getContextPath(), _redirectPath)
-        ).asString();
+        final StringBuilder redirectUri = URIUtil.newURIBuilder(request.getHttpURI().getScheme(),
+            Request.getServerName(request), Request.getServerPort(request));
+        redirectUri.append(URIUtil.addPaths(request.getContext().getContextPath(), _redirectPath));
+        return redirectUri.toString();
     }
 
     protected String getChallengeUri(Request request)

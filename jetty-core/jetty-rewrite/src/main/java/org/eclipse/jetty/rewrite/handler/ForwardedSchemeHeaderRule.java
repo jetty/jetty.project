@@ -14,7 +14,7 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * <p>Sets the request URI scheme, by default {@code https}.</p>
@@ -30,7 +30,7 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
 
     public void setScheme(String scheme)
     {
-        _scheme = StringUtil.asciiToLowerCase(scheme);
+        _scheme = URIUtil.normalizeScheme(scheme);
     }
 
     @Override
