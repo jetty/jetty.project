@@ -19,8 +19,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.util.URIUtil;
 
 /**
  * <p>SecuredRedirectHandler redirects from {@code http} to {@code https}.</p>
@@ -81,7 +81,7 @@ public class SecuredRedirectHandler extends HandlerWrapper
         if (securePort > 0)
         {
             String secureScheme = httpConfig.getSecureScheme();
-            String url = URIUtil.newURI(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString());
+            String url = HttpURI.from(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString(), null).asString();
             response.setContentLength(0);
             baseRequest.getResponse().sendRedirect(_redirectCode, url, true);
         }

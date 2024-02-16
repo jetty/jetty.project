@@ -55,11 +55,11 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.URIUtil;
 
 public class HttpRequest implements Request
 {
@@ -122,9 +122,7 @@ public class HttpRequest implements Request
     {
         if (newURI == null)
         {
-            StringBuilder builder = new StringBuilder(64);
-            URIUtil.appendSchemeHostPort(builder, getScheme(), getHost(), getPort());
-            newURI = URI.create(builder.toString());
+            newURI = HttpURI.from(getScheme(), getHost(), getPort(), null).toURI();
         }
 
         HttpRequest newRequest = copyInstance(newURI);

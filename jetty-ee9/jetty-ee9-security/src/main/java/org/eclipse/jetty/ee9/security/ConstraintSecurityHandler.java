@@ -37,6 +37,7 @@ import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
@@ -44,7 +45,6 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -652,7 +652,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 String scheme = httpConfig.getSecureScheme();
                 int port = httpConfig.getSecurePort();
 
-                String url = URIUtil.newURI(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
+                String url = HttpURI.from(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString(), null).asString();
                 response.setContentLength(0);
                 response.sendRedirect(url, true);
             }

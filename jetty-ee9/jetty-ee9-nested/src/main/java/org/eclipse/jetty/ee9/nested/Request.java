@@ -1152,12 +1152,7 @@ public class Request implements HttpServletRequest
     @Override
     public StringBuffer getRequestURL()
     {
-        final StringBuffer url = new StringBuffer(128);
-        URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
-        String path = getRequestURI();
-        if (path != null)
-            url.append(path);
-        return url;
+        return new StringBuffer(HttpURI.from(getScheme(), getServerName(), getServerPort(), getRequestURI()).asString());
     }
 
     public Response getResponse()
@@ -1177,9 +1172,7 @@ public class Request implements HttpServletRequest
      */
     public StringBuilder getRootURL()
     {
-        StringBuilder url = new StringBuilder(128);
-        URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
-        return url;
+        return new StringBuilder(HttpURI.from(getScheme(), getServerName(), getServerPort(), null).asString());
     }
 
     @Override

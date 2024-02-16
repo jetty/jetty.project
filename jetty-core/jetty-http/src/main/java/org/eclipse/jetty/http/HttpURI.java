@@ -151,6 +151,11 @@ public interface HttpURI
         return new Mutable(scheme, host, port, pathQuery).asImmutable();
     }
 
+    static Immutable from(String scheme, String host, int port, String path, String query, String fragment)
+    {
+        return new Mutable(scheme, host, port, path, query, fragment).asImmutable();
+    }
+
     Immutable asImmutable();
 
     String asString();
@@ -340,8 +345,9 @@ public interface HttpURI
                     out.append(_host);
                 }
 
-                if (_port > 0)
-                    out.append(':').append(_port);
+                int normalizedPort = HttpScheme.normalizePort(_scheme, _port);
+                if (normalizedPort > 0)
+                    out.append(':').append(normalizedPort);
 
                 if (_path != null)
                     out.append(_path);
@@ -616,7 +622,7 @@ public interface HttpURI
         {
             _uri = null;
 
-            _scheme = uri.getScheme();
+            _scheme = StringUtil.asciiToLowerCase(uri.getScheme());
             _host = uri.getHost();
             if (_host == null && uri.getRawSchemeSpecificPart().startsWith("//"))
                 _host = "";
@@ -631,18 +637,26 @@ public interface HttpURI
 
         private Mutable(String scheme, String host, int port, String pathQuery)
         {
-            // TODO review if this should be here
-            if (port == HttpScheme.getDefaultPort(scheme))
-                port = 0;
-
             _uri = null;
 
-            _scheme = scheme;
+            _scheme = StringUtil.asciiToLowerCase(scheme);
             _host = host;
             _port = port;
 
             if (pathQuery != null)
                 parse(State.PATH, pathQuery);
+        }
+
+        private Mutable(String scheme, String host, int port, String path, String query, String fragment)
+        {
+            _uri = null;
+
+            _scheme = StringUtil.asciiToLowerCase(scheme);
+            _host = host;
+            _port = port;
+            _path = path;
+            _query = query;
+            _fragment = fragment;
         }
 
         @Override
@@ -1122,7 +1136,7 @@ public interface HttpURI
                         {
                             case ':':
                                 // must have been a scheme
-                                _scheme = uri.substring(mark, i);
+                                _scheme = StringUtil.asciiToLowerCase(uri.substring(mark, i));
                                 // Start again with scheme set
                                 state = State.START;
                                 break;

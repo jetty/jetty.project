@@ -35,6 +35,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -45,7 +46,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -249,9 +249,7 @@ public class XmlConfiguredJetty
 
     public URI getServerURI() throws UnknownHostException
     {
-        StringBuilder uri = new StringBuilder();
-        URIUtil.appendSchemeHostPort(uri, getScheme(), InetAddress.getLocalHost().getHostAddress(), getServerPort());
-        return URI.create(uri.toString());
+        return HttpURI.from(getScheme(), InetAddress.getLocalHost().getHostAddress(), getServerPort(), null).toURI();
     }
 
     public Path getJettyBasePath()

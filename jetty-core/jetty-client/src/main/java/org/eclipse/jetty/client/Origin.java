@@ -20,10 +20,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.URIUtil;
 
 /**
  * <p>Class that groups the elements that uniquely identify a destination.</p>
@@ -122,9 +122,7 @@ public class Origin
 
     public String asString()
     {
-        StringBuilder result = new StringBuilder();
-        URIUtil.appendSchemeHostPort(result, scheme, address.host, address.port);
-        return result.toString();
+        return HttpURI.from(scheme, address.host, address.port, null).asString();
     }
 
     @Override

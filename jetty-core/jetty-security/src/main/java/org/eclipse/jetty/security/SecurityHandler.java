@@ -46,7 +46,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -604,7 +603,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             String scheme = httpConfig.getSecureScheme();
             int port = httpConfig.getSecurePort();
 
-            String url = URIUtil.newURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+            String url = HttpURI.from(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery(), null).asString();
             response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
 
             Response.sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, url, true);

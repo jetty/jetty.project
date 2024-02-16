@@ -356,10 +356,7 @@ public interface Response extends Content.Sink
             if (!request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
             {
                 // make the location an absolute URI
-                StringBuilder url = new StringBuilder(128);
-                URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
-                url.append(location);
-                location = url.toString();
+                location = HttpURI.from(uri.getScheme(), Request.getServerName(request), Request.getServerPort(request), location).asString();
             }
         }
         return location;
