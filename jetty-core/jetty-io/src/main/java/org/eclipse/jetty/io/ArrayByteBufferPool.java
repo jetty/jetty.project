@@ -66,7 +66,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final LongAdder _heapMemory = new LongAdder();
     private final LongAdder _directMemory = new LongAdder();
     private final IntUnaryOperator _bucketIndexFor;
-    private boolean _statisticsEnabled = true;
+    private boolean _statisticsEnabled;
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
