@@ -1409,11 +1409,12 @@ public final class URIUtil
     @Deprecated(forRemoval = true, since = "12.0.7")
     public static void appendSchemeHostPort(StringBuilder url, String scheme, String server, int port)
     {
-        url.append(scheme).append("://").append(HostPort.normalizeHost(server));
+        String schemeSpec = StringUtil.asciiToLowerCase(scheme);
+        url.append(schemeSpec).append("://").append(HostPort.normalizeHost(server));
 
         if (port > 0)
         {
-            switch (scheme)
+            switch (schemeSpec)
             {
                 case "ws":
                 case "http":
@@ -1445,19 +1446,20 @@ public final class URIUtil
     @Deprecated(forRemoval = true, since = "12.0.7")
     public static void appendSchemeHostPort(StringBuffer url, String scheme, String server, int port)
     {
-        url.append(scheme).append("://").append(HostPort.normalizeHost(server));
+        String schemeSpec = StringUtil.asciiToLowerCase(scheme);
+        url.append(schemeSpec).append("://").append(HostPort.normalizeHost(server));
 
         if (port > 0)
         {
-            switch (scheme)
+            switch (schemeSpec)
             {
-                    case "ws":
+                case "ws":
                 case "http":
                     if (port != 80)
                         url.append(':').append(port);
                     break;
 
-                    case "wss":
+                case "wss":
                 case "https":
                     if (port != 443)
                         url.append(':').append(port);
