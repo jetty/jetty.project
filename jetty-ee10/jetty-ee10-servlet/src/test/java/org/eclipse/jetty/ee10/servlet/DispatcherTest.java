@@ -35,9 +35,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
@@ -1519,7 +1517,7 @@ public class DispatcherTest
             assertEquals("/context/AssertForwardServlet", request.getRequestURI());
             assertEquals("/context", request.getContextPath());
             assertEquals("/AssertForwardServlet", request.getServletPath());
-            assertEquals("http://local:80/context/AssertForwardServlet", request.getRequestURL().toString());
+            assertEquals("http://local/context/AssertForwardServlet", request.getRequestURL().toString());
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
