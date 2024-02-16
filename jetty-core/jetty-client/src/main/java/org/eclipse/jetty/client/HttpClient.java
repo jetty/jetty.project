@@ -1099,9 +1099,17 @@ public class HttpClient extends ContainerLifeCycle
         return proxyConfig;
     }
 
+    /**
+     * Return a normalized port suitable for use by Origin and Address
+     * @param scheme the scheme to use for the default port (if port is unspecified)
+     * @param port the port (0 or negative means the port is unspecified)
+     * @return the normalized port.
+     */
     public static int normalizePort(String scheme, int port)
     {
-        return HttpScheme.normalizePort(scheme, port);
+        if (port > 0)
+            return port;
+        return HttpScheme.getDefaultPort(scheme);
     }
 
     public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
