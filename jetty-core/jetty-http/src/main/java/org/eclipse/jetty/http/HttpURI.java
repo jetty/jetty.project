@@ -153,7 +153,7 @@ public interface HttpURI
 
     static Immutable from(String scheme, String host, int port, String path, String query, String fragment)
     {
-        return new Mutable(scheme, host, port, path, query, fragment).asImmutable();
+        return new Immutable(scheme, host, port, path, query, fragment);
     }
 
     Immutable asImmutable();
@@ -307,18 +307,19 @@ public interface HttpURI
                 _violations = Collections.unmodifiableSet(EnumSet.copyOf(builder._violations));
         }
 
-        private Immutable(String uri)
+        private Immutable(String scheme, String host, int port, String path, String query, String fragment)
         {
-            _scheme = null;
+            _uri = null;
+
+            _scheme = URIUtil.normalizeScheme(scheme);
             _user = null;
-            _host = null;
-            _port = -1;
-            _path = uri;
+            _host = host;
+            _port = port;
+            _path = path;
+            _canonicalPath = _path == null ? null : URIUtil.canonicalPath(_path);
             _param = null;
-            _query = null;
-            _fragment = null;
-            _uri = uri;
-            _canonicalPath = null;
+            _query = query;
+            _fragment = fragment;
         }
 
         @Override

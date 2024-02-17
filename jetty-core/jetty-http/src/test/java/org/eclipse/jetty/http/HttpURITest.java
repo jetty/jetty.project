@@ -1044,7 +1044,6 @@ public class HttpURITest
 
     /**
      * Tests of parameters that result in undesired behaviors.
-     * TODO: Should these trigger an IllegalStateException?
      * {@link HttpURI#from(String, String, int, String)}
      */
     public static Stream<Arguments> fromBad()
@@ -1058,7 +1057,7 @@ public class HttpURITest
             // bad ports
             Arguments.of("http", "example.org", 1_000_000, "http://example.org:1000000"),
             // bad ports
-            Arguments.of("ws", "example.org", -222333, "ws://example.org"), // TODO: drop port? or ISE?
+            Arguments.of("ws", "example.org", -222333, "ws://example.org"), // negative port same as -1, i.e. not set.
             // bad servers
             Arguments.of("http", null, 0, "http:"),
             Arguments.of("http", "", 0, "http://"),

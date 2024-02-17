@@ -1430,7 +1430,9 @@ public final class URIUtil
      * @param scheme the URI scheme
      * @param server the URI server
      * @param port the URI port
+     * @deprecated Use {@link #appendSchemeHostPort(StringBuilder, String, String, int)}
      */
+    @Deprecated
     public static void appendSchemeHostPort(StringBuffer url, String scheme, String server, int port)
     {
         scheme = normalizeScheme(scheme);
