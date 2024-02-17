@@ -648,18 +648,6 @@ public interface HttpURI
                 parse(State.PATH, pathQuery);
         }
 
-        private Mutable(String scheme, String host, int port, String path, String query, String fragment)
-        {
-            _uri = null;
-
-            _scheme = URIUtil.normalizeScheme(scheme);
-            _host = host;
-            _port = port;
-            _path = path;
-            _query = query;
-            _fragment = fragment;
-        }
-
         @Override
         public Immutable asImmutable()
         {
