@@ -1385,8 +1385,12 @@ public final class URIUtil
     public static String newURI(String scheme, String server, int port, String path, String query)
     {
         StringBuilder builder = newURIBuilder(scheme, server, port);
-        builder.append(path);
-        if (query != null && query.length() > 0)
+        boolean hasQuery = !StringUtil.isBlank(query);
+        if (!StringUtil.isBlank(path))
+            builder.append(path);
+        else if (hasQuery)
+            builder.append('/');
+        if (hasQuery)
             builder.append('?').append(query);
         return builder.toString();
     }
