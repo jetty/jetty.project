@@ -107,7 +107,6 @@ public class QueuedPool<P> implements Pool<P>
             {
                 queueSize.decrementAndGet();
                 entry.acquire();
-                onAcquired(entry);
             }
             return entry;
         }
@@ -115,14 +114,6 @@ public class QueuedPool<P> implements Pool<P>
         {
             rwLock.readLock().unlock();
         }
-    }
-
-    protected void onAcquired(Entry<P> entry)
-    {
-    }
-
-    protected void onReleased(Entry<P> entry)
-    {
     }
 
     @Override
@@ -272,10 +263,7 @@ public class QueuedPool<P> implements Pool<P>
             if (p == null || !inUse[0])
                 return false;
             pooled.set(p, false);
-            boolean reQueued = pool.requeue(this);
-            if (reQueued)
-                pool.onReleased(this);
-            return reQueued;
+            return pool.requeue(this);
         }
 
         @Override

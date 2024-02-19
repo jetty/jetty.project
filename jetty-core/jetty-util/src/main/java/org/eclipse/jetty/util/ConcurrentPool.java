@@ -237,7 +237,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("returning entry {} for {}", entry, this);
-                        onAcquired(entry);
                         return entry;
                     }
                 }
@@ -270,22 +269,12 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         };
     }
 
-    protected void onAcquired(Entry<P> entry)
-    {
-    }
-
     private boolean release(Entry<P> entry)
     {
         boolean released = ((ConcurrentEntry<P>)entry).tryRelease();
         if (LOG.isDebugEnabled())
             LOG.debug("released {} {} for {}", released, entry, this);
-        if (released)
-            onReleased(entry);
         return released;
-    }
-
-    protected void onReleased(Entry<P> entry)
-    {
     }
 
     private boolean remove(Entry<P> entry)
