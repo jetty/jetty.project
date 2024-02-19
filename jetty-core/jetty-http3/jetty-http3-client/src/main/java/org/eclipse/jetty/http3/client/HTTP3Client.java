@@ -23,11 +23,11 @@ import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.ClientQuicConnection;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
-import org.eclipse.jetty.quic.client.QuicTransportProtocol;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -190,10 +190,10 @@ public class HTTP3Client extends ContainerLifeCycle
     {
         if (context == null)
             context = new ConcurrentHashMap<>();
-        return connect(new QuicTransportProtocol(getQuicConfiguration()), socketAddress, listener, context);
+        return connect(new QuicTransport(getQuicConfiguration()), socketAddress, listener, context);
     }
 
-    public CompletableFuture<Session.Client> connect(TransportProtocol transportProtocol, SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
+    public CompletableFuture<Session.Client> connect(Transport transport, SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
     {
         if (context == null)
             context = new ConcurrentHashMap<>();
@@ -204,12 +204,12 @@ public class HTTP3Client extends ContainerLifeCycle
         context.putIfAbsent(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, connector);
         context.computeIfAbsent(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, key -> new HTTP3ClientConnectionFactory());
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, completable::failed));
-        context.put(TransportProtocol.class.getName(), transportProtocol);
+        context.put(Transport.class.getName(), transport);
 
         if (LOG.isDebugEnabled())
             LOG.debug("connecting to {}", socketAddress);
 
-        transportProtocol.connect(socketAddress, context);
+        transport.connect(socketAddress, context);
         return completable;
     }
 

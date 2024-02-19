@@ -272,7 +272,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 ----
 
 [[pg-client-http-api-protocol]]
-===== Request `TransportProtocol`
+===== Request `Transport`
 
 The communication between client and server happens over a xref:pg-client-io-arch-transport[low-level transport], and applications can specify the low-level transport to use for each request.
 
@@ -298,5 +298,5 @@ This is a fancy example of how to mix HTTP versions and low-level transports:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=mixedTransportProtocols]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=mixedTransports]
 ----

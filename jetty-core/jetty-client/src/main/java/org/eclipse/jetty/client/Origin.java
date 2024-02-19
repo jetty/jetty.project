@@ -22,7 +22,7 @@ import java.util.Objects;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.URIUtil;
  * <p>The elements are {@code scheme}, {@code host}, {@code port}, a
  * {@link Origin.Protocol}, a tag object that further distinguishes
  * destinations that have the same scheme, host, port and protocol,
- * and a {@link TransportProtocol}.</p>
+ * and a {@link Transport}.</p>
  * <p>In general it is possible that, for the same scheme, host and port,
  * the server can speak different protocols (for example, clear-text HTTP/1.1
  * and clear-text HTTP/2), so the {@link Origin.Protocol} makes that distinction.</p>
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.URIUtil;
  * so that all the connections to the server associated to that destination can
  * specify the PROXY protocol bytes for that particular client connection.</p>
  * <p>Finally, it is necessary to have different destinations for the same
- * scheme, host, port, and protocol, but having different {@link TransportProtocol},
+ * scheme, host, port, and protocol, but having different {@link Transport},
  * for example when the same server may be reached via TCP/IP but also via
  * Unix-Domain sockets.</p>
  */
@@ -52,7 +52,7 @@ public class Origin
     private final Address address;
     private final Object tag;
     private final Protocol protocol;
-    private final TransportProtocol transport;
+    private final Transport transport;
 
     public Origin(String scheme, String host, int port)
     {
@@ -81,10 +81,10 @@ public class Origin
 
     public Origin(String scheme, Address address, Object tag, Protocol protocol)
     {
-        this(scheme, address, tag, protocol, TransportProtocol.TCP_IP);
+        this(scheme, address, tag, protocol, Transport.TCP_IP);
     }
 
-    public Origin(String scheme, Address address, Object tag, Protocol protocol, TransportProtocol transport)
+    public Origin(String scheme, Address address, Object tag, Protocol protocol, Transport transport)
     {
         this.scheme = Objects.requireNonNull(scheme);
         this.address = address;
@@ -113,7 +113,7 @@ public class Origin
         return protocol;
     }
 
-    public TransportProtocol getTransportProtocol()
+    public Transport getTransport()
     {
         return transport;
     }
@@ -155,7 +155,7 @@ public class Origin
             asString(),
             getTag(),
             getProtocol(),
-            getTransportProtocol()
+            getTransport()
         );
     }
 

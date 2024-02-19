@@ -36,7 +36,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -213,15 +213,15 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         if (matchingInfos.isEmpty())
             return getHttpClient().createOrigin(request, null);
 
-        TransportProtocol transportProtocol = request.getTransportProtocol();
-        if (transportProtocol == null)
+        Transport transport = request.getTransport();
+        if (transport == null)
         {
             // Ask the ClientConnector for backwards compatibility
             // until ClientConnector.Configurator is removed.
-            transportProtocol = getClientConnector().newTransportProtocol();
-            if (transportProtocol == null)
-                transportProtocol = matchingInfos.get(0).newTransportProtocol();
-            request.transportProtocol(transportProtocol);
+            transport = getClientConnector().newTransport();
+            if (transport == null)
+                transport = matchingInfos.get(0).newTransport();
+            request.transport(transport);
         }
 
         List<String> protocols = matchingInfos.stream()
@@ -253,7 +253,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         else
         {
-            boolean intrinsicallySecure = origin.getTransportProtocol().isIntrinsicallySecure();
+            boolean intrinsicallySecure = origin.getTransport().isIntrinsicallySecure();
             if (!intrinsicallySecure && destination.isSecure() && protocol.isNegotiate())
             {
                 factory = new ALPNClientConnectionFactory(getClientConnector().getExecutor(), this::newNegotiatedConnection, protocol.getProtocols());

@@ -39,7 +39,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.ProcessorUtils;
 
 /**
@@ -217,7 +217,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 
         Path unixDomain = unixDomainPath;
         if (unixDomain != null)
-            proxyRequest.transportProtocol(new TransportProtocol.TCPUnix(unixDomain));
+            proxyRequest.transport(new Transport.TCPUnix(unixDomain));
 
         super.sendProxyRequest(request, proxyResponse, proxyRequest);
     }

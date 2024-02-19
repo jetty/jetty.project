@@ -54,7 +54,7 @@ import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
@@ -998,7 +998,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 client = new HttpClient(new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11));
                 client.start();
                 ContentResponse response = client.newRequest("http://localhost/path")
-                    .transportProtocol(new TransportProtocol.TCPUnix(path))
+                    .transport(new Transport.TCPUnix(path))
                     .send();
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             }

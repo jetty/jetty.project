@@ -20,17 +20,17 @@ import java.util.Objects;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Promise;
 
 /**
- * <p>A {@link TransportProtocol} suitable to be used when using a {@link MemoryConnector}.</p>
+ * <p>A {@link Transport} suitable to be used when using a {@link MemoryConnector}.</p>
  */
-public class MemoryTransportProtocol implements TransportProtocol
+public class MemoryTransport implements Transport
 {
     private final MemoryConnector connector;
 
-    public MemoryTransportProtocol(MemoryConnector connector)
+    public MemoryTransport(MemoryConnector connector)
     {
         this.connector = connector;
     }
@@ -46,10 +46,10 @@ public class MemoryTransportProtocol implements TransportProtocol
             ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
             endPoint.setIdleTimeout(clientConnector.getIdleTimeout().toMillis());
 
-            // This instance may be nested inside other TransportProtocol instances.
+            // This instance may be nested inside other Transport instances.
             // Retrieve the outermost instance to call newConnection().
-            TransportProtocol transportProtocol = (TransportProtocol)context.get(TransportProtocol.class.getName());
-            Connection connection = transportProtocol.newConnection(endPoint, context);
+            Transport transport = (Transport)context.get(Transport.class.getName());
+            Connection connection = transport.newConnection(endPoint, context);
             endPoint.setConnection(connection);
 
             endPoint.onOpen();
@@ -82,7 +82,7 @@ public class MemoryTransportProtocol implements TransportProtocol
     {
         if (this == obj)
             return true;
-        if (obj instanceof MemoryTransportProtocol that)
+        if (obj instanceof MemoryTransport that)
             return Objects.equals(connector, that.connector);
         return false;
     }

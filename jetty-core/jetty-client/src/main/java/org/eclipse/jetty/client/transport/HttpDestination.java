@@ -103,7 +103,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         hostField = new HttpField(HttpHeader.HOST, host);
 
         ClientConnectionFactory connectionFactory = client.getTransport();
-        boolean intrinsicallySecure = origin.getTransportProtocol().isIntrinsicallySecure();
+        boolean intrinsicallySecure = origin.getTransport().isIntrinsicallySecure();
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxy = proxyConfig.match(origin);

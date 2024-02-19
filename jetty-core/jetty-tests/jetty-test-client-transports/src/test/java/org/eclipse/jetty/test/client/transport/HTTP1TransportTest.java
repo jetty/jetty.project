@@ -25,14 +25,14 @@ import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.client.QuicTransportProtocol;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
-import org.eclipse.jetty.server.MemoryTransportProtocol;
+import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -46,7 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
+public class HTTP1TransportTest extends AbstractTransportTest
 {
     private HttpClient httpClient;
 
@@ -63,7 +63,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testDefaultTransportProtocol() throws Exception
+    public void testDefaultTransport() throws Exception
     {
         ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory());
         server.addConnector(connector);
@@ -79,7 +79,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
         List<Destination> destinations = httpClient.getDestinations();
         assertThat(destinations.size(), is(1));
         Destination destination = destinations.get(0);
-        assertThat(destination.getOrigin().getTransportProtocol(), sameInstance(TransportProtocol.TCP_IP));
+        assertThat(destination.getOrigin().getTransport(), sameInstance(Transport.TCP_IP));
 
         HttpClientTransportOverHTTP httpClientTransport = (HttpClientTransportOverHTTP)httpClient.getTransport();
         int networkConnections = httpClientTransport.getClientConnector().getSelectorManager().getTotalKeys();
@@ -87,7 +87,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testExplicitTransportProtocol() throws Exception
+    public void testExplicitTransport() throws Exception
     {
         ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory());
         server.addConnector(connector);
@@ -95,7 +95,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transportProtocol(TransportProtocol.TCP_IP)
+            .transport(Transport.TCP_IP)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -103,7 +103,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testMemoryTransportProtocol() throws Exception
+    public void testMemoryTransport() throws Exception
     {
         MemoryConnector connector = new MemoryConnector(server, new HttpConnectionFactory());
         server.addConnector(connector);
@@ -111,7 +111,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("http://localhost/")
-            .transportProtocol(new MemoryTransportProtocol(connector))
+            .transport(new MemoryTransport(connector))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -123,7 +123,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testUnixDomainTransportProtocol() throws Exception
+    public void testUnixDomainTransport() throws Exception
     {
         UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, new HttpConnectionFactory());
         connector.setUnixDomainPath(newUnixDomainPath());
@@ -132,7 +132,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("http://localhost/")
-            .transportProtocol(new TransportProtocol.TCPUnix(connector.getUnixDomainPath()))
+            .transport(new Transport.TCPUnix(connector.getUnixDomainPath()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -140,7 +140,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testQUICTransportProtocol(WorkDir workDir) throws Exception
+    public void testQUICTransport(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
         sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
@@ -162,7 +162,7 @@ public class HTTP1TransportProtocolTest extends AbstractTransportProtocolTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transportProtocol(new QuicTransportProtocol(clientQuicConfig))
+            .transport(new QuicTransport(clientQuicConfig))
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();

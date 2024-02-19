@@ -32,7 +32,7 @@ import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -423,31 +423,31 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public void connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
-        connect(TransportProtocol.TCP_IP, sslContextFactory, address, listener, promise, context);
+        connect(Transport.TCP_IP, sslContextFactory, address, listener, promise, context);
     }
 
-    public CompletableFuture<Session> connect(TransportProtocol transportProtocol, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener)
+    public CompletableFuture<Session> connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener)
     {
-        return Promise.Completable.with(p -> connect(transportProtocol, sslContextFactory, address, listener, p, null));
+        return Promise.Completable.with(p -> connect(transport, sslContextFactory, address, listener, p, null));
     }
 
-    public void connect(TransportProtocol transportProtocol, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
-        connect(transportProtocol, address, factory, listener, promise, context);
+        connect(transport, address, factory, listener, promise, context);
     }
 
     public void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
-        connect(TransportProtocol.TCP_IP, address, factory, listener, promise, context);
+        connect(Transport.TCP_IP, address, factory, listener, promise, context);
     }
 
-    public void connect(TransportProtocol transportProtocol, SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(Transport transport, SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         context = contextFrom(factory, listener, promise, context);
-        context.put(TransportProtocol.class.getName(), transportProtocol);
+        context.put(Transport.class.getName(), transport);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
-        transportProtocol.connect(address, context);
+        transport.connect(address, context);
     }
 
     public void accept(SslContextFactory.Client sslContextFactory, SocketChannel channel, Session.Listener listener, Promise<Session> promise)
@@ -458,13 +458,13 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public void accept(SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
     {
-        accept(TransportProtocol.TCP_IP, channel, factory, listener, promise);
+        accept(Transport.TCP_IP, channel, factory, listener, promise);
     }
 
-    public void accept(TransportProtocol transportProtocol, SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
+    public void accept(Transport transport, SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
     {
         Map<String, Object> context = contextFrom(factory, listener, promise, null);
-        context.put(TransportProtocol.class.getName(), transportProtocol);
+        context.put(Transport.class.getName(), transport);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
         connector.accept(channel, context);
     }

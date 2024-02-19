@@ -35,14 +35,14 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.client.QuicTransportProtocol;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.server.QuicServerConnectionFactory;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.MemoryConnector;
-import org.eclipse.jetty.server.MemoryTransportProtocol;
+import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -56,7 +56,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
+public class HTTP3TransportTest extends AbstractTransportTest
 {
     private SslContextFactory.Server sslServer;
     private Path pemServerDir;
@@ -86,7 +86,7 @@ public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testDefaultTransportProtocol() throws Exception
+    public void testDefaultTransport() throws Exception
     {
         ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslServer, pemServerDir);
         QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
@@ -103,10 +103,10 @@ public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
         List<Destination> destinations = httpClient.getDestinations();
         assertThat(destinations.size(), is(1));
         Destination destination = destinations.get(0);
-        TransportProtocol transportProtocol = destination.getOrigin().getTransportProtocol();
-        if (transportProtocol instanceof TransportProtocol.Wrapper wrapper)
-            transportProtocol = wrapper.unwrap();
-        assertThat(transportProtocol, sameInstance(TransportProtocol.UDP_IP));
+        Transport transport = destination.getOrigin().getTransport();
+        if (transport instanceof Transport.Wrapper wrapper)
+            transport = wrapper.unwrap();
+        assertThat(transport, sameInstance(Transport.UDP_IP));
 
         HttpClientTransportOverHTTP3 httpClientTransport = (HttpClientTransportOverHTTP3)httpClient.getTransport();
         int networkConnections = httpClientTransport.getHTTP3Client().getClientConnector().getSelectorManager().getTotalKeys();
@@ -114,7 +114,7 @@ public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testExplicitTransportProtocol() throws Exception
+    public void testExplicitTransport() throws Exception
     {
         ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslServer, pemServerDir);
         QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
@@ -123,7 +123,7 @@ public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transportProtocol(new QuicTransportProtocol(http3Client.getQuicConfiguration()))
+            .transport(new QuicTransport(http3Client.getQuicConfiguration()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -131,7 +131,7 @@ public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testMemoryTransportProtocol() throws Exception
+    public void testMemoryTransport() throws Exception
     {
         ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslServer, pemServerDir);
         QuicServerConnectionFactory quic = new QuicServerConnectionFactory(quicConfiguration);
@@ -142,7 +142,7 @@ public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("http://localhost/")
-            .transportProtocol(new QuicTransportProtocol(new MemoryTransportProtocol(connector), http3Client.getQuicConfiguration()))
+            .transport(new QuicTransport(new MemoryTransport(connector), http3Client.getQuicConfiguration()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -154,7 +154,7 @@ public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
     }
 
     @Test
-    public void testUnixDomainTransportProtocol()
+    public void testUnixDomainTransport()
     {
         noUnixDomainForDatagramChannel();
     }
@@ -198,8 +198,8 @@ public class HTTP3TransportProtocolTest extends AbstractTransportProtocolTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        TransportProtocol transportProtocol = new QuicTransportProtocol(new MemoryTransportProtocol(connector), http3Client.getQuicConfiguration());
-        Session.Client session = http3Client.connect(transportProtocol, connector.getLocalSocketAddress(), new Session.Client.Listener() {}, null).get(5, TimeUnit.SECONDS);
+        Transport transport = new QuicTransport(new MemoryTransport(connector), http3Client.getQuicConfiguration());
+        Session.Client session = http3Client.connect(transport, connector.getLocalSocketAddress(), new Session.Client.Listener() {}, null).get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_3, HttpFields.EMPTY);

@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -159,14 +159,14 @@ public class UnixDomainTest
             new Origin.Address("localhost", fakeProxyPort),
             null,
             new Origin.Protocol(List.of("http/1.1"), false),
-            new TransportProtocol.TCPUnix(unixDomainPath)
+            new Transport.TCPUnix(unixDomainPath)
         );
         httpClient.getProxyConfiguration().addProxy(new HttpProxy(proxyOrigin, null));
         httpClient.start();
         try
         {
             ContentResponse response = httpClient.newRequest("localhost", fakeServerPort)
-                .transportProtocol(new TransportProtocol.TCPUnix(unixDomainPath))
+                .transport(new Transport.TCPUnix(unixDomainPath))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -222,7 +222,7 @@ public class UnixDomainTest
             // Try PROXYv1 with the PROXY information retrieved from the EndPoint.
             // PROXYv1 does not support the UNIX family.
             ContentResponse response1 = httpClient.newRequest("localhost", 0)
-                .transportProtocol(new TransportProtocol.TCPUnix(unixDomainPath))
+                .transport(new Transport.TCPUnix(unixDomainPath))
                 .path("/v1")
                 .tag(new V1.Tag())
                 .timeout(5, TimeUnit.SECONDS)
@@ -233,7 +233,7 @@ public class UnixDomainTest
             // Try PROXYv2 with explicit PROXY information.
             var tag = new V2.Tag(V2.Tag.Command.PROXY, V2.Tag.Family.UNIX, V2.Tag.Protocol.STREAM, srcAddr, 0, dstAddr, 0, null);
             ContentResponse response2 = httpClient.newRequest("localhost", 0)
-                .transportProtocol(new TransportProtocol.TCPUnix(unixDomainPath))
+                .transport(new Transport.TCPUnix(unixDomainPath))
                 .path("/v2")
                 .tag(tag)
                 .timeout(5, TimeUnit.SECONDS)

@@ -33,7 +33,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.proxy.ProxyHandler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -331,7 +331,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
 
         Path unixDomain = getUnixDomainPath();
         if (unixDomain != null)
-            proxyToServerRequest.transportProtocol(new TransportProtocol.TCPUnix(unixDomain));
+            proxyToServerRequest.transport(new Transport.TCPUnix(unixDomain));
 
         super.sendProxyToServerRequest(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
     }

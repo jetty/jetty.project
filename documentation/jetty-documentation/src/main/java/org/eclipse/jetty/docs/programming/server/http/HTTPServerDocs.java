@@ -66,7 +66,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
-import org.eclipse.jetty.server.MemoryTransportProtocol;
+import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -266,8 +266,8 @@ public class HTTPServerDocs
         httpClient.start();
 
         ContentResponse response = httpClient.newRequest("http://localhost/")
-            // Use the memory TransportProtocol to communicate with the server-side.
-            .transportProtocol(new MemoryTransportProtocol(connector))
+            // Use the memory Transport to communicate with the server-side.
+            .transport(new MemoryTransport(connector))
             .send();
         // end::memoryConnector[]
     }

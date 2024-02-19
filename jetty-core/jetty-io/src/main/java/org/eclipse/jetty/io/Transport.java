@@ -28,7 +28,7 @@ import java.util.Objects;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * <p>The low-level transport protocol used by clients.</p>
+ * <p>The low-level transport used by clients.</p>
  * <p>A high-level protocol such as HTTP/1.1 can be transported over a low-level
  * protocol such as TCP/IP, Unix-Domain sockets, QUIC, shared memory, etc.</p>
  * <p>This class defines the programming interface to implement low-level
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * lower-level than others, but from the point of view of the high-level
  * protocols they are all considered low-level.</p>
  * <p>For example, QUIC is typically layered on top of the UDP/IP low-level
- * transport protocol, but it may be layered on top Unix-Domain sockets,
+ * {@code Transport}, but it may be layered on top Unix-Domain sockets,
  * or on top of shared memory.
  * As QUIC provides a reliable, ordered, stream-based transport, it may
  * be seen as a replacement for TCP, and high-level protocols that need
@@ -47,20 +47,20 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * This makes possible to transport HTTP/1.1 over QUIC over Unix-Domain
  * sockets, or HTTP/2 over QUIC over shared memory, etc.</p>
  */
-public interface TransportProtocol
+public interface Transport
 {
     /**
-     * <p>The transport protocol TCP/IP.</p>
+     * <p>The TCP/IP {@code Transport}.</p>
      */
-    TransportProtocol TCP_IP = new TCPIP();
+    Transport TCP_IP = new TCPIP();
 
     /**
-     * <p>The transport protocol UDP/IP.</p>
+     * <p>The UDP/IP {@code Transport}.</p>
      */
-    TransportProtocol UDP_IP = new UDPIP();
+    Transport UDP_IP = new UDPIP();
 
     /**
-     * @return whether this transport protocol is intrinsically secure.
+     * @return whether this {@code Transport} is intrinsically secure.
      */
     default boolean isIntrinsicallySecure()
     {
@@ -68,7 +68,7 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>Returns whether this transport protocol requires resolution of domain
+     * <p>Returns whether this {@code Transport} requires resolution of domain
      * names.</p>
      * <p>When domain name resolution is required, it must be performed by
      * an external service, and the value returned by {@link #getSocketAddress()}
@@ -78,7 +78,7 @@ public interface TransportProtocol
      * by {@link #getSocketAddress()} is eventually passed to
      * {@link #connect(SocketAddress, Map)}.</p>
      *
-     * @return whether this transport protocol requires domain names resolution
+     * @return whether this {@code Transport} requires domain names resolution
      */
     default boolean requiresDomainNamesResolution()
     {
@@ -87,10 +87,10 @@ public interface TransportProtocol
 
     /**
      * <p>Establishes a connection to the given socket address.</p>
-     * <p>For transport protocols that {@link #requiresDomainNamesResolution()
+     * <p>For {@code Transport}s that {@link #requiresDomainNamesResolution()
      * require domain name resolution}, this is the IP address resolved from
      * the domain name.
-     * For transport protocols that do not require domain name resolution
+     * For {@code Transport}s that do not require domain name resolution
      * (for example Unix-Domain sockets, or memory) this is the socket address
      * to connect to.</p>
      *
@@ -110,8 +110,8 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>For transport protocols that are based on sockets, or for transport protocols
-     * that are layered on top of another transport protocol that is based on sockets,
+     * <p>For {@code Transport}s that are based on sockets, or for {@code Transport}s
+     * that are layered on top of another {@code Transport} that is based on sockets,
      * this method is invoked to create a new {@link SelectableChannel} used for the
      * socket communication.</p>
      *
@@ -125,8 +125,8 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>For transport protocols that are based on sockets, or for transport protocols
-     * that are layered on top of another transport protocol that is based on sockets,
+     * <p>For {@code Transport}s that are based on sockets, or for {@code Transport}s
+     * that are layered on top of another {@code Transport} that is based on sockets,
      * this method is invoked to create a new {@link EndPoint} that wraps the
      * {@link SelectableChannel} created by {@link #newSelectableChannel()}.</p>
      *
@@ -143,10 +143,10 @@ public interface TransportProtocol
 
     /**
      * <p>Creates a new {@link Connection} to be associated with the given low-level {@link EndPoint}.</p>
-     * <p>For non-layered transport protocols such as TCP/IP, the {@link Connection} is typically
+     * <p>For non-layered {@code Transport}s such as TCP/IP, the {@link Connection} is typically
      * that of the high-level protocol.
-     * For layered transport protocols such as QUIC, the {@link Connection} is typically that of the
-     * layered transport protocol.</p>
+     * For layered {@code Transport}s such as QUIC, the {@link Connection} is typically that of the
+     * layered {@code Transport}.</p>
      *
      * @param endPoint the {@link EndPoint} to associate the {@link Connection} to
      * @param context the context information to create the connection
@@ -164,9 +164,9 @@ public interface TransportProtocol
     boolean equals(Object obj);
 
     /**
-     * <p>Abstract implementation of transport protocols based on sockets.</p>
+     * <p>Abstract implementation of {@code Transport} based on sockets.</p>
      */
-    abstract class Socket implements TransportProtocol
+    abstract class Socket implements Transport
     {
         @Override
         public void connect(SocketAddress socketAddress, Map<String, Object> context)
@@ -183,7 +183,7 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>Abstract implementation of transport protocols based on IP.</p>
+     * <p>Abstract implementation of {@code Transport} based on IP.</p>
      */
     abstract class IP extends Socket
     {
@@ -195,7 +195,7 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>The TCP/IP transport protocol.</p>
+     * <p>The TCP/IP {@code Transport}.</p>
      */
     class TCPIP extends IP
     {
@@ -218,9 +218,9 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>The UDP/IP transport protocol.</p>
+     * <p>The UDP/IP {@code Transport}.</p>
      */
-    class UDPIP extends TransportProtocol.IP
+    class UDPIP extends Transport.IP
     {
         protected UDPIP()
         {
@@ -241,7 +241,7 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>Abstract implementation of transport protocols based on Unix-Domain sockets.</p>
+     * <p>Abstract implementation of {@code Transport} based on Unix-Domain sockets.</p>
      */
     abstract class Unix extends Socket
     {
@@ -282,7 +282,7 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>The stream Unix-Domain socket transport protocol.</p>
+     * <p>The stream Unix-Domain socket {@code Transport}.</p>
      */
     class TCPUnix extends Unix
     {
@@ -305,7 +305,7 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>The datagram Unix-Domain socket transport protocol.</p>
+     * <p>The datagram Unix-Domain socket {@code Transport}.</p>
      */
     class UDPUnix extends Unix
     {
@@ -328,25 +328,25 @@ public interface TransportProtocol
     }
 
     /**
-     * <p>A wrapper for {@link TransportProtocol} instances to allow layering of transport protocols.</p>
+     * <p>A wrapper for {@link Transport} instances to allow layering of {@code Transport}s.</p>
      */
-    class Wrapper implements TransportProtocol
+    class Wrapper implements Transport
     {
-        private final TransportProtocol wrapped;
+        private final Transport wrapped;
 
-        public Wrapper(TransportProtocol wrapped)
+        public Wrapper(Transport wrapped)
         {
             this.wrapped = Objects.requireNonNull(wrapped);
         }
 
-        public TransportProtocol getWrapped()
+        public Transport getWrapped()
         {
             return wrapped;
         }
 
-        public TransportProtocol unwrap()
+        public Transport unwrap()
         {
-            TransportProtocol result = getWrapped();
+            Transport result = getWrapped();
             while (true)
             {
                 if (result instanceof Wrapper wrapper)

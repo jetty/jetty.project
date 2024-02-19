@@ -131,7 +131,7 @@ A connection may start by speaking one protocol, for example HTTP/1.1, but then 
 
 Two origins with the same `(scheme, host, port, tag)` but different `protocol` create two different destinations and therefore two different connection pools.
 
-Finally, it is possible for a server to speak the same protocol over different xref:pg-client-io-arch-transport[low-level transports] (represented by `TransportProtocol`), for example TCP and Unix-Domain.
+Finally, it is possible for a server to speak the same protocol over different xref:pg-client-io-arch-transport[low-level transports] (represented by `Transport`), for example TCP and Unix-Domain.
 
 Two origins with the same `(scheme, host, port, tag, protocol)` but different low-level transports create two different destinations and therefore two different connection pools.
 

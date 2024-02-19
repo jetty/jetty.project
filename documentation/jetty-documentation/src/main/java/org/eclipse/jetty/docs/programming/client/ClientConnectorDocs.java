@@ -30,7 +30,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -143,8 +143,8 @@ public class ClientConnectorDocs
         int port = 8080;
         SocketAddress address = new InetSocketAddress(host, port);
 
-        // The TransportProtocol instance.
-        TransportProtocol transportProtocol = TransportProtocol.TCP_IP;
+        // The Transport instance.
+        Transport transport = Transport.TCP_IP;
 
         // The ClientConnectionFactory that creates CustomConnection instances.
         ClientConnectionFactory connectionFactory = (endPoint, context) ->
@@ -158,7 +158,7 @@ public class ClientConnectorDocs
 
         // Populate the context with the mandatory keys to create and obtain connections.
         Map<String, Object> context = new ConcurrentHashMap<>();
-        context.put(TransportProtocol.class.getName(), transportProtocol);
+        context.put(Transport.class.getName(), transport);
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
@@ -272,7 +272,7 @@ public class ClientConnectorDocs
         CompletableFuture<TelnetConnection> connectionPromise = new Promise.Completable<>();
 
         Map<String, Object> context = new HashMap<>();
-        context.put(TransportProtocol.class.getName(), TransportProtocol.TCP_IP);
+        context.put(Transport.class.getName(), Transport.TCP_IP);
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
@@ -397,7 +397,7 @@ public class ClientConnectorDocs
         CompletableFuture<SslConnection> connectionPromise = new Promise.Completable<>();
 
         Map<String, Object> context = new ConcurrentHashMap<>();
-        context.put(TransportProtocol.class.getName(), TransportProtocol.TCP_IP);
+        context.put(Transport.class.getName(), Transport.TCP_IP);
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);

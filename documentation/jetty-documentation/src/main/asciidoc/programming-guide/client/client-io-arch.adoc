@@ -43,13 +43,13 @@ The Jetty client libraries use the common I/O design described in xref:pg-arch-i
 The common I/O components and concepts are used for all low-level transports.
 The only partial exception is the xref:pg-client-io-arch-memory[memory transport], which is not based on network components; as such it does not need a `SelectorManager`, but it exposes `EndPoint` so that high-level protocols have a common interface to interact with the low-level transport.
 
-The client-side abstraction for the low-level transport is `org.eclipse.jetty.io.TransportProtocol`.
+The client-side abstraction for the low-level transport is `org.eclipse.jetty.io.Transport`.
 
-`TransportProtocol` represents how high-level protocols can be transported; there is `TransportProtocol.TCP_IP` that represents communication over TCP, but also `TransportProtocol.TCPUnix` for Unix-Domain sockets, `QuicTransportProtocol` for QUIC and `MemoryTransportProtocol` for memory.
+`Transport` represents how high-level protocols can be transported; there is `Transport.TCP_IP` that represents communication over TCP, but also `Transport.TCPUnix` for Unix-Domain sockets, `QuicTransport` for QUIC and `MemoryTransport` for memory.
 
-Applications can specify the `TransportProtocol` to use for each request as described in xref:pg-client-http-api-protocol[this section].
+Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-protocol[this section].
 
-When the `TransportProtocol` implementation uses the network, it delegates to `org.eclipse.jetty.io.ClientConnector`.
+When the `Transport` implementation uses the network, it delegates to `org.eclipse.jetty.io.ClientConnector`.
 
 `ClientConnector` primarily wraps `org.eclipse.jetty.io.SelectorManager` to provide network functionalities, and aggregates other four components:
 
@@ -109,7 +109,7 @@ link:https://openjdk.java.net/jeps/380[JEP 380] introduced Unix-Domain sockets s
 
 `ClientConnector` handles Unix-Domain sockets exactly like it handles regular TCP sockets, so there is no additional configuration necessary -- Unix-Domain sockets are supported out-of-the-box.
 
-Applications can specify the `TransportProtocol` to use for each request as described in xref:pg-client-http-api-protocol[this section].
+Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-protocol[this section].
 
 [[pg-client-io-arch-memory]]
 ===== Memory Support
@@ -117,9 +117,9 @@ Applications can specify the `TransportProtocol` to use for each request as desc
 In addition to support communication between client and server via network or Unix-Domain, the Jetty client libraries also support communication between client and server via memory for intra-process communication.
 This means that the client and server must be in the same JVM process.
 
-This functionality is provided by `org.eclipse.jetty.server.MemoryTransportProtocol`, which does not delegate to `ClientConnector`, but instead delegates to the server-side `MemoryConnector` and its related classes.
+This functionality is provided by `org.eclipse.jetty.server.MemoryTransport`, which does not delegate to `ClientConnector`, but instead delegates to the server-side `MemoryConnector` and its related classes.
 
-Applications can specify the `TransportProtocol` to use for each request as described in xref:pg-client-http-api-protocol[this section].
+Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-protocol[this section].
 
 [[pg-client-io-arch-protocol]]
 ==== Protocol Layer
@@ -132,7 +132,7 @@ On the client side, a `ClientConnectionFactory` implementation is the component 
 
 Applications may use `ClientConnector.connect(SocketAddress, Map<String, Object>)` to establish a TCP connection to the server, and must provide `ClientConnector` with the following information in the context map:
 
-* A `TransportProtocol` instance that specifies the low-level transport to use.
+* A `Transport` instance that specifies the low-level transport to use.
 * A `ClientConnectionFactory` that creates `Connection` instances for the high-level protocol.
 * A `Promise` that is notified when the connection creation succeeds or fails.
 

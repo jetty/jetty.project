@@ -29,7 +29,7 @@ import org.eclipse.jetty.http2.client.transport.internal.HTTPSessionListenerProm
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Promise;
@@ -78,9 +78,9 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
         }
 
         @Override
-        public TransportProtocol newTransportProtocol()
+        public Transport newTransport()
         {
-            return TransportProtocol.TCP_IP;
+            return Transport.TCP_IP;
         }
 
         @Override

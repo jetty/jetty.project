@@ -36,8 +36,8 @@ import org.eclipse.jetty.http3.client.transport.internal.HttpConnectionOverHTTP3
 import org.eclipse.jetty.http3.client.transport.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
-import org.eclipse.jetty.quic.client.QuicTransportProtocol;
+import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
 
@@ -87,9 +87,9 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     @Override
     public Origin newOrigin(Request request)
     {
-        TransportProtocol transportProtocol = request.getTransportProtocol();
-        if (transportProtocol == null)
-            request.transportProtocol(new QuicTransportProtocol(http3Client.getQuicConfiguration()));
+        Transport transport = request.getTransport();
+        if (transport == null)
+            request.transport(new QuicTransport(http3Client.getQuicConfiguration()));
         return getHttpClient().createOrigin(request, new Origin.Protocol(List.of("h3"), false));
     }
 
@@ -112,7 +112,7 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, destination.getClientConnectionFactory());
 
         SessionClientListener listener = new TransportSessionClientListener(context);
-        getHTTP3Client().connect(destination.getOrigin().getTransportProtocol(), address, listener, context)
+        getHTTP3Client().connect(destination.getOrigin().getTransport(), address, listener, context)
             .whenComplete(listener::onConnect);
     }
 

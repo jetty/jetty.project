@@ -35,7 +35,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MemoryEndPointPipe;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -67,7 +67,7 @@ import static org.hamcrest.Matchers.is;
  * Remote Server (SSH) - - > In-Memory Gateway -> Response Bytes -> Remote MemoryEndPoint -> HttpClient -> Proxy -> Client
  * }
  */
-public class CustomTransportProtocolTest
+public class CustomTransportTest
 {
     private static final String CONTENT = "CONTENT";
 
@@ -97,7 +97,7 @@ public class CustomTransportProtocolTest
     }
 
     @Test
-    public void testCustomTransportProtocol() throws Exception
+    public void testCustomTransport() throws Exception
     {
         Gateway gateway = new Gateway();
 
@@ -109,7 +109,7 @@ public class CustomTransportProtocolTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 var gatewayRequest = httpClient.newRequest("http://localhost/")
-                    .transportProtocol(new GatewayTransportProtocol(httpClient.getScheduler(), gateway))
+                    .transport(new GatewayTransport(httpClient.getScheduler(), gateway))
                     .method(request.getMethod())
                     .path(request.getHttpURI().getPathQuery())
                     .timeout(5, TimeUnit.SECONDS);
@@ -164,12 +164,12 @@ public class CustomTransportProtocolTest
         assertThat(response.getContentAsString(), is(CONTENT));
     }
 
-    private static class GatewayTransportProtocol implements TransportProtocol
+    private static class GatewayTransport implements Transport
     {
         private final Scheduler scheduler;
         private final Gateway gateway;
 
-        private GatewayTransportProtocol(Scheduler scheduler, Gateway gateway)
+        private GatewayTransport(Scheduler scheduler, Gateway gateway)
         {
             this.scheduler = scheduler;
             this.gateway = gateway;
@@ -195,8 +195,8 @@ public class CustomTransportProtocolTest
                 ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
                 localEndPoint.setIdleTimeout(clientConnector.getIdleTimeout().toMillis());
 
-                TransportProtocol transportProtocol = (TransportProtocol)context.get(TransportProtocol.class.getName());
-                Connection connection = transportProtocol.newConnection(localEndPoint, context);
+                Transport transport = (Transport)context.get(Transport.class.getName());
+                Connection connection = transport.newConnection(localEndPoint, context);
                 localEndPoint.setConnection(connection);
 
                 localEndPoint.onOpen();
@@ -219,7 +219,7 @@ public class CustomTransportProtocolTest
         {
             if (this == obj)
                 return true;
-            if (obj instanceof GatewayTransportProtocol that)
+            if (obj instanceof GatewayTransport that)
                 return Objects.equals(gateway, that.gateway);
             return false;
         }

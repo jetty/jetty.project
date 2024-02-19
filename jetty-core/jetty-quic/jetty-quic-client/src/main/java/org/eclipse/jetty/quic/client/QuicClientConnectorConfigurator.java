@@ -29,7 +29,7 @@ import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * {@link SocketChannelEndPoint}s.</p>
  *
  * @see QuicConfiguration
- * @deprecated replaced by {@link TransportProtocol}
+ * @deprecated replaced by {@link Transport}
  */
 @Deprecated(since = "12.0.7", forRemoval = true)
 public class QuicClientConnectorConfigurator extends ClientConnector.Configurator
@@ -97,9 +97,9 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     }
 
     @Override
-    public TransportProtocol newTransportProtocol()
+    public Transport newTransport()
     {
-        return new QuicTransportProtocol(quicConfig);
+        return new QuicTransport(quicConfig);
     }
 
     @Override

@@ -23,8 +23,8 @@ import org.eclipse.jetty.http3.client.HTTP3ClientConnectionFactory;
 import org.eclipse.jetty.http3.client.transport.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
-import org.eclipse.jetty.quic.client.QuicTransportProtocol;
+import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -73,9 +73,9 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
         }
 
         @Override
-        public TransportProtocol newTransportProtocol()
+        public Transport newTransport()
         {
-            return new QuicTransportProtocol(getHTTP3Client().getQuicConfiguration());
+            return new QuicTransport(getHTTP3Client().getQuicConfiguration());
         }
 
         @Override

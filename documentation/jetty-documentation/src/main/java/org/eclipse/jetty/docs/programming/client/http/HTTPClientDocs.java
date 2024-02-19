@@ -72,12 +72,12 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
-import org.eclipse.jetty.server.MemoryTransportProtocol;
+import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -1160,7 +1160,7 @@ public class HTTPClientDocs
 
         ContentResponse response = httpClient.newRequest("jetty.org", 80)
             // Specify that the request must be sent over Unix-Domain.
-            .transportProtocol(new TransportProtocol.TCPUnix(unixDomainPath))
+            .transport(new Transport.TCPUnix(unixDomainPath))
             .send();
         // end::unixDomain[]
     }
@@ -1181,17 +1181,17 @@ public class HTTPClientDocs
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
-        // Use the MemoryTransportProtocol to communicate with the server-side.
-        TransportProtocol transportProtocol = new MemoryTransportProtocol(memoryConnector);
+        // Use the MemoryTransport to communicate with the server-side.
+        Transport transport = new MemoryTransport(memoryConnector);
 
         httpClient.newRequest("http://localhost/")
-            // Specify the TransportProtocol to use.
-            .transportProtocol(transportProtocol)
+            // Specify the Transport to use.
+            .transport(transport)
             .send();
         // end::memory[]
     }
 
-    public void mixedTransportProtocols() throws Exception
+    public void mixedTransports() throws Exception
     {
         Path unixDomainPath = Path.of("/path/to/server.sock");
 
@@ -1212,19 +1212,19 @@ public class HTTPClientDocs
         HTTP3Client http3Client = new HTTP3Client(quicConfiguration, clientConnector);
         ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client);
 
-        // tag::mixedTransportProtocols[]
+        // tag::mixedTransports[]
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, http2, http1, http3));
         httpClient.start();
 
         // Make a TCP request to a 3rd party web application.
         ContentResponse thirdPartyResponse = httpClient.newRequest("https://third-party.com/api")
-            // No need to specify the TransportProtocol, TCP will be used by default.
+            // No need to specify the Transport, TCP will be used by default.
             .send();
 
         // Upload the third party response content to a validation process.
         ContentResponse validatedResponse = httpClient.newRequest("http://localhost/validate")
             // The validation process is available via Unix-Domain.
-            .transportProtocol(new TransportProtocol.TCPUnix(unixDomainPath))
+            .transport(new Transport.TCPUnix(unixDomainPath))
             .method(HttpMethod.POST)
             .body(new BytesRequestContent(thirdPartyResponse.getContent()))
             .send();
@@ -1233,10 +1233,10 @@ public class HTTPClientDocs
         // it to another web application in the same Jetty server.
         ContentResponse response = httpClient.newRequest("http://localhost/process")
             // The processing is in-memory.
-            .transportProtocol(new MemoryTransportProtocol(memoryConnector))
+            .transport(new MemoryTransport(memoryConnector))
             .method(HttpMethod.POST)
             .body(new BytesRequestContent(validatedResponse.getContent()))
             .send();
-        // end::mixedTransportProtocols[]
+        // end::mixedTransports[]
     }
 }

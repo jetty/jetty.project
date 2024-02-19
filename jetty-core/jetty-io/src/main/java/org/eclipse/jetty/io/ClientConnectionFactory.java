@@ -92,9 +92,9 @@ public interface ClientConnectionFactory
         }
 
         /**
-         * @return the default {@link TransportProtocol} used by the protocol
+         * @return the default {@link Transport} used by the protocol
          */
-        public abstract TransportProtocol newTransportProtocol();
+        public abstract Transport newTransport();
 
         /**
          * <p>Tests whether one of the protocol identifiers of this

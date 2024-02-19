@@ -20,24 +20,24 @@ import java.util.Objects;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 
 /**
- * <p>A {@link TransportProtocol} for QUIC that delegates to another {@code TransportProtocol}.</p>
- * <p>By default, the delegate is {@link TransportProtocol#UDP_IP}, but it may be a different
+ * <p>A {@link Transport} for QUIC that delegates to another {@code Transport}.</p>
+ * <p>By default, the delegate is {@link Transport#UDP_IP}, but it may be a different
  * implementation.</p>
  */
-public class QuicTransportProtocol extends TransportProtocol.Wrapper
+public class QuicTransport extends Transport.Wrapper
 {
     private final ClientQuicConfiguration quicConfiguration;
 
-    public QuicTransportProtocol(ClientQuicConfiguration quicConfiguration)
+    public QuicTransport(ClientQuicConfiguration quicConfiguration)
     {
         this(UDP_IP, quicConfiguration);
     }
 
-    public QuicTransportProtocol(TransportProtocol wrapped, ClientQuicConfiguration quicConfiguration)
+    public QuicTransport(Transport wrapped, ClientQuicConfiguration quicConfiguration)
     {
         super(wrapped);
         this.quicConfiguration = quicConfiguration;
@@ -74,7 +74,7 @@ public class QuicTransportProtocol extends TransportProtocol.Wrapper
     {
         if (this == obj)
             return true;
-        if (obj instanceof QuicTransportProtocol that)
+        if (obj instanceof QuicTransport that)
             return Objects.equals(getWrapped(), that.getWrapped());
         return false;
     }

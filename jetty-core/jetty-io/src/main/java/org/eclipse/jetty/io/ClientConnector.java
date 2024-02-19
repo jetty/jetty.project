@@ -85,7 +85,7 @@ public class ClientConnector extends ContainerLifeCycle
      *
      * @param path the Unix-Domain path to connect to
      * @return a ClientConnector that connects to the given Unix-Domain path
-     * @deprecated replaced by {@link TransportProtocol.TCPUnix}
+     * @deprecated replaced by {@link Transport.TCPUnix}
      */
     @Deprecated(since = "12.0.7", forRemoval = true)
     public static ClientConnector forUnixDomain(Path path)
@@ -117,7 +117,7 @@ public class ClientConnector extends ContainerLifeCycle
 
     /**
      * @param configurator the {@link Configurator}
-     * @deprecated replaced by {@link TransportProtocol}
+     * @deprecated replaced by {@link Transport}
      */
     @Deprecated(since = "12.0.7", forRemoval = true)
     public ClientConnector(Configurator configurator)
@@ -132,7 +132,7 @@ public class ClientConnector extends ContainerLifeCycle
      * @return whether the connection to the given SocketAddress is intrinsically secure
      * @see Configurator#isIntrinsicallySecure(ClientConnector, SocketAddress)
      *
-     * @deprecated replaced by {@link TransportProtocol#isIntrinsicallySecure()}
+     * @deprecated replaced by {@link Transport#isIntrinsicallySecure()}
      */
     @Deprecated(since = "12.0.7", forRemoval = true)
     public boolean isIntrinsicallySecure(SocketAddress address)
@@ -151,18 +151,18 @@ public class ClientConnector extends ContainerLifeCycle
     }
 
     /**
-     * <p>Returns the default {@link TransportProtocol} for this connector.</p>
+     * <p>Returns the default {@link Transport} for this connector.</p>
      * <p>This method only exists for backwards compatibility, when
      * {@link Configurator} was used, and should be removed when
      * {@link Configurator} is removed.</p>
      *
-     * @return the default {@link TransportProtocol} for this connector
-     * @deprecated use {@link TransportProtocol} instead
+     * @return the default {@link Transport} for this connector
+     * @deprecated use {@link Transport} instead
      */
     @Deprecated(since = "12.0.7", forRemoval = true)
-    public TransportProtocol newTransportProtocol()
+    public Transport newTransport()
     {
-        return configurator.newTransportProtocol();
+        return configurator.newTransport();
     }
 
     public void setExecutor(Executor executor)
@@ -433,7 +433,7 @@ public class ClientConnector extends ContainerLifeCycle
         {
             context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, this);
 
-            TransportProtocol transport = (TransportProtocol)context.get(TransportProtocol.class.getName());
+            Transport transport = (Transport)context.get(Transport.class.getName());
 
             if (address == null)
                 address = transport.getSocketAddress();
@@ -554,14 +554,14 @@ public class ClientConnector extends ContainerLifeCycle
     {
         @SuppressWarnings("unchecked")
         Map<String, Object> context = (Map<String, Object>)selectionKey.attachment();
-        TransportProtocol transportProtocol = (TransportProtocol)context.get(TransportProtocol.class.getName());
-        return transportProtocol.newEndPoint(getScheduler(), selector, selectable, selectionKey);
+        Transport transport = (Transport)context.get(Transport.class.getName());
+        return transport.newEndPoint(getScheduler(), selector, selectable, selectionKey);
     }
 
     protected Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        TransportProtocol transportProtocol = (TransportProtocol)context.get(TransportProtocol.class.getName());
-        return transportProtocol.newConnection(endPoint, context);
+        Transport transport = (Transport)context.get(Transport.class.getName());
+        return transport.newConnection(endPoint, context);
     }
 
     protected void acceptFailed(Throwable failure, SelectableChannel channel, Map<String, Object> context)
@@ -637,15 +637,15 @@ public class ClientConnector extends ContainerLifeCycle
     /**
      * <p>Configures a {@link ClientConnector}.</p>
      *
-     * @deprecated replaced by {@link TransportProtocol}
+     * @deprecated replaced by {@link Transport}
      */
     @Deprecated(since = "12.0.7", forRemoval = true)
     public static class Configurator extends ContainerLifeCycle
     {
         /**
-         * @return the default {@link TransportProtocol} for this configurator
+         * @return the default {@link Transport} for this configurator
          */
-        public TransportProtocol newTransportProtocol()
+        public Transport newTransport()
         {
             return null;
         }
@@ -709,7 +709,7 @@ public class ClientConnector extends ContainerLifeCycle
         /**
          * <p>A pair/record holding a {@link SelectableChannel} and a {@link SocketAddress} to connect to.</p>
          *
-         * @deprecated replaced by {@link TransportProtocol}
+         * @deprecated replaced by {@link Transport}
          */
         @Deprecated(since = "12.0.7", forRemoval = true)
         public static class ChannelWithAddress
@@ -739,9 +739,9 @@ public class ClientConnector extends ContainerLifeCycle
             return new Configurator()
             {
                 @Override
-                public TransportProtocol newTransportProtocol()
+                public Transport newTransport()
                 {
-                    return new TransportProtocol.TCPUnix(path);
+                    return new Transport.TCPUnix(path);
                 }
 
                 @Override

@@ -71,7 +71,7 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
         context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, connector);
-        destination.getOrigin().getTransportProtocol().connect(address, context);
+        destination.getOrigin().getTransport().connect(address, context);
     }
 
     @Override

@@ -50,7 +50,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -468,16 +468,16 @@ public class HttpClient extends ContainerLifeCycle
         host = host.toLowerCase(Locale.ENGLISH);
         int port = request.getPort();
         port = normalizePort(scheme, port);
-        TransportProtocol transportProtocol = request.getTransportProtocol();
-        if (transportProtocol == null)
+        Transport transport = request.getTransport();
+        if (transport == null)
         {
             // Ask the ClientConnector for backwards compatibility
             // until ClientConnector.Configurator is removed.
-            transportProtocol = connector.newTransportProtocol();
-            if (transportProtocol == null)
-                transportProtocol = TransportProtocol.TCP_IP;
+            transport = connector.newTransport();
+            if (transport == null)
+                transport = Transport.TCP_IP;
         }
-        return new Origin(scheme, new Origin.Address(host, port), request.getTag(), protocol, transportProtocol);
+        return new Origin(scheme, new Origin.Address(host, port), request.getTag(), protocol, transport);
     }
 
     /**
@@ -540,10 +540,10 @@ public class HttpClient extends ContainerLifeCycle
         if (proxy != null)
             origin = proxy.getOrigin();
 
-        TransportProtocol transportProtocol = origin.getTransportProtocol();
-        context.put(TransportProtocol.class.getName(), transportProtocol);
+        Transport transport = origin.getTransport();
+        context.put(Transport.class.getName(), transport);
 
-        if (transportProtocol.requiresDomainNamesResolution())
+        if (transport.requiresDomainNamesResolution())
         {
             Origin.Address address = origin.getAddress();
             getSocketAddressResolver().resolve(address.getHost(), address.getPort(), new Promise<>()
@@ -574,14 +574,14 @@ public class HttpClient extends ContainerLifeCycle
                                 connect(socketAddresses, nextIndex, context);
                         }
                     });
-                    transport.connect((SocketAddress)socketAddresses.get(index), context);
+                    HttpClient.this.transport.connect((SocketAddress)socketAddresses.get(index), context);
                 }
             });
         }
         else
         {
             context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
-            transport.connect(transportProtocol.getSocketAddress(), context);
+            this.transport.connect(transport.getSocketAddress(), context);
         }
     }
 

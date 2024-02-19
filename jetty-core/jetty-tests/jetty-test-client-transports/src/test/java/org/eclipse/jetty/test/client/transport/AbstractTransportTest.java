@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(WorkDirExtension.class)
-public abstract class AbstractTransportProtocolTest
+public abstract class AbstractTransportTest
 {
     protected Server server;
 

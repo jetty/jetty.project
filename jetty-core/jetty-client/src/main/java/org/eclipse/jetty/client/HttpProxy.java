@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -54,7 +54,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public HttpProxy(Origin.Address address, boolean secure, Origin.Protocol protocol)
     {
-        this(new Origin(secure ? "https" : "http", address, null, protocol, TransportProtocol.TCP_IP), null);
+        this(new Origin(secure ? "https" : "http", address, null, protocol, Transport.TCP_IP), null);
     }
 
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
@@ -64,7 +64,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
     {
-        this(new Origin(sslContextFactory == null ? "http" : "https", address, null, protocol, TransportProtocol.TCP_IP), sslContextFactory);
+        this(new Origin(sslContextFactory == null ? "http" : "https", address, null, protocol, Transport.TCP_IP), sslContextFactory);
     }
 
     public HttpProxy(Origin origin, SslContextFactory.Client sslContextFactory)

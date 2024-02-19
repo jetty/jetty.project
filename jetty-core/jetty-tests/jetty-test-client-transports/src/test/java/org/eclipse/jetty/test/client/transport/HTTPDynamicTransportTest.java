@@ -47,9 +47,9 @@ import org.eclipse.jetty.http3.client.transport.ClientConnectionFactoryOverHTTP3
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.TransportProtocol;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.client.QuicTransportProtocol;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.server.QuicServerConnectionFactory;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
@@ -58,7 +58,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
-import org.eclipse.jetty.server.MemoryTransportProtocol;
+import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ServerConnector;
@@ -80,7 +80,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HTTPDynamicTransportProtocolTest extends AbstractTransportProtocolTest
+public class HTTPDynamicTransportTest extends AbstractTransportTest
 {
     private SslContextFactory.Server sslServer;
     private Path pemServerDir;
@@ -380,7 +380,7 @@ public class HTTPDynamicTransportProtocolTest extends AbstractTransportProtocolT
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", tcp.getLocalPort())
-            .transportProtocol(new TransportProtocol.TCPUnix(unixDomainPath))
+            .transport(new Transport.TCPUnix(unixDomainPath))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -409,9 +409,9 @@ public class HTTPDynamicTransportProtocolTest extends AbstractTransportProtocolT
 
         server.start();
 
-        TransportProtocol.TCPUnix transportProtocol = new TransportProtocol.TCPUnix(unixDomainPath);
+        Transport.TCPUnix transport = new Transport.TCPUnix(unixDomainPath);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        http2Client.connect(transportProtocol, null, new HTTP2ClientConnectionFactory(), new Session.Listener() {}, promise, null);
+        http2Client.connect(transport, null, new HTTP2ClientConnectionFactory(), new Session.Listener() {}, promise, null);
         Session session = promise.get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
@@ -445,7 +445,7 @@ public class HTTPDynamicTransportProtocolTest extends AbstractTransportProtocolT
         server.start();
 
         ContentResponse response = httpClient.newRequest("http://localhost/")
-            .transportProtocol(new MemoryTransportProtocol(local))
+            .transport(new MemoryTransport(local))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -476,10 +476,10 @@ public class HTTPDynamicTransportProtocolTest extends AbstractTransportProtocolT
         server.start();
 
         ClientQuicConfiguration clientQuicConfiguration = new ClientQuicConfiguration(sslClient, null);
-        QuicTransportProtocol transportProtocol = new QuicTransportProtocol(clientQuicConfiguration);
+        QuicTransport transport = new QuicTransport(clientQuicConfiguration);
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transportProtocol(transportProtocol)
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -508,10 +508,10 @@ public class HTTPDynamicTransportProtocolTest extends AbstractTransportProtocolT
 
         server.start();
 
-        TransportProtocol transportProtocol = new QuicTransportProtocol(new MemoryTransportProtocol(connector), http3Client.getQuicConfiguration());
+        Transport transport = new QuicTransport(new MemoryTransport(connector), http3Client.getQuicConfiguration());
 
         ContentResponse response = httpClient.newRequest("https://localhost/")
-            .transportProtocol(transportProtocol)
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
