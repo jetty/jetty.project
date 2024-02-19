@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.osgi.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
@@ -92,6 +93,26 @@ public class TestOSGiUtil
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
         options.add(systemProperty("jetty.http.port").value("0"));
         options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
+        return options;
+    }
+
+    public static List<Option>  configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
+    {
+        //use the default set of config files embedded in jetty boot jar
+        List<Option> options = new ArrayList<>();
+        StringBuffer xmlConfigs = new StringBuffer();
+        xmlConfigs.append(JettyBootstrapActivator.DEFAULT_JETTY_ETC_FILES);
+        xmlConfigs.append(",");
+        //add in a couple of external files needed for testing
+        File etc = new File(FS.separators("src/test/config/etc"));
+        xmlConfigs.append(new File(etc, jettyConnectorListenerFileName).toURI());
+        xmlConfigs.append(",");
+        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
+        options.add(systemProperty("jetty.http.port").value("0"));
+        options.add(systemProperty(OSGiServerConstants.JETTY_HOME_BUNDLE).value("org.eclipse.jetty.ee10.osgi.boot"));
         options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
         return options;
     }

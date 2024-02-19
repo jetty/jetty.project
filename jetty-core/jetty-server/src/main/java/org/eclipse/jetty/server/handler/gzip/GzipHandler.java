@@ -57,7 +57,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     private final IncludeExclude<String> _inflatePaths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
-    private HttpField _vary = GzipResponseAndCallback.VARY_ACCEPT_ENCODING;
+    private HttpField _vary = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
     /**
      * Instantiates a new GzipHandler.
@@ -88,7 +88,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         _mimeTypes.exclude("application/compress");
         _mimeTypes.exclude("application/zip");
         _mimeTypes.exclude("application/gzip");
-        _mimeTypes.exclude("application/bzip2");
+        _mimeTypes.exclude("application/x-bzip2");
         _mimeTypes.exclude("application/brotli");
         _mimeTypes.exclude("application/x-xz");
         _mimeTypes.exclude("application/x-rar-compressed");
@@ -380,14 +380,16 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     {
         if (contentLength >= 0 && contentLength < _minGzipSize)
         {
-            LOG.debug("{} excluded minGzipSize {}", this, request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} excluded minGzipSize {}", this, request);
             return null;
         }
 
         // check the accept encoding header
         if (!request.getHeaders().contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
         {
-            LOG.debug("{} excluded not gzip accept {}", this, request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} excluded not gzip accept {}", this, request);
             return null;
         }
 
@@ -577,17 +579,18 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             request = new GzipRequest(request, inflatable && tryInflate ? getInflateBufferSize() : -1);
         }
 
+        if (tryDeflate && _vary != null)
+        {
+            // The response may vary based on the presence or lack of Accept-Encoding.
+            response.getHeaders().ensureField(_vary);
+        }
+
         // Wrap the response and callback IFF we can be deflated and will try to deflate
         if (deflatable && tryDeflate)
         {
             GzipResponseAndCallback gzipResponseAndCallback = new GzipResponseAndCallback(this, request, response, callback);
             response = gzipResponseAndCallback;
             callback = gzipResponseAndCallback;
-        }
-        else if (tryDeflate && _vary != null)
-        {
-            // We are not wrapping the response, but could have if request accepted, so we add a Vary header.
-            response.getHeaders().ensureField(_vary);
         }
 
         // Call handle() with the possibly wrapped request, response and callback

@@ -492,13 +492,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public String toString()
     {
         int q;
-        ByteBuffer b;
+        Object b;
         String o;
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock lock = _lock.tryLock())
         {
-            q = _inQ.size();
-            b = _inQ.peek();
-            o = BufferUtil.toDetailString(_out);
+            boolean held = lock.isHeldByCurrentThread();
+            q = held ? _inQ.size() : -1;
+            b = held ? _inQ.peek() : "?";
+            o = held ? BufferUtil.toDetailString(_out) : "?";
         }
         return String.format("%s[q=%d,q[0]=%s,o=%s]", super.toString(), q, b, o);
     }

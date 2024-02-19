@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -100,8 +102,11 @@ public class ServletMultiPartFormData
                 ? servletContextRequest.getContext().getTempDirectory()
                 : new File(config.getLocation());
 
+            HttpChannel httpChannel = HttpChannel.from(servletContextRequest);
+            ComplianceViolation.Listener complianceViolationListener = httpChannel.getComplianceViolationListener();
+
             // Look for an existing future MultiPartFormData.Parts
-            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.from(servletContextRequest, boundary, parser ->
+            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.from(servletContextRequest, complianceViolationListener, boundary, parser ->
             {
                 try
                 {

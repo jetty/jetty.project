@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-distribution</artifactId>
-    <version>12.0.6-SNAPSHOT</version>
+    <version>12.0.7-SNAPSHOT</version>
   </parent>
   <artifactId>test-ee9-distribution</artifactId>
   <packaging>jar</packaging>
@@ -13,40 +13,9 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.ee9.distribution</bundle-symbolic-name>
-    <!-- jetty-home is creating some issues with upperbound -->
-    <!--    <enforcer.skip>true</enforcer.skip>-->
   </properties>
 
-  <dependencyManagement>
-    <dependencies>
-      <!-- doesn't work with partial build -->
-      <!--      <dependency>-->
-      <!--        <groupId>org.eclipse.jetty.ee9</groupId>-->
-      <!--        <artifactId>jetty-ee9-bom</artifactId>-->
-      <!--        <version>${project.version}</version>-->
-      <!--        <scope>import</scope>-->
-      <!--        <type>pom</type>-->
-      <!--      </dependency>-->
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-distribution-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
@@ -55,7 +24,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -75,6 +43,11 @@
       <artifactId>jetty-ee9-test-openid-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-testers</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

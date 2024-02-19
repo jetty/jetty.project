@@ -18,7 +18,7 @@ xmemcached.version?=@xmemcached.version@
 
 [lib]
 lib/jetty-memcached-sessions-${jetty.version}.jar
-lib/xmemcached/*.jar
+lib/xmemcached/xmemcached-${xmemcached.version}.jar
 
 [license]
 Xmemcached is an open source project hosted on Github and released under the Apache 2.0 license.

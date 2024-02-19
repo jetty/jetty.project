@@ -229,7 +229,6 @@ public class HttpParser
     private final HttpHandler _handler;
     private final RequestHandler _requestHandler;
     private final ResponseHandler _responseHandler;
-    private final ComplianceViolation.Listener _complianceListener;
     private final int _maxHeaderBytes;
     private final HttpCompliance _complianceMode;
     private final Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH);
@@ -309,7 +308,6 @@ public class HttpParser
         _responseHandler = responseHandler;
         _maxHeaderBytes = maxHeaderBytes;
         _complianceMode = compliance;
-        _complianceListener = (ComplianceViolation.Listener)(_handler instanceof ComplianceViolation.Listener ? _handler : null);
     }
 
     public long getBeginNanoTime()
@@ -357,8 +355,8 @@ public class HttpParser
 
     protected void reportComplianceViolation(Violation violation, String reason)
     {
-        if (_complianceListener != null)
-            _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
+        if (_requestHandler != null)
+            _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
     }
 
     protected String caseInsensitiveHeader(String orig, String normative)
@@ -1520,6 +1518,10 @@ public class HttpParser
             // Start a request/response
             if (_state == State.START)
             {
+                if (_requestHandler != null)
+                    _requestHandler.messageBegin();
+                if (_responseHandler != null)
+                    _responseHandler.messageBegin();
                 _version = null;
                 _method = null;
                 _methodString = null;
@@ -1990,6 +1992,8 @@ public class HttpParser
      */
     public interface HttpHandler
     {
+        default void messageBegin() {}
+
         boolean content(ByteBuffer item);
 
         boolean headerComplete();
@@ -2019,6 +2023,14 @@ public class HttpParser
          * during the parsing of an HTTP message
          */
         void earlyEOF();
+
+        /**
+         * Called to indicate that a {@link ComplianceViolation} has occurred.
+         * @param event the Compliance Violation event
+         */
+        default void onViolation(ComplianceViolation.Event event)
+        {
+        }
 
         /**
          * Called to signal that a bad HTTP message has been received.
@@ -2128,7 +2140,7 @@ public class HttpParser
 
         public boolean cacheable(HttpHeader header, String valueString)
         {
-            return isEnabled() && header != null && valueString.length() <= _size;
+            return isEnabled() && header != null && valueString != null && valueString.length() <= _size;
         }
 
         private void prepare()

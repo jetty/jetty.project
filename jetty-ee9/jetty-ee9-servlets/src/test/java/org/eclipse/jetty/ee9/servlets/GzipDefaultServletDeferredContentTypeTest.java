@@ -39,7 +39,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
@@ -123,7 +122,7 @@ public class GzipDefaultServletDeferredContentTypeTest extends AbstractGzipTest
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
 
         // Response Vary check
-        assertThat("Response[Vary]", response.get("Vary"), is(emptyOrNullString()));
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);

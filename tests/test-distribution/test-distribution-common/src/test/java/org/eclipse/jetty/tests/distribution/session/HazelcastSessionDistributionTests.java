@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.tests.distribution.session;
 
-import java.io.File;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -161,10 +161,10 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
                 assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, run1.getExitValue());
 
-                File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-session-webapp:war:" + jettyVersion);
-                distribution.installWarFile(war, "test");
+                Path war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-session-webapp:war:" + jettyVersion);
+                distribution.installWar(war, "test");
 
-                int port = distribution.freePort();
+                int port = Tester.freePort();
                 List<String> argsStart = Arrays.asList(
                     "jetty.http.port=" + port,
                     "jetty.session.hazelcast.onlyClient=false",

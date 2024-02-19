@@ -77,13 +77,22 @@ public class MultiPartFormData
     {
     }
 
+    /**
+     * @deprecated use {@link #from(Attributes, ComplianceViolation.Listener, String, Function)} instead.  This method will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.6", forRemoval = true)
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    {
+        return from(attributes, ComplianceViolation.Listener.NOOP, boundary, parse);
+    }
+
+    public static CompletableFuture<Parts> from(Attributes attributes, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         @SuppressWarnings("unchecked")
         CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
         if (futureParts == null)
         {
-            futureParts = parse.apply(new Parser(boundary));
+            futureParts = parse.apply(new Parser(boundary, listener));
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
         }
         return futureParts;
@@ -200,6 +209,7 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
+        private ComplianceViolation.Listener complianceViolationListener;
         private boolean useFilesForPartsWithoutFileName;
         private Path filesDirectory;
         private long maxFileSize = -1;
@@ -210,7 +220,13 @@ public class MultiPartFormData
 
         public Parser(String boundary)
         {
+            this(boundary, null);
+        }
+
+        public Parser(String boundary, ComplianceViolation.Listener complianceViolationListener)
+        {
             parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
+            this.complianceViolationListener = complianceViolationListener != null ? complianceViolationListener : ComplianceViolation.Listener.NOOP;
         }
 
         public CompletableFuture<Parts> parse(Content.Source content)
@@ -517,6 +533,13 @@ public class MultiPartFormData
                 memoryFileSize = 0;
                 try (AutoLock ignored = lock.lock())
                 {
+                    if (headers.contains("content-transfer-encoding"))
+                    {
+                        String value = headers.get("content-transfer-encoding");
+                        if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
+                            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
+                    }
+
                     MultiPart.Part part;
                     if (fileChannel != null)
                         part = new MultiPart.PathPart(name, fileName, headers, filePath);

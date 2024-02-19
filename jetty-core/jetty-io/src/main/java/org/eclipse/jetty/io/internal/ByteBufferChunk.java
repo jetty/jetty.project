@@ -163,7 +163,7 @@ public abstract class ByteBufferChunk implements Content.Chunk
         @Override
         public boolean canRetain()
         {
-            return true;
+            return retainable.canRetain();
         }
 
         @Override

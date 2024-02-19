@@ -18,6 +18,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -38,6 +40,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -82,7 +85,14 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             _requestMetaData = (MetaData.Request)frame.getMetaData();
 
+            // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
+            ComplianceViolation.Listener listener = _httpChannel.getComplianceViolationListener();
             Runnable handler = _httpChannel.onRequest(_requestMetaData);
+            Request request = _httpChannel.getRequest();
+            listener.onRequestBegin(request);
+            // Note UriCompliance is done by HandlerInvoker
+            HttpCompliance httpCompliance = _httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+            HttpCompliance.checkHttpCompliance(_requestMetaData, httpCompliance, listener);
 
             if (frame.isEndStream())
             {

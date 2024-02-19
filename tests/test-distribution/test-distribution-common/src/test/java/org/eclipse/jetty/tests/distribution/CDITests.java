@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +25,8 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -104,14 +104,14 @@ public class CDITests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-" + integration + "-cdi-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "demo");
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-" + integration + "-cdi-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "demo");
 
             distribution.installBaseResource("jetty-logging.properties", "resources/jetty-logging.properties", StandardCopyOption.REPLACE_EXISTING);
             if (configure != null)
                 configure.accept(distribution);
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
