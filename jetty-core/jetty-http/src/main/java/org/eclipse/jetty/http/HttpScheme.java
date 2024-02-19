@@ -76,6 +76,31 @@ public enum HttpScheme
         return _string;
     }
 
+    /**
+     * Get the default port for a URI scheme
+     * @param scheme The scheme
+     * @return Default port for URI scheme
+     * @deprecated Use {@link URIUtil#getDefaultPortForScheme(String)}
+     */
+    @Deprecated
+    public static int getDefaultPort(String scheme)
+    {
+        return URIUtil.getDefaultPortForScheme(scheme);
+    }
+
+    /**
+     * Normalize a port for a URI scheme
+     * @param scheme the scheme
+     * @param port the port to normalize
+     * @return The normalized port
+     * @deprecated Use {@link URIUtil#normalizePortForScheme(String, int)}
+     */
+    @Deprecated
+    public static int normalizePort(String scheme, int port)
+    {
+        return URIUtil.normalizePortForScheme(scheme, port);
+    }
+
     public static boolean isSecure(String scheme)
     {
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
