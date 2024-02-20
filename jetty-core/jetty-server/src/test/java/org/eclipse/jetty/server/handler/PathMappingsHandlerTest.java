@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -40,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,14 +50,23 @@ public class PathMappingsHandlerTest
     private Server server;
     private LocalConnector connector;
 
-    public void startServer(Handler handler) throws Exception
+    public void startServer(Consumer<Server> configureServer) throws Exception
     {
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        server.setHandler(handler);
+        configureServer.accept(server);
+
         server.start();
+    }
+
+    public void startServer(Handler handler) throws Exception
+    {
+        startServer((server) ->
+        {
+            server.setHandler(handler);
+        });
     }
 
     @AfterEach
@@ -186,28 +197,52 @@ public class PathMappingsHandlerTest
         assertThat(dump, containsString("FakeSpecificStaticHandler"));
         assertThat(dump, containsString("PhpHandler"));
         assertThat(dump, containsString("PathMappings[size=3]"));
-
     }
 
+    /**
+     * Test the updateHandler logic in regard to setServer() on added handlers.
+     *
+     * Sets the server handler first, then adds a handler.
+     */
     @Test
-    public void testGetDescendantsSimple()
+    public void testServerNotNullSetHandlerThenAddMapping() throws Exception
     {
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setContextPath("/");
+        SimpleHandler simpleHandler = new SimpleHandler("default");
+        SimpleHandler extraHandler = new SimpleHandler("extra");
 
-        PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
-        pathMappingsHandler.addMapping(new ServletPathSpec("/"), new SimpleHandler("default"));
-        pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("specific"));
-        pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new SimpleHandler("php"));
+        startServer((server) ->
+        {
+            PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+            server.setHandler(pathMappingsHandler);
+            pathMappingsHandler.addMapping(new ServletPathSpec("/"), simpleHandler);
+            pathMappingsHandler.addMapping(new ServletPathSpec("/extras/*"), extraHandler);
+        });
 
-        List<String> actualHandlers = pathMappingsHandler.getDescendants().stream().map(Objects::toString).toList();
+        assertNotNull(simpleHandler.getServer(), "Server was not set on start");
+        assertNotNull(extraHandler.getServer(), "Server was not set on start");
+    }
 
-        String[] expectedHandlers = {
-            "SimpleHandler[msg=\"default\"]",
-            "SimpleHandler[msg=\"specific\"]",
-            "SimpleHandler[msg=\"php\"]"
-        };
-        assertThat(actualHandlers, containsInAnyOrder(expectedHandlers));
+    /**
+     * Test the updateHandler logic in regard to setServer() on added handlers.
+     *
+     * Add a handler(s) first, then sets the server handler.
+     */
+    @Test
+    public void testServerNotNullAddMappingThenSetHandler() throws Exception
+    {
+        SimpleHandler simpleHandler = new SimpleHandler("default");
+        SimpleHandler extraHandler = new SimpleHandler("extra");
+
+        startServer((server) ->
+        {
+            PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
+            pathMappingsHandler.addMapping(new ServletPathSpec("/"), simpleHandler);
+            pathMappingsHandler.addMapping(new ServletPathSpec("/extras/*"), extraHandler);
+            server.setHandler(pathMappingsHandler);
+        });
+
+        assertNotNull(simpleHandler.getServer(), "Server was not set on start");
+        assertNotNull(extraHandler.getServer(), "Server was not set on start");
     }
 
     @Test
