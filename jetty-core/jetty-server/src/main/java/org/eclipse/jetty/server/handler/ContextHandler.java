@@ -1071,8 +1071,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     public class ScopedContext extends Attributes.Layer implements Context
     {
-        private File tempDirectory;
-
         public ScopedContext()
         {
             super(_persistentAttributes);
@@ -1126,14 +1124,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         @Override
         public File getTempDirectory()
         {
+            File tempDirectory = ContextHandler.this.getTempDirectory();
             if (tempDirectory == null)
             {
-                tempDirectory = ContextHandler.this.getTempDirectory();
-                if (tempDirectory == null)
-                {
-                    tempDirectory = new File(getServer().getContext().getTempDirectory(), _contextPath);
-                    tempDirectory.mkdirs();
-                }
+                // TODO save that file somewhere instead of recreating it and attempting mkdir each time
+                File tmp = new File(getServer().getContext().getTempDirectory(), _contextPath);
+                tmp.mkdirs();
+                tempDirectory = tmp;
             }
             return tempDirectory;
         }
