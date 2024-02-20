@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -476,7 +477,7 @@ public class HttpConfiguration implements Dumpable
      */
     public void setSecureScheme(String secureScheme)
     {
-        _secureScheme = secureScheme;
+        _secureScheme = URIUtil.normalizeScheme(secureScheme);
     }
 
     /**
