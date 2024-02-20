@@ -271,7 +271,7 @@ An application that implements a forwarder between two servers can be implemente
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=forwardContent]
 ----
 
-[[pg-client-http-api-protocol]]
+[[pg-client-http-api-transport]]
 ===== Request `Transport`
 
 The communication between client and server happens over a xref:pg-client-io-arch-transport[low-level transport], and applications can specify the low-level transport to use for each request.

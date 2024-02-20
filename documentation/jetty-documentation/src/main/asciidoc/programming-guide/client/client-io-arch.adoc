@@ -36,7 +36,7 @@ The same high-level protocol can be carried by different low-level transports.
 For example, the high-level HTTP/1.1 protocol can be transported over either TCP (the default), or QUIC, or Unix-Domain sockets, or memory, because all these low-level transport provide reliable and ordered communication between client and server.
 
 Similarly, the high-level HTTP/3 protocol can be transported over either QUIC (the default) or memory.
-It would be possible to transport HTTP/3 also over Unix-Domain sockets, but the current version of Java only supports Unix-Domain sockets for `SocketChannel` and not for `DatagramChannel`.
+It would be possible to transport HTTP/3 also over Unix-Domain sockets, but the current version of Java only supports Unix-Domain sockets for ``SocketChannel``s and not for ``DatagramChannel``s.
 
 The Jetty client libraries use the common I/O design described in xref:pg-arch-io[this section].
 
@@ -47,7 +47,7 @@ The client-side abstraction for the low-level transport is `org.eclipse.jetty.io
 
 `Transport` represents how high-level protocols can be transported; there is `Transport.TCP_IP` that represents communication over TCP, but also `Transport.TCPUnix` for Unix-Domain sockets, `QuicTransport` for QUIC and `MemoryTransport` for memory.
 
-Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-protocol[this section].
+Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-transport[this section].
 
 When the `Transport` implementation uses the network, it delegates to `org.eclipse.jetty.io.ClientConnector`.
 
@@ -88,7 +88,7 @@ Since `ClientConnector` is the component that handles the low-level network tran
 
 The most common parameters are:
 
-* `ClientConnector.selectors`: the number of ``java.nio.Selector``s components (defaults to `1`) that are present to handle the ``SocketChannel``s opened by the `ClientConnector`.
+* `ClientConnector.selectors`: the number of ``java.nio.Selector``s components (defaults to `1`) that are present to handle the ``SocketChannel``s and ``DatagramChannel``s opened by the `ClientConnector`.
 You typically want to increase the number of selectors only for those use cases where each selector should handle more than few hundreds _concurrent_ socket events.
 For example, one selector typically runs well for `250` _concurrent_ socket events; as a rule of thumb, you can multiply that number by `10` to obtain the number of opened sockets a selector can handle (`2500`), based on the assumption that not all the `2500` sockets will be active _at the same time_.
 * `ClientConnector.idleTimeout`: the duration of time after which `ClientConnector` closes a socket due to inactivity (defaults to `30` seconds).
@@ -105,11 +105,11 @@ Please refer to the `ClientConnector` link:{javadoc-url}/org/eclipse/jetty/io/Cl
 [[pg-client-io-arch-unix-domain]]
 ===== Unix-Domain Support
 
-link:https://openjdk.java.net/jeps/380[JEP 380] introduced Unix-Domain sockets support in Java 16, on all operative systems, for `SocketChannel`.
+link:https://openjdk.java.net/jeps/380[JEP 380] introduced Unix-Domain sockets support in Java 16, on all operative systems, but only for ``SocketChannel``s (not for ``DatagramChannel``s).
 
 `ClientConnector` handles Unix-Domain sockets exactly like it handles regular TCP sockets, so there is no additional configuration necessary -- Unix-Domain sockets are supported out-of-the-box.
 
-Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-protocol[this section].
+Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-transport[this section].
 
 [[pg-client-io-arch-memory]]
 ===== Memory Support
@@ -119,7 +119,7 @@ This means that the client and server must be in the same JVM process.
 
 This functionality is provided by `org.eclipse.jetty.server.MemoryTransport`, which does not delegate to `ClientConnector`, but instead delegates to the server-side `MemoryConnector` and its related classes.
 
-Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-protocol[this section].
+Applications can specify the `Transport` to use for each request as described in xref:pg-client-http-api-transport[this section].
 
 [[pg-client-io-arch-protocol]]
 ==== Protocol Layer
