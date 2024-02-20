@@ -134,4 +134,57 @@ public class DynamicTableTest extends AbstractTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
+
+    @ParameterizedTest
+    @CsvSource({"0,-1", "-1,0", "0,0"})
+    public void testMaxTableCapacityZero(int clientMaxCapacity, int serverMaxCapacity) throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.setStatus(200);
+                resp.getOutputStream().close();
+            }
+        });
+
+        if (clientMaxCapacity >= 0)
+        {
+            client.setMaxDecoderTableCapacity(0);
+            client.setMaxEncoderTableCapacity(0);
+        }
+        if (serverMaxCapacity >= 0)
+        {
+            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxEncoderTableCapacity(serverMaxCapacity);
+            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxDecoderTableCapacity(serverMaxCapacity);
+        }
+
+        CountDownLatch serverPreface = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                serverPreface.countDown();
+            }
+        });
+        assertTrue(serverPreface.await(5, TimeUnit.SECONDS));
+
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
+        CountDownLatch latch = new CountDownLatch(1);
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(200, response.getStatus());
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
 }
