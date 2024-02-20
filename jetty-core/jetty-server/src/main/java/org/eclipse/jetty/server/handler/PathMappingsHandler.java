@@ -64,11 +64,11 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         if (!isDynamic() && isStarted())
             throw new IllegalStateException("Cannot add mapping: " + this);
 
-        // check that self isn't present
+        // Check that self isn't present.
         if (handler == this)
             throw new IllegalStateException("Unable to addHandler of self: " + handler);
 
-        // check for loops
+        // Check for loops.
         if (handler instanceof Handler.Container container && container.getDescendants().contains(this))
             throw new IllegalStateException("loop detected: " + handler);
 
@@ -87,7 +87,7 @@ public class PathMappingsHandler extends Handler.AbstractContainer
                 throw new IllegalArgumentException("Cannot change invocation type of started server");
         }
 
-        // add new mapping and remove any old
+        // Add new mapping and remove any old.
         Handler old = mappings.get(pathSpec);
         mappings.put(pathSpec, handler);
         updateBean(old, handler);
