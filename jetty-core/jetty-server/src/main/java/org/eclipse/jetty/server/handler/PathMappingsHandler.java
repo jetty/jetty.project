@@ -75,14 +75,14 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         Server server = getServer();
         if (server != null)
         {
-            InvocationType serverInvocationType = server.getInvocationType();
-            InvocationType invocationType = InvocationType.NON_BLOCKING;
-            invocationType = Invocable.combine(invocationType, handler.getInvocationType());
             handler.setServer(server);
 
             // If the collection can be changed dynamically, then the risk is that if we switch from NON_BLOCKING to BLOCKING
             // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
             // never block, only for it to lose the race and find a newly added BLOCKING handler.
+            InvocationType serverInvocationType = server.getInvocationType();
+            InvocationType invocationType = InvocationType.NON_BLOCKING;
+            invocationType = Invocable.combine(invocationType, handler.getInvocationType());
             if (isDynamic() && server.isStarted() && serverInvocationType != invocationType && serverInvocationType != InvocationType.BLOCKING)
                 throw new IllegalArgumentException("Cannot change invocation type of started server");
         }
