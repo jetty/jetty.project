@@ -59,6 +59,7 @@
     <jakarta.xml.bind.impl.version>4.0.1</jakarta.xml.bind.impl.version>
     <jakarta.xml.jaxws.impl.version>4.0.0</jakarta.xml.jaxws.impl.version>
     <jakarta.xml.ws.api.version>4.0.0</jakarta.xml.ws.api.version>
+    <jersey.version>3.1.5</jersey.version>
 
     <jsp.impl.version>10.1.16</jsp.impl.version>
     <mail.impl.version>2.0.1</mail.impl.version>
@@ -375,17 +376,17 @@
       <dependency>
         <groupId>org.glassfish.jersey.containers</groupId>
         <artifactId>jersey-container-servlet</artifactId>
-        <version>3.1.5</version>
+        <version>${jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.inject</groupId>
         <artifactId>jersey-hk2</artifactId>
-        <version>3.1.5</version>
+        <version>${jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.media</groupId>
         <artifactId>jersey-media-json-binding</artifactId>
-        <version>3.1.5</version>
+        <version>${jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.web</groupId>
