@@ -352,7 +352,7 @@ Server
 In the example above, `TotalEventsHandler` may record the total times of request processing, from `SlowHandler` all the way to the `ContextHandler`.
 On the other hand, `AppEventsHandler` may record both the time it takes for the request to flow from `TotalEventsHandler` to `AppEventsHandler`, therefore effectively measuring the processing time due to `SlowHandler`, and the time it takes to process the request by the `ContextHandler`.
 
-Refer to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler/EventsHandler[javadocs] for further information.
+Refer to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler/EventsHandler.html[javadocs] for further information.
 
 [[pg-server-http-handler-use-qos]]
 ====== QoSHandler

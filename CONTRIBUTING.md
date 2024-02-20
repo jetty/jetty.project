@@ -5,11 +5,11 @@ Please see our [Contribution Guide](https://eclipse.dev/jetty/documentation/cont
 
 Here are some quick links to other useful resources:
 
-* [**Source code.**](https://github.com/eclipse/jetty.project) Jetty's canonical git repository is located on GitHub at https://github.com/eclipse/jetty.project.
+* [**Source code.**](https://github.com/jetty/jetty.project) Jetty's canonical git repository is located on GitHub at https://github.com/jetty/jetty.project.
 
 * [**Mailing list.**](https://accounts.eclipse.org/mailing-list/jetty-users) The [`jetty-users@eclipse.org`](mailto:jetty-users@eclipse.org) mailing list is a forum for technical discussion.
 
-* [**Issue tracking.**](https://github.com/eclipse/jetty.project/issues) We use [GitHub Issues](https://github.com/eclipse/jetty.project/issues) to track ongoing development and issues.
+* [**Issue tracking.**](https://github.com/jetty/jetty.project/issues) We use [GitHub Issues](https://github.com/eclipse/jetty.project/issues) to track ongoing development and issues.
 
 
 ## Eclipse Contributor Agreement

@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
@@ -148,6 +149,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         leaked.increment();
         if (LOG.isDebugEnabled())
             LOG.debug("Leaked " + holder);
+        leaked();
+    }
+
+    protected void leaked()
+    {
     }
 
     @Override
@@ -194,8 +200,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             Holder<P> holder = entries.get(i);
             if (holder.getEntry() == null)
             {
-                leaked(holder);
                 entries.remove(i--);
+                leaked(holder);
             }
         }
     }
@@ -222,8 +228,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     ConcurrentEntry<P> entry = (ConcurrentEntry<P>)holder.getEntry();
                     if (entry == null)
                     {
-                        leaked(holder);
                         entries.remove(index);
+                        leaked(holder);
                         continue;
                     }
 
@@ -346,6 +352,42 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     public Stream<Entry<P>> stream()
     {
         return entries.stream().map(Holder::getEntry).filter(Objects::nonNull);
+    }
+
+    @Override
+    public int getReservedCount()
+    {
+        return getCount(Entry::isReserved);
+    }
+
+    @Override
+    public int getIdleCount()
+    {
+        return getCount(Entry::isIdle);
+    }
+
+    @Override
+    public int getInUseCount()
+    {
+        return getCount(Entry::isInUse);
+    }
+
+    @Override
+    public int getTerminatedCount()
+    {
+        return getCount(Entry::isTerminated);
+    }
+
+    private int getCount(Predicate<Entry<P>> predicate)
+    {
+        int count = 0;
+        for (Holder<P> holder : entries)
+        {
+            Entry<P> entry = holder.getEntry();
+            if (entry != null && predicate.test(entry))
+                count++;
+        }
+        return count;
     }
 
     @Override
