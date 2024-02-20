@@ -171,6 +171,30 @@ public class QueuedPool<P> implements Pool<P>
         return queue.stream();
     }
 
+    @Override
+    public int getReservedCount()
+    {
+        return 0;
+    }
+
+    @Override
+    public int getIdleCount()
+    {
+        return size();
+    }
+
+    @Override
+    public int getInUseCount()
+    {
+        return 0;
+    }
+
+    @Override
+    public int getTerminatedCount()
+    {
+        return 0;
+    }
+
     private static class QueuedEntry<P> implements Entry<P>
     {
         private final QueuedPool<P> pool;
