@@ -35,6 +35,16 @@ public class CompoundPool<P> implements Pool<P>
         this.secondaryPool = secondaryPool;
     }
 
+    public Pool<P> getPrimaryPool()
+    {
+        return primaryPool;
+    }
+
+    public Pool<P> getSecondaryPool()
+    {
+        return secondaryPool;
+    }
+
     @Override
     public Entry<P> reserve()
     {
@@ -80,5 +90,29 @@ public class CompoundPool<P> implements Pool<P>
     public Stream<Entry<P>> stream()
     {
         return Stream.concat(primaryPool.stream(), secondaryPool.stream());
+    }
+
+    @Override
+    public int getReservedCount()
+    {
+        return primaryPool.getReservedCount() + secondaryPool.getReservedCount();
+    }
+
+    @Override
+    public int getIdleCount()
+    {
+        return primaryPool.getIdleCount() + secondaryPool.getIdleCount();
+    }
+
+    @Override
+    public int getInUseCount()
+    {
+        return primaryPool.getInUseCount() + secondaryPool.getInUseCount();
+    }
+
+    @Override
+    public int getTerminatedCount()
+    {
+        return primaryPool.getTerminatedCount() + secondaryPool.getTerminatedCount();
     }
 }

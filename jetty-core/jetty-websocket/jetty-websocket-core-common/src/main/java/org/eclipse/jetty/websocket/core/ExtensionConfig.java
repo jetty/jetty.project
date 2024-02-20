@@ -326,7 +326,7 @@ public class ExtensionConfig
         }
 
         @Override
-        protected void parsedParam(StringBuffer buffer, int valueLength, int paramNameIdx, int paramValueIdx)
+        protected void parsedParam(StringBuilder buffer, int valueLength, int paramNameIdx, int paramValueIdx)
         {
             String paramName = "";
             String paramValue = null;
@@ -346,7 +346,7 @@ public class ExtensionConfig
         }
 
         @Override
-        protected void parsedValue(StringBuffer buffer)
+        protected void parsedValue(StringBuilder buffer)
         {
             String extName = buffer.toString();
             if (name != null)
