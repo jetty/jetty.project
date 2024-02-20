@@ -134,7 +134,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
     private File _tempDirectory;
-    private boolean _tempDirectoryAutoChosen = false;
     private boolean _tempDirectoryPersisted = false;
     private boolean _tempDirectoryCreated = false;
 
@@ -637,13 +636,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         _availability.set(Availability.STARTING);
         try
         {
-            File tempDirectory = getTempDirectory();
-            if (tempDirectory == null)
-            {
-                _tempDirectoryAutoChosen = true;
-                String contextPath = "/".equals(_contextPath) ? "ROOT" : _contextPath;
-                setTempDirectory(new File(getServer().getContext().getTempDirectory(), contextPath));
-            }
             createTempDirectory();
             _context.call(super::doStart, null);
             _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
@@ -700,12 +692,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
             IO.delete(tempDirectory);
-
-        if (_tempDirectoryAutoChosen)
-        {
-            _tempDirectoryAutoChosen = false;
-            setTempDirectory(null);
-        }
 
         _tempDirectoryCreated = false;
     }
@@ -1085,6 +1071,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     public class ScopedContext extends Attributes.Layer implements Context
     {
+        private File tempDirectory;
+
         public ScopedContext()
         {
             super(_persistentAttributes);
@@ -1138,7 +1126,16 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         @Override
         public File getTempDirectory()
         {
-            return ContextHandler.this.getTempDirectory();
+            if (tempDirectory == null)
+            {
+                tempDirectory = ContextHandler.this.getTempDirectory();
+                if (tempDirectory == null)
+                {
+                    tempDirectory = new File(getServer().getContext().getTempDirectory(), _contextPath);
+                    tempDirectory.mkdirs();
+                }
+            }
+            return tempDirectory;
         }
 
         @Override
