@@ -135,7 +135,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
     private File _tempDirectory;
-    private boolean _tempDirectoryNameGenerated = false;
+    private boolean _tempDirectoryAutoChosen = false;
     private boolean _tempDirectoryPersisted = false;
     private boolean _tempDirectoryCreated = false;
 
@@ -641,9 +641,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             File tempDirectory = getTempDirectory();
             if (tempDirectory == null)
             {
+                _tempDirectoryAutoChosen = true;
                 String contextPath = "/".equals(_contextPath) ? "ROOT" : _contextPath;
                 setTempDirectory(new File(getServer().getContext().getTempDirectory(), contextPath + "-" + UUID.randomUUID()));
-                _tempDirectoryNameGenerated = true;
             }
             createTempDirectory();
             _context.call(super::doStart, null);
@@ -702,9 +702,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
             IO.delete(tempDirectory);
 
-        if (_tempDirectoryNameGenerated)
+        if (_tempDirectoryAutoChosen)
         {
-            _tempDirectoryNameGenerated = false;
+            _tempDirectoryAutoChosen = false;
             setTempDirectory(null);
         }
 
