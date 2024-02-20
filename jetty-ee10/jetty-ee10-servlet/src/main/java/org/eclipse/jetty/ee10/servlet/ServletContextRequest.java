@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Set;
 
 import jakarta.servlet.AsyncListener;
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
@@ -305,9 +304,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public Object getAttribute(String name)
     {
-        if (ServletContext.TEMPDIR.equals(name))
-            return getContext().getTempDirectory();
-
         return _attributes.getAttribute(name);
     }
 
