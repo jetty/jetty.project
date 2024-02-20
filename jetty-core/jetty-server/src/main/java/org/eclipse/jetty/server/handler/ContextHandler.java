@@ -40,7 +40,6 @@ import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -58,7 +57,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -643,8 +641,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             File tempDirectory = getTempDirectory();
             if (tempDirectory == null)
             {
-                String child = getCanonicalNameForTmpDir(this) + (_tempDirectoryPersisted ? "" : "-" + UUID.randomUUID());
-                setTempDirectory(new File(getServer().getContext().getTempDirectory(), child));
+                String contextPath = "/".equals(_contextPath) ? "ROOT" : _contextPath;
+                setTempDirectory(new File(getServer().getContext().getTempDirectory(), contextPath + "-" + UUID.randomUUID()));
                 _tempDirectoryNameGenerated = true;
             }
             createTempDirectory();
@@ -656,114 +654,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             _availability.compareAndSet(Availability.STARTING, Availability.UNAVAILABLE);
         }
-    }
-
-    // TODO copied and adapted from WebInfConfiguration, merge both
-    private static String getCanonicalNameForTmpDir(ContextHandler contextHandler)
-    {
-        StringBuilder canonicalName = new StringBuilder();
-        canonicalName.append("jetty-");
-
-        Server server = contextHandler.getServer();
-
-        //get the host and the port from the first connector
-        if (server != null)
-        {
-            Connector[] connectors = server.getConnectors();
-
-            if (connectors.length > 0)
-            {
-                //Get the host
-                String host = null;
-                int port = 0;
-                if (connectors[0] instanceof NetworkConnector connector)
-                {
-                    host = connector.getHost();
-                    port = connector.getLocalPort();
-                    if (port < 0)
-                        port = connector.getPort();
-                }
-                if (host == null)
-                    host = "0.0.0.0";
-                canonicalName.append(host);
-                canonicalName.append("-");
-                canonicalName.append(port);
-                canonicalName.append("-");
-            }
-        }
-
-        // Resource base
-        try
-        {
-            Resource resource = contextHandler.getBaseResource();
-            if (resource != null)
-            {
-                String resourceBaseName = getResourceBaseName(resource);
-                canonicalName.append(resourceBaseName);
-            }
-            canonicalName.append("-");
-        }
-        catch (Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Can't get resource base name", e);
-            canonicalName.append("-"); // empty resourceBaseName segment
-        }
-
-        //Context name
-        String contextPath = contextHandler.getContextPath();
-        contextPath = contextPath.replace('/', '_');
-        contextPath = contextPath.replace('\\', '_');
-        canonicalName.append(contextPath);
-
-        //Virtual host (if there is one)
-        canonicalName.append("-");
-        List<String> vhosts = contextHandler.getVirtualHosts();
-        if (vhosts == null || vhosts.isEmpty())
-            canonicalName.append("any");
-        else
-            canonicalName.append(vhosts.get(0));
-
-        // sanitize
-        for (int i = 0; i < canonicalName.length(); i++)
-        {
-            char c = canonicalName.charAt(i);
-            if (!Character.isJavaIdentifierPart(c) && "-.".indexOf(c) < 0)
-                canonicalName.setCharAt(i, '.');
-        }
-
-        return StringUtil.sanitizeFileSystemName(canonicalName.toString());
-    }
-
-    // TODO copied and adapted from WebInfConfiguration, merge both
-    private static String getResourceBaseName(Resource resource)
-    {
-        // Use File System and File interface if present
-        Path resourceFile = resource.getPath();
-
-        if ((resourceFile != null) && (resource instanceof MountedPathResource))
-        {
-            resourceFile = ((MountedPathResource)resource).getContainerPath();
-        }
-
-        if (resourceFile != null)
-        {
-            Path fileName = resourceFile.getFileName();
-            return fileName == null ? "" : fileName.toString();
-        }
-
-        // Use URI itself.
-        URI uri = resource.getURI();
-        if (uri == null)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("Resource has no URI reference: {}", resource);
-            }
-            return "";
-        }
-
-        return URIUtil.getUriLastPathSegment(uri);
     }
 
     /**
