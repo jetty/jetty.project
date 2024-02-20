@@ -1384,14 +1384,35 @@ public final class URIUtil
      */
     public static String newURI(String scheme, String server, int port, String path, String query)
     {
+        return newURI(scheme, server, port, path, query, null);
+    }
+
+    /**
+     * Create a new URI from the arguments, handling IPv6 host encoding and default ports
+     *
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
+     * @param path the URI path
+     * @param query the URI query
+     * @param fragment the URI fragment
+     * @return A String URI
+     */
+    public static String newURI(String scheme, String server, int port, String path, String query, String fragment)
+    {
         StringBuilder builder = newURIBuilder(scheme, server, port);
-        boolean hasQuery = !StringUtil.isBlank(query);
-        if (!StringUtil.isBlank(path))
+        // check only for null, as empty query/fragment have meaning.
+        // this also matches the behavior of java URL & URI
+        boolean hasQuery = query != null;
+        boolean hasFragment = fragment != null;
+        if (StringUtil.isNotBlank(path))
             builder.append(path);
-        else if (hasQuery)
+        else if (hasQuery || hasFragment)
             builder.append('/');
         if (hasQuery)
             builder.append('?').append(query);
+        if (hasFragment)
+            builder.append('#').append(fragment);
         return builder.toString();
     }
 
@@ -1950,10 +1971,12 @@ public final class URIUtil
      * Normalize a port for a given scheme
      * @param scheme The scheme
      * @param port The port to normalize
-     * @return The port number or 0 if it was equal to the default port for the scheme
+     * @return The port number or 0 if provided port was less than 0 or was equal to the default port for the scheme
      */
     public static int normalizePortForScheme(String scheme, int port)
     {
+        if (port <= 0)
+            return 0;
         return port == getDefaultPortForScheme(scheme) ? 0 : port;
     }
 }

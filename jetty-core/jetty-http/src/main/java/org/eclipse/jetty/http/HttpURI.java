@@ -350,16 +350,22 @@ public interface HttpURI
                 if (normalizedPort > 0)
                     out.append(':').append(normalizedPort);
 
+                // we output even if the input is an empty string (to match java URI / URL behaviors)
+                boolean hasQuery = _query != null;
+                boolean hasFragment = _fragment != null;
+
                 if (_path != null)
                     out.append(_path);
+                else if (hasQuery || hasFragment)
+                    out.append('/');
 
-                if (_query != null)
+                if (hasQuery)
                     out.append('?').append(_query);
 
-                if (_fragment != null)
+                if (hasFragment)
                     out.append('#').append(_fragment);
 
-                if (out.length() > 0)
+                if (!out.isEmpty())
                     _uri = out.toString();
                 else
                     _uri = "";

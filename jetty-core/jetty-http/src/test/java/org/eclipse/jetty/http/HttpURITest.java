@@ -1027,10 +1027,14 @@ public class HttpURITest
             // Query specified
             Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
             Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
-            Arguments.of("http", "example.org", 0, null, "a=b", null, "http://example.org?a=b"),
+            Arguments.of("http", "example.org", 0, null, "a=b", null, "http://example.org/?a=b"),
+            Arguments.of("http", "example.org", 0, null, "", null, "http://example.org/?"),
             // Fragment specified
+            Arguments.of("http", "example.org", 0, "/", null, "", "http://example.org/#"),
             Arguments.of("http", "example.org", 0, "/", null, "toc", "http://example.org/#toc"),
-            Arguments.of("http", "example.org", 0, null, null, "toc", "http://example.org#toc")
+            Arguments.of("http", "example.org", 0, null, null, "toc", "http://example.org/#toc"),
+            // Empty query & fragment - behavior matches java URI and URL
+            Arguments.of("http", "example.org", 0, null, "", "", "http://example.org/?#")
         );
     }
 
