@@ -16,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.lang.reflect.Method;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,6 +115,28 @@ public class VirtualThreads
         {
             warn();
             return false;
+        }
+    }
+
+    /**
+     * Get a virtual threads {@code Executor} that names the virtual threads according to the provided name prefix.
+     *
+     * @param namePrefix the prefix to use for the name of the virtual threads
+     * @return a virtual threads {@code Executor} that will name the virtual threads according to the provided name prefix.
+     */
+    public static Executor getNamedVirtualThreadsExecutor(String namePrefix)
+    {
+        try
+        {
+            Class<?> builderClass = Class.forName("java.lang.Thread$Builder");
+            Object threadBuilder = Thread.class.getMethod("ofVirtual").invoke(null);
+            threadBuilder = builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, namePrefix, 0L);
+            ThreadFactory factory = (ThreadFactory)builderClass.getMethod("factory").invoke(threadBuilder);
+            return (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
+        }
+        catch (Throwable x)
+        {
+            return null;
         }
     }
 
