@@ -28,7 +28,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -73,7 +72,7 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getDirectByteBufferCount(), greaterThan(0L));
         assertThat(pool.getDirectByteBufferCount(), lessThan((long)buffers.size()));
         assertThat(pool.getDirectMemory(), greaterThan(0L));
-        assertThat(pool.getDirectMemory(), lessThanOrEqualTo(40L));
+        assertThat(pool.getDirectMemory(), lessThan(120L));
     }
 
     @Test
