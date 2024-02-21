@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import jakarta.servlet.AsyncContext;
@@ -35,9 +36,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
@@ -204,7 +203,7 @@ public class DispatcherTest
 
         assertEquals(expected, rawResponse);
     }
-    
+
     @Test
     public void testForwardNonUTF8() throws Exception
     {
@@ -404,7 +403,7 @@ public class DispatcherTest
             Connection: close\r
             \r
             """);
-        
+
         String expected = """
             HTTP/1.1 200 OK\r
             specialSetHeader: specialSetHeader\r
@@ -893,6 +892,27 @@ public class DispatcherTest
     }
 
     @Test
+    public void testParameterReadingCrossContextForward() throws Exception
+    {
+        _forwardTargetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
+        _contextHandler.addFilter(ParameterReadingFilter.class, "/dispatch/*", EnumSet.of(DispatcherType.REQUEST));
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+
+        String form = "a=xxx";
+        String rawResponse = _connector.getResponse(
+            "POST /context/dispatch/?forward=/reader HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Content-Length: " + form.length() + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+             form);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getContent(), containsString("a="));
+    }
+
+    @Test
     public void testForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -1174,6 +1194,18 @@ public class DispatcherTest
         }
     }
 
+    public static class ParameterReadingFilter implements Filter
+    {
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            //case the params to be parsed on the request
+            Map<String, String[]> params = request.getParameterMap();
+
+            chain.doFilter(request, response);
+        }
+    }
+
     /*
      * Forward filter works with roger, echo and reverse echo servlets to test various
      * forwarding bits using filters.
@@ -1244,6 +1276,18 @@ public class DispatcherTest
 
     public static class CrossContextDispatchServlet extends HttpServlet implements Servlet
     {
+        /**
+         * @param req an {@link HttpServletRequest} object that contains the request the client has made of the servlet
+         * @param resp an {@link HttpServletResponse} object that contains the response the servlet sends to the client
+         * @throws ServletException
+         * @throws IOException
+         */
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            doGet(req, resp);
+        }
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -1366,6 +1410,36 @@ public class DispatcherTest
                 out.println("CAUGHT2 " + t);
             }
             out.println("AFTER");
+        }
+    }
+
+    public static class ParameterReadingServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            Map<String, String[]> params = req.getParameterMap();
+
+            for (String key : params.keySet())
+            {
+                res.getWriter().print(key + "=");
+                String[] val = params.get(key);
+                if (val == null)
+                    res.getWriter().println();
+                else if (val.length == 1)
+                    res.getWriter().println(val[0]);
+                else
+                {
+                    res.getWriter().println(Arrays.asList(val));
+                }
+            }
+
+/*          System.err.println(req.getAttribute("jakarta.servlet.forward.mapping"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.request_uri"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.context_path"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.servlet_path"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.path_info"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.query_string"));*/
         }
     }
 
@@ -1497,7 +1571,7 @@ public class DispatcherTest
             response.getOutputStream().println(request.getRequestURI());
         }
     }
-    
+
     public static class IncludeEchoURIServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -1518,7 +1592,7 @@ public class DispatcherTest
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH));
         }
     }
-    
+
     public static class ForwardEchoURIServlet extends HttpServlet implements Servlet
     {
         @Override
