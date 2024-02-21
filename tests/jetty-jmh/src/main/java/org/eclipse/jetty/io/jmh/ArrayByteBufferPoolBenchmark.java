@@ -47,7 +47,7 @@ public class ArrayByteBufferPoolBenchmark
             .measurementTime(TimeValue.milliseconds(500))
             .addProfiler(AsyncProfiler.class, "dir=/tmp;output=flamegraph;event=cpu;interval=500000;libPath=" + asyncProfilerPath)
             .forks(1)
-            .threads(10)
+            .threads(32)
             .build();
         new Runner(opt).run();
     }
@@ -129,7 +129,7 @@ public class ArrayByteBufferPoolBenchmark
     @BenchmarkMode({Mode.Throughput})
     public void fastPathAcquireRelease()
     {
-        RetainableByteBuffer buffer = pool.acquire(8192, true);
+        RetainableByteBuffer buffer = pool.acquire(65535, true);
         buffer.release();
     }
 }
