@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.URIUtil;
 
 import static org.eclipse.jetty.util.URIUtil.addEncodedPaths;
@@ -57,11 +58,20 @@ class ServletCoreRequest implements Request
     private final ServletContextRequest _servletContextRequest;
     private final HttpFields _httpFields;
     private final HttpURI _uri;
+    private final Attributes _attributes;
+    private final boolean _wrapped;
 
     ServletCoreRequest(HttpServletRequest request)
     {
+        this (request, new ServletAttributes(request));
+    }
+
+    ServletCoreRequest(HttpServletRequest request, Attributes attributes)
+    {
         _servletRequest = request;
+        _wrapped = !(request instanceof ServletApiRequest);
         _servletContextRequest = ServletContextRequest.getServletContextRequest(_servletRequest);
+        _attributes = attributes;
 
         HttpFields.Mutable fields = HttpFields.build();
 
@@ -133,45 +143,31 @@ class ServletCoreRequest implements Request
     @Override
     public Object removeAttribute(String name)
     {
-        Object value = _servletRequest.getAttribute(name);
-        _servletRequest.removeAttribute(name);
-        return value;
+        return _attributes.removeAttribute(name);
     }
 
     @Override
     public Object setAttribute(String name, Object attribute)
     {
-        Object value = _servletRequest.getAttribute(name);
-        _servletRequest.setAttribute(name, attribute);
-        return value;
+        return _attributes.setAttribute(name, attribute);
     }
 
     @Override
     public Object getAttribute(String name)
     {
-        return _servletRequest.getAttribute(name);
+        return _attributes.getAttribute(name);
     }
 
     @Override
     public Set<String> getAttributeNameSet()
     {
-        Set<String> set = new HashSet<>();
-        Enumeration<String> e = _servletRequest.getAttributeNames();
-        while (e.hasMoreElements())
-        {
-            set.add(e.nextElement());
-        }
-        return set;
+        return _attributes.getAttributeNameSet();
     }
 
     @Override
     public void clearAttributes()
     {
-        Enumeration<String> e = _servletRequest.getAttributeNames();
-        while (e.hasMoreElements())
-        {
-            _servletRequest.removeAttribute(e.nextElement());
-        }
+        _attributes.clearAttributes();
     }
 
     @Override
@@ -201,7 +197,9 @@ class ServletCoreRequest implements Request
     @Override
     public void demand(Runnable demandCallback)
     {
-        throw new UnsupportedOperationException();
+        if (_wrapped)
+            throw new UnsupportedOperationException(); // TODO
+        _servletContextRequest.demand(demandCallback);
     }
 
     @Override
@@ -225,13 +223,17 @@ class ServletCoreRequest implements Request
     @Override
     public Content.Chunk read()
     {
-        throw new UnsupportedOperationException();
+        if (_wrapped)
+            throw new UnsupportedOperationException(); // TODO
+        return _servletContextRequest.read();
     }
 
     @Override
     public boolean consumeAvailable()
     {
-        throw new UnsupportedOperationException();
+        if (_wrapped)
+            throw new UnsupportedOperationException(); // TODO
+        return _servletContextRequest.consumeAvailable();
     }
 
     @Override
@@ -262,5 +264,68 @@ class ServletCoreRequest implements Request
     public Session getSession(boolean create)
     {
         return Session.getSession(_servletRequest.getSession(create));
+    }
+
+    public static class ServletAttributes implements Attributes
+    {
+        private final HttpServletRequest _servletRequest;
+        private Set<String> _attributeNames;
+
+        public ServletAttributes(HttpServletRequest httpServletRequest)
+        {
+            _servletRequest = httpServletRequest;
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            Object value = _servletRequest.getAttribute(name);
+            if (value != null)
+                _attributeNames = null;
+            _servletRequest.removeAttribute(name);
+            return value;
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            Object value = _servletRequest.getAttribute(name);
+            if (value == null)
+                _attributeNames = null;
+            _servletRequest.setAttribute(name, attribute);
+            return value;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _servletRequest.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> set = _attributeNames;
+            if (set == null)
+            {
+                set = new HashSet<>();
+                Enumeration<String> e = _servletRequest.getAttributeNames();
+                while (e.hasMoreElements())
+                    set.add(e.nextElement());
+                _attributeNames = set;
+            }
+            return set;
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            Enumeration<String> e = _servletRequest.getAttributeNames();
+            _attributeNames = null;
+            while (e.hasMoreElements())
+            {
+                _servletRequest.removeAttribute(e.nextElement());
+            }
+        }
     }
 }

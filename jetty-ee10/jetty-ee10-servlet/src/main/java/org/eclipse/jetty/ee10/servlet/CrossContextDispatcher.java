@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.servlet.RequestDispatcher;
@@ -25,11 +24,28 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 
 public class CrossContextDispatcher implements RequestDispatcher
 {
+    public static final Set<String> ATTRIBUTES = Set.of(
+        RequestDispatcher.FORWARD_REQUEST_URI,
+        RequestDispatcher.FORWARD_MAPPING,
+        RequestDispatcher.FORWARD_CONTEXT_PATH,
+        RequestDispatcher.FORWARD_SERVLET_PATH,
+        RequestDispatcher.FORWARD_QUERY_STRING,
+        RequestDispatcher.FORWARD_PATH_INFO,
+        RequestDispatcher.INCLUDE_REQUEST_URI,
+        RequestDispatcher.INCLUDE_MAPPING,
+        RequestDispatcher.INCLUDE_CONTEXT_PATH,
+        RequestDispatcher.INCLUDE_SERVLET_PATH,
+        RequestDispatcher.INCLUDE_QUERY_STRING,
+        RequestDispatcher.INCLUDE_PATH_INFO,
+        ServletContextRequest.MULTIPART_CONFIG_ELEMENT
+    );
+
     private final ServletContextHandler.DispatchableServletContextApi _targetContext;
     private final HttpURI _uri;
     private final String _decodedPathInContext;
@@ -43,72 +59,36 @@ public class CrossContextDispatcher implements RequestDispatcher
          */
         public ForwardRequest(HttpServletRequest httpServletRequest)
         {
-            super(httpServletRequest);
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            if (name == null)
-                return null;
-
-            //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
-            if (_namedServlet != null && name.startsWith(Dispatcher.__FORWARD_PREFIX))
-                return null;
-
-            //Servlet Spec 9.4.2 must return the values from the original request
-            if (name.startsWith(Dispatcher.__FORWARD_PREFIX))
+            super(httpServletRequest, new Attributes.Synthetic(new ServletAttributes(httpServletRequest))
             {
-                return switch (name)
+                @Override
+                protected Object getSyntheticAttribute(String name)
                 {
-                    case RequestDispatcher.FORWARD_REQUEST_URI -> super.getServletRequest().getRequestURI();
-                    case RequestDispatcher.FORWARD_SERVLET_PATH -> super.getServletRequest().getServletPath();
-                    case RequestDispatcher.FORWARD_PATH_INFO -> super.getServletRequest().getPathInfo();
-                    case RequestDispatcher.FORWARD_CONTEXT_PATH -> super.getServletRequest().getContextPath();
-                    case RequestDispatcher.FORWARD_MAPPING -> super.getServletRequest().getHttpServletMapping();
-                    case RequestDispatcher.FORWARD_QUERY_STRING -> super.getServletRequest().getQueryString();
-                    default -> super.getServletRequest().getAttribute(name);
-                };
-            }
-
-            switch (name)
-            {
-                // Forward should hide include.
-                case RequestDispatcher.INCLUDE_MAPPING, RequestDispatcher.INCLUDE_SERVLET_PATH, RequestDispatcher.INCLUDE_PATH_INFO, RequestDispatcher.INCLUDE_REQUEST_URI, RequestDispatcher.INCLUDE_CONTEXT_PATH, RequestDispatcher.INCLUDE_QUERY_STRING ->
-                {
-                    return null;
-                }
-                case ServletContextRequest.MULTIPART_CONFIG_ELEMENT ->
-                {
-                    // If we already have future parts, return the configuration of the wrapped request.
-                    return super.getAttribute(ServletMultiPartFormData.class.getName());
-
-                    //TODO how to ensure we return the multipart config of the destination servlet instead?
+                    return switch (name)
+                    {
+                        case RequestDispatcher.FORWARD_REQUEST_URI -> httpServletRequest.getRequestURI();
+                        case RequestDispatcher.FORWARD_SERVLET_PATH -> httpServletRequest.getServletPath();
+                        case RequestDispatcher.FORWARD_PATH_INFO -> httpServletRequest.getPathInfo();
+                        case RequestDispatcher.FORWARD_CONTEXT_PATH -> httpServletRequest.getContextPath();
+                        case RequestDispatcher.FORWARD_MAPPING -> httpServletRequest.getHttpServletMapping();
+                        case RequestDispatcher.FORWARD_QUERY_STRING -> httpServletRequest.getQueryString();
+                        case RequestDispatcher.INCLUDE_MAPPING -> REMOVED;
+                        case RequestDispatcher.INCLUDE_REQUEST_URI -> REMOVED;
+                        case RequestDispatcher.INCLUDE_CONTEXT_PATH -> REMOVED;
+                        case RequestDispatcher.INCLUDE_QUERY_STRING -> REMOVED;
+                        case RequestDispatcher.INCLUDE_SERVLET_PATH -> REMOVED;
+                        case RequestDispatcher.INCLUDE_PATH_INFO -> REMOVED;
+                        case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> httpServletRequest.getAttribute(ServletMultiPartFormData.class.getName());
+                        default -> null;
+                    };
                 }
 
-                default ->
+                @Override
+                protected Set<String> getSyntheticNameSet()
                 {
-                    return super.getServletRequest().getAttribute(name);
+                    return ATTRIBUTES;
                 }
-            }
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            Set<String> names = new HashSet<>(super.getAttributeNameSet());
-
-            //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
-            if (_namedServlet != null)
-                return names;
-
-            names.add(RequestDispatcher.FORWARD_REQUEST_URI);
-            names.add(RequestDispatcher.FORWARD_SERVLET_PATH);
-            names.add(RequestDispatcher.FORWARD_PATH_INFO);
-            names.add(RequestDispatcher.FORWARD_CONTEXT_PATH);
-            names.add(RequestDispatcher.FORWARD_MAPPING);
-            names.add(RequestDispatcher.FORWARD_QUERY_STRING);
-            return names;
+            });
         }
 
         /**

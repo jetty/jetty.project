@@ -573,7 +573,7 @@ public interface Attributes
      */
     abstract class Synthetic extends Wrapper
     {
-        private static final Object REMOVED = new Object()
+        protected static final Object REMOVED = new Object()
         {
             @Override
             public String toString()
@@ -622,6 +622,8 @@ public interface Attributes
 
             // Is there a synthetic value for the attribute? We just as for the value rather than checking the name.
             Object s = getSyntheticAttribute(name);
+            if (s == REMOVED)
+                return null;
             if (s != null)
                 return s;
 
@@ -696,9 +698,15 @@ public interface Attributes
                     if (l == REMOVED)
                         // it has been removed
                         names.remove(s);
-                    else if (l != null || getSyntheticAttribute(s) != null)
-                        // else it was modified or has an original value
+                    else if (l != null)
+                        // else it was modified
                         names.add(s);
+                    else
+                    {
+                        Object v = getSyntheticAttribute(s);
+                        if (v != null && v != REMOVED)
+                            names.add(s);
+                    }
                 }
             }
 
