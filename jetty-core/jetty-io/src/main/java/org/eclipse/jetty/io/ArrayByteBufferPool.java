@@ -445,10 +445,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (evictionCandidate.remove())
         {
             RetainableByteBuffer buffer = evictionCandidate.getPooled();
-            int clearedCapacity = buffer.capacity();
             bucket.recordRemove();
             removed(buffer);
-            return clearedCapacity;
+            return bucket._capacity;
         }
         else
         {
