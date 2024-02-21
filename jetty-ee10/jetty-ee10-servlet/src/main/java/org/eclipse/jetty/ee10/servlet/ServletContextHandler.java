@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.UnsupportedOperationException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -39,21 +41,27 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConnection;
 import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestEvent;
 import jakarta.servlet.ServletRequestListener;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
@@ -2043,6 +2051,576 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
+    public class DispatchableServletContextApi implements jakarta.servlet.ServletContext
+    {
+        private final ScopedContext _targetContext;
+
+        protected DispatchableServletContextApi(ContextHandler.ScopedContext targetContext)
+        {
+            _targetContext = Objects.requireNonNull(targetContext);
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public String getContextPath()
+        {
+            return _targetContext.getContextPath();
+        }
+
+        /**
+         * @param uripath a <code>String</code> specifying the context path of another web application in the container. 
+         * @return
+         */
+        @Override
+        public ServletContext getContext(String uripath)
+        {
+            //TODO should we support
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public int getMajorVersion()
+        {
+            return 0;
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public int getMinorVersion()
+        {
+            return 0;
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public int getEffectiveMajorVersion()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public int getEffectiveMinorVersion()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param file a <code>String</code> specifying the name of a file 
+         * @return
+         */
+        @Override
+        public String getMimeType(String file)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param path the partial path used to match the resources, which must start with a <tt>/</tt> 
+         * @return
+         */
+        @Override
+        public Set<String> getResourcePaths(String path)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param path a <code>String</code> specifying the path to the resource 
+         * @return
+         * @throws MalformedURLException
+         */
+        @Override
+        public URL getResource(String path) throws MalformedURLException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param path a <code>String</code> specifying the path to the resource 
+         * @return
+         */
+        @Override
+        public InputStream getResourceAsStream(String path)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param uriInContext a <code>String</code> specifying the pathname to the resource
+         * @return
+         */
+        @Override
+        public RequestDispatcher getRequestDispatcher(String uriInContext)
+        {
+            // uriInContext is encoded, potentially with query.
+            if (uriInContext == null)
+                return null;
+
+            if (!uriInContext.startsWith("/"))
+                return null;
+
+            try
+            {
+                String contextPath = getContextPath();
+                // uriInContext is canonicalized by HttpURI.
+                HttpURI.Mutable uri = HttpURI.build(uriInContext);
+                String encodedPathInContext = uri.getCanonicalPath();
+                if (StringUtil.isEmpty(encodedPathInContext))
+                    return null;
+
+                if (!StringUtil.isEmpty(contextPath))
+                {
+                    uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
+                    encodedPathInContext = uri.getCanonicalPath().substring(contextPath.length());
+                }
+                return new CrossContextDispatcher(this, uri, URIUtil.decodePath(encodedPathInContext));
+            }
+            catch (Exception e)
+            {
+                LOG.trace("IGNORED", e);
+            }
+            return null;
+        }
+
+        /**
+         * @param name a <code>String</code> specifying the name of a servlet to wrap 
+         * @return
+         */
+        @Override
+        public RequestDispatcher getNamedDispatcher(String name)
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @param msg a <code>String</code> specifying the message to be written to the log file 
+         */
+        @Override
+        public void log(String msg)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param message a <code>String</code> that describes the error or exception 
+         * @param throwable the <code>Throwable</code> error or exception
+         */
+        @Override
+        public void log(String message, Throwable throwable)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param path the <i>virtual</i> path to be translated to a <i>real</i> path 
+         * @return
+         */
+        @Override
+        public String getRealPath(String path)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public String getServerInfo()
+        {
+            return getServer().getServerInfo();
+        }
+
+        /**
+         * @param name a <code>String</code> containing the name of the parameter whose value is requested 
+         * @return
+         */
+        @Override
+        public String getInitParameter(String name)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public Enumeration<String> getInitParameterNames()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param name the name of the context initialization parameter to set 
+         * @param value the value of the context initialization parameter to set
+         * @return
+         */
+        @Override
+        public boolean setInitParameter(String name, String value)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param name a <code>String</code> specifying the name of the attribute 
+         * @return
+         */
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _targetContext.getAttribute(name);
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public Enumeration<String> getAttributeNames()
+        {
+            return Collections.enumeration(_targetContext.getAttributeNameSet());
+        }
+
+        /**
+         * @param name a <code>String</code> specifying the name of the attribute 
+         * @param object an <code>Object</code> representing the attribute to be bound
+         */
+        @Override
+        public void setAttribute(String name, Object object)
+        {
+            _targetContext.setAttribute(name, object);
+        }
+
+        /**
+         * @param name a <code>String</code> specifying the name of the attribute to be removed 
+         */
+        @Override
+        public void removeAttribute(String name)
+        {
+            _targetContext.removeAttribute(name);
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public String getServletContextName()
+        {
+            return _targetContext.getContextHandler().getDisplayName();
+        }
+
+        /**
+         * @param servletName the name of the servlet 
+         * @param className the fully qualified class name of the servlet
+         * @return
+         */
+        @Override
+        public ServletRegistration.Dynamic addServlet(String servletName, String className)
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @param servletName the name of the servlet 
+         * @param servlet the servlet instance to register
+         * @return
+         */
+        @Override
+        public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @param servletName the name of the servlet 
+         * @param servletClass the class object from which the servlet will be instantiated
+         * @return
+         */
+        @Override
+        public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @param servletName the name of the servlet 
+         * @param jspFile the full path to a JSP file within the web application beginning with a `/'.
+         * @return
+         */
+        @Override
+        public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @param clazz the Servlet class to instantiate 
+         * @param <T>
+         * @return
+         * @throws ServletException
+         */
+        @Override
+        public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @param servletName the name of a servlet 
+         * @return
+         */
+        @Override
+        public ServletRegistration getServletRegistration(String servletName)
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public Map<String, ? extends ServletRegistration> getServletRegistrations()
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @param filterName the name of the filter 
+         * @param className the fully qualified class name of the filter
+         * @return
+         */
+        @Override
+        public FilterRegistration.Dynamic addFilter(String filterName, String className)
+        {
+            throw new UnsupportedOperationException();        }
+
+        /**
+         * @param filterName the name of the filter 
+         * @param filter the filter instance to register
+         * @return
+         */
+        @Override
+        public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param filterName the name of the filter 
+         * @param filterClass the class object from which the filter will be instantiated
+         * @return
+         */
+        @Override
+        public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param clazz the Filter class to instantiate 
+         * @param <T>
+         * @return
+         * @throws ServletException
+         */
+        @Override
+        public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param filterName the name of a filter 
+         * @return
+         */
+        @Override
+        public FilterRegistration getFilterRegistration(String filterName)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public Map<String, ? extends FilterRegistration> getFilterRegistrations()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public SessionCookieConfig getSessionCookieConfig()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param sessionTrackingModes the set of session tracking modes to become effective for this <tt>ServletContext</tt> 
+         */
+        @Override
+        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
+        {
+           throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param className the fully qualified class name of the listener 
+         */
+        @Override
+        public void addListener(String className)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param t the listener to be added 
+         * @param <T>
+         */
+        @Override
+        public <T extends EventListener> void addListener(T t)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param listenerClass the listener class to be instantiated 
+         */
+        @Override
+        public void addListener(Class<? extends EventListener> listenerClass)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param clazz the EventListener class to instantiate 
+         * @param <T>
+         * @return
+         * @throws ServletException
+         */
+        @Override
+        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public JspConfigDescriptor getJspConfigDescriptor()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            return _targetContext.getClassLoader();
+        }
+
+        /**
+         * @param roleNames the role names being declared 
+         */
+        @Override
+        public void declareRoles(String... roleNames)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public String getVirtualServerName()
+        {
+            return null;
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public int getSessionTimeout()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param sessionTimeout session timeout in minutes 
+         */
+        @Override
+        public void setSessionTimeout(int sessionTimeout)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public String getRequestCharacterEncoding()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param encoding request character encoding 
+         */
+        @Override
+        public void setRequestCharacterEncoding(String encoding)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return 
+         */
+        @Override
+        public String getResponseCharacterEncoding()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @param encoding response character encoding 
+         */
+        @Override
+        public void setResponseCharacterEncoding(String encoding)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        public ContextHandler.ScopedContext getTargetContext()
+        {
+            return _targetContext;
+        }
+    }
+    
     public class ServletContextApi implements jakarta.servlet.ServletContext
     {
         public static final int SERVLET_MAJOR_VERSION = 6;
@@ -2704,7 +3282,88 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public jakarta.servlet.ServletContext getContext(String uripath)
         {
-            //TODO jetty-12 does not currently support cross context dispatch
+            List<ContextHandler> contexts = new ArrayList<>();
+            List<ContextHandler> handlers = getServer().getDescendants(ContextHandler.class);
+            String matchedPath = null;
+
+            for (ContextHandler ch : handlers)
+            {
+                if (ch == null)
+                    continue;
+                String contextPath = ch.getContextPath();
+
+                if (uripath.equals(contextPath) ||
+                    (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
+                    "/".equals(contextPath))
+                {
+                    // look first for vhost matching context only
+                    List<String> vhosts = getVirtualHosts();
+
+                    if (vhosts != null && !vhosts.isEmpty())
+                    {
+                        List<String> targetVhosts = ch.getVirtualHosts();
+                        if (targetVhosts != null && !targetVhosts.isEmpty())
+                        {
+                            for (String h1 : vhosts)
+                            {
+                                for (String h2 : targetVhosts)
+                                {
+                                    if (h1.equals(h2))
+                                    {
+                                        if (matchedPath == null || contextPath.length() > matchedPath.length())
+                                        {
+                                            contexts.clear();
+                                            matchedPath = contextPath;
+                                        }
+
+                                        if (matchedPath.equals(contextPath))
+                                            contexts.add(ch);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (matchedPath == null || contextPath.length() > matchedPath.length())
+                        {
+                            contexts.clear();
+                            matchedPath = contextPath;
+                        }
+
+                        if (matchedPath.equals(contextPath))
+                            contexts.add(ch);
+                    }
+                }
+            }
+
+            if (!contexts.isEmpty())
+                return new DispatchableServletContextApi(contexts.get(0).getContext());
+
+            // try again ignoring virtual hosts
+            matchedPath = null;
+            for (ContextHandler ch : handlers)
+            {
+                if (ch == null)
+                    continue;
+
+                String contextPath = ch.getContextPath();
+
+                if (uripath.equals(contextPath) || (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') || "/".equals(contextPath))
+                {
+                    if (matchedPath == null || contextPath.length() > matchedPath.length())
+                    {
+                        contexts.clear();
+                        matchedPath = contextPath;
+                    }
+
+                    if (matchedPath.equals(contextPath))
+                        contexts.add(ch);
+                }
+            }
+
+            if (!contexts.isEmpty())
+                return new DispatchableServletContextApi(contexts.get(0).getContext());
             return null;
         }
 

@@ -85,6 +85,8 @@ public class DispatcherTest
     private LocalConnector _connector;
     private ServletContextHandler _contextHandler;
 
+    private ServletContextHandler _forwardTargetServletContextHandler;
+
     @BeforeEach
     public void init() throws Exception
     {
@@ -98,6 +100,12 @@ public class DispatcherTest
         _contextHandler.setContextPath("/context");
         _contextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("contextResources"));
         contextCollection.addHandler(_contextHandler);
+
+        _forwardTargetServletContextHandler = new ServletContextHandler();
+        _forwardTargetServletContextHandler.setContextPath("/foreign");
+        _forwardTargetServletContextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest"));
+        contextCollection.addHandler(_forwardTargetServletContextHandler);
+
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest")));
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
@@ -865,7 +873,26 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
+    public void testSimpleCrossContextForward() throws Exception
+    {
+        _forwardTargetServletContextHandler.addServlet(RogerThatServlet.class, "/rogerThat/*");
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+
+        String rawResponse = _connector.getResponse("""
+            GET /context/dispatch/?forward=/rogerThat HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        // from inside the context.txt file
+        assertThat(response.getContent(), containsString("Roger That!"));
+
+    }
+
+    @Test
     public void testForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -1207,6 +1234,27 @@ public class DispatcherTest
             else if (request.getParameter("forward") != null)
             {
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("forward"));
+                if (dispatcher != null)
+                    dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
+                else
+                    response.sendError(404);
+            }
+        }
+    }
+
+    public static class CrossContextDispatchServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            RequestDispatcher dispatcher;
+
+            if (request.getParameter("forward") != null)
+            {
+                ServletContext foreign = getServletContext().getContext("/foreign");
+                assertNotNull(foreign);
+                dispatcher = foreign.getRequestDispatcher(request.getParameter("forward"));
+
                 if (dispatcher != null)
                     dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
                 else
