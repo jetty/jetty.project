@@ -303,8 +303,6 @@ public class CreationTest
      * session in it too. Check that both sessions exist after the response
      * completes.
      */
-    //TODO - no cross context support in jetty-12
-    @Disabled
     @Test
     public void testSessionCreateForward() throws Exception
     {
@@ -353,8 +351,6 @@ public class CreationTest
      * in it, then invalidate the session in the original context: that should invalidate the
      * session in both contexts and no session should exist after the response completes.
      */
-    //TODO no cross context dispatch in jetty-12
-    @Disabled
     @Test
     public void testSessionCreateForwardAndInvalidate() throws Exception
     {
