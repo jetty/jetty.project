@@ -23,16 +23,14 @@ import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("myresource")
-public class MyResource
+@Path("resource")
+public class Resource
 {
     @PUT
     @Path("/security")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public void putSecurity(@Context HttpServletRequest httpRequest,
-                                 Security security,
-                                 @Suspended final AsyncResponse asyncResponse)
+    public void putSecurity(@Context HttpServletRequest httpRequest, Security security, @Suspended final AsyncResponse asyncResponse)
     {
         if (security.getPrincipal() == null)
             throw new NullPointerException("principal must no be null");
@@ -42,6 +40,7 @@ public class MyResource
         asyncResponse.resume("""
             {
                 "response" : "ok"
-            }""");
+            }
+            """);
     }
 }
