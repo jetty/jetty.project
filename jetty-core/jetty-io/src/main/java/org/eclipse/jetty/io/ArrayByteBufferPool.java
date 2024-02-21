@@ -226,7 +226,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         bucket.recordRelease();
 
-        // try to reserve an entry to put the buffer into the pool.
+        // Try to reserve an entry to put the buffer into the pool.
         Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().reserve();
         if (entry == null)
         {
@@ -234,13 +234,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return;
         }
 
-        // Add the buffer to the new entry
+        // Add the buffer to the new entry.
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.reset(byteBuffer);
         Buffer pooledBuffer = new Buffer(byteBuffer, b -> release(bucket, entry));
         if (entry.enable(pooledBuffer, false))
         {
-            checkMaxMemory(buffer.isDirect());
+            checkMaxMemory(bucket, buffer.isDirect());
             return;
         }
 
@@ -256,21 +256,21 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         RetainableByteBuffer buffer = entry.getPooled();
         BufferUtil.reset(buffer.getByteBuffer());
 
-        // We have enough space for this entry, pool it.
-        int used = buffer instanceof Buffer b ? b.use() : 0;
+        // Release the buffer and check the memory 1% of the times.
+        int used = ((Buffer)buffer).use();
         if (entry.release())
         {
             if (used % 100 == 0)
-               checkMaxMemory(buffer.isDirect());
+               checkMaxMemory(bucket, buffer.isDirect());
             return;
         }
 
-        // Not enough space, discard this buffer.
+        // Cannot release, discard this buffer.
         bucket.recordRemove();
         entry.remove();
     }
 
-    private void checkMaxMemory(boolean direct)
+    private void checkMaxMemory(RetainedBucket bucket, boolean direct)
     {
         long max = direct ? _maxDirectMemory : _maxHeapMemory;
         if (max <= 0 || !_evictor.compareAndSet(false, true))
@@ -280,7 +280,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             long memory = getMemory(direct);
             long excess = memory - max;
             if (excess > 0)
+            {
+                bucket.recordEvict();
                 evict(excess, direct);
+            }
         }
         finally
         {
@@ -304,16 +307,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             if (excessMemory <= 0)
                 return;
         }
-    }
-
-    protected ByteBuffer allocate(int capacity)
-    {
-        return ByteBuffer.allocate(capacity);
-    }
-
-    protected ByteBuffer allocateDirect(int capacity)
-    {
-        return ByteBuffer.allocateDirect(capacity);
     }
 
     private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer> releaser)
@@ -397,16 +390,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return size;
     }
 
-    @ManagedAttribute("The available bytes retained by direct ByteBuffers")
     public long getAvailableDirectMemory()
     {
-        return getMemory(true);
+        return getDirectMemory();
     }
 
-    @ManagedAttribute("The available bytes retained by heap ByteBuffers")
     public long getAvailableHeapMemory()
     {
-        return getMemory(false);
+        return getHeapMemory();
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
@@ -442,8 +433,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             super.toString(),
             _minCapacity, _maxCapacity,
             _direct.length,
-            getMemory(false), _maxHeapMemory,
-            getMemory(true), _maxDirectMemory);
+            getHeapMemory(), _maxHeapMemory,
+            getDirectMemory(), _maxDirectMemory);
     }
 
     private class RetainedBucket
@@ -528,7 +519,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
             recordRemove();
             entry.remove();
-            recordEvict();
 
             return getCapacity();
         }
