@@ -257,9 +257,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         BufferUtil.reset(buffer.getByteBuffer());
 
         // We have enough space for this entry, pool it.
+        int used = buffer instanceof Buffer b ? b.use() : 0;
         if (entry.release())
         {
-            if (buffer instanceof Buffer b && b.use() % 100 == 0)
+            if (used % 100 == 0)
                checkMaxMemory(buffer.isDirect());
             return;
         }
@@ -392,32 +393,20 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         long size = 0;
         for (RetainedBucket bucket : direct ? _direct : _indirect)
-            size += (long)bucket.getPool().getIdleCount() * bucket._capacity;
+            size += (long)bucket.getPool().getIdleCount() * bucket.getCapacity();
         return size;
     }
 
     @ManagedAttribute("The available bytes retained by direct ByteBuffers")
     public long getAvailableDirectMemory()
     {
-        return getAvailableMemory(true);
+        return getMemory(true);
     }
 
     @ManagedAttribute("The available bytes retained by heap ByteBuffers")
     public long getAvailableHeapMemory()
     {
-        return getAvailableMemory(false);
-    }
-
-    private long getAvailableMemory(boolean direct)
-    {
-        RetainedBucket[] buckets = direct ? _direct : _indirect;
-        long total = 0L;
-        for (RetainedBucket bucket : buckets)
-        {
-            long capacity = bucket.getCapacity();
-            total += bucket.getPool().getIdleCount() * capacity;
-        }
-        return total;
+        return getMemory(false);
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
