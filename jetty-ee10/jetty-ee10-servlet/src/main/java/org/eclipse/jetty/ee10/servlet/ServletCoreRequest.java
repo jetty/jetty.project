@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -36,6 +38,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 import static org.eclipse.jetty.util.URIUtil.addEncodedPaths;
@@ -60,6 +63,7 @@ class ServletCoreRequest implements Request
     private final HttpURI _uri;
     private final Attributes _attributes;
     private final boolean _wrapped;
+    private Content.Source _source;
 
     ServletCoreRequest(HttpServletRequest request)
     {
@@ -103,6 +107,15 @@ class ServletCoreRequest implements Request
             builder.path(request.getRequestURI());
         builder.query(request.getQueryString());
         _uri = builder.asImmutable();
+
+        _source = _wrapped ? null : _servletContextRequest;
+    }
+
+    private Content.Source source() throws IOException
+    {
+        if (_source == null)
+            _source = _wrapped ? new InputStreamContentSource(getServletRequest().getInputStream()) : _servletContextRequest;
+        return _source;
     }
 
     @Override
@@ -173,7 +186,14 @@ class ServletCoreRequest implements Request
     @Override
     public void fail(Throwable failure)
     {
-        throw new UnsupportedOperationException();
+        try
+        {
+            source().fail(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, t);
+        }
     }
 
     @Override
@@ -197,9 +217,14 @@ class ServletCoreRequest implements Request
     @Override
     public void demand(Runnable demandCallback)
     {
-        if (_wrapped)
-            throw new UnsupportedOperationException(); // TODO
-        _servletContextRequest.demand(demandCallback);
+        try
+        {
+            source().demand(demandCallback);
+        }
+        catch (Throwable t)
+        {
+            demandCallback.run();
+        }
     }
 
     @Override
@@ -223,17 +248,35 @@ class ServletCoreRequest implements Request
     @Override
     public Content.Chunk read()
     {
-        if (_wrapped)
-            throw new UnsupportedOperationException(); // TODO
-        return _servletContextRequest.read();
+        try
+        {
+            return source().read();
+        }
+        catch (Throwable t)
+        {
+            return Content.Chunk.from(t, true);
+        }
     }
 
     @Override
     public boolean consumeAvailable()
     {
         if (_wrapped)
-            throw new UnsupportedOperationException(); // TODO
-        return _servletContextRequest.consumeAvailable();
+        {
+            try
+            {
+                Content.Source.consumeAll(source());
+                return true;
+            }
+            catch (IOException e)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return _servletContextRequest.consumeAvailable();
+        }
     }
 
     @Override
