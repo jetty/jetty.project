@@ -120,6 +120,7 @@ public class VirtualThreads
 
     /**
      * Get a virtual threads {@code Executor} that names the virtual threads according to the provided name prefix.
+     * While named virtual threads enable observability they do also incur a minor performance penalty.
      *
      * @param namePrefix the prefix to use for the name of the virtual threads
      * @return a virtual threads {@code Executor} that will name the virtual threads according to the provided name prefix.
