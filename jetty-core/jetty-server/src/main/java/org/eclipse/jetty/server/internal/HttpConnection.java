@@ -103,7 +103,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
     private final HttpFields.Mutable _headerBuilder = HttpFields.build();
-    private volatile RetainableByteBuffer _retainableByteBuffer;
+    private RetainableByteBuffer _retainableByteBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
     private long _requests;
@@ -622,6 +622,17 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public void onClose(Throwable cause)
     {
+        HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
+        if (stream != null)
+        {
+            stream.abort(cause);
+            if (_retainableByteBuffer != null)
+            {
+                _retainableByteBuffer.release();
+                _retainableByteBuffer = null;
+            }
+        }
+
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
         //  Revisit whether we still need IteratingCallback.close().

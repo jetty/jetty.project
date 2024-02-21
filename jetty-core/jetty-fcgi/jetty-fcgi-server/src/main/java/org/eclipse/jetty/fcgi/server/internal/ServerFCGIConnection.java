@@ -16,6 +16,7 @@ package org.eclipse.jetty.fcgi.server.internal;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
@@ -51,10 +52,10 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private final HttpConfiguration configuration;
     private final ServerParser parser;
     private final String id;
+    private final AtomicReference<HttpStreamOverFCGI> stream = new AtomicReference<>();
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
     private RetainableByteBuffer networkBuffer;
-    private HttpStreamOverFCGI stream;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
@@ -166,6 +167,23 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     }
 
     @Override
+    public void onClose(Throwable cause)
+    {
+        super.onClose(cause);
+        HttpStreamOverFCGI stream = this.stream.getAndSet(null);
+        if (stream != null)
+        {
+            stream.failed(cause);
+
+            if (networkBuffer != null)
+            {
+                networkBuffer.release();
+                networkBuffer = null;
+            }
+        }
+    }
+
+    @Override
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
@@ -228,7 +246,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         acquireInputBuffer();
         // This loop must run only until the request is completed.
         // See also HttpConnection.parseAndFillForContent().
-        while (stream != null)
+        while (true)
         {
             // The networkBuffer cannot be released immediately after parse()
             // even if the buffer has been fully consumed because releaseInputBuffer()
@@ -238,7 +256,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 break;
 
             // Check if the request was completed by the parsing.
-            if (stream == null || fillInputBuffer() <= 0)
+            if (stream.get() == null || fillInputBuffer() <= 0)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("parseAndFill completed the request by parsing {}", this);
@@ -282,6 +300,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     @Override
     protected boolean onReadTimeout(TimeoutException timeout)
     {
+        HttpStreamOverFCGI stream = this.stream.get();
         if (stream != null)
             return stream.onIdleTimeout(timeout);
         return true;
@@ -315,7 +334,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     @Override
     public boolean onIdleExpired(TimeoutException timeoutException)
     {
-        HttpStreamOverFCGI stream = this.stream;
+        HttpStreamOverFCGI stream = this.stream.get();
         if (stream == null)
             return true;
         Runnable task = stream.getHttpChannel().onIdleTimeout(timeoutException);
@@ -330,12 +349,13 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         public void onStart(int request, FCGI.Role role, int flags)
         {
             // TODO: handle flags
-            if (stream != null)
+            if (stream.get() != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
             HttpChannel channel = httpChannelFactory.newHttpChannel(ServerFCGIConnection.this);
             ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
-            stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
+            HttpStreamOverFCGI stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
             channel.setHttpStream(stream);
+            ServerFCGIConnection.this.stream.set(stream);
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} start on {}", request, channel);
         }
@@ -345,6 +365,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} header {} on {}", request, field, stream);
+            HttpStreamOverFCGI stream = ServerFCGIConnection.this.stream.get();
             if (stream != null)
                 stream.onHeader(field);
         }
@@ -354,6 +375,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} headers on {}", request, stream);
+            HttpStreamOverFCGI stream = ServerFCGIConnection.this.stream.get();
             if (stream != null)
             {
                 stream.onHeaders();
@@ -369,6 +391,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);
+            HttpStreamOverFCGI stream = ServerFCGIConnection.this.stream.get();
             if (stream != null)
             {
                 // No need to call networkBuffer.retain() here.
@@ -386,13 +409,11 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} end on {}", request, stream);
+            // Nulling out the stream signals that the
+            // request is complete, see also parseAndFill().
+            HttpStreamOverFCGI stream = ServerFCGIConnection.this.stream.getAndSet(null);
             if (stream != null)
-            {
                 stream.onComplete();
-                // Nulling out the stream signals that the
-                // request is complete, see also parseAndFill().
-                stream = null;
-            }
         }
 
         @Override
@@ -400,13 +421,13 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} failure on {}: {}", request, stream, failure);
+            HttpStreamOverFCGI stream = ServerFCGIConnection.this.stream.getAndSet(null);
             if (stream != null)
             {
                 Runnable runnable = stream.getHttpChannel().onFailure(new BadMessageException(null, failure));
                 if (runnable != null)
                     getExecutor().execute(runnable);
             }
-            stream = null;
         }
     }
 }

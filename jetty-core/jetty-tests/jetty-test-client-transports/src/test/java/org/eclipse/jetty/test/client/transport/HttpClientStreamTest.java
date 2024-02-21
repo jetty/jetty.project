@@ -482,7 +482,6 @@ public class HttpClientStreamTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client")
-    @Tag("DisableLeakTracking:server:FCGI")
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -996,11 +995,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:server:HTTP")
-    @Tag("DisableLeakTracking:server:HTTPS")
-    @Tag("DisableLeakTracking:H3")
-    @Tag("DisableLeakTracking:server:FCGI")
-    @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
+    @Tag("DisableLeakTracking:client:H3")
     public void testUploadWithConcurrentServerCloseClosesStream(Transport transport) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
@@ -1212,10 +1207,6 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:server:H2")
-    @Tag("DisableLeakTracking:server:H2C")
-    @Tag("DisableLeakTracking:server:H3")
-    @Tag("DisableLeakTracking:server:FCGI")
     public void testHttpStreamConsumeAvailableUponClientAbort(Transport transport) throws Exception
     {
         AtomicReference<org.eclipse.jetty.client.Request> clientRequestRef = new AtomicReference<>();
