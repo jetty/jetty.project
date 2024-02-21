@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.UnsupportedOperationException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -41,13 +39,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletConnection;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextAttributeEvent;
@@ -55,13 +51,10 @@ import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.ServletRegistration;
-import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestEvent;
 import jakarta.servlet.ServletRequestListener;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
@@ -2061,7 +2054,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         /**
-         * @return 
+         * @return
          */
         @Override
         public String getContextPath()
@@ -2081,7 +2074,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         /**
-         * @return 
+         * @return
          */
         @Override
         public int getMajorVersion()
@@ -2090,7 +2083,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         /**
-         * @return 
+         * @return
          */
         @Override
         public int getMinorVersion()
@@ -2127,7 +2120,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         /**
-         * @param path the partial path used to match the resources, which must start with a <tt>/</tt> 
+         * @param path the partial path used to match the resources, which must start with a <code>/</code>
          * @return
          */
         @Override
@@ -2459,7 +2452,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         /**
-         * @param sessionTrackingModes the set of session tracking modes to become effective for this <tt>ServletContext</tt> 
+         * @param sessionTrackingModes the set of session tracking modes to become effective for this <code>ServletContext</code>
          */
         @Override
         public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
