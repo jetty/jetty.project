@@ -124,4 +124,12 @@ public class ArrayByteBufferPoolBenchmark
         output.release();
         input.release();
     }
+
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    public void fastPathAcquireRelease()
+    {
+        RetainableByteBuffer buffer = pool.acquire(8192, true);
+        buffer.release();
+    }
 }
