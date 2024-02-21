@@ -1186,7 +1186,6 @@ public class MultiPart
 
         private State parseHeaderStart(ByteBuffer buffer)
         {
-            boolean crFlag = false;
             while (buffer.hasRemaining())
             {
                 HttpTokens.Token token = next(buffer);
@@ -1201,6 +1200,7 @@ public class MultiPart
                     {
                         if (!crFlag)
                             notifyViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
+                        crFlag = false;
                         // End of fields.
                         notifyPartHeaders();
                         // A part may have an empty content.

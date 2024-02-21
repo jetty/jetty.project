@@ -279,11 +279,17 @@ public class MultiPartFormDataTest
             assertThat(Content.Source.asString(partContent), is("Hello World"));
 
             List<ComplianceViolation.Event> events = violations.getEvents();
-            assertThat(events.size(), is(2));
-            ComplianceViolation.Event event = events.get(0);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING));
-            event = events.get(1);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING));
+            List<MultiPartCompliance.Violation> expected = List.of(
+                MultiPartCompliance.Violation.LF_LINE_TERMINATION,
+                MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
+                MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING
+            );
+            assertThat(events.size(), is(expected.size()));
+            for (int i = 0; i < expected.size(); i++)
+            {
+                ComplianceViolation.Event event = events.get(i);
+                assertThat(event.violation(), is(expected.get(i)));
+            }
         }
     }
 
@@ -450,11 +456,17 @@ public class MultiPartFormDataTest
             assertThat(Content.Source.asString(partContent), is("SGVsbG8gV29ybGQK"));
 
             List<ComplianceViolation.Event> events = violations.getEvents();
-            assertThat(events.size(), is(2));
-            ComplianceViolation.Event event = events.get(0);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING));
-            event = events.get(1);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING));
+            List<MultiPartCompliance.Violation> expected = List.of(
+                MultiPartCompliance.Violation.LF_LINE_TERMINATION,
+                MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING
+            );
+            assertThat(events.size(), is(expected.size()));
+            for (int i = 0; i < expected.size(); i++)
+            {
+                ComplianceViolation.Event event = events.get(i);
+                assertThat(event.violation(), is(expected.get(i)));
+            }
         }
     }
 

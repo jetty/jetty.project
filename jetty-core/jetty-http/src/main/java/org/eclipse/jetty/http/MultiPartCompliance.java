@@ -206,6 +206,8 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
     @Override
     public String toString()
     {
-        return String.format("%s@%x%s", name, hashCode(), violations);
+        if (this == RFC7578 || this == LEGACY)
+            return name;
+        return String.format("%s@%x(v=%s)", name, hashCode(), violations);
     }
 }

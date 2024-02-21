@@ -219,11 +219,11 @@ public class MultiPartTest
             parser.parse(Content.Chunk.from(ByteBuffer.wrap(new byte[]{bytes[i]}), i == bytes.length - 1));
         }
 
-        assertEquals(16, listener.events.size());
+        assertEquals(15, listener.events.size());
         assertEquals("begin", listener.events.poll());
         assertEquals("header name: value", listener.events.poll());
         assertEquals("headers", listener.events.poll());
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 9; i++)
         {
             assertEquals("content last: false length: 1", listener.events.poll());
         }
