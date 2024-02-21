@@ -1505,7 +1505,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // If we are fill interested, then a read is pending and we must abort
             if (isFillInterested())
             {
-                LOG.warn("Read pending {} {}", this, getEndPoint());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("abort due to pending read {} {} ", this, getEndPoint());
                 abort(new IOException("Pending read in onCompleted"));
                 return;
             }
