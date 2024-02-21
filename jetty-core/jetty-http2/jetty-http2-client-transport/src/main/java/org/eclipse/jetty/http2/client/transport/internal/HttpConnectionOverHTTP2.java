@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -57,12 +58,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
+    private final HTTP2Connection connection;
     private boolean recycleHttpChannels = true;
 
-    public HttpConnectionOverHTTP2(Destination destination, Session session)
+    public HttpConnectionOverHTTP2(Destination destination, Session session, HTTP2Connection connection)
     {
         super((HttpDestination)destination);
         this.session = session;
+        this.connection = connection;
     }
 
     public Session getSession()
@@ -275,6 +278,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         if (!isClosed())
             return false;
         return sweeps.incrementAndGet() >= 4;
+    }
+
+    void offerTask(Runnable task, boolean dispatch)
+    {
+        if (task != null)
+            connection.offerTask(task, dispatch);
     }
 
     @Override

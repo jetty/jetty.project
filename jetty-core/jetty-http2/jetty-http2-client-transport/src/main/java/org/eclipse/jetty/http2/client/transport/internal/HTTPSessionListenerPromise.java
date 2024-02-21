@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -72,7 +73,8 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
 
     private void onServerPreface(Session session)
     {
-        HttpConnectionOverHTTP2 connection = (HttpConnectionOverHTTP2)newConnection(destination(), session);
+        HTTP2Connection http2Connection = (HTTP2Connection)context.get(HTTP2Connection.class.getName());
+        HttpConnectionOverHTTP2 connection = (HttpConnectionOverHTTP2)newConnection(destination(), session, http2Connection);
         if (this.connection.compareAndSet(null, connection, false, true))
         {
             // The connection promise must be called synchronously
@@ -82,9 +84,9 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
         }
     }
 
-    protected Connection newConnection(Destination destination, Session session)
+    protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
     {
-        return new HttpConnectionOverHTTP2(destination, session);
+        return new HttpConnectionOverHTTP2(destination, session, connection);
     }
 
     @Override
