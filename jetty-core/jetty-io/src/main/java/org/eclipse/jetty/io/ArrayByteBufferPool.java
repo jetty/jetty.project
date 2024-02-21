@@ -259,7 +259,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         // We have enough space for this entry, pool it.
         if (entry.release())
         {
-            if (buffer instanceof Buffer b && b.use() % 100 == 1)
+            if (buffer instanceof Buffer b && b.use() % 100 == 0)
                checkMaxMemory(buffer.isDirect());
             return;
         }
@@ -627,7 +627,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         private int use()
         {
-            return _usages++;
+            if (++_usages < 0)
+                _usages = 0;
+            return _usages;
         }
     }
 
