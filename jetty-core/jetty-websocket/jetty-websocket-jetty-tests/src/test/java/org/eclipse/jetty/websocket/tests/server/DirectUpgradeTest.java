@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
@@ -41,8 +42,11 @@ import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DirectUpgradeTest
 {
@@ -50,12 +54,12 @@ public class DirectUpgradeTest
     private HttpClient httpClient;
     private WebSocketClient wsClient;
 
-    public void start(Function<Server, ContextHandler> factory) throws Exception
+    public void start(Function<Server, Handler> factory) throws Exception
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
-        ContextHandler context = factory.apply(server);
+        Handler context = factory.apply(server);
         server.setHandler(context);
         server.start();
 
@@ -100,7 +104,8 @@ public class DirectUpgradeTest
                     ServerWebSocketContainer container = ServerWebSocketContainer.get(request.getContext());
                     assertNotNull(container);
                     // Direct upgrade.
-                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> supplier.get(), request, response, callback);
+                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) ->
+                        supplier.get(), request, response, callback);
                 }
             });
             return context;
@@ -146,7 +151,8 @@ public class DirectUpgradeTest
                 public boolean handle(Request request, Response response, Callback callback)
                 {
                     // Direct upgrade.
-                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
+                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) ->
+                        new EchoSocket(), request, response, callback);
                 }
             });
             return context;
@@ -159,6 +165,50 @@ public class DirectUpgradeTest
         session.sendText(text, null);
         String echo = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
         assertEquals(text, echo);
+
+        session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeCode, equalTo(CloseStatus.NORMAL));
+    }
+
+    @Test
+    public void testDirectWebSocketUpgradeInChildHandlerWithoutWebSocketUpgradeHandlerWithoutContextHandler() throws Exception
+    {
+        start(server ->
+        {
+            // Do not set up a WebSocketUpgradeHandler or ContextHandler.
+            // Set up the Handler that will perform the upgrade.
+            return new Handler.Abstract()
+            {
+                @Override
+                protected void doStart() throws Exception
+                {
+                    super.doStart();
+                    ServerWebSocketContainer.ensure(getServer());
+                }
+
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    // Direct upgrade.
+                    ServerWebSocketContainer container = ServerWebSocketContainer.get(getServer().getContext());
+                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) ->
+                        new EchoSocket(), request, response, callback);
+                }
+            };
+        });
+
+        URI wsUri = WSURI.toWebsocket(server.getURI());
+        EventSocket clientEndpoint = new EventSocket();
+        Session session = wsClient.connect(clientEndpoint, wsUri).get(5, TimeUnit.SECONDS);
+        String text = "ECHO";
+        session.sendText(text, null);
+        String echo = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+        assertEquals(text, echo);
+
+        session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeCode, equalTo(CloseStatus.NORMAL));
     }
 
     @Test

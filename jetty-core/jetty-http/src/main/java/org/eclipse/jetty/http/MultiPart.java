@@ -405,7 +405,7 @@ public class MultiPart
         @Override
         public Content.Source newContentSource()
         {
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 if (closed)
                     return null;
@@ -431,7 +431,7 @@ public class MultiPart
         public void fail(Throwable t)
         {
             List<Content.Source> contentSourcesToFail;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 closed = true;
                 content.forEach(Content.Chunk::release);
@@ -1334,7 +1334,7 @@ public class MultiPart
                 {
                     if (boundaryMatch == boundaryFinder.getLength())
                     {
-                        // The boundary was fully matched.
+                        // The boundary was fully matched, so the part is complete.
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
                         partialBoundaryMatch = 0;
                         crContent = false;
@@ -1344,7 +1344,8 @@ public class MultiPart
                     }
                     else
                     {
-                        // The boundary was partially matched.
+                        // The boundary was partially matched, but it
+                        // is not clear yet if it is content or boundary.
                         buffer.position(buffer.limit());
                         partialBoundaryMatch = boundaryMatch;
                         return false;
@@ -1352,8 +1353,8 @@ public class MultiPart
                 }
                 else
                 {
-                    // There was a partial boundary match, but a mismatch was found.
-                    // Handle the special case of parts with no content.
+                    // There was a partial boundary match in the previous chunk, but now a
+                    // mismatch was found. Handle the special case of parts with no content.
                     if (state == State.CONTENT_START)
                     {
                         // There is some content, reset the boundary match.
@@ -1374,16 +1375,19 @@ public class MultiPart
 
             // Search for a full boundary.
             int boundaryOffset = boundaryFinder.match(buffer);
-            if (boundaryOffset == 0)
-                crContent = false;
             if (boundaryOffset >= 0)
             {
-                // Output as content the previous partial match, if any.
+                if (boundaryOffset == 0)
+                    crContent = false;
+
+                // Emit as content the last CR byte of the previous chunk, if any.
                 notifyCRContent();
+
+                // Emit as content the bytes of this chunk that are before the boundary.
                 int position = buffer.position();
                 int length = boundaryOffset;
                 // BoundaryFinder is configured to search for '\n--Boundary';
-                // if we found '\r\n--Boundary' then the '\r' is not content.
+                // if '\r\n--Boundary' is found, then the '\r' is not content.
                 if (length > 0 && buffer.get(position + length - 1) == '\r')
                     --length;
                 Content.Chunk content = asSlice(chunk, position, length, true);
@@ -1395,35 +1399,25 @@ public class MultiPart
 
             // Search for a partial boundary at the end of the buffer.
             partialBoundaryMatch = boundaryFinder.endsWith(buffer);
-            if (partialBoundaryMatch > 0)
+            if (partialBoundaryMatch > 0 && partialBoundaryMatch == buffer.remaining())
             {
-                notifyCRContent();
-                int limit = buffer.limit();
-                int sliceLimit = limit - partialBoundaryMatch;
-                // BoundaryFinder is configured to search for '\n--Boundary';
-                // if we found '\r\n--Bo' then the '\r' may not be content,
-                // but remember it in case there is a boundary mismatch.
-                if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
-                {
-                    crContent = true;
-                    --sliceLimit;
-                }
-                int position = buffer.position();
-                Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
-                buffer.position(limit);
-                if (content.hasRemaining())
-                    notifyPartContent(content);
+                // The boundary was partially matched, but it
+                // is not clear yet if it is content or boundary.
+                buffer.position(buffer.limit());
                 return false;
             }
 
-            // There is normal content with no boundary.
+            // Here, either the boundary was not found, or it was partially found at the end.
 
-            // Output as content the previous partial match, if any.
+            // Emit as content the last CR byte of the previous chunk, if any.
             notifyCRContent();
-            // If '\r' is found at the end of the buffer, it may
-            // not be content but the beginning of a '\r\n--Boundary';
-            // remember it in case it is truly normal content.
-            int sliceLimit = buffer.limit();
+
+            // Emit as content the bytes of this chunk, until the partial boundary match (if any).
+            int limit = buffer.limit();
+            int sliceLimit = limit - partialBoundaryMatch;
+            // BoundaryFinder is configured to search for '\n--Boundary';
+            // if '\r\n--Bo' is found, then the '\r' may not be content,
+            // but remember it in case there is a boundary mismatch.
             if (buffer.get(sliceLimit - 1) == '\r')
             {
                 crContent = true;
@@ -1431,7 +1425,7 @@ public class MultiPart
             }
             int position = buffer.position();
             Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
-            buffer.position(buffer.limit());
+            buffer.position(limit);
             if (content.hasRemaining())
                 notifyPartContent(content);
             return false;
@@ -1698,7 +1692,7 @@ public class MultiPart
             if (value.matches(".??[a-zA-Z]:\\\\[^\\\\].*"))
             {
                 // Matched incorrectly escaped IE filenames that have the whole
-                // path, as in C:\foo, we just strip any leading & trailing quotes
+                // path, as in C:\foo, just strip any leading & trailing quotes.
                 char first = value.charAt(0);
                 if (first == '"' || first == '\'')
                     value = value.substring(1);

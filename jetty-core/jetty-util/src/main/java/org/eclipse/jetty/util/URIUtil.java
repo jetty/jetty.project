@@ -1365,16 +1365,54 @@ public final class URIUtil
      * @param scheme the URI scheme
      * @param server the URI server
      * @param port the URI port
+     * @return A String URI
+     */
+    public static String newURI(String scheme, String server, int port)
+    {
+        return newURI(scheme, server, port, null, null);
+    }
+
+    /**
+     * Create a new URI from the arguments, handling IPv6 host encoding and default ports
+     *
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
      * @param path the URI path
      * @param query the URI query
      * @return A String URI
      */
     public static String newURI(String scheme, String server, int port, String path, String query)
     {
+        return newURI(scheme, server, port, path, query, null);
+    }
+
+    /**
+     * Create a new URI from the arguments, handling IPv6 host encoding and default ports
+     *
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
+     * @param path the URI path
+     * @param query the URI query
+     * @param fragment the URI fragment
+     * @return A String URI
+     */
+    public static String newURI(String scheme, String server, int port, String path, String query, String fragment)
+    {
         StringBuilder builder = newURIBuilder(scheme, server, port);
-        builder.append(path);
-        if (query != null && query.length() > 0)
+        // check only for null, as empty query/fragment have meaning.
+        // this also matches the behavior of java URL & URI
+        boolean hasQuery = query != null;
+        boolean hasFragment = fragment != null;
+        if (StringUtil.isNotBlank(path))
+            builder.append(path);
+        else if (hasQuery || hasFragment)
+            builder.append('/');
+        if (hasQuery)
             builder.append('?').append(query);
+        if (hasFragment)
+            builder.append('#').append(fragment);
         return builder.toString();
     }
 
@@ -1388,7 +1426,7 @@ public final class URIUtil
      */
     public static StringBuilder newURIBuilder(String scheme, String server, int port)
     {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new StringBuilder(128);
         appendSchemeHostPort(builder, scheme, server, port);
         return builder;
     }
@@ -1403,26 +1441,11 @@ public final class URIUtil
      */
     public static void appendSchemeHostPort(StringBuilder url, String scheme, String server, int port)
     {
+        scheme = normalizeScheme(scheme);
         url.append(scheme).append("://").append(HostPort.normalizeHost(server));
-
+        port = normalizePortForScheme(scheme, port);
         if (port > 0)
-        {
-            switch (scheme)
-            {
-                case "http":
-                    if (port != 80)
-                        url.append(':').append(port);
-                    break;
-
-                case "https":
-                    if (port != 443)
-                        url.append(':').append(port);
-                    break;
-
-                default:
-                    url.append(':').append(port);
-            }
-        }
+            url.append(':').append(port);
     }
 
     /**
@@ -1432,29 +1455,16 @@ public final class URIUtil
      * @param scheme the URI scheme
      * @param server the URI server
      * @param port the URI port
+     * @deprecated Use {@link #appendSchemeHostPort(StringBuilder, String, String, int)}
      */
+    @Deprecated
     public static void appendSchemeHostPort(StringBuffer url, String scheme, String server, int port)
     {
+        scheme = normalizeScheme(scheme);
         url.append(scheme).append("://").append(HostPort.normalizeHost(server));
-
+        port = normalizePortForScheme(scheme, port);
         if (port > 0)
-        {
-            switch (scheme)
-            {
-                case "http":
-                    if (port != 80)
-                        url.append(':').append(port);
-                    break;
-
-                case "https":
-                    if (port != 443)
-                        url.append(':').append(port);
-                    break;
-
-                default:
-                    url.append(':').append(port);
-            }
-        }
+            url.append(':').append(port);
     }
 
     /**
@@ -1920,5 +1930,53 @@ public final class URIUtil
             .map(URI::create)
             .map(URIUtil::unwrapContainer)
             .map(URIUtil::correctFileURI);
+    }
+
+    private static final Index<Integer> DEFAULT_PORT_FOR_SCHEME = new Index.Builder<Integer>()
+        .caseSensitive(false)
+        .with("ftp", 21)
+        .with("ssh", 22)
+        .with("telnet", 23)
+        .with("smtp", 25)
+        .with("http", 80)
+        .with("ws", 80)
+        .with("https", 443)
+        .with("wss", 443)
+        .build();
+
+    /**
+     * Get the default port for some well known schemes
+     * @param scheme The scheme
+     * @return The default port or -1 if not known
+     */
+    public static int getDefaultPortForScheme(String scheme)
+    {
+        if (scheme == null)
+            return -1;
+        Integer port = DEFAULT_PORT_FOR_SCHEME.get(scheme);
+        return port == null ? -1 : port;
+    }
+
+    /**
+     * Normalize the scheme
+     * @param scheme The scheme to normalize
+     * @return The normalized version of the scheme
+     */
+    public static String normalizeScheme(String scheme)
+    {
+        return scheme == null ? null : StringUtil.asciiToLowerCase(scheme);
+    }
+
+    /**
+     * Normalize a port for a given scheme
+     * @param scheme The scheme
+     * @param port The port to normalize
+     * @return The port number or 0 if provided port was less than 0 or was equal to the default port for the scheme
+     */
+    public static int normalizePortForScheme(String scheme, int port)
+    {
+        if (port <= 0)
+            return 0;
+        return port == getDefaultPortForScheme(scheme) ? 0 : port;
     }
 }

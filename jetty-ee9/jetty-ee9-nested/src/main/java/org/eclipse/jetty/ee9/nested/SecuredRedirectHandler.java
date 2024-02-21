@@ -81,9 +81,9 @@ public class SecuredRedirectHandler extends HandlerWrapper
         if (securePort > 0)
         {
             String secureScheme = httpConfig.getSecureScheme();
-            String url = URIUtil.newURI(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString());
+            String uri = URIUtil.newURI(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString());
             response.setContentLength(0);
-            baseRequest.getResponse().sendRedirect(_redirectCode, url, true);
+            baseRequest.getResponse().sendRedirect(_redirectCode, uri, true);
         }
         else
         {
