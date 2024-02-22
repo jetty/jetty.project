@@ -249,7 +249,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private void acquireInputBuffer()
     {
         if (inputBuffer == null)
-            inputBuffer = networkByteBufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), isUseInputDirectByteBuffers());
+            inputBuffer = networkByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
     }
 
     private void releaseInputBuffer()
