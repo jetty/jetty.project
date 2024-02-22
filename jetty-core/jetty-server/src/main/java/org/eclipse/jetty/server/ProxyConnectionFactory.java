@@ -19,6 +19,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
@@ -636,11 +637,11 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         {
                             byte[] addr = new byte[108];
                             byteBuffer.get(addr);
-                            String src = UnixDomain.toPath(addr);
+                            String src = toUnixDomainPath(addr);
                             byteBuffer.get(addr);
-                            String dst = UnixDomain.toPath(addr);
-                            local = UnixDomain.newSocketAddress(dst);
-                            remote = UnixDomain.newSocketAddress(src);
+                            String dst = toUnixDomainPath(addr);
+                            local = UnixDomainSocketAddress.of(dst);
+                            remote = UnixDomainSocketAddress.of(src);
                         }
                         default -> throw new IllegalStateException("Unsupported family " + _family);
                     }
@@ -764,6 +765,18 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     LOG.debug("Proxy v2 releasing buffer and closing");
                 _buffer.release();
                 close();
+            }
+
+            private static String toUnixDomainPath(byte[] bytes)
+            {
+                // Unix-Domain paths are zero-terminated.
+                int i = 0;
+                while (i < bytes.length)
+                {
+                    if (bytes[i++] == 0)
+                        break;
+                }
+                return new String(bytes, 0, i, StandardCharsets.US_ASCII).trim();
             }
         }
     }
@@ -971,53 +984,6 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
         {
             _endPoint.write(callback, buffers);
-        }
-    }
-
-    private static class UnixDomain
-    {
-        private static final Class<?> unixDomainSocketAddress = probe();
-
-        private static Class<?> probe()
-        {
-            try
-            {
-                return ClassLoader.getPlatformClassLoader().loadClass("java.net.UnixDomainSocketAddress");
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ignored", x);
-                return null;
-            }
-        }
-
-        private static SocketAddress newSocketAddress(String path)
-        {
-            try
-            {
-                if (unixDomainSocketAddress != null)
-                    return (SocketAddress)unixDomainSocketAddress.getMethod("of", String.class).invoke(null, path);
-                return null;
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ignored", x);
-                return null;
-            }
-        }
-
-        private static String toPath(byte[] bytes)
-        {
-            // Unix-Domain paths are zero-terminated.
-            int i = 0;
-            while (i < bytes.length)
-            {
-                if (bytes[i++] == 0)
-                    break;
-            }
-            return new String(bytes, 0, i, StandardCharsets.US_ASCII).trim();
         }
     }
 }
