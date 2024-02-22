@@ -1858,7 +1858,7 @@ public final class URIUtil
                 Path path = Paths.get(resource);
                 return path.toUri();
             }
-            catch(InvalidPathException ignore)
+            catch (InvalidPathException ignore)
             {
                 // ignore
             }
