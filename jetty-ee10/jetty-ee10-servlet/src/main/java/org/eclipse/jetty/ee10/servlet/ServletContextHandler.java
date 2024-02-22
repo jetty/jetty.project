@@ -3273,91 +3273,10 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public jakarta.servlet.ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String path)
         {
-            List<ContextHandler> contexts = new ArrayList<>();
-            List<ContextHandler> handlers = getServer().getDescendants(ContextHandler.class);
-            String matchedPath = null;
-
-            for (ContextHandler ch : handlers)
-            {
-                if (ch == null)
-                    continue;
-                String contextPath = ch.getContextPath();
-
-                if (uripath.equals(contextPath) ||
-                    (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
-                    "/".equals(contextPath))
-                {
-                    // look first for vhost matching context only
-                    List<String> vhosts = getVirtualHosts();
-
-                    if (vhosts != null && !vhosts.isEmpty())
-                    {
-                        List<String> targetVhosts = ch.getVirtualHosts();
-                        if (targetVhosts != null && !targetVhosts.isEmpty())
-                        {
-                            for (String h1 : vhosts)
-                            {
-                                for (String h2 : targetVhosts)
-                                {
-                                    if (h1.equals(h2))
-                                    {
-                                        if (matchedPath == null || contextPath.length() > matchedPath.length())
-                                        {
-                                            contexts.clear();
-                                            matchedPath = contextPath;
-                                        }
-
-                                        if (matchedPath.equals(contextPath))
-                                            contexts.add(ch);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (matchedPath == null || contextPath.length() > matchedPath.length())
-                        {
-                            contexts.clear();
-                            matchedPath = contextPath;
-                        }
-
-                        if (matchedPath.equals(contextPath))
-                            contexts.add(ch);
-                    }
-                }
-            }
-
-            if (!contexts.isEmpty())
-                return new DispatchableServletContextApi(contexts.get(0).getContext());
-
-            // try again ignoring virtual hosts
-            matchedPath = null;
-            for (ContextHandler ch : handlers)
-            {
-                if (ch == null)
-                    continue;
-
-                String contextPath = ch.getContextPath();
-
-                if (uripath.equals(contextPath) || (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') || "/".equals(contextPath))
-                {
-                    if (matchedPath == null || contextPath.length() > matchedPath.length())
-                    {
-                        contexts.clear();
-                        matchedPath = contextPath;
-                    }
-
-                    if (matchedPath.equals(contextPath))
-                        contexts.add(ch);
-                }
-            }
-
-            if (!contexts.isEmpty())
-                return new DispatchableServletContextApi(contexts.get(0).getContext());
-            return null;
+            ContextHandler context = getContextHandler().getCrossContextHandler(path);
+            return context == null ? null : new DispatchableServletContextApi(context.getContext());
         }
 
         @Override

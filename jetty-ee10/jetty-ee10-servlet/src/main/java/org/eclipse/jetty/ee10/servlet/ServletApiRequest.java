@@ -1289,11 +1289,9 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public DispatcherType getDispatcherType()
     {
-        // TODO make this either conditional or done only once
-        if (getAttribute(CrossContextDispatcher.CROSS_CONTEXT_ATTRIBUTE) instanceof String dispatcherType)
-            return DispatcherType.valueOf(dispatcherType);
-
-        return DispatcherType.REQUEST;
+        Request request = getRequest();
+        String dispatchType = request.getContext().getCrossContextDispatchType(request);
+        return dispatchType == null ? DispatcherType.REQUEST : DispatcherType.valueOf(dispatchType);
     }
 
     @Override

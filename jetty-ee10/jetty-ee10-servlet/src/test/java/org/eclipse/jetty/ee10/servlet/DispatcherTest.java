@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.Time;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -101,17 +100,20 @@ public class DispatcherTest
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
         _contextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("contextResources"));
+        _contextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_contextHandler);
 
         _forwardTargetServletContextHandler = new ServletContextHandler();
         _forwardTargetServletContextHandler.setContextPath("/foreign");
         _forwardTargetServletContextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest"));
+        _forwardTargetServletContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_forwardTargetServletContextHandler);
 
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest")));
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(resourceHandler);
+        resourceContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(resourceContextHandler);
         _server.setHandler(contextCollection);
         _server.addConnector(_connector);
@@ -1312,12 +1314,6 @@ public class DispatcherTest
 
     public static class CrossContextDispatchServlet extends HttpServlet implements Servlet
     {
-        /**
-         * @param req an {@link HttpServletRequest} object that contains the request the client has made of the servlet
-         * @param resp an {@link HttpServletResponse} object that contains the response the servlet sends to the client
-         * @throws ServletException
-         * @throws IOException
-         */
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
