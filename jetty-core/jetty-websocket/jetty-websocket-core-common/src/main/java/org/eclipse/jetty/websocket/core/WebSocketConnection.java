@@ -220,9 +220,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         BufferUtil.flipToFlush(buffer, 0);
     }
 
-    /**
-     * Physical connection Open.
-     */
     @Override
     public void onOpen()
     {
@@ -236,11 +233,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             fillAndParse();
     }
 
-    /**
-     * Physical connection disconnect.
-     * <p>
-     * Not related to WebSocket close handshake.
-     */
     @Override
     public void onClose(Throwable cause)
     {
@@ -273,11 +265,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return true;
     }
 
-    /**
-     * Event for no activity on connection (read or write)
-     *
-     * @return true to signal that the endpoint must be closed, false to keep the endpoint open
-     */
     @Override
     protected boolean onReadTimeout(TimeoutException timeout)
     {

@@ -109,7 +109,6 @@ public class ExplicitDemandTest
             if (frame.getOpCode() == OpCode.TEXT)
                 textMessages.add(BufferUtil.toString(frame.getPayload()));
             callback.succeed();
-
         }
     }
 
@@ -265,7 +264,7 @@ public class ExplicitDemandTest
         Session session = connect.get(5, TimeUnit.SECONDS);
         session.sendText("test-text", Callback.NOOP);
 
-        // We cannot receive messages in onOpen even if we have demanded.
+        // We cannot receive messages while in onOpen, even if we have demanded.
         assertNull(onOpenSocket.textMessages.poll(1, TimeUnit.SECONDS));
 
         // Once we leave onOpen we receive the message.
