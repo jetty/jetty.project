@@ -824,26 +824,27 @@ public class ServletApiRequest implements HttpServletRequest
 
     private Fields getParameters()
     {
-        //TODO: if parameters not null, just return them
-
-        extractContentParameters();
-        extractQueryParameters();
-
-        // Do parameters need to be combined?
-        if (ServletContextRequest.isNoParams(_queryParameters) || _queryParameters.getSize() == 0)
-            _parameters = _contentParameters;
-        else if (ServletContextRequest.isNoParams(_contentParameters) || _contentParameters.getSize() == 0)
-            _parameters = _queryParameters;
-        else if (_parameters == null)
-        {
-            _parameters = new Fields(true);
-            _parameters.addAll(_queryParameters);
-            _parameters.addAll(_contentParameters);
-        }
-
         // protect against calls to recycled requests (which is illegal, but
         // this gives better failures
         Fields parameters = _parameters;
+        if (parameters == null)
+        {
+            extractContentParameters();
+            extractQueryParameters();
+
+            // Do parameters need to be combined?
+            if (ServletContextRequest.isNoParams(_queryParameters) || _queryParameters.getSize() == 0)
+                _parameters = _contentParameters;
+            else if (ServletContextRequest.isNoParams(_contentParameters) || _contentParameters.getSize() == 0)
+                _parameters = _queryParameters;
+            else if (_parameters == null)
+            {
+                _parameters = new Fields(true);
+                _parameters.addAll(_queryParameters);
+                _parameters.addAll(_contentParameters);
+            }
+            parameters = _parameters;
+        }
         return parameters == null ? ServletContextRequest.NO_PARAMS : parameters;
     }
 
