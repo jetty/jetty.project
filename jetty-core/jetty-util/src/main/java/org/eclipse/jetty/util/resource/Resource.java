@@ -315,7 +315,7 @@ public abstract class Resource implements Iterable<Resource>
                 }
                 return;
             }
-            throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo");
+            throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo: " + this);
         }
 
         // Do we have to copy a single file?
