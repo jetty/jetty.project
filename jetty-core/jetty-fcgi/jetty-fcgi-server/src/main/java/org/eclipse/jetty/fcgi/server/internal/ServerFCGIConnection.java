@@ -45,7 +45,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
-    private final ByteBufferPool networkByteBufferPool;
+    private final ByteBufferPool bufferPool;
     private final boolean sendStatus200;
     private final Flusher flusher;
     private final ServerParser parser;
@@ -59,7 +59,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     {
         super(connector, configuration, endPoint);
         this.connector = connector;
-        this.networkByteBufferPool = connector.getByteBufferPool();
+        this.bufferPool = connector.getByteBufferPool();
         this.flusher = new Flusher(endPoint);
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
@@ -178,10 +178,10 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                     LOG.debug("Read {} bytes from {} {}", read, getEndPoint(), this);
                 if (read > 0)
                 {
-                    // The networkBuffer cannot be released immediately after parse()
+                    // The inputBuffer cannot be released immediately after parse()
                     // even if the buffer has been fully consumed because releaseInputBuffer()
                     // must be called as the last release for it to be able to null out the
-                    // networkBuffer field exactly when the latter isn't used anymore.
+                    // inputBuffer field exactly when the latter isn't used anymore.
                     if (parse(inputBuffer.getByteBuffer()))
                         return;
                 }
@@ -228,10 +228,10 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         // See also HttpConnection.parseAndFillForContent().
         while (stream != null)
         {
-            // The networkBuffer cannot be released immediately after parse()
+            // The inputBuffer cannot be released immediately after parse()
             // even if the buffer has been fully consumed because releaseInputBuffer()
             // must be called as the last release for it to be able to null out the
-            // networkBuffer field exactly when the latter isn't used anymore.
+            // inputBuffer field exactly when the latter isn't used anymore.
             if (parse(inputBuffer.getByteBuffer()))
                 return;
 
@@ -249,7 +249,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private void acquireInputBuffer()
     {
         if (inputBuffer == null)
-            inputBuffer = networkByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            inputBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
     }
 
     private void releaseInputBuffer()
@@ -369,7 +369,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);
             if (stream != null)
             {
-                // No need to call networkBuffer.retain() here.
+                // No need to call inputBuffer.retain() here.
                 // The receiver of the chunk decides whether to consume/retain it.
                 Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, inputBuffer);
                 stream.onContent(chunk);

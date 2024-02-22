@@ -402,8 +402,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         else
         {
-            // No need to call networkBuffer.retain() here, since we know
-            // that the action will be run before releasing the networkBuffer.
+            // No need to call inputBuffer.retain() here, since we know
+            // that the action will be run before releasing the inputBuffer.
             data = new StreamData(frame, inputBuffer);
         }
 
