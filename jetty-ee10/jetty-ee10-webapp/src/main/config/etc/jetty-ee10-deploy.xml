@@ -41,7 +41,7 @@
               </Default>
             </Property>
           </Set>
-          <Set name="scanInterval"><Property name="jetty.deploy.scanInterval" default="1"/></Set>
+          <Set name="scanInterval" property="jetty.deploy.scanInterval"/>
           <Set name="extractWars" property="jetty.deploy.extractWars" />
           <Set name="parentLoaderPriority" property="jetty.deploy.parentLoaderPriority" />
           <Set name="configurationClasses" property="jetty.deploy.configurationClasses" />
