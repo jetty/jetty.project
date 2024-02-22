@@ -434,7 +434,17 @@ public class ResourceTest
         Resource resource = resourceFactory.newResource(file);
         // Requesting a resource that would point to a location called ".../testDotAliasFileExists/foo/bar.txt/."
         Resource dot = resource.resolve(".");
-        assertTrue(Resources.missing(dot), "Cannot reference file as a directory");
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            // windows allows this reference, but it's an alias.
+            assertTrue(Resources.exists(dot), "Reference to directory via dot allowed");
+            assertTrue(dot.isAlias(), "Reference to dot is an alias to actual bar.txt");
+            assertEquals(dot.getRealURI(), file.toUri());
+        }
+        else
+        {
+            assertTrue(Resources.missing(dot), "Cannot reference file as a directory");
+        }
     }
 
     @Test

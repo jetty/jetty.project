@@ -110,9 +110,9 @@ public class CombinedResourceTest
             .toList();
 
         expected = new String[] {
-            "dir/1.txt",
-            "dir/2.txt",
-            "dir/3.txt"
+            FS.separators("dir/1.txt"),
+            FS.separators("dir/2.txt"),
+            FS.separators("dir/3.txt")
         };
 
         assertThat(relative, containsInAnyOrder(expected));
@@ -281,9 +281,9 @@ public class CombinedResourceTest
                 "2.txt",
                 "3.txt",
                 "4.txt",
-                "dir/1.txt",
-                "dir/2.txt",
-                "dir/3.txt"
+                FS.separators("dir/1.txt"),
+                FS.separators("dir/2.txt"),
+                FS.separators("dir/3.txt")
             };
 
             assertThat(actual, contains(expected));
@@ -804,9 +804,9 @@ public class CombinedResourceTest
             "2.txt",
             "3.txt",
             "dir",
-            "dir/1.txt",
-            "dir/2.txt",
-            "dir/3.txt"
+            FS.separators("dir/1.txt"),
+            FS.separators("dir/2.txt"),
+            FS.separators("dir/3.txt")
         ));
     }
 

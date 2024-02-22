@@ -1063,6 +1063,48 @@ public class URIUtilTest
         assertThat(actual.toASCIIString(), is(expected));
     }
 
+    public static Stream<Arguments> toURICases()
+    {
+        List<Arguments> args = new ArrayList<>();
+
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            // Windows format (absolute and relative)
+            args.add(Arguments.of("C:\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:\\path\\to\\bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("\\path\\to\\bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // unix format (relative)
+            args.add(Arguments.of("C:/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:/path/to/bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // URI format (absolute)
+            args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
+            args.add(Arguments.of("jar:file:///E:/path/to/bar.jar", "jar:file:///E:/path/to/bar.jar"));
+        }
+        else
+        {
+            // URI (and unix) format (relative)
+            args.add(Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"));
+        }
+        // URI format (absolute)
+        args.add(Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"));
+        args.add(Arguments.of("jar:file:///path/to/bar.jar", "jar:file:///path/to/bar.jar"));
+
+        return args.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("toURICases")
+    public void testToURI(String inputRaw, String expectedUri)
+    {
+        URI actual = URIUtil.toURI(inputRaw);
+        URI expected = URI.create(expectedUri);
+        assertEquals(expected, actual);
+    }
+
     @Test
     public void testSplitSingleJar()
     {

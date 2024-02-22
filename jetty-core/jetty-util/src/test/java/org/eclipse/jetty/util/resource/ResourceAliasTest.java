@@ -25,6 +25,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +74,10 @@ public class ResourceAliasTest
             Resource rootRes = resourceFactory.newResource(docroot);
             // Test navigation through a directory that doesn't exist
             Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
-            assertTrue(Resources.missing(fileResViaBar), "File doesn't exist");
+            if (OS.WINDOWS.isCurrentOs()) // windows allows navigation through a non-existent directory
+                assertTrue(Resources.exists(fileResViaBar));
+            else
+                assertTrue(Resources.missing(fileResViaBar), "File doesn't exist");
 
             // Test navigation through a directory that does exist
             Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");

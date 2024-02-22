@@ -16,10 +16,12 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -1845,10 +1847,36 @@ public final class URIUtil
     {
         Objects.requireNonNull(resource);
 
-        // Only try URI for string for known schemes, otherwise assume it is a Path
-        return (ResourceFactory.isSupported(resource))
-            ? correctFileURI(URI.create(resource))
-            : Paths.get(resource).toUri();
+        // Only try URI for string for known schemes, otherwise try a few different ways
+        if (ResourceFactory.isSupported(resource))
+            return correctFileURI(URI.create(resource));
+        else
+        {
+            // Try as local path first
+            try
+            {
+                Path path = Paths.get(resource);
+                return path.toUri();
+            }
+            catch(InvalidPathException ignore)
+            {
+                // ignore
+            }
+
+            // Try as URI
+            try
+            {
+                URI uri = new URI(resource);
+                if (uri.isAbsolute())
+                    return correctFileURI(uri); // we need it to be absolute
+            }
+            catch (URISyntaxException ignore)
+            {
+                // ignore
+            }
+
+            throw new IllegalArgumentException("Unrecognized resource string: " + resource);
+        }
     }
 
     /**
