@@ -310,7 +310,7 @@ public class PathResource extends Resource
     @Override
     public boolean isDirectory()
     {
-        return Files.isDirectory(getPath(), LinkOption.NOFOLLOW_LINKS);
+        return Files.isDirectory(getPath());
     }
 
     @Override
