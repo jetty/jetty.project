@@ -45,6 +45,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -473,6 +474,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         Handler next = getHandler();
         if (next == null)
             return false;
+
+        // Skip security check if this is a dispatch rather than a fresh request
+        if (StringUtil.isNotBlank((String)request.getAttribute("org.eclipse.jetty.CrossContextDispatch")))
+            return next.handle(request, response, callback);
 
         String pathInContext = Request.getPathInContext(request);
         Constraint constraint = getConstraint(pathInContext, request);

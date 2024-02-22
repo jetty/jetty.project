@@ -17,6 +17,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Set;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -30,6 +31,8 @@ import org.eclipse.jetty.util.IO;
 
 public class CrossContextDispatcher implements RequestDispatcher
 {
+    public static final String CROSS_CONTEXT_ATTRIBUTE = "org.eclipse.jetty.CrossContextDispatch";
+
     public static final Set<String> ATTRIBUTES = Set.of(
         RequestDispatcher.FORWARD_REQUEST_URI,
         RequestDispatcher.FORWARD_MAPPING,
@@ -43,7 +46,8 @@ public class CrossContextDispatcher implements RequestDispatcher
         RequestDispatcher.INCLUDE_SERVLET_PATH,
         RequestDispatcher.INCLUDE_QUERY_STRING,
         RequestDispatcher.INCLUDE_PATH_INFO,
-        ServletContextRequest.MULTIPART_CONFIG_ELEMENT
+        ServletContextRequest.MULTIPART_CONFIG_ELEMENT,
+        CROSS_CONTEXT_ATTRIBUTE
     );
 
     private final ServletContextHandler.DispatchableServletContextApi _targetContext;
@@ -79,6 +83,7 @@ public class CrossContextDispatcher implements RequestDispatcher
                         case RequestDispatcher.INCLUDE_SERVLET_PATH -> REMOVED;
                         case RequestDispatcher.INCLUDE_PATH_INFO -> REMOVED;
                         case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> httpServletRequest.getAttribute(ServletMultiPartFormData.class.getName());
+                        case CrossContextDispatcher.CROSS_CONTEXT_ATTRIBUTE -> DispatcherType.FORWARD.toString();
                         default -> null;
                     };
                 }

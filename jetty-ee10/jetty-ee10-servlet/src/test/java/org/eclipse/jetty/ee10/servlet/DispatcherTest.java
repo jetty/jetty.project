@@ -17,11 +17,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.sql.Time;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import jakarta.servlet.AsyncContext;
@@ -874,11 +877,11 @@ public class DispatcherTest
     @Test
     public void testSimpleCrossContextForward() throws Exception
     {
-        _forwardTargetServletContextHandler.addServlet(RogerThatServlet.class, "/rogerThat/*");
+        _forwardTargetServletContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
         String rawResponse = _connector.getResponse("""
-            GET /context/dispatch/?forward=/rogerThat HTTP/1.1\r
+            GET /context/dispatch/?forward=/verify HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
             \r
@@ -887,12 +890,11 @@ public class DispatcherTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         // from inside the context.txt file
-        assertThat(response.getContent(), containsString("Roger That!"));
-
+        assertThat(response.getContent(), containsString("Verified!"));
     }
 
     @Test
-    public void testParameterReadingCrossContextForward() throws Exception
+    public void testParamsBeforeCrossContextForward() throws Exception
     {
         _forwardTargetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
         _contextHandler.addFilter(ParameterReadingFilter.class, "/dispatch/*", EnumSet.of(DispatcherType.REQUEST));
@@ -910,6 +912,40 @@ public class DispatcherTest
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("a="));
+    }
+
+    @Test
+    public void testParamsAfterCrossContextForward() throws Exception
+    {
+         _forwardTargetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
+         CountDownLatch latch = new CountDownLatch(1);
+         Servlet dispatcher = new CrossContextDispatchServlet()
+         {
+             @Override
+             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+             {
+                 super.doGet(request, response);
+                 String checkParam = request.getParameter("param");
+                    if (!StringUtil.isBlank(checkParam))
+                        latch.countDown();
+             }
+         };
+
+        _contextHandler.addServlet(new ServletHolder(dispatcher), "/dispatch/*");
+
+        String form = "a=xxx";
+        String rawResponse = _connector.getResponse(
+            "POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Content-Length: " + form.length() + "\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+             form);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1300,7 +1336,9 @@ public class DispatcherTest
                 dispatcher = foreign.getRequestDispatcher(request.getParameter("forward"));
 
                 if (dispatcher != null)
+                {
                     dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
+                }
                 else
                     response.sendError(404);
             }
@@ -1440,6 +1478,16 @@ public class DispatcherTest
             System.err.println(req.getAttribute("jakarta.servlet.forward.servlet_path"));
             System.err.println(req.getAttribute("jakarta.servlet.forward.path_info"));
             System.err.println(req.getAttribute("jakarta.servlet.forward.query_string"));*/
+        }
+    }
+
+    public static class VerifyForwardServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            if (DispatcherType.FORWARD.equals(req.getDispatcherType()))
+                res.getWriter().print("Verified!");
         }
     }
 
