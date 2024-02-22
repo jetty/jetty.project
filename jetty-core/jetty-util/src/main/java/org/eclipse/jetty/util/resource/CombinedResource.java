@@ -403,4 +403,15 @@ public class CombinedResource extends Resource
         }
         return relative;
     }
+
+    @Override
+    public boolean isSameFile(Path path)
+    {
+        for (Resource r : this)
+        {
+            if (r.isSameFile(path))
+                return true;
+        }
+        return false;
+    }
 }
