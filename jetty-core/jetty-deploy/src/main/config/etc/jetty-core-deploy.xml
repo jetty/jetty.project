@@ -33,7 +33,7 @@
             </Call>
           </Set>
           <Set name="deferInitialScan" property="jetty.deploy.deferInitialScan"/>
-          <Set name="scanInterval" property="jetty.deploy.scanInterval"/>
+          <Set name="scanInterval"><Property name="jetty.deploy.scanInterval" default="1"/></Set>
         </New>
       </Arg>
     </Call>
