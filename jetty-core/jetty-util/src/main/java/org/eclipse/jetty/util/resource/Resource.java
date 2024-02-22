@@ -326,12 +326,18 @@ public abstract class Resource implements Iterable<Resource>
             {
                 // to a directory, preserve the filename
                 Path destPath = destination.resolve(src.getFileName().toString());
-                Files.copy(src, destPath, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(src, destPath,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.COPY_ATTRIBUTES,
+                    StandardCopyOption.REPLACE_EXISTING);
             }
             else
             {
                 // to a file, use destination as-is
-                Files.copy(src, destination, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(src, destination,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.COPY_ATTRIBUTES,
+                    StandardCopyOption.REPLACE_EXISTING);
             }
             return;
         }
