@@ -1133,9 +1133,19 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected ContextRequest wrapRequest(Request request, Response response)
     {
-        // Need to ask directly to the Context for the pathInContext, rather than using
-        // Request.getPathInContext(), as the request is not yet wrapped in this Context.
-        String decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        String decodedPathInContext;
+        if (isCrossContextDispatchSupported() && DispatcherType.INCLUDE.toString().equals(request.getContext().getCrossContextDispatchType(request)))
+        {
+            // Why oh why is the servlet spec so stupid!
+            decodedPathInContext = URIUtil.addPaths((String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH),
+                (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO));
+        }
+        else
+        {
+            // Need to ask directly to the Context for the pathInContext, rather than using
+            // Request.getPathInContext(), as the request is not yet wrapped in this Context.
+            decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        }
 
         MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
         if (matchedResource == null)
