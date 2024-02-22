@@ -1114,7 +1114,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             if (writeCallback == null)
                 return null;
-            return () -> writeCallback.failed(x);
+            return () -> Callback.failed(writeCallback, x);
         }
 
         public long getContentBytesWritten()
@@ -1229,7 +1229,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (writeFailure != null)
                 {
                     Throwable failure = writeFailure;
-                    httpChannelState._writeInvoker.run(() -> callback.failed(failure));
+                    httpChannelState._writeInvoker.run(() -> Callback.failed(callback, failure));
                     return;
                 }
 
@@ -1297,7 +1297,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
-                httpChannel._writeInvoker.run(() -> callback.failed(x));
+                httpChannel._writeInvoker.run(() -> Callback.failed(callback, x));
         }
 
         @Override
@@ -1513,41 +1513,49 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void failed(Throwable failure)
         {
-            // Called when the request/response cycle is completing with a failure.
-            HttpStream stream;
-            ChannelRequest request;
-            HttpChannelState httpChannelState;
-            ErrorResponse errorResponse = null;
-            try (AutoLock ignored = _request._lock.lock())
+            try
             {
-                if (lockedCompleteCallback())
-                    return;
-                httpChannelState = _request._httpChannelState;
-                stream = httpChannelState._stream;
-                request = _request;
+                // Called when the request/response cycle is completing with a failure.
+                HttpStream stream;
+                ChannelRequest request;
+                HttpChannelState httpChannelState;
+                ErrorResponse errorResponse = null;
+                try (AutoLock ignored = _request._lock.lock())
+                {
+                    if (lockedCompleteCallback())
+                        return;
+                    httpChannelState = _request._httpChannelState;
+                    stream = httpChannelState._stream;
+                    request = _request;
 
-                assert httpChannelState._callbackFailure == null;
+                    assert httpChannelState._callbackFailure == null;
 
-                httpChannelState._callbackFailure = failure;
+                    httpChannelState._callbackFailure = failure;
 
-                // Consume any input.
-                Throwable unconsumed = stream.consumeAvailable();
-                ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
+                    // Consume any input.
+                    Throwable unconsumed = stream.consumeAvailable();
+                    ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
 
-                ChannelResponse response = httpChannelState._response;
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
+                    ChannelResponse response = httpChannelState._response;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
 
-                // There may have been an attempt to write an error response that failed.
-                // Do not try to write again an error response if already committed.
-                if (!stream.isCommitted())
-                    errorResponse = new ErrorResponse(request);
+                    // There may have been an attempt to write an error response that failed.
+                    // Do not try to write again an error response if already committed.
+                    if (!stream.isCommitted())
+                        errorResponse = new ErrorResponse(request);
+                }
+
+                if (errorResponse != null)
+                    Response.writeError(request, errorResponse, new ErrorCallback(request, errorResponse, stream, failure), failure);
+                else
+                    _request.getHttpChannelState()._handlerInvoker.failed(failure);
             }
-
-            if (errorResponse != null)
-                Response.writeError(request, errorResponse, new ErrorCallback(request, errorResponse, stream, failure), failure);
-            else
-                _request.getHttpChannelState()._handlerInvoker.failed(failure);
+            catch (Throwable t)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+                throw t;
+            }
         }
 
         private boolean lockedCompleteCallback()
@@ -1683,7 +1691,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             else
             {
-                httpChannelState._handlerInvoker.failed(failure);
+                Callback.failed(httpChannelState._handlerInvoker, failure);
             }
         }
 
@@ -1705,9 +1713,8 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannelState = _request.lockedGetHttpChannelState();
                 httpChannelState._response._status = _errorResponse._status;
             }
-            if (ExceptionUtil.areNotAssociated(failure, x))
-                failure.addSuppressed(x);
-            httpChannelState._handlerInvoker.failed(failure);
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
+            Callback.failed(httpChannelState._handlerInvoker, failure);
         }
 
         @Override
@@ -1736,8 +1743,16 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void failed(Throwable x)
         {
-            completing();
-            super.failed(x);
+            try
+            {
+                completing();
+                super.failed(x);
+            }
+            catch (Throwable t)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                throw t;
+            }
         }
 
         private void completing()
