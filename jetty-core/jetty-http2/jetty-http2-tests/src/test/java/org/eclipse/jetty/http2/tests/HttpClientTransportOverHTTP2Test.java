@@ -743,7 +743,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     }
 
     @Test
-    public void testInputStreamResponseListenerAbortInOnBegin() throws Exception
+    public void testResponseListenerAbortInOnBegin() throws Exception
     {
         start(new Handler.Abstract()
         {
@@ -759,7 +759,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         AtomicReference<Result> resultRef = new AtomicReference<>();
 
         org.eclipse.jetty.client.Request jettyRequest = httpClient.newRequest("localhost", connector.getLocalPort());
-        jettyRequest.send(new InputStreamResponseListener()
+        jettyRequest.send(new Response.Listener()
         {
             @Override
             public void onBegin(org.eclipse.jetty.client.Response response)
@@ -772,7 +772,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             {
                 try
                 {
-                    super.onContentSource(response, contentSource);
+                    Content.Chunk chunk = contentSource.read();
+                    chunk.release();
                 }
                 catch (Throwable x)
                 {
