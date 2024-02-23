@@ -17,12 +17,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -35,25 +35,30 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:server:FCGI")
     public void testClientIdleTimeout(Transport transport) throws Exception
     {
+        long serverIdleTimeout = idleTimeout * 2;
+        CountDownLatch serverIdleTimeoutLatch = new CountDownLatch(1);
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))
                     callback.succeeded();
+                else
+                    request.addFailureListener(x -> serverIdleTimeoutLatch.countDown());
                 return true;
             }
         });
+        connector.setIdleTimeout(serverIdleTimeout);
         client.setIdleTimeout(idleTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
             .path("/timeout")
+            .body(new StringRequestContent("some data"))
             .send(result ->
             {
                 if (result.isFailed())
@@ -65,15 +70,20 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         // Verify that after the timeout we can make another request.
         ContentResponse response = client.newRequest(newURI(transport))
             .timeout(5, TimeUnit.SECONDS)
+            .body(new StringRequestContent("more data"))
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Wait for the server's idle timeout to trigger to give it a chance to clean up its resources.
+        assertTrue(serverIdleTimeoutLatch.await(2 * serverIdleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:server:FCGI")
     public void testRequestIdleTimeout(Transport transport) throws Exception
     {
+        long serverIdleTimeout = idleTimeout * 2;
+        CountDownLatch serverIdleTimeoutLatch = new CountDownLatch(1);
         start(transport, new Handler.Abstract()
         {
             @Override
@@ -82,13 +92,17 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                 // Do not succeed the callback if it's a timeout request.
                 if (!Request.getPathInContext(request).equals("/timeout"))
                     callback.succeeded();
+                else
+                    request.addFailureListener(x -> serverIdleTimeoutLatch.countDown());
                 return true;
             }
         });
+        connector.setIdleTimeout(serverIdleTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
             .path("/timeout")
+            .body(new StringRequestContent("some data"))
             .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
             .send(result ->
             {
@@ -100,9 +114,13 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 
         // Verify that after the timeout we can make another request.
         ContentResponse response = client.newRequest(newURI(transport))
+            .body(new StringRequestContent("more data"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Wait for the server's idle timeout to trigger to give it a chance to clean up its resources.
+        assertTrue(serverIdleTimeoutLatch.await(2 * serverIdleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @ParameterizedTest
