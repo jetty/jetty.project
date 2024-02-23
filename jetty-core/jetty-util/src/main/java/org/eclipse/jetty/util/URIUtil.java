@@ -1864,20 +1864,23 @@ public final class URIUtil
                     {
                         return toURI(Paths.get(resource).toUri().toASCIIString());
                     }
-                    catch (InvalidPathException ignore)
+                    catch (InvalidPathException x)
                     {
-                        // ignore
+                        LOG.trace("ignored", x);
                     }
                 }
 
                 // If we reached this point, that means the input String has a scheme,
                 // and is not recognized as supported by the registered schemes in ResourceFactory.
-                throw new IllegalArgumentException("URI scheme not supported: " + resource);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("URI scheme is not registered: {}", uri.toASCIIString());
+                throw new IllegalArgumentException("URI scheme not registered: " + uri.getScheme());
             }
-            catch (URISyntaxException ignore)
+            catch (URISyntaxException x)
             {
                 // We have an input string that has what looks like a scheme, but isn't a URI.
                 // Eg: "C:\path\to\resource.txt"
+                LOG.trace("ignored", x);
             }
         }
 
@@ -1887,12 +1890,17 @@ public final class URIUtil
         {
             return toURI(Paths.get(resource).toUri().toASCIIString());
         }
-        catch (InvalidPathException ignore)
+        catch (InvalidPathException x)
         {
-            // ignore
+            LOG.trace("ignored", x);
         }
 
-        throw new IllegalArgumentException("Unrecognized resource string: " + resource);
+        // If we reached this here, that means the input string cannot be used as
+        // a URI or a File Path.  The cause is usually due to bad input (eg:
+        // characters that are not supported by file system)
+        if (LOG.isDebugEnabled())
+            LOG.debug("Input string cannot be converted to URI \"{}\"", resource);
+        throw new IllegalArgumentException("Cannot be converted to URI");
     }
 
     /**

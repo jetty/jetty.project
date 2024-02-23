@@ -219,7 +219,7 @@ class ResourceFactoryInternals
 
                 ResourceFactory resourceFactory = RESOURCE_FACTORIES.get(uri.getScheme());
                 if (resourceFactory == null)
-                    throw new IllegalArgumentException("URI scheme not supported: " + uri);
+                    throw new IllegalArgumentException("URI scheme not registered: " + uri.getScheme());
                 if (resourceFactory instanceof MountedPathResourceFactory)
                 {
                     FileSystemPool.Mount mount = mountIfNeeded(uri);
@@ -233,7 +233,9 @@ class ResourceFactoryInternals
             }
             catch (URISyntaxException | ProviderNotFoundException ex)
             {
-                throw new IllegalArgumentException("Unable to create resource from: " + uri, ex);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to create resource from: {}", uri, ex);
+                throw new IllegalArgumentException("Unable to create resource", ex);
             }
         }
 

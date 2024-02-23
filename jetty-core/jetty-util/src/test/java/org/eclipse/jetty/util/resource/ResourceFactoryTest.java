@@ -137,13 +137,13 @@ public class ResourceFactoryTest
         // Since the `ftp` scheme is not registered, it's not recognized as a supported URI.
         IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
             () -> ResourceFactory.root().newResource("ftp://webtide.com/favicon.ico"));
-        assertThat(iae.getMessage(), containsString("URI scheme not supported"));
+        assertThat(iae.getMessage(), containsString("URI scheme not registered: ftp"));
 
         // Now try it as a formal URI object as input.
         URI uri = URI.create("ftp://webtide.com/favicon.ico");
         // This is an unsupported URI scheme
         iae = assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root().newResource(uri));
-        assertThat(iae.getMessage(), containsString("URI scheme not supported"));
+        assertThat(iae.getMessage(), containsString("URI scheme not registered: ftp"));
     }
 
     @Test
