@@ -56,7 +56,7 @@ public class DynamicTableTest extends AbstractTest
         });
 
         if (clientMaxCapacity >= 0)
-            client.setMaxEncoderTableCapacity(0);
+            client.setMaxEncoderTableCapacity(clientMaxCapacity);
         if (serverMaxCapacity >= 0)
             connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxEncoderTableCapacity(serverMaxCapacity);
 
@@ -103,7 +103,7 @@ public class DynamicTableTest extends AbstractTest
         });
 
         if (clientMaxCapacity >= 0)
-            client.setMaxDecoderTableCapacity(0);
+            client.setMaxDecoderTableCapacity(clientMaxCapacity);
         if (serverMaxCapacity >= 0)
             connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxDecoderTableCapacity(serverMaxCapacity);
 
@@ -151,8 +151,8 @@ public class DynamicTableTest extends AbstractTest
 
         if (clientMaxCapacity >= 0)
         {
-            client.setMaxDecoderTableCapacity(0);
-            client.setMaxEncoderTableCapacity(0);
+            client.setMaxDecoderTableCapacity(clientMaxCapacity);
+            client.setMaxEncoderTableCapacity(clientMaxCapacity);
         }
         if (serverMaxCapacity >= 0)
         {
