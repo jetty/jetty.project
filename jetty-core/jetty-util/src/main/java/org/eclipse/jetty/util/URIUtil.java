@@ -1847,36 +1847,52 @@ public final class URIUtil
     {
         Objects.requireNonNull(resource);
 
-        // Only try URI for string for known schemes, otherwise try a few different ways
-        if (ResourceFactory.isSupported(resource))
-            return correctFileURI(URI.create(resource));
-        else
+        if (URIUtil.hasScheme(resource))
         {
-            // Try as local path first
-            try
-            {
-                Path path = Paths.get(resource);
-                return path.toUri();
-            }
-            catch (InvalidPathException ignore)
-            {
-                // ignore
-            }
-
-            // Try as URI
             try
             {
                 URI uri = new URI(resource);
-                if (uri.isAbsolute())
-                    return correctFileURI(uri); // we need it to be absolute
+
+                if (ResourceFactory.isSupported(uri))
+                    return correctFileURI(uri);
+
+                // We don't have a supported URI scheme
+                if (uri.getScheme().length() == 1)
+                {
+                    // Input is a possible Windows path disguised as a URI "D:/path/to/resource.txt".
+                    try
+                    {
+                        return toURI(Paths.get(resource).toUri().toASCIIString());
+                    }
+                    catch (InvalidPathException ignore)
+                    {
+                        // ignore
+                    }
+                }
+
+                // If we reached this point, that means the input String has a scheme,
+                // and is not recognized as supported by the registered schemes in ResourceFactory.
+                throw new IllegalArgumentException("URI scheme not supported: " + resource);
             }
             catch (URISyntaxException ignore)
             {
-                // ignore
+                // We have an input string that has what looks like a scheme, but isn't a URI.
+                // Eg: "C:\path\to\resource.txt"
             }
-
-            throw new IllegalArgumentException("Unrecognized resource string: " + resource);
         }
+
+        // If we reached this point, we have a String with no valid scheme.
+        // Treat it as a Path, as that's all we have left to investigate.
+        try
+        {
+            return toURI(Paths.get(resource).toUri().toASCIIString());
+        }
+        catch (InvalidPathException ignore)
+        {
+            // ignore
+        }
+
+        throw new IllegalArgumentException("Unrecognized resource string: " + resource);
     }
 
     /**

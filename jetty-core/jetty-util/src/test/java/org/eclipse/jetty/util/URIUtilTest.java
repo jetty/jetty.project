@@ -57,7 +57,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @ExtendWith(WorkDirExtension.class)
 public class URIUtilTest
 {
-
     public WorkDir workDir;
 
     public static Stream<Arguments> encodePathSource()
@@ -1081,6 +1080,7 @@ public class URIUtilTest
             args.add(Arguments.of("/path/to/bogus.txt", "file:///C:/path/to/bogus.txt"));
             // URI format (absolute)
             args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
+            args.add(Arguments.of("file:/e:/zed/yotta.txt", "file:///E:/zed/yotta.txt"));
             args.add(Arguments.of("jar:file:///E:/path/to/bar.jar", "jar:file:///E:/path/to/bar.jar"));
         }
         else
