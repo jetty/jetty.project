@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
@@ -86,7 +87,7 @@ public class Origin
 
     public Origin(String scheme, Address address, Object tag, Protocol protocol, Transport transport)
     {
-        this.scheme = Objects.requireNonNull(scheme);
+        this.scheme = URIUtil.normalizeScheme(Objects.requireNonNull(scheme));
         this.address = address;
         this.tag = tag;
         this.protocol = protocol;
@@ -141,9 +142,7 @@ public class Origin
 
     public String asString()
     {
-        StringBuilder result = new StringBuilder();
-        URIUtil.appendSchemeHostPort(result, scheme, address.host, address.port);
-        return result.toString();
+        return HttpURI.from(scheme, address.host, address.port, null).asString();
     }
 
     @Override

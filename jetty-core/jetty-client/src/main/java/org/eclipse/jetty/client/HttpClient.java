@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -1121,11 +1122,17 @@ public class HttpClient extends ContainerLifeCycle
         return proxyConfig;
     }
 
+    /**
+     * Return a normalized port suitable for use by Origin and Address
+     * @param scheme the scheme to use for the default port (if port is unspecified)
+     * @param port the port (0 or negative means the port is unspecified)
+     * @return the normalized port.
+     */
     public static int normalizePort(String scheme, int port)
     {
         if (port > 0)
             return port;
-        return HttpScheme.getDefaultPort(scheme);
+        return URIUtil.getDefaultPortForScheme(scheme);
     }
 
     public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)

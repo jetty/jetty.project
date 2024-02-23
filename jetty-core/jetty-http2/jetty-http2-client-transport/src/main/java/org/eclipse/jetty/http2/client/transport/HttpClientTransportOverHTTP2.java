@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
@@ -154,9 +155,9 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         return factory.newConnection(endPoint, context);
     }
 
-    protected Connection newConnection(Destination destination, Session session)
+    protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
     {
-        return new HttpConnectionOverHTTP2(destination, session);
+        return new HttpConnectionOverHTTP2(destination, session, connection);
     }
 
     protected void onClose(Connection connection, GoAwayFrame frame)
@@ -172,9 +173,9 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         }
 
         @Override
-        protected Connection newConnection(Destination destination, Session session)
+        protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
         {
-            return HttpClientTransportOverHTTP2.this.newConnection(destination, session);
+            return HttpClientTransportOverHTTP2.this.newConnection(destination, session, connection);
         }
 
         @Override

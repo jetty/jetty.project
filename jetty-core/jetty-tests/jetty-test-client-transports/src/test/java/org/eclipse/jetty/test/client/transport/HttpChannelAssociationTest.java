@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.client.transport.internal.HttpChannelOverFCGI;
 import org.eclipse.jetty.fcgi.client.transport.internal.HttpConnectionOverFCGI;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
@@ -149,9 +150,9 @@ public class HttpChannelAssociationTest extends AbstractTest
                 yield new HttpClientTransportOverHTTP2(http2Client)
                 {
                     @Override
-                    protected Connection newConnection(Destination destination, Session session)
+                    protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
                     {
-                        return new HttpConnectionOverHTTP2(destination, session)
+                        return new HttpConnectionOverHTTP2(destination, session, connection)
                         {
                             @Override
                             protected HttpChannelOverHTTP2 newHttpChannel()

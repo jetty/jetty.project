@@ -151,6 +151,11 @@ public interface HttpURI
         return new Mutable(scheme, host, port, pathQuery).asImmutable();
     }
 
+    static Immutable from(String scheme, String host, int port, String path, String query, String fragment)
+    {
+        return new Immutable(scheme, host, port, path, query, fragment);
+    }
+
     Immutable asImmutable();
 
     String asString();
@@ -302,18 +307,19 @@ public interface HttpURI
                 _violations = Collections.unmodifiableSet(EnumSet.copyOf(builder._violations));
         }
 
-        private Immutable(String uri)
+        private Immutable(String scheme, String host, int port, String path, String query, String fragment)
         {
-            _scheme = null;
+            _uri = null;
+
+            _scheme = URIUtil.normalizeScheme(scheme);
             _user = null;
-            _host = null;
-            _port = -1;
-            _path = uri;
+            _host = host;
+            _port = port;
+            _path = path;
+            _canonicalPath = _path == null ? null : URIUtil.canonicalPath(_path);
             _param = null;
-            _query = null;
-            _fragment = null;
-            _uri = uri;
-            _canonicalPath = null;
+            _query = query;
+            _fragment = fragment;
         }
 
         @Override
@@ -340,19 +346,26 @@ public interface HttpURI
                     out.append(_host);
                 }
 
-                if (_port > 0)
-                    out.append(':').append(_port);
+                int normalizedPort = URIUtil.normalizePortForScheme(_scheme, _port);
+                if (normalizedPort > 0)
+                    out.append(':').append(normalizedPort);
+
+                // we output even if the input is an empty string (to match java URI / URL behaviors)
+                boolean hasQuery = _query != null;
+                boolean hasFragment = _fragment != null;
 
                 if (_path != null)
                     out.append(_path);
+                else if (hasQuery || hasFragment)
+                    out.append('/');
 
-                if (_query != null)
+                if (hasQuery)
                     out.append('?').append(_query);
 
-                if (_fragment != null)
+                if (hasFragment)
                     out.append('#').append(_fragment);
 
-                if (out.length() > 0)
+                if (!out.isEmpty())
                     _uri = out.toString();
                 else
                     _uri = "";
@@ -504,7 +517,7 @@ public interface HttpURI
         {
             try
             {
-                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
+                return new URI(_scheme, null, _host, URIUtil.normalizePortForScheme(_scheme, _port), _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
             }
             catch (URISyntaxException x)
             {
@@ -616,7 +629,7 @@ public interface HttpURI
         {
             _uri = null;
 
-            _scheme = uri.getScheme();
+            _scheme = URIUtil.normalizeScheme(uri.getScheme());
             _host = uri.getHost();
             if (_host == null && uri.getRawSchemeSpecificPart().startsWith("//"))
                 _host = "";
@@ -631,13 +644,9 @@ public interface HttpURI
 
         private Mutable(String scheme, String host, int port, String pathQuery)
         {
-            // TODO review if this should be here
-            if (port == HttpScheme.getDefaultPort(scheme))
-                port = 0;
-
             _uri = null;
 
-            _scheme = scheme;
+            _scheme = URIUtil.normalizeScheme(scheme);
             _host = host;
             _port = port;
 
@@ -960,7 +969,7 @@ public interface HttpURI
 
         public Mutable scheme(String scheme)
         {
-            _scheme = scheme;
+            _scheme = URIUtil.normalizeScheme(scheme);
             _uri = null;
             return this;
         }
@@ -1122,7 +1131,7 @@ public interface HttpURI
                         {
                             case ':':
                                 // must have been a scheme
-                                _scheme = uri.substring(mark, i);
+                                _scheme = URIUtil.normalizeScheme(uri.substring(mark, i));
                                 // Start again with scheme set
                                 state = State.START;
                                 break;
