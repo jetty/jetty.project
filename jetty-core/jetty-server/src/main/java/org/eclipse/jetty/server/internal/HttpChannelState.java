@@ -867,31 +867,37 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public Content.Chunk read()
         {
-            HttpStream stream;
-            try (AutoLock ignored = _lock.lock())
+            try
             {
-                HttpChannelState httpChannel = lockedGetHttpChannelState();
+                HttpStream stream;
+                try (AutoLock ignored = _lock.lock())
+                {
+                    HttpChannelState httpChannel = lockedGetHttpChannelState();
 
-                Content.Chunk error = httpChannel._readFailure;
-                httpChannel._readFailure = Content.Chunk.next(error);
-                if (error != null)
-                    return error;
+                    Content.Chunk error = httpChannel._readFailure;
+                    httpChannel._readFailure = Content.Chunk.next(error);
+                    if (error != null)
+                        return error;
 
-                stream = httpChannel._stream;
+                    stream = httpChannel._stream;
+                }
+                Content.Chunk chunk = stream.read();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read {}", chunk);
+
+                if (chunk != null && chunk.hasRemaining())
+                    _contentBytesRead.add(chunk.getByteBuffer().remaining());
+
+                if (chunk instanceof Trailers trailers)
+                    _trailers = trailers.getTrailers();
+
+                return chunk;
             }
-
-            Content.Chunk chunk = stream.read();
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("read {}", chunk);
-
-            if (chunk != null && chunk.hasRemaining())
-                _contentBytesRead.add(chunk.getByteBuffer().remaining());
-
-            if (chunk instanceof Trailers trailers)
-                _trailers = trailers.getTrailers();
-
-            return chunk;
+            catch (Throwable t)
+            {
+                return Content.Chunk.from(t, true);
+            }
         }
 
         @Override

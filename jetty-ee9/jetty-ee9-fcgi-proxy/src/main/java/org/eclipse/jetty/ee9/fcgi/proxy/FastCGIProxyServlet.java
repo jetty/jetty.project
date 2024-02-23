@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * Specific implementation of {@link org.eclipse.jetty.ee9.proxy.AsyncProxyServlet.Transparent} for FastCGI.
@@ -195,7 +196,8 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         {
             String server = request.getServerName();
             int port = request.getServerPort();
-            if (port != HttpScheme.getDefaultPort(request.getScheme()))
+            String scheme = request.getScheme();
+            if (port != URIUtil.getDefaultPortForScheme(scheme))
                 server += ":" + port;
             String host = server;
             proxyRequest.headers(headers -> headers

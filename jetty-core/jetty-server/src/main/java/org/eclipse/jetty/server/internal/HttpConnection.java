@@ -70,6 +70,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1218,7 +1219,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
                 int port = hostPort.getPort();
-                if (port == HttpScheme.getDefaultPort(_uri.getScheme()))
+                if (port == URIUtil.getDefaultPortForScheme(_uri.getScheme()))
                     port = -1;
                 _uri.authority(hostPort.getHost(), port);
             }
@@ -1504,7 +1505,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // If we are fill interested, then a read is pending and we must abort
             if (isFillInterested())
             {
-                LOG.warn("Read pending {} {}", this, getEndPoint());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("abort due to pending read {} {} ", this, getEndPoint());
                 abort(new IOException("Pending read in onCompleted"));
                 return;
             }

@@ -672,8 +672,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     private String getRedirectUri(Request request)
     {
-        final StringBuffer redirectUri = new StringBuffer(128);
-        URIUtil.appendSchemeHostPort(redirectUri, request.getHttpURI().getScheme(),
+        final StringBuilder redirectUri = URIUtil.newURIBuilder(request.getHttpURI().getScheme(),
             Request.getServerName(request), Request.getServerPort(request));
         redirectUri.append(URIUtil.addPaths(request.getContext().getContextPath(), _redirectPath));
         return redirectUri.toString();

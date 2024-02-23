@@ -48,6 +48,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.api.Session;
@@ -326,9 +327,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)
         {
             @Override
-            protected Connection newConnection(Destination destination, Session session)
+            protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
             {
-                return new HttpConnectionOverHTTP2(destination, session)
+                return new HttpConnectionOverHTTP2(destination, session, connection)
                 {
                     @Override
                     protected HttpChannelOverHTTP2 newHttpChannel()
@@ -520,10 +521,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client)
             {
                 @Override
-                protected Connection newConnection(Destination destination, Session session)
+                protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
                 {
                     sessions.add(session);
-                    return super.newConnection(destination, session);
+                    return super.newConnection(destination, session, connection);
                 }
             });
             QueuedThreadPool clientExecutor = new QueuedThreadPool();

@@ -40,6 +40,9 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
 {
     public static final String MAX_FIELDS_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormKeys";
     public static final String MAX_LENGTH_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormContentSize";
+    public static final int MAX_FIELDS_DEFAULT = 1000;
+    public static final int MAX_LENGTH_DEFAULT = 200000;
+
     private static final CompletableFuture<Fields> EMPTY = CompletableFuture.completedFuture(Fields.EMPTY);
 
     public static Charset getFormEncodedCharset(Request request)
@@ -108,8 +111,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      */
     public static CompletableFuture<Fields> from(Request request)
     {
-        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
-        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
+        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
         return from(request, maxFields, maxLength);
     }
 
@@ -124,8 +127,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      */
     public static CompletableFuture<Fields> from(Request request, Charset charset)
     {
-        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
-        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
+        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         return from(request, charset, maxFields, maxLength);
     }
 
@@ -188,18 +191,18 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         return futureFormFields;
     }
 
-    private static int getRequestAttribute(Request request, String attribute)
+    private static int getContextAttribute(Context context, String attribute, int defValue)
     {
-        Object value = request.getAttribute(attribute);
+        Object value = context.getAttribute(attribute);
         if (value == null)
-            return -1;
+            return defValue;
         try
         {
             return Integer.parseInt(value.toString());
         }
         catch (NumberFormatException x)
         {
-            return -1;
+            return defValue;
         }
     }
 
