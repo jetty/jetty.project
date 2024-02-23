@@ -143,8 +143,8 @@ public class SizeLimitHandler extends Handler.Wrapper
             {
                 if (_responseLimit >= 0 && (_written + content.remaining())  > _responseLimit)
                 {
-                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Response body is too large: " +
-                        _written + content.remaining() + ">" + _responseLimit));
+                    String message = "Response body is too large: %d > %d".formatted(_written + content.remaining(), _responseLimit);
+                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, message));
                     return;
                 }
                 _written += content.remaining();

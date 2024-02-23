@@ -1051,6 +1051,9 @@ public class ServletChannelState
             if (_requestState != RequestState.COMPLETING)
                 throw new IllegalStateException(this.getStatusStringLocked());
 
+            if (failure != null)
+                abortResponse(failure);
+
             if (_event == null)
             {
                 _requestState = RequestState.COMPLETED;
