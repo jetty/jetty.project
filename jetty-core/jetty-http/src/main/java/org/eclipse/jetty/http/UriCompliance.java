@@ -357,12 +357,25 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
     {
-        for (UriCompliance.Violation violation : UriCompliance.Violation.values())
+        if (uri.hasViolations())
         {
-            if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(violation)))
-                return violation.getDescription();
-            else if (listener != null)
-                listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
+            StringBuilder violations = null;
+            for (UriCompliance.Violation violation : UriCompliance.Violation.values())
+            {
+                if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(violation)))
+                {
+                    if (listener != null)
+                        listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
+
+                    if (violations == null)
+                        violations = new StringBuilder();
+                    else
+                        violations.append(", ");
+                    violations.append(violation.getDescription());
+                }
+            }
+            if (violations != null)
+                return violations.toString();
         }
         return null;
     }
