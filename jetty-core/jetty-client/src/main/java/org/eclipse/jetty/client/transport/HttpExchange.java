@@ -233,7 +233,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         return result;
     }
 
-    public boolean isResponseCompleteOrTerminated()
+    boolean isResponseCompleteOrTerminated()
     {
         try (AutoLock l = lock.lock())
         {
