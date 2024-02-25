@@ -172,6 +172,7 @@ public class Request implements HttpServletRequest
     private ContextHandler.APIContext _context;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
+    private final boolean _crossContextDispatchSupported;
     private ContextHandler.CoreContextRequest _coreRequest;
     private MetaData.Request _metaData;
     private HttpFields _httpFields;
@@ -207,6 +208,7 @@ public class Request implements HttpServletRequest
     {
         _channel = channel;
         _input = input;
+        _crossContextDispatchSupported = _channel.getContextHandler().getCoreContextHandler().isCrossContextDispatchSupported();
     }
 
     public HttpFields getHttpFields()
@@ -705,6 +707,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getContextPath()
     {
+        // TODO this is not correctly implemented for Cross Context
         // The context path returned is normally for the current context.  Except during a cross context
         // INCLUDE dispatch, in which case this method returns the context path of the source context,
         // which we recover from the IncludeAttributes wrapper.
@@ -2074,6 +2077,20 @@ public class Request implements HttpServletRequest
      */
     public void setServletPathMapping(ServletPathMapping servletPathMapping)
     {
+        // Change request to cross context dispatch
+        if (_crossContextDispatchSupported && _dispatcherType == DispatcherType.REQUEST && _servletPathMapping == null)
+        {
+            String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (crossContextDispatchType != null)
+            {
+                _dispatcherType = DispatcherType.valueOf(crossContextDispatchType);
+                if (_dispatcherType == DispatcherType.INCLUDE)
+                {
+                    // TODO more work to do here!
+                }
+            }
+        }
+
         _servletPathMapping = servletPathMapping;
     }
 
@@ -2093,6 +2110,7 @@ public class Request implements HttpServletRequest
      */
     ServletPathMapping findServletPathMapping()
     {
+        // TODO cross context
         ServletPathMapping mapping;
         if (_dispatcherType == DispatcherType.INCLUDE)
         {

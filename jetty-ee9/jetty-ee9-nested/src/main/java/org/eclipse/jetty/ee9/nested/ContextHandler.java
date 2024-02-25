@@ -1836,10 +1836,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
 
         @Override
-        public ServletContext getContext(String uripath)
+        public ServletContext getContext(String path)
         {
-            // TODO No cross context dispatch
-            return null;
+            org.eclipse.jetty.server.handler.ContextHandler context = getContextHandler().getCoreContextHandler().getCrossContextHandler(path);
+            return context == null ? null : new CrossContextServletContext(_coreContextHandler, context.getContext());
         }
 
         @Override
@@ -2694,10 +2694,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private class CoreToNestedHandler extends Abstract
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback)
             {
                 HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
-                httpChannel.onProcess(response, callback);
+                Objects.requireNonNull(httpChannel).onProcess(response, callback);
                 httpChannel.handle();
                 return true;
             }

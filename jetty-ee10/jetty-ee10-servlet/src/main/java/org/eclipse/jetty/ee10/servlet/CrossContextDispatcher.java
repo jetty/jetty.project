@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 
-public class CrossContextDispatcher implements RequestDispatcher
+class CrossContextDispatcher implements RequestDispatcher
 {
     public static final Set<String> ATTRIBUTES = Set.of(
         RequestDispatcher.FORWARD_REQUEST_URI,
@@ -49,11 +49,8 @@ public class CrossContextDispatcher implements RequestDispatcher
         ContextHandler.CROSS_CONTEXT_ATTRIBUTE
     );
 
-    private final ServletContextHandler.DispatchableServletContextApi _targetContext;
+    private final CrossContextServletContext _targetContext;
     private final HttpURI _uri;
-    private final String _decodedPathInContext;
-
-    private final String _namedServlet = null;
 
     private class ForwardRequest extends ServletCoreRequest
     {
@@ -95,9 +92,6 @@ public class CrossContextDispatcher implements RequestDispatcher
             });
         }
 
-        /**
-         * @return 
-         */
         @Override
         public HttpURI getHttpURI()
         {
@@ -105,19 +99,12 @@ public class CrossContextDispatcher implements RequestDispatcher
         }
     }
 
-    public CrossContextDispatcher(ServletContextHandler.DispatchableServletContextApi targetContext, HttpURI uri, String decodedPathInContext)
+    CrossContextDispatcher(CrossContextServletContext targetContext, HttpURI uri, String decodedPathInContext)
     {
         _targetContext = targetContext;
         _uri = uri;
-        _decodedPathInContext = decodedPathInContext;
     }
 
-    /**
-     * @param servletRequest a {@link ServletRequest} object that represents the request the client makes of the servlet
-     * @param response a {@link ServletResponse} object that represents the response the servlet returns to the client
-     * @throws ServletException
-     * @throws IOException
-     */
     @Override
     public void forward(ServletRequest servletRequest, ServletResponse response) throws ServletException, IOException
     {
@@ -155,12 +142,6 @@ public class CrossContextDispatcher implements RequestDispatcher
         }
     }
 
-    /**
-     * @param request a {@link ServletRequest} object that contains the client's request
-     * @param response a {@link ServletResponse} object that contains the servlet's response
-     * @throws ServletException
-     * @throws IOException
-     */
     @Override
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
