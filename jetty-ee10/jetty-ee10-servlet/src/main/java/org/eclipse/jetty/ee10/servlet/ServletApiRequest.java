@@ -105,12 +105,10 @@ public class ServletApiRequest implements HttpServletRequest
         {
             super(servletContextRequest);
             //ensure the request is set up with the correct INCLUDE attributes now we know the matchedResource
-            setAttribute(RequestDispatcher.INCLUDE_MAPPING, getServletRequestInfo().getMatchedResource().getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
-            setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, getServletRequestInfo().getMatchedResource().getMatchedPath().getPathMatch());
-            setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, getServletRequestInfo().getMatchedResource().getMatchedPath().getPathInfo());
-            setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, getServletRequestInfo().getRequest().getContext().getContextPath());
-            // setAttribute(RequestDispatcher.INCLUDE_QUERY_STRING, getServletRequestInfo().getRequest().);
-            //TODO
+            setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletContextRequest.getMatchedResource().getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
+            setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletContextRequest.getMatchedResource().getMatchedPath().getPathMatch());
+            setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, servletContextRequest.getMatchedResource().getMatchedPath().getPathInfo());
+            setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, servletContextRequest.getRequest().getContext().getContextPath());
         }
         
         @Override

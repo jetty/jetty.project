@@ -127,12 +127,12 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     {
         super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
-        _servletApiRequest = newServletApiRequest();
         _matchedResource = matchedResource;
         _httpInput = _servletChannel.getHttpInput();
         _decodedPathInContext = decodedPathInContext;
-        _response =  newServletContextResponse(response);
         _sessionManager = sessionManager;
+        _servletApiRequest = newServletApiRequest();
+        _response =  newServletContextResponse(response);
         _attributes = new Attributes.Synthetic(request)
         {
             @Override
@@ -159,19 +159,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         };
 
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
-    }
-
-    @Override
-    public HttpURI getHttpURI()
-    {
-        //until we have fully constructed the ServletContextRequest we need to return the target
-        if (_servletApiRequest == null)
-            return super.getHttpURI();
-
-        String uri = (String)getAttribute(CrossContextDispatcher.ORIGINAL_URI);
-        if (uri == null)
-            return super.getHttpURI();
-        return HttpURI.build().asImmutable();
     }
 
     @Override
@@ -221,7 +208,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             }
         }
 
-        if (getServletContextHandler().isCrossContextDispatchSupported() && DispatcherType.INCLUDE.toString().equals(getContext().getCrossContextDispatchType(this)))
+        if (getServletContextHandler().isCrossContextDispatchSupported() && DispatcherType.INCLUDE.toString().equals(getContext().getCrossContextDispatchType(getWrapped())))
             return new ServletApiRequest.IncludedServletApiRequest(this);
         else
             return new ServletApiRequest(this);

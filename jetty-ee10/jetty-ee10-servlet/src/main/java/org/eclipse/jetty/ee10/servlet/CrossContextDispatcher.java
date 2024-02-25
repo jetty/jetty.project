@@ -42,7 +42,6 @@ class CrossContextDispatcher implements RequestDispatcher
     public static final String ORIGINAL_SERVLET_CONTEXT = "org.eclipse.jetty.dispatch.originalServletContext";
     public static final String ORIGINAL_CONTEXT_PATH = "org.ecipse.jetty.dispatch.originalContextPath";
 
-
     public static final Set<String> ATTRIBUTES = Set.of(
         RequestDispatcher.FORWARD_REQUEST_URI,
         RequestDispatcher.FORWARD_MAPPING,
@@ -69,6 +68,7 @@ class CrossContextDispatcher implements RequestDispatcher
 
     private final CrossContextServletContext _targetContext;
     private final HttpURI _uri;
+    private final String _decodedPathInContext;
 
     private class IncludeRequest extends ServletCoreRequest
     {
@@ -83,8 +83,8 @@ class CrossContextDispatcher implements RequestDispatcher
                         return null;
 
                     //Servlet Spec 9.3.1 no include attributes if a named dispatcher
-                    if (_namedServlet != null && name.startsWith(Dispatcher.__INCLUDE_PREFIX))
-                        return null;
+/*                    if (_namedServlet != null && name.startsWith(Dispatcher.__INCLUDE_PREFIX))
+                        return null;*/
 
                     //Special include attributes refer to the target context and path
                     return switch (name)
@@ -183,6 +183,7 @@ class CrossContextDispatcher implements RequestDispatcher
     {
         _targetContext = targetContext;
         _uri = uri;
+        _decodedPathInContext = decodedPathInContext;
     }
 
     @Override
