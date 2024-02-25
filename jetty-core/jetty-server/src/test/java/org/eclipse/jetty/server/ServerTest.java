@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,6 +45,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ServerTest
 {
@@ -107,6 +109,13 @@ public class ServerTest
     {
         LifeCycle.stop(_server);
         _connector = null;
+    }
+
+    @Test
+    public void testContextTempDirectory()
+    {
+        File tempDirectory = _server.getContext().getTempDirectory();
+        assertThat(tempDirectory, not(nullValue()));
     }
 
     @Test

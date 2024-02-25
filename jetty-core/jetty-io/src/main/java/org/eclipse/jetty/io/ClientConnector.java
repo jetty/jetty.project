@@ -15,12 +15,12 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.ProtocolFamily;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketOption;
 import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
+import java.net.UnixDomainSocketAddress;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -677,21 +676,11 @@ public class ClientConnector extends ContainerLifeCycle
             return new Configurator()
             {
                 @Override
-                public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context)
+                public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
                 {
-                    try
-                    {
-                        ProtocolFamily family = Enum.valueOf(StandardProtocolFamily.class, "UNIX");
-                        SocketChannel socketChannel = (SocketChannel)SocketChannel.class.getMethod("open", ProtocolFamily.class).invoke(null, family);
-                        Class<?> addressClass = Class.forName("java.net.UnixDomainSocketAddress");
-                        SocketAddress socketAddress = (SocketAddress)addressClass.getMethod("of", Path.class).invoke(null, path);
-                        return new ChannelWithAddress(socketChannel, socketAddress);
-                    }
-                    catch (Throwable x)
-                    {
-                        String message = "Unix-Domain SocketChannels are available starting from Java 16, your Java version is: " + JavaVersion.VERSION;
-                        throw new UnsupportedOperationException(message, x);
-                    }
+                    SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
+                    UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(path);
+                    return new ChannelWithAddress(socketChannel, socketAddress);
                 }
             };
         }

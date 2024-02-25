@@ -15,6 +15,7 @@ package org.eclipse.jetty.unixdomain.server;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.UnixDomainSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -40,11 +41,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V2;
@@ -56,32 +53,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@EnabledForJreRange(min = JRE.JAVA_16)
 public class UnixDomainTest
 {
-    private static final Class<?> unixDomainSocketAddressClass = probe();
-
-    private static Class<?> probe()
-    {
-        try
-        {
-            return ClassLoader.getPlatformClassLoader().loadClass("java.net.UnixDomainSocketAddress");
-        }
-        catch (Throwable x)
-        {
-            return null;
-        }
-    }
-
     private ConnectionFactory[] factories = new ConnectionFactory[]{new HttpConnectionFactory()};
     private Server server;
     private Path unixDomainPath;
-
-    @BeforeEach
-    public void prepare()
-    {
-        Assumptions.assumeTrue(unixDomainSocketAddressClass != null);
-    }
 
     private void start(Handler handler) throws Exception
     {
@@ -120,9 +96,9 @@ public class UnixDomainTest
 
                 // Verify the SocketAddresses.
                 SocketAddress local = endPoint.getLocalSocketAddress();
-                assertThat(local, Matchers.instanceOf(unixDomainSocketAddressClass));
+                assertThat(local, Matchers.instanceOf(UnixDomainSocketAddress.class));
                 SocketAddress remote = endPoint.getRemoteSocketAddress();
-                assertThat(remote, Matchers.instanceOf(unixDomainSocketAddressClass));
+                assertThat(remote, Matchers.instanceOf(UnixDomainSocketAddress.class));
 
                 // Verify that other address methods don't throw.
                 local = assertDoesNotThrow(endPoint::getLocalAddress);
@@ -205,8 +181,8 @@ public class UnixDomainTest
             {
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
-                assertThat(endPoint.getLocalSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
-                assertThat(endPoint.getRemoteSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
+                assertThat(endPoint.getLocalSocketAddress(), Matchers.instanceOf(UnixDomainSocketAddress.class));
+                assertThat(endPoint.getRemoteSocketAddress(), Matchers.instanceOf(UnixDomainSocketAddress.class));
                 String target = Request.getPathInContext(request);
                 if ("/v1".equals(target))
                 {
@@ -273,15 +249,8 @@ public class UnixDomainTest
 
     private static Path toUnixDomainPath(SocketAddress address)
     {
-        try
-        {
-            Assertions.assertNotNull(unixDomainSocketAddressClass);
-            return (Path)unixDomainSocketAddressClass.getMethod("getPath").invoke(address);
-        }
-        catch (Throwable x)
-        {
-            Assertions.fail(x);
-            throw new AssertionError();
-        }
+        if (address instanceof UnixDomainSocketAddress unix)
+            return unix.getPath();
+        throw new AssertionError();
     }
 }

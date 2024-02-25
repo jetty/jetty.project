@@ -17,16 +17,17 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * HTTP and WebSocket Schemes
  */
 public enum HttpScheme
 {
-    HTTP("http", 80),
-    HTTPS("https", 443),
-    WS("ws", 80),
-    WSS("wss", 443);
+    HTTP("http"),
+    HTTPS("https"),
+    WS("ws"),
+    WSS("wss");
 
     public static final Index<HttpScheme> CACHE = new Index.Builder<HttpScheme>()
         .caseSensitive(false)
@@ -37,11 +38,11 @@ public enum HttpScheme
     private final ByteBuffer _buffer;
     private final int _defaultPort;
 
-    HttpScheme(String s, int port)
+    HttpScheme(String s)
     {
         _string = s;
         _buffer = BufferUtil.toBuffer(s);
-        _defaultPort = port;
+        _defaultPort = URIUtil.getDefaultPortForScheme(s);
     }
 
     public ByteBuffer asByteBuffer()
@@ -75,16 +76,29 @@ public enum HttpScheme
         return _string;
     }
 
+    /**
+     * Get the default port for a URI scheme
+     * @param scheme The scheme
+     * @return Default port for URI scheme
+     * @deprecated Use {@link URIUtil#getDefaultPortForScheme(String)}
+     */
+    @Deprecated
     public static int getDefaultPort(String scheme)
     {
-        HttpScheme httpScheme = scheme == null ? null : CACHE.get(scheme);
-        return httpScheme == null ? HTTP.getDefaultPort() : httpScheme.getDefaultPort();
+        return URIUtil.getDefaultPortForScheme(scheme);
     }
 
+    /**
+     * Normalize a port for a URI scheme
+     * @param scheme the scheme
+     * @param port the port to normalize
+     * @return The normalized port
+     * @deprecated Use {@link URIUtil#normalizePortForScheme(String, int)}
+     */
+    @Deprecated
     public static int normalizePort(String scheme, int port)
     {
-        HttpScheme httpScheme = scheme == null ? null : CACHE.get(scheme);
-        return httpScheme == null ? port : httpScheme.normalizePort(port);
+        return URIUtil.normalizePortForScheme(scheme, port);
     }
 
     public static boolean isSecure(String scheme)

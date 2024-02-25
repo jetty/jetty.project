@@ -187,7 +187,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         return false;
     }
 
-    protected void offerTask(Runnable task, boolean dispatch)
+    public void offerTask(Runnable task, boolean dispatch)
     {
         offerTask(task);
         if (dispatch)

@@ -1177,9 +1177,7 @@ public class Request implements HttpServletRequest
      */
     public StringBuilder getRootURL()
     {
-        StringBuilder url = new StringBuilder(128);
-        URIUtil.appendSchemeHostPort(url, getScheme(), getServerName(), getServerPort());
-        return url;
+        return new StringBuilder(HttpURI.from(getScheme(), getServerName(), getServerPort(), null).asString());
     }
 
     @Override

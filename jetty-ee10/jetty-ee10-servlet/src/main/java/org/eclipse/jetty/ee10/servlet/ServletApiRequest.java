@@ -65,7 +65,6 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -1020,7 +1019,7 @@ public class ServletApiRequest implements HttpServletRequest
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
-            return HttpScheme.getDefaultPort(getScheme());
+            return URIUtil.getDefaultPortForScheme(getScheme());
 
         // return a specific port
         return port;

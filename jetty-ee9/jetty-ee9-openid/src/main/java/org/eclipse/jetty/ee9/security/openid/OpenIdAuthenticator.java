@@ -292,8 +292,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String redirectUri = null;
             if (_logoutRedirectPath != null)
             {
-                StringBuilder sb = new StringBuilder(128);
-                URIUtil.appendSchemeHostPort(sb, request.getScheme(), request.getServerName(), request.getServerPort());
+                StringBuilder sb = URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
                 sb.append(baseRequest.getContextPath());
                 sb.append(_logoutRedirectPath);
                 redirectUri = sb.toString();
@@ -614,8 +613,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     private String getRedirectUri(HttpServletRequest request)
     {
-        final StringBuffer redirectUri = new StringBuffer(128);
-        URIUtil.appendSchemeHostPort(redirectUri, request.getScheme(),
+        final StringBuilder redirectUri = URIUtil.newURIBuilder(request.getScheme(),
             request.getServerName(), request.getServerPort());
         redirectUri.append(request.getContextPath());
         redirectUri.append(_redirectPath);

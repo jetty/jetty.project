@@ -28,7 +28,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -45,22 +44,8 @@ public class ArrayByteBufferPoolTest
 
         List<RetainableByteBuffer> buffers = new ArrayList<>();
 
-        buffers.add(pool.acquire(10, true));
-        assertThat(pool.getDirectMemory(), is(0L));
-        buffers.add(pool.acquire(10, true));
-        assertThat(pool.getDirectMemory(), is(0L));
-        buffers.add(pool.acquire(20, true));
-        assertThat(pool.getDirectMemory(), is(0L));
-        buffers.add(pool.acquire(20, true));
-        assertThat(pool.getDirectMemory(), is(0L));
-        buffers.add(pool.acquire(10, true));
-        assertThat(pool.getDirectMemory(), is(0L));
-        buffers.add(pool.acquire(20, true));
-        assertThat(pool.getDirectMemory(), is(0L));
-        buffers.add(pool.acquire(10, true));
-        assertThat(pool.getDirectMemory(), is(0L));
-        buffers.add(pool.acquire(20, true));
-        assertThat(pool.getDirectMemory(), is(0L));
+        for (int i = 0; i < 200; i++)
+            buffers.add(pool.acquire(10 + i / 10, true));
 
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectByteBufferCount(), is(0L));
@@ -73,7 +58,22 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getDirectByteBufferCount(), greaterThan(0L));
         assertThat(pool.getDirectByteBufferCount(), lessThan((long)buffers.size()));
         assertThat(pool.getDirectMemory(), greaterThan(0L));
-        assertThat(pool.getDirectMemory(), lessThanOrEqualTo(40L));
+        assertThat(pool.getDirectMemory(), lessThan(120L));
+
+        buffers.clear();
+        for (int i = 0; i < 200; i++)
+            buffers.add(pool.acquire(10 + i / 10, true));
+
+        long maxSize = 0;
+        for (RetainableByteBuffer buffer : buffers)
+        {
+            buffer.release();
+            long size = pool.getDirectMemory();
+            maxSize = Math.max(size, maxSize);
+        }
+
+        // Test that size is never too much over target max
+        assertThat(maxSize, lessThan(100L));
     }
 
     @Test
