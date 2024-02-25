@@ -80,7 +80,7 @@ public class CrossContextDispatcherTest
     private LocalConnector _connector;
     private ServletContextHandler _contextHandler;
 
-    private ServletContextHandler _forwardTargetServletContextHandler;
+    private ServletContextHandler _targetServletContextHandler;
 
     @BeforeEach
     public void init() throws Exception
@@ -97,11 +97,11 @@ public class CrossContextDispatcherTest
         _contextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_contextHandler);
 
-        _forwardTargetServletContextHandler = new ServletContextHandler();
-        _forwardTargetServletContextHandler.setContextPath("/foreign");
-        _forwardTargetServletContextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest"));
-        _forwardTargetServletContextHandler.setCrossContextDispatchSupported(true);
-        contextCollection.addHandler(_forwardTargetServletContextHandler);
+        _targetServletContextHandler = new ServletContextHandler();
+        _targetServletContextHandler.setContextPath("/foreign");
+        _targetServletContextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest"));
+        _targetServletContextHandler.setCrossContextDispatchSupported(true);
+        contextCollection.addHandler(_targetServletContextHandler);
 
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest")));
@@ -125,7 +125,7 @@ public class CrossContextDispatcherTest
     @Test
     public void testSimpleCrossContextForward() throws Exception
     {
-        _forwardTargetServletContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
+        _targetServletContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
         String rawResponse = _connector.getResponse("""
@@ -142,9 +142,26 @@ public class CrossContextDispatcherTest
     }
 
     @Test
+    public void testSimpleCrossContextInclude() throws Exception
+    {
+        _targetServletContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+
+         String rawResponse = _connector.getResponse("""
+            GET /context/dispatch/?include=/verify HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getContent(), containsString("Verified!"));
+    }
+
+    @Test
     public void testParamsBeforeCrossContextForward() throws Exception
     {
-        _forwardTargetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
+        _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
         _contextHandler.addFilter(ParameterReadingFilter.class, "/dispatch/*", EnumSet.of(DispatcherType.REQUEST));
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
@@ -165,7 +182,7 @@ public class CrossContextDispatcherTest
     @Test
     public void testParamsAfterCrossContextForward() throws Exception
     {
-         _forwardTargetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
+         _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
          CountDownLatch latch = new CountDownLatch(1);
          Servlet dispatcher = new CrossContextDispatchServlet()
          {
@@ -484,13 +501,24 @@ public class CrossContextDispatcherTest
                 assertNotNull(foreign);
                 dispatcher = foreign.getRequestDispatcher(request.getParameter("forward"));
 
-                if (dispatcher != null)
-                {
-                    dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
-                }
+                if (dispatcher == null)
+                       response.sendError(404, "No dispatcher for forward");
                 else
-                    response.sendError(404);
+                    dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
             }
+            else if (request.getParameter("include") != null)
+            {
+                ServletContext foreign = getServletContext().getContext("/foreign");
+                assertNotNull(foreign);
+                dispatcher = foreign.getRequestDispatcher(request.getParameter("include"));
+
+                if (dispatcher == null)
+                    response.sendError(404, "No dispatcher for include");
+                else
+                    dispatcher.include(request, response);
+            }
+            else
+                response.sendError(404, "No action");
         }
     }
 
@@ -636,6 +664,16 @@ public class CrossContextDispatcherTest
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             if (DispatcherType.FORWARD.equals(req.getDispatcherType()))
+                res.getWriter().print("Verified!");
+        }
+    }
+
+    public static class VerifyIncludeServlet extends GenericServlet
+    {
+         @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            if (DispatcherType.INCLUDE.equals(req.getDispatcherType()))
                 res.getWriter().print("Verified!");
         }
     }

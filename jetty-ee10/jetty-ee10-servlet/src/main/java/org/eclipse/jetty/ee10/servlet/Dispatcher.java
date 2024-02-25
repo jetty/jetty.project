@@ -64,6 +64,8 @@ public class Dispatcher implements RequestDispatcher
      */ 
     public static final String __ORIGINAL_REQUEST = "org.eclipse.jetty.originalRequest";
 
+    public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
+
     private final ServletContextHandler _contextHandler;
     private final HttpURI _uri;
     private final String _decodedPathInContext;
@@ -434,7 +436,6 @@ public class Dispatcher implements RequestDispatcher
 
     private static class IncludeResponse extends HttpServletResponseWrapper
     {
-        public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
         ServletOutputStream _servletOutputStream;
         PrintWriter _printWriter;
         PrintWriter _mustFlush;

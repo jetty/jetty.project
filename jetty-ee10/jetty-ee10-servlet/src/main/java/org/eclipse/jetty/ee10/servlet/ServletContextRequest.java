@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Set;
 
 import jakarta.servlet.AsyncListener;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
@@ -155,7 +157,21 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 return ATTRIBUTES;
             }
         };
+
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
+    }
+
+    @Override
+    public HttpURI getHttpURI()
+    {
+        //until we have fully constructed the ServletContextRequest we need to return the target
+        if (_servletApiRequest == null)
+            return super.getHttpURI();
+
+        String uri = (String)getAttribute(CrossContextDispatcher.ORIGINAL_URI);
+        if (uri == null)
+            return super.getHttpURI();
+        return HttpURI.build().asImmutable();
     }
 
     @Override
@@ -205,7 +221,10 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             }
         }
 
-        return new ServletApiRequest(this);
+        if (getServletContextHandler().isCrossContextDispatchSupported() && DispatcherType.INCLUDE.toString().equals(getContext().getCrossContextDispatchType(this)))
+            return new ServletApiRequest.IncludedServletApiRequest(this);
+        else
+            return new ServletApiRequest(this);
     }
 
     protected ServletContextResponse newServletContextResponse(Response response)

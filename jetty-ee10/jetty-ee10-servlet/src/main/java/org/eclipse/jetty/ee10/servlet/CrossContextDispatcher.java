@@ -24,7 +24,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Blocker;
@@ -32,6 +34,15 @@ import org.eclipse.jetty.util.IO;
 
 class CrossContextDispatcher implements RequestDispatcher
 {
+    public static final String ORIGINAL_URI = "org.eclipse.jetty.dispatch.originalURI";
+    public static final String ORIGINAL_SERVLET_PATH = "org.eclipse.jetty.dispatch.originalServletPath";
+    public static final String ORIGINAL_PATH_INFO = "org.eclipse.jetty.dispatch.originalPathInfo";
+    public static final String ORIGINAL_QUERY_STRING = "org.eclipse.jetty.dispatch.originalQueryString";
+    public static final String ORIGINAL_SERVLET_MAPPING = "org.eclipse.jetty.dispatch.originalServletMapping";
+    public static final String ORIGINAL_SERVLET_CONTEXT = "org.eclipse.jetty.dispatch.originalServletContext";
+    public static final String ORIGINAL_CONTEXT_PATH = "org.ecipse.jetty.dispatch.originalContextPath";
+
+
     public static final Set<String> ATTRIBUTES = Set.of(
         RequestDispatcher.FORWARD_REQUEST_URI,
         RequestDispatcher.FORWARD_MAPPING,
@@ -46,11 +57,80 @@ class CrossContextDispatcher implements RequestDispatcher
         RequestDispatcher.INCLUDE_QUERY_STRING,
         RequestDispatcher.INCLUDE_PATH_INFO,
         ServletContextRequest.MULTIPART_CONFIG_ELEMENT,
-        ContextHandler.CROSS_CONTEXT_ATTRIBUTE
+        ContextHandler.CROSS_CONTEXT_ATTRIBUTE,
+        ORIGINAL_URI,
+        ORIGINAL_QUERY_STRING,
+        ORIGINAL_SERVLET_MAPPING,
+        ORIGINAL_PATH_INFO,
+        ORIGINAL_SERVLET_PATH,
+        ORIGINAL_SERVLET_CONTEXT,
+        ORIGINAL_CONTEXT_PATH
     );
 
     private final CrossContextServletContext _targetContext;
     private final HttpURI _uri;
+
+    private class IncludeRequest extends ServletCoreRequest
+    {
+        public IncludeRequest(HttpServletRequest httpServletRequest)
+        {
+            super(httpServletRequest, new Attributes.Synthetic(new ServletAttributes(httpServletRequest))
+            {
+                @Override
+                protected Object getSyntheticAttribute(String name)
+                {
+                    if (name == null)
+                        return null;
+
+                    //Servlet Spec 9.3.1 no include attributes if a named dispatcher
+                    if (_namedServlet != null && name.startsWith(Dispatcher.__INCLUDE_PREFIX))
+                        return null;
+
+                    //Special include attributes refer to the target context and path
+                    return switch (name)
+                    {
+                        case RequestDispatcher.INCLUDE_MAPPING -> null;
+                        case RequestDispatcher.INCLUDE_SERVLET_PATH -> null;
+                        case RequestDispatcher.INCLUDE_PATH_INFO ->  _decodedPathInContext;
+                        case RequestDispatcher.INCLUDE_REQUEST_URI -> (_uri == null) ? null : _uri.getPath();
+                        case RequestDispatcher.INCLUDE_CONTEXT_PATH -> _targetContext.getContextPath();
+                        case RequestDispatcher.INCLUDE_QUERY_STRING -> (_uri == null) ? null : _uri.getQuery();
+                        case ContextHandler.CROSS_CONTEXT_ATTRIBUTE -> DispatcherType.INCLUDE.toString();
+                        default -> httpServletRequest.getAttribute(name);
+                    };
+                }
+
+                @Override
+                protected Set<String> getSyntheticNameSet()
+                {
+                    return ATTRIBUTES;
+                }
+            });
+            
+            setAttribute(ORIGINAL_URI, getServletRequest().getRequestURI());
+            setAttribute(ORIGINAL_SERVLET_PATH, getServletRequest().getServletPath());
+            setAttribute(ORIGINAL_PATH_INFO, getServletRequest().getPathInfo());
+            setAttribute(ORIGINAL_QUERY_STRING, httpServletRequest.getQueryString());
+            setAttribute(ORIGINAL_SERVLET_MAPPING, getServletRequest().getHttpServletMapping());
+            setAttribute(ORIGINAL_SERVLET_CONTEXT, getServletRequest().getServletContext());
+            setAttribute(ORIGINAL_CONTEXT_PATH, getServletRequest().getContextPath());
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            //return the uri of the dispatch target
+            return _uri;
+        }
+    }
+
+    private class IncludeResponse extends ServletCoreResponse
+    {
+        public IncludeResponse(Request coreRequest, HttpServletResponse httpServletResponse)
+        {
+            super(coreRequest, httpServletResponse, true);
+        }
+    }
 
     private class ForwardRequest extends ServletCoreRequest
     {
@@ -143,8 +223,23 @@ class CrossContextDispatcher implements RequestDispatcher
     }
 
     @Override
-    public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
+    public void include(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException
     {
-        //TODO
+        HttpServletRequest httpServletRequest = (servletRequest instanceof HttpServletRequest) ? ((HttpServletRequest)servletRequest) : new ServletRequestHttpWrapper(servletRequest);
+        HttpServletResponse httpServletResponse = (servletResponse instanceof HttpServletResponse) ? (HttpServletResponse)servletResponse : new ServletResponseHttpWrapper(servletResponse);
+        ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(servletResponse);
+
+        IncludeRequest includeRequest = new IncludeRequest(httpServletRequest);
+        IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse);
+
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            _targetContext.getTargetContext().getContextHandler().handle(includeRequest, includeResponse, callback);
+            callback.block();
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
     }
 }

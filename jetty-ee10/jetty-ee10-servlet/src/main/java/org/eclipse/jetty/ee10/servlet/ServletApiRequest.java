@@ -99,6 +99,57 @@ import org.slf4j.LoggerFactory;
  */
 public class ServletApiRequest implements HttpServletRequest
 {
+    public static class IncludedServletApiRequest extends ServletApiRequest
+    {
+        protected IncludedServletApiRequest(ServletContextRequest servletContextRequest)
+        {
+            super(servletContextRequest);
+            //ensure the request is set up with the correct INCLUDE attributes now we know the matchedResource
+            setAttribute(RequestDispatcher.INCLUDE_MAPPING, getServletRequestInfo().getMatchedResource().getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
+            setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, getServletRequestInfo().getMatchedResource().getMatchedPath().getPathMatch());
+            setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, getServletRequestInfo().getMatchedResource().getMatchedPath().getPathInfo());
+            setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, getServletRequestInfo().getRequest().getContext().getContextPath());
+            // setAttribute(RequestDispatcher.INCLUDE_QUERY_STRING, getServletRequestInfo().getRequest().);
+            //TODO
+        }
+        
+        @Override
+        public String getPathInfo()
+        {
+            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_PATH_INFO);
+        }
+        
+        @Override
+        public String getContextPath()
+        {
+            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_CONTEXT_PATH);
+        }
+        
+        @Override
+        public String getQueryString()
+        {
+            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_QUERY_STRING);
+        }
+
+        @Override
+        public String getServletPath()
+        {
+            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_PATH);
+        }
+
+        @Override
+        public ServletContext getServletContext()
+        {
+            return (ServletContext)getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_CONTEXT);
+        }
+
+        @Override
+        public HttpServletMapping getHttpServletMapping()
+        {
+            return (HttpServletMapping)getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
+        }
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
     private static final SetCookieParser SET_COOKIE_PARSER = SetCookieParser.newInstance();
 

@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
@@ -63,6 +64,12 @@ class ServletCoreResponse implements Response
                 @Override
                 public HttpField onAddField(HttpField field)
                 {
+                    String name = field == null ? null : field.getName();
+                    if (!StringUtil.isBlank(name) && name.startsWith(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX))
+                    {
+                        return new HttpField(name.substring(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX.length()), field.getValue());
+                    }
+
                     return null;
                 }
 
@@ -70,6 +77,12 @@ class ServletCoreResponse implements Response
                 public boolean onRemoveField(HttpField field)
                 {
                     return false;
+                }
+
+                @Override
+                public HttpField onReplaceField(HttpField oldField, HttpField newField)
+                {
+                    return oldField;
                 }
             };
         }

@@ -1133,20 +1133,14 @@ public class ServletContextHandler extends ContextHandler
     protected ContextRequest wrapRequest(Request request, Response response)
     {
         String decodedPathInContext;
-        if (isCrossContextDispatchSupported() && DispatcherType.INCLUDE.toString().equals(request.getContext().getCrossContextDispatchType(request)))
-        {
-            // Why oh why is the servlet spec so stupid!
-            decodedPathInContext = URIUtil.addPaths((String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH),
-                (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO));
-        }
-        else
-        {
-            // Need to ask directly to the Context for the pathInContext, rather than using
-            // Request.getPathInContext(), as the request is not yet wrapped in this Context.
-            decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
-        }
+        MatchedResource<ServletHandler.MappedServlet> matchedResource;
 
-        MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
+        // Need to ask directly to the Context for the pathInContext, rather than using
+        // Request.getPathInContext(), as the request is not yet wrapped in this Context.
+        decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
+
+
         if (matchedResource == null)
             return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
