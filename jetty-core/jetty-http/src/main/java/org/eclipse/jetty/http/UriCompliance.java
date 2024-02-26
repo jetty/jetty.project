@@ -360,9 +360,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
         if (uri.hasViolations())
         {
             StringBuilder violations = null;
-            for (UriCompliance.Violation violation : UriCompliance.Violation.values())
+            for (UriCompliance.Violation violation : uri.getViolations())
             {
-                if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(violation)))
+                if (compliance == null || !compliance.allows(violation))
                 {
                     if (listener != null)
                         listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
