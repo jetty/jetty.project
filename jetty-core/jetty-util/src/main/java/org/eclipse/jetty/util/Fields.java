@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -109,12 +108,7 @@ public class Fields implements Iterable<Fields.Field>
      */
     public Set<String> getNames()
     {
-        Set<String> result = new LinkedHashSet<>();
-        for (Field field : fields.values())
-        {
-            result.add(field.getName());
-        }
-        return result;
+        return fields.keySet();
     }
 
     public Stream<Field> stream()
@@ -211,6 +205,31 @@ public class Fields implements Iterable<Fields.Field>
             else
                 return new Field(f.getName(), f.getValues(), List.of(value));
         });
+    }
+
+    /**
+     * <p>Adds the given value to a field with the given name,
+     * creating a {@link Field} is none exists for the given name.</p>
+     *
+     * @param name the field name
+     * @param values the field values to add
+     */
+    public void add(String name, String... values)
+    {
+        if (values == null || values.length == 0)
+            return;
+        if (values.length == 1)
+            add(name, values[0]);
+        else
+        {
+            fields.compute(name, (k, f) ->
+            {
+                if (f == null)
+                    return new Field(name, List.of(values));
+                else
+                    return new Field(f.getName(), f.getValues(), List.of(values));
+            });
+        }
     }
 
     /**

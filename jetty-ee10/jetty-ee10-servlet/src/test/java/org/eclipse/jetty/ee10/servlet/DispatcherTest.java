@@ -365,7 +365,7 @@ public class DispatcherTest
                 Connection: close\r
                 \r
                 """);
-            assertThat(rawResponse, containsString(" 500 "));
+            assertThat(rawResponse, containsString(" 400 "));
         }
     }
 

@@ -42,8 +42,8 @@ import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
@@ -170,31 +170,48 @@ public class Dispatcher implements RequestDispatcher
 
     public class ParameterRequestWrapper extends HttpServletRequestWrapper
     {
-        private MultiMap<String> _params = null;
+        private Fields _parameters = null;
 
         public ParameterRequestWrapper(HttpServletRequest request)
         {
             super(request);
         }
 
-        private MultiMap<String> getParams()
+        private Fields getParameters()
         {
-            if (_params == null)
+            if (_parameters == null)
             {
-                _params = new MultiMap<>();
-
-                // Have to assume ENCODING because we can't know otherwise.
                 String targetQuery = (_uri == null) ? null : _uri.getQuery();
-                if (targetQuery != null)
-                    UrlEncoded.decodeTo(targetQuery, _params, UrlEncoded.ENCODING);
 
-                for (Enumeration<String> names = getRequest().getParameterNames(); names.hasMoreElements(); )
+                if (getRequest() instanceof ServletApiRequest servletApiRequest)
                 {
-                    String name = names.nextElement();
-                    _params.addValues(name, getRequest().getParameterValues(name));
+                    Fields parameters = servletApiRequest.getParameters();
+
+                    if (targetQuery == null)
+                    {
+                        _parameters = parameters;
+                    }
+                    else
+                    {
+                        _parameters = new Fields();
+                        UrlEncoded.decodeTo(targetQuery, _parameters::add, UrlEncoded.ENCODING);
+                        _parameters.addAll(parameters);
+                    }
+                }
+                else
+                {
+                    _parameters = new Fields(true);
+                    // Have to assume ENCODING because we can't know otherwise.
+                    if (targetQuery != null)
+                        UrlEncoded.decodeTo(targetQuery, _parameters::add, UrlEncoded.ENCODING);
+                    for (Enumeration<String> names = getRequest().getParameterNames(); names.hasMoreElements(); )
+                    {
+                        String name = names.nextElement();
+                        _parameters.add(name, getRequest().getParameterValues(name));
+                    }
                 }
             }
-            return _params;
+            return _parameters;
         }
 
         @Override
@@ -218,25 +235,25 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getParameter(String name)
         {
-            return getParams().getValue(name);
+            return getParameters().getValue(name);
         }
 
         @Override
         public Map<String, String[]> getParameterMap()
         {
-            return Collections.unmodifiableMap(getParams().toStringArrayMap());
+            return Collections.unmodifiableMap(getParameters().toStringArrayMap());
         }
 
         @Override
         public Enumeration<String> getParameterNames()
         {
-            return Collections.enumeration(getParams().keySet());
+            return Collections.enumeration(getParameters().getNames());
         }
 
         @Override
         public String[] getParameterValues(String name)
         {
-            List<String> vals = getParams().getValues(name);
+            List<String> vals = getParameters().getValues(name);
             if (vals == null)
                 return null;
             return vals.toArray(new String[0]);

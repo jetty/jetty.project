@@ -949,7 +949,7 @@ public class ServletApiRequest implements HttpServletRequest
         return Collections.unmodifiableMap(getParameters().toStringArrayMap());
     }
 
-    protected Fields getParameters()
+    public Fields getParameters()
     {
         // protect against calls to recycled requests (which is illegal, but
         // this gives better failures
