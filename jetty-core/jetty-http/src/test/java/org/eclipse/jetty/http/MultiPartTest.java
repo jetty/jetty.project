@@ -618,7 +618,7 @@ public class MultiPartTest
         parser.parse(Content.Chunk.from(data, true));
 
         assertNotNull(listener.failure);
-        assertThat(listener.failure.getMessage(), containsStringIgnoringCase("Invalid EOL"));
+        assertThat(listener.failure.getMessage(), containsStringIgnoringCase("Invalid CR-only EOL"));
     }
 
     private static List<String> badHeaders()

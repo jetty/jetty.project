@@ -279,16 +279,86 @@ public class MultiPartFormDataTest
             assertThat(Content.Source.asString(partContent), is("Hello World"));
 
             List<ComplianceViolation.Event> events = violations.getEvents();
-            List<MultiPartCompliance.Violation> expected = List.of(
-                MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
-                MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING
-            );
-            assertThat(events.size(), is(expected.size()));
-            for (int i = 0; i < expected.size(); i++)
-            {
-                ComplianceViolation.Event event = events.get(i);
-                assertThat(event.violation(), is(expected.get(i)));
-            }
+            assertThat(events.size(), is(1));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING));
+        }
+    }
+
+    @Test
+    public void testLFOnlyNoCRInPreviousChunk() throws Exception
+    {
+        String str1 = """
+            --BEEF\r
+            Content-Disposition: form-data; name="greeting"\r
+            Content-Type: text/plain; charset=US-ASCII\r
+            \r
+            """;
+        String str2 = "Hello World"; // not ending with CR
+        String str3 = """
+            \n--BEEF--\r
+            """;
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("BEEF", MultiPartCompliance.RFC7578, violations);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, false, str1, Callback.NOOP);
+        Content.Sink.write(source, false, str2, Callback.NOOP);
+        Content.Sink.write(source, true, str3, Callback.NOOP);
+
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+
+            MultiPart.Part greeting = parts.getFirst("greeting");
+            assertThat(greeting, notNullValue());
+            Content.Source partContent = greeting.getContentSource();
+            assertThat(partContent.getLength(), is(11L));
+            assertThat(Content.Source.asString(partContent), is("Hello World"));
+
+            List<ComplianceViolation.Event> events = violations.getEvents();
+            assertThat(events.size(), is(1));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
+        }
+    }
+
+    @Test
+    public void testLFOnlyNoCRInCurrentChunk() throws Exception
+    {
+        String str1 = """
+            --BEEF\r
+            Content-Disposition: form-data; name="greeting"\r
+            Content-Type: text/plain; charset=US-ASCII\r
+            \r
+            """;
+        // Do not end Hello World with "\r".
+        String str2 = """
+            Hello World\n--BEEF--\r
+            """;
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("BEEF", MultiPartCompliance.RFC7578, violations);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, false, str1, Callback.NOOP);
+        Content.Sink.write(source, true, str2, Callback.NOOP);
+
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+
+            MultiPart.Part greeting = parts.getFirst("greeting");
+            assertThat(greeting, notNullValue());
+            Content.Source partContent = greeting.getContentSource();
+            assertThat(partContent.getLength(), is(11L));
+            assertThat(Content.Source.asString(partContent), is("Hello World"));
+
+            List<ComplianceViolation.Event> events = violations.getEvents();
+            assertThat(events.size(), is(1));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
         }
     }
 
@@ -310,7 +380,6 @@ public class MultiPartFormDataTest
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
-        formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
@@ -349,14 +418,13 @@ public class MultiPartFormDataTest
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578_STRICT, violations);
-        formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
         assertThat(ee.getCause(), instanceOf(BadMessageException.class));
         BadMessageException bme = (BadMessageException)ee.getCause();
-        assertThat(bme.getMessage(), containsString("invalid LF only EOL"));
+        assertThat(bme.getMessage(), containsString("invalid LF-only EOL"));
     }
 
     /**
@@ -419,7 +487,7 @@ public class MultiPartFormDataTest
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
         assertThat(ee.getCause(), instanceOf(BadMessageException.class));
         BadMessageException bme = (BadMessageException)ee.getCause();
-        assertThat(bme.getMessage(), containsString("invalid CR only EOL"));
+        assertThat(bme.getMessage(), containsString("invalid CR-only EOL"));
     }
 
     @Test
@@ -448,7 +516,7 @@ public class MultiPartFormDataTest
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
         assertThat(ee.getCause(), instanceOf(BadMessageException.class));
         BadMessageException bme = (BadMessageException)ee.getCause();
-        assertThat(bme.getMessage(), containsString("invalid CR only EOL"));
+        assertThat(bme.getMessage(), containsString("invalid CR-only EOL"));
     }
 
     @Test
@@ -483,16 +551,9 @@ public class MultiPartFormDataTest
             assertThat(Content.Source.asString(partContent), is("SGVsbG8gV29ybGQK"));
 
             List<ComplianceViolation.Event> events = violations.getEvents();
-            List<MultiPartCompliance.Violation> expected = List.of(
-                MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
-                MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING
-            );
-            assertThat(events.size(), is(expected.size()));
-            for (int i = 0; i < expected.size(); i++)
-            {
-                ComplianceViolation.Event event = events.get(i);
-                assertThat(event.violation(), is(expected.get(i)));
-            }
+            assertThat(events.size(), is(1));
+            ComplianceViolation.Event event = events.get(0);
+            assertThat(event.violation(), is(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING));
         }
     }
 

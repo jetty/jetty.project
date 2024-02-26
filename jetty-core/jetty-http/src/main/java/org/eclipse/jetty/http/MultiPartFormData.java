@@ -555,34 +555,37 @@ public class MultiPartFormData
                 memoryFileSize = 0;
                 try (AutoLock ignored = lock.lock())
                 {
-                    String value = headers.get("content-transfer-encoding");
+                    // Content-Transfer-Encoding is not a multi-valued field.
+                    String value = headers.get(HttpHeader.CONTENT_TRANSFER_ENCODING);
                     if (value != null)
                     {
-                        String ctencoding = StringUtil.asciiToLowerCase(value);
-
-                        // Inform on specific unsupported encodings
-                        if ("base64".equalsIgnoreCase(ctencoding))
+                        switch (StringUtil.asciiToLowerCase(value))
                         {
-                            complianceListener.onComplianceViolation(
-                                new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
-                                    MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
-                                    value));
-                        }
-                        else if ("quoted-printable".equalsIgnoreCase(ctencoding))
-                        {
-                            complianceListener.onComplianceViolation(
-                                new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
-                                    MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
-                                    value));
-                        }
-
-                        // Inform on general Content-Transfer-Encoding use (8bit and binary are essentially no-ops)
-                        if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
-                        {
-                            complianceListener.onComplianceViolation(
-                                new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
-                                    MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
-                                    value));
+                            case "base64" ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                                        value));
+                            }
+                            case "quoted-printable" ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
+                                        value));
+                            }
+                            case "8bit", "binary" ->
+                            {
+                                // ignore
+                            }
+                            default ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
+                                        value));
+                            }
                         }
                     }
 
@@ -649,7 +652,7 @@ public class MultiPartFormData
             public void onViolation(MultiPartCompliance.Violation violation)
             {
                 complianceListener.onComplianceViolation(new ComplianceViolation.Event(
-                    MultiPartCompliance.RFC7578, violation, "multipart spec violation"
+                    compliance, violation, "multipart spec violation"
                 ));
             }
 

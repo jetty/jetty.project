@@ -1149,9 +1149,10 @@ public class MultiPart
                 {
                     if (!crFlag)
                     {
-                        addEolViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
-                        if (!compliance.allows(MultiPartCompliance.Violation.LF_LINE_TERMINATION))
-                            throw new BadMessageException("invalid LF only EOL");
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                        addEolViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid LF-only EOL");
                     }
                     crFlag = false;
                 }
@@ -1159,9 +1160,10 @@ public class MultiPart
                 {
                     if (crFlag)
                     {
-                        addEolViolation(MultiPartCompliance.Violation.CR_LINE_TERMINATION);
-                        if (!compliance.allows(MultiPartCompliance.Violation.CR_LINE_TERMINATION))
-                            throw new BadMessageException("invalid CR only EOL");
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
+                        addEolViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid CR-only EOL");
                     }
                     crFlag = true;
                 }
@@ -1169,9 +1171,10 @@ public class MultiPart
                 {
                     if (crFlag)
                     {
-                        addEolViolation(MultiPartCompliance.Violation.CR_LINE_TERMINATION);
-                        if (!compliance.allows(MultiPartCompliance.Violation.CR_LINE_TERMINATION))
-                            throw new BadMessageException("invalid CR only EOL");
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
+                        addEolViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid CR-only EOL");
                     }
                 }
             }
@@ -1371,9 +1374,10 @@ public class MultiPart
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
                         if (!crContent)
                         {
-                            addEolViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
-                            if (!compliance.allows(MultiPartCompliance.Violation.LF_LINE_TERMINATION))
-                                throw new BadMessageException("invalid LF only EOL");
+                            MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                            addEolViolation(violation);
+                            if (!compliance.allows(violation))
+                                throw new BadMessageException("invalid LF-only EOL");
                         }
                         partialBoundaryMatch = 0;
                         crContent = false;
@@ -1417,7 +1421,16 @@ public class MultiPart
             if (boundaryOffset >= 0)
             {
                 if (boundaryOffset == 0)
+                {
+                    if (!crContent)
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                        addEolViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid LF-only EOL");
+                    }
                     crContent = false;
+                }
 
                 // Emit as content the last CR byte of the previous chunk, if any.
                 notifyCRContent();
@@ -1428,7 +1441,16 @@ public class MultiPart
                 // BoundaryFinder is configured to search for '\n--Boundary';
                 // if '\r\n--Boundary' is found, then the '\r' is not content.
                 if (length > 0 && buffer.get(position + length - 1) == '\r')
+                {
                     --length;
+                }
+                else
+                {
+                    MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                    addEolViolation(violation);
+                    if (!compliance.allows(violation))
+                        throw new BadMessageException("invalid LF-only EOL");
+                }
                 Content.Chunk content = asSlice(chunk, position, length, true);
                 buffer.position(position + boundaryOffset + boundaryFinder.getLength());
                 notifyPartContent(content);
