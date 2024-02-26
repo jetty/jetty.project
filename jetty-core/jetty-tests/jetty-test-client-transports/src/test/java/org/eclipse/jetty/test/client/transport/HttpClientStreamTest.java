@@ -879,9 +879,6 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadWithOutputStreamFailureToConnect(Transport transport) throws Exception
     {
-        // Failure to connect is based on InetSocketAddress failure, which Unix-Domain does not use.
-        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
-
         long connectTimeout = 1000;
         start(transport, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);
@@ -960,9 +957,6 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadWithConnectFailureClosesStream(Transport transport) throws Exception
     {
-        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
-        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
-
         long connectTimeout = 1000;
         start(transport, new EmptyServerHandler());
         client.setConnectTimeout(connectTimeout);

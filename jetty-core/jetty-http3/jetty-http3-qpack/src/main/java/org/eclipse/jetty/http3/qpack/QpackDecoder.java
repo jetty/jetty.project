@@ -332,16 +332,21 @@ public class QpackDecoder implements Dumpable
 
     private void notifyInstructionHandler()
     {
-        if (!_instructions.isEmpty())
-            _handler.onInstructions(_instructions);
+        if (_instructions.isEmpty())
+            return;
+        // Copy the list to avoid re-entrance.
+        List<Instruction> instructions = List.copyOf(_instructions);
         _instructions.clear();
+        _handler.onInstructions(instructions);
     }
 
     private void notifyMetaDataHandler(boolean wasBlocked)
     {
+        if (_metaDataNotifications.isEmpty())
+            return;
         // Copy the list to avoid re-entrance, where the call to
         // notifyHandler() may end up calling again this method.
-        List<MetaDataNotification> notifications = new ArrayList<>(_metaDataNotifications);
+        List<MetaDataNotification> notifications = List.copyOf(_metaDataNotifications);
         _metaDataNotifications.clear();
         for (MetaDataNotification notification : notifications)
         {

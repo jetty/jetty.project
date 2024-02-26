@@ -499,9 +499,12 @@ public class QpackEncoder implements Dumpable
 
     private void notifyInstructionHandler()
     {
-        if (!_instructions.isEmpty())
-            _handler.onInstructions(_instructions);
+        if (_instructions.isEmpty())
+            return;
+        // Copy the list to avoid re-entrance.
+        List<Instruction> instructions = List.copyOf(_instructions);
         _instructions.clear();
+        _handler.onInstructions(instructions);
     }
 
     InstructionHandler getInstructionHandler()

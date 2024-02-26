@@ -47,13 +47,13 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
 {
     private final ClientConnectionFactory connectionFactory = new HTTP2ClientConnectionFactory();
-    private final HTTP2Client client;
+    private final HTTP2Client http2Client;
     private boolean useALPN = true;
 
-    public HttpClientTransportOverHTTP2(HTTP2Client client)
+    public HttpClientTransportOverHTTP2(HTTP2Client http2Client)
     {
-        this.client = client;
-        addBean(client.getClientConnector(), false);
+        this.http2Client = http2Client;
+        addBean(http2Client);
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
@@ -63,13 +63,13 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
 
     public HTTP2Client getHTTP2Client()
     {
-        return client;
+        return http2Client;
     }
 
     @ManagedAttribute(value = "The number of selectors", readonly = true)
     public int getSelectors()
     {
-        return client.getSelectors();
+        return http2Client.getSelectors();
     }
 
     @ManagedAttribute(value = "Whether ALPN should be used when establishing connections")
@@ -86,29 +86,21 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     @Override
     protected void doStart() throws Exception
     {
-        if (!client.isStarted())
+        if (!http2Client.isStarted())
         {
             HttpClient httpClient = getHttpClient();
-            client.setExecutor(httpClient.getExecutor());
-            client.setScheduler(httpClient.getScheduler());
-            client.setByteBufferPool(httpClient.getByteBufferPool());
-            client.setConnectTimeout(httpClient.getConnectTimeout());
-            client.setIdleTimeout(httpClient.getIdleTimeout());
-            client.setInputBufferSize(httpClient.getResponseBufferSize());
-            client.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
-            client.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
-            client.setConnectBlocking(httpClient.isConnectBlocking());
-            client.setBindAddress(httpClient.getBindAddress());
+            http2Client.setExecutor(httpClient.getExecutor());
+            http2Client.setScheduler(httpClient.getScheduler());
+            http2Client.setByteBufferPool(httpClient.getByteBufferPool());
+            http2Client.setConnectTimeout(httpClient.getConnectTimeout());
+            http2Client.setIdleTimeout(httpClient.getIdleTimeout());
+            http2Client.setInputBufferSize(httpClient.getResponseBufferSize());
+            http2Client.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
+            http2Client.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
+            http2Client.setConnectBlocking(httpClient.isConnectBlocking());
+            http2Client.setBindAddress(httpClient.getBindAddress());
         }
-        addBean(client);
         super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        removeBean(client);
     }
 
     @Override
@@ -121,20 +113,13 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     @Override
     public Destination newDestination(Origin origin)
     {
-        SocketAddress address = origin.getAddress().getSocketAddress();
-        return new HttpDestination(getHttpClient(), origin, getHTTP2Client().getClientConnector().isIntrinsicallySecure(address));
+        return new HttpDestination(getHttpClient(), origin);
     }
 
     @Override
     public void connect(SocketAddress address, Map<String, Object> context)
     {
-        HttpClient httpClient = getHttpClient();
-        client.setConnectTimeout(httpClient.getConnectTimeout());
-        client.setConnectBlocking(httpClient.isConnectBlocking());
-        client.setBindAddress(httpClient.getBindAddress());
-
         SessionListenerPromise listenerPromise = new SessionListenerPromise(context);
-
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         connect(address, destination.getClientConnectionFactory(), listenerPromise, listenerPromise, context);
     }
@@ -147,7 +132,8 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
 
     protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
-        getHTTP2Client().connect(address, factory, listener, promise, context);
+        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        getHTTP2Client().connect(destination.getOrigin().getTransport(), address, factory, listener, promise, context);
     }
 
     protected void connect(InetSocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
@@ -165,7 +151,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         ProxyConfiguration.Proxy proxy = destination.getProxy();
         boolean ssl = proxy == null ? destination.isSecure() : proxy.isSecure();
         if (ssl && isUseALPN())
-            factory = new ALPNClientConnectionFactory(client.getExecutor(), factory, client.getProtocols());
+            factory = new ALPNClientConnectionFactory(http2Client.getExecutor(), factory, http2Client.getProtocols());
         return factory.newConnection(endPoint, context);
     }
 
