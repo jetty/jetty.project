@@ -667,10 +667,10 @@ public class URIUtilTest
 
     @ParameterizedTest
     @MethodSource("correctBadFileURICases")
-    public void testCorrectFileURI(String input, String expected)
+    public void testCorrectURI(String input, String expected)
     {
         URI inputUri = URI.create(input);
-        URI actualUri = URIUtil.correctFileURI(inputUri);
+        URI actualUri = URIUtil.correctURI(inputUri);
         URI expectedUri = URI.create(expected);
         assertThat(actualUri.toASCIIString(), is(expectedUri.toASCIIString()));
     }
@@ -694,8 +694,8 @@ public class URIUtilTest
         assertThat(fileUri.toASCIIString(), not(containsString("://")));
         assertThat(fileUrlUri.toASCIIString(), not(containsString("://")));
 
-        assertThat(URIUtil.correctFileURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
-        assertThat(URIUtil.correctFileURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.correctURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.correctURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
     }
 
     public static Stream<Arguments> encodeSpecific()

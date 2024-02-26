@@ -213,8 +213,8 @@ class ResourceFactoryInternals
                         // otherwise resolve against the current directory
                         uri = CURRENT_WORKING_DIR.toUri().resolve(uri);
 
-                    // Correct any `file:/path` to `file:///path` mistakes
-                    uri = URIUtil.correctFileURI(uri);
+                    // Correct any mistakes like `file:/path` (to `file:///path`)
+                    uri = URIUtil.correctURI(uri);
                 }
 
                 ResourceFactory resourceFactory = RESOURCE_FACTORIES.get(uri.getScheme());

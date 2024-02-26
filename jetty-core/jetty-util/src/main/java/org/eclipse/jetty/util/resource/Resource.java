@@ -109,8 +109,8 @@ public abstract class Resource implements Iterable<Resource>
             return false;
 
         // Ensure that if `file` scheme is used, it's using a consistent convention to allow for startsWith check
-        String thisURIString = URIUtil.correctFileURI(thisURI).toASCIIString();
-        String otherURIString = URIUtil.correctFileURI(otherURI).toASCIIString();
+        String thisURIString = URIUtil.correctURI(thisURI).toASCIIString();
+        String otherURIString = URIUtil.correctURI(otherURI).toASCIIString();
 
         return otherURIString.startsWith(thisURIString) &&
             (thisURIString.length() == otherURIString.length() || otherURIString.charAt(thisURIString.length()) == '/');

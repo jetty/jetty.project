@@ -1642,7 +1642,7 @@ public final class URIUtil
         // Correct any bad `file:/path` usages, and
         // force encoding of characters that must be encoded (such as unicode)
         // for the base
-        String base = correctFileURI(uri).toASCIIString();
+        String base = correctURI(uri).toASCIIString();
 
         // ensure that the base has a safe encoding suitable for both
         // URI and Paths.get(URI) later usage
@@ -1700,8 +1700,36 @@ public final class URIUtil
      *
      * @param uri the URI to (possibly) correct
      * @return the new URI with the {@code file:/} substring corrected, or the original URI.
+     * @deprecated use {@link #correctURI(URI)} instead, will be removed in Jetty 12.1.0
      */
+    @Deprecated(since = "12.0.7", forRemoval = true)
     public static URI correctFileURI(URI uri)
+    {
+        return correctURI(uri);
+    }
+
+    /**
+     * <p>
+     * Corrects any bad {@code file} based URIs (even within a {@code jar:file:} based URIs) from the bad out-of-spec
+     * format that various older Java APIs creates (most notably: {@link java.io.File} creates with it's {@link File#toURL()}
+     * and {@link File#toURI()}, along with the side effects of using {@link URL#toURI()})
+     * </p>
+     *
+     * <p>
+     *     This correction is currently limited to only the {@code file:/} substring in the URI.
+     *     If there is a {@code file:/<not-a-slash>} detected, that substring is corrected to
+     *     {@code file:///<not-a-slash>}, all other uses of {@code file:}, and URIs without a {@code file:}
+     *     substring are left alone.
+     * </p>
+     *
+     * <p>
+     *     Note that Windows UNC based URIs are left alone, along with non-absolute URIs.
+     * </p>
+     *
+     * @param uri the URI to (possibly) correct
+     * @return the new URI with the {@code file:} scheme specific part corrected, or the original URI.
+     */
+    public static URI correctURI(URI uri)
     {
         if ((uri == null) || (uri.getScheme() == null))
             return uri;
@@ -1854,7 +1882,7 @@ public final class URIUtil
                 URI uri = new URI(resource);
 
                 if (ResourceFactory.isSupported(uri))
-                    return correctFileURI(uri);
+                    return correctURI(uri);
 
                 // We don't have a supported URI scheme
                 if (uri.getScheme().length() == 1)
@@ -1981,7 +2009,7 @@ public final class URIUtil
             .map(URL::toString)
             .map(URI::create)
             .map(URIUtil::unwrapContainer)
-            .map(URIUtil::correctFileURI);
+            .map(URIUtil::correctURI);
     }
 
     private static final Index<Integer> DEFAULT_PORT_FOR_SCHEME = new Index.Builder<Integer>()
