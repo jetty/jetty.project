@@ -206,8 +206,6 @@ class CrossContextDispatcher implements RequestDispatcher
             throw new ServletException(e);
         }
 
-        // TODO We cannot handle async here.
-        // TODO this is closing te wrong response.  Should be ServletCoreResponse?
         // If we are not async and not closed already, then close via the possibly wrapped response.
         if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getServletContextResponse().hasLastWrite())
         {

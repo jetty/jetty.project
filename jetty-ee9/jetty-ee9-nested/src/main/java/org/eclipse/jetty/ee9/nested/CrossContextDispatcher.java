@@ -211,7 +211,7 @@ class CrossContextDispatcher implements RequestDispatcher
         }
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
-        if (true) // TODO
+        if (!baseRequest.isAsyncStarted() && !servletCoreResponse.hasLastWrite())
         {
             Closeable closeable;
             try
