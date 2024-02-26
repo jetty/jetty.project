@@ -65,10 +65,16 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * RFC7578 {@code multiPart/form-data} compliant strict parsing.
+     * Strict (RFC7578) {@code multiPart/form-data} compliant strict parsing.
+     */
+    public static final MultiPartCompliance RFC7578_STRICT = new MultiPartCompliance(
+        "RFC7578", EnumSet.noneOf(Violation.class));
+
+    /**
+     * RFC7578 {@code multiPart/form-data} compliant parsing lenient to LF EOL and Content-Transfer-Encoding.
      */
     public static final MultiPartCompliance RFC7578 = new MultiPartCompliance(
-        "RFC7578", EnumSet.of(Violation.CONTENT_TRANSFER_ENCODING));
+        "RFC7578", EnumSet.of(Violation.CONTENT_TRANSFER_ENCODING, Violation.LF_LINE_TERMINATION));
 
     /**
      * Legacy {@code multiPart/form-data} parsing which is slow, buggy, but forgiving to a fault.

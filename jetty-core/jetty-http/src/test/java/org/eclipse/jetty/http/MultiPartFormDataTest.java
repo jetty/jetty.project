@@ -263,7 +263,7 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
@@ -293,7 +293,7 @@ public class MultiPartFormDataTest
     }
 
     @Test
-    public void testLFOnlyEOL() throws Exception
+    public void testLFOnlyEOLLenient() throws Exception
     {
         String boundary = "BEEF";
         String str = """
@@ -309,7 +309,7 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
@@ -329,6 +329,34 @@ public class MultiPartFormDataTest
             ComplianceViolation.Event event = events.get(0);
             assertThat(event.violation(), is(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
         }
+    }
+
+    @Test
+    public void testLFOnlyEOLStrict() throws Exception
+    {
+        String boundary = "BEEF";
+        String str = """
+            --$B
+            Content-Disposition: form-data; name="greeting"
+            Content-Type: text/plain; charset=US-ASCII
+            
+            Hello World
+            --$B--
+            """.replace("$B", boundary);
+
+        assertThat("multipart str cannot contain CR for this test", str, not(containsString(CR)));
+
+        AsyncContent source = new TestContent();
+        CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578_STRICT, violations);
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
+        Content.Sink.write(source, true, str, Callback.NOOP);
+
+        ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
+        assertThat(ee.getCause(), instanceOf(BadMessageException.class));
+        BadMessageException bme = (BadMessageException)ee.getCause();
+        assertThat(bme.getMessage(), containsString("invalid LF only EOL"));
     }
 
     /**
@@ -352,7 +380,7 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
@@ -383,7 +411,7 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
@@ -391,7 +419,7 @@ public class MultiPartFormDataTest
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
         assertThat(ee.getCause(), instanceOf(BadMessageException.class));
         BadMessageException bme = (BadMessageException)ee.getCause();
-        assertThat(bme.getMessage(), containsString("invalid EOL"));
+        assertThat(bme.getMessage(), containsString("invalid CR only EOL"));
     }
 
     @Test
@@ -412,7 +440,7 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
@@ -420,7 +448,7 @@ public class MultiPartFormDataTest
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
         assertThat(ee.getCause(), instanceOf(BadMessageException.class));
         BadMessageException bme = (BadMessageException)ee.getCause();
-        assertThat(bme.getMessage(), containsString("invalid EOL"));
+        assertThat(bme.getMessage(), containsString("invalid CR only EOL"));
     }
 
     @Test
@@ -439,7 +467,7 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, violations);
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
@@ -859,7 +887,7 @@ public class MultiPartFormDataTest
             \r
             --AaB03x\r
             Content-Disposition: form-data; name="utf"\r
-            Content-Type: text/plain; charset="UTF-8"
+            Content-Type: text/plain; charset="UTF-8"\r
             \r
             """;
         ByteBuffer utfCedilla = UTF_8.encode("ç");

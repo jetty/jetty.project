@@ -909,6 +909,7 @@ public class MultiPart
         private final Utf8StringBuilder text = new Utf8StringBuilder();
         private final String boundary;
         private final SearchPattern boundaryFinder;
+        private final MultiPartCompliance compliance;
         private final Listener listener;
         private int partHeadersLength;
         private int partHeadersMaxLength = -1;
@@ -925,10 +926,29 @@ public class MultiPart
 
         public Parser(String boundary, Listener listener)
         {
+            this(boundary, MultiPartCompliance.RFC7578, listener);
+        }
+
+        public Parser(String boundary, MultiPartCompliance compliance, Listener listener)
+        {
             this.boundary = boundary;
             // While the spec mandates CRLF before the boundary, be more lenient and only require LF.
             this.boundaryFinder = SearchPattern.compile("\n--" + boundary);
+            this.compliance = compliance;
             this.listener = listener;
+
+            if (LOG.isDebugEnabled())
+            {
+                List.of(
+                    MultiPartCompliance.Violation.CR_LINE_TERMINATION,
+                    MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                    MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY
+                ).forEach(viol ->
+                {
+                    if (compliance.allows(viol))
+                        LOG.debug("{} ignoring compliance {}: unable to allow() it.", this.getClass().getName(), viol.name());
+                });
+            }
             reset();
         }
 
@@ -1052,13 +1072,7 @@ public class MultiPart
                             HttpTokens.Token token = next(buffer);
                             if (token.getByte() != '-')
                                 throw new BadMessageException("bad last boundary");
-                            if (eols != null)
-                            {
-                                for (MultiPartCompliance.Violation violation: eols)
-                                {
-                                    notifyViolation(violation);
-                                }
-                            }
+                            notifyEolViolations();
                             state = State.EPILOGUE;
                         }
                         case HEADER_START ->
@@ -1108,6 +1122,7 @@ public class MultiPart
                 if (LOG.isDebugEnabled())
                     LOG.debug("parse failure {} {}", state, BufferUtil.toDetailString(buffer), x);
                 buffer.position(buffer.limit());
+                notifyEolViolations();
                 notifyFailure(x);
             }
         }
@@ -1135,6 +1150,8 @@ public class MultiPart
                     if (!crFlag)
                     {
                         addEolViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
+                        if (!compliance.allows(MultiPartCompliance.Violation.LF_LINE_TERMINATION))
+                            throw new BadMessageException("invalid LF only EOL");
                     }
                     crFlag = false;
                 }
@@ -1143,7 +1160,8 @@ public class MultiPart
                     if (crFlag)
                     {
                         addEolViolation(MultiPartCompliance.Violation.CR_LINE_TERMINATION);
-                        throw new BadMessageException("invalid EOL");
+                        if (!compliance.allows(MultiPartCompliance.Violation.CR_LINE_TERMINATION))
+                            throw new BadMessageException("invalid CR only EOL");
                     }
                     crFlag = true;
                 }
@@ -1152,7 +1170,8 @@ public class MultiPart
                     if (crFlag)
                     {
                         addEolViolation(MultiPartCompliance.Violation.CR_LINE_TERMINATION);
-                        throw new BadMessageException("invalid EOL");
+                        if (!compliance.allows(MultiPartCompliance.Violation.CR_LINE_TERMINATION))
+                            throw new BadMessageException("invalid CR only EOL");
                     }
                 }
             }
@@ -1230,7 +1249,6 @@ public class MultiPart
                     {
                         if (Character.isWhitespace(token.getByte()))
                         {
-                            notifyViolation(MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY);
                             if (text.length() == 0)
                                 throw new BadMessageException("invalid leading whitespace before header");
                         }
@@ -1354,6 +1372,8 @@ public class MultiPart
                         if (!crContent)
                         {
                             addEolViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
+                            if (!compliance.allows(MultiPartCompliance.Violation.LF_LINE_TERMINATION))
+                                throw new BadMessageException("invalid LF only EOL");
                         }
                         partialBoundaryMatch = 0;
                         crContent = false;
@@ -1557,6 +1577,18 @@ public class MultiPart
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("failure while notifying listener {}", listener, x);
+            }
+        }
+
+        private void notifyEolViolations()
+        {
+            if (eols != null)
+            {
+                for (MultiPartCompliance.Violation violation: eols)
+                {
+                    notifyViolation(violation);
+                }
+                eols = null;
             }
         }
 

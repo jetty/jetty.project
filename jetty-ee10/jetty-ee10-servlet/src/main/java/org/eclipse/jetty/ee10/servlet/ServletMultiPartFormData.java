@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -104,9 +105,10 @@ public class ServletMultiPartFormData
 
             HttpChannel httpChannel = HttpChannel.from(servletContextRequest);
             ComplianceViolation.Listener complianceViolationListener = httpChannel.getComplianceViolationListener();
+            MultiPartCompliance compliance = servletContextRequest.getConnectionMetaData().getHttpConfiguration().getMultiPartCompliance();
 
             // Look for an existing future MultiPartFormData.Parts
-            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.from(servletContextRequest, complianceViolationListener, boundary, parser ->
+            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.from(servletContextRequest, compliance, complianceViolationListener, boundary, parser ->
             {
                 try
                 {

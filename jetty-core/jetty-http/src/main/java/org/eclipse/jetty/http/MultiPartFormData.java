@@ -79,21 +79,30 @@ public class MultiPartFormData
     }
 
     /**
-     * @deprecated use {@link #from(Attributes, ComplianceViolation.Listener, String, Function)} instead.  This method will be removed in Jetty 12.1.0
+     * Get {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578} behaviors.
      */
-    @Deprecated(since = "12.0.6", forRemoval = true)
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
-        return from(attributes, ComplianceViolation.Listener.NOOP, boundary, parse);
+        return from(attributes, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP, boundary, parse);
     }
 
-    public static CompletableFuture<Parts> from(Attributes attributes, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    /**
+     * Get {@code multipart/form-data} parts using arbitrary {@link MultiPartCompliance} behaviors and listeners.
+     *
+     * @param attributes the attributes where the futureParts are tracked
+     * @param compliance the compliance mode
+     * @param listener the compliance violation listener
+     * @param boundary the boundary for the {@code multipart/form-data} parts
+     * @param parse the parser completable future
+     * @return the future parts
+     */
+    public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         @SuppressWarnings("unchecked")
         CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
         if (futureParts == null)
         {
-            futureParts = parse.apply(new Parser(boundary, listener));
+            futureParts = parse.apply(new Parser(boundary, compliance, listener));
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
         }
         return futureParts;
@@ -210,7 +219,8 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
-        private ComplianceViolation.Listener complianceViolationListener;
+        private final MultiPartCompliance compliance;
+        private final ComplianceViolation.Listener complianceListener;
         private boolean useFilesForPartsWithoutFileName;
         private Path filesDirectory;
         private long maxFileSize = -1;
@@ -221,13 +231,14 @@ public class MultiPartFormData
 
         public Parser(String boundary)
         {
-            this(boundary, null);
+            this(boundary, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP);
         }
 
-        public Parser(String boundary, ComplianceViolation.Listener complianceViolationListener)
+        public Parser(String boundary, MultiPartCompliance multiPartCompliance, ComplianceViolation.Listener complianceViolationListener)
         {
-            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
-            this.complianceViolationListener = complianceViolationListener != null ? complianceViolationListener : ComplianceViolation.Listener.NOOP;
+            compliance = Objects.requireNonNull(multiPartCompliance);
+            complianceListener = Objects.requireNonNull(complianceViolationListener);
+            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), compliance, listener);
         }
 
         public CompletableFuture<Parts> parse(Content.Source content)
@@ -552,14 +563,14 @@ public class MultiPartFormData
                         // Inform on specific unsupported encodings
                         if ("base64".equalsIgnoreCase(ctencoding))
                         {
-                            complianceViolationListener.onComplianceViolation(
+                            complianceListener.onComplianceViolation(
                                 new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
                                     MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
                                     value));
                         }
                         else if ("quoted-printable".equalsIgnoreCase(ctencoding))
                         {
-                            complianceViolationListener.onComplianceViolation(
+                            complianceListener.onComplianceViolation(
                                 new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
                                     MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
                                     value));
@@ -568,7 +579,7 @@ public class MultiPartFormData
                         // Inform on general Content-Transfer-Encoding use (8bit and binary are essentially no-ops)
                         if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
                         {
-                            complianceViolationListener.onComplianceViolation(
+                            complianceListener.onComplianceViolation(
                                 new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
                                     MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
                                     value));
@@ -637,7 +648,7 @@ public class MultiPartFormData
             @Override
             public void onViolation(MultiPartCompliance.Violation violation)
             {
-                complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(
+                complianceListener.onComplianceViolation(new ComplianceViolation.Event(
                     MultiPartCompliance.RFC7578, violation, "multipart spec violation"
                 ));
             }
