@@ -21,6 +21,7 @@ jetty-12.0.6 - 29 January 2024
  + 11253 Jetty 12 ComplianceViolation.Listener not notified for URI, Cookie,
    and Multipart violations.
  + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
+   (CVE-2024-22201)
  + 11260 QuickStartConfiguration cannot be mixed with contexts that do not have
    a `WEB-INF/quickstart-web.xml`
  + 11263 Using `jetty.version` override from jetty-start does not use version
