@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
@@ -357,7 +358,7 @@ public class EE10Activator implements BundleActivator
         {
             OSGiApp osgiApp = OSGiApp.class.cast(app);
             String jettyHome = (String)app.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
-            Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
+            Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : Paths.get(URIUtil.toURI(jettyHome));
 
             WebAppContext webApp = new WebAppContext();
 
