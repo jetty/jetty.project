@@ -174,7 +174,7 @@ class CrossContextServletContext implements ServletContext
                 uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
                 encodedPathInContext = uri.getCanonicalPath().substring(contextPath.length());
             }
-            // TODO return new CrossContextDispatcher(this, uri, URIUtil.decodePath(encodedPathInContext));
+            return new CrossContextDispatcher(this, uri, URIUtil.decodePath(encodedPathInContext));
         }
         catch (Exception e)
         {

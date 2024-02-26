@@ -324,6 +324,26 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         _coreContextHandler.setAllowNullPathInContext(allowNullPathInfo);
     }
 
+    /**
+     * Cross context dispatch support.
+     * @param supported {@code True} if cross context dispatch is supported
+     * @see org.eclipse.jetty.server.handler.ContextHandler#setCrossContextDispatchSupported(boolean)
+     */
+    public void setCrossContextDispatchSupported(boolean supported)
+    {
+        getCoreContextHandler().setCrossContextDispatchSupported(supported);
+    }
+
+    /**
+     * Cross context dispatch support.
+     * @return {@code True} if cross context dispatch is supported
+     * @see org.eclipse.jetty.server.handler.ContextHandler#isCrossContextDispatchSupported()
+     */
+    public boolean isCrossContextDispatchSupported()
+    {
+        return getCoreContextHandler().isCrossContextDispatchSupported();
+    }
+
     @Override
     public void setServer(Server server)
     {
