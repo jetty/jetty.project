@@ -544,7 +544,7 @@ public class HttpClient extends ContainerLifeCycle
         Transport transport = origin.getTransport();
         context.put(Transport.class.getName(), transport);
 
-        if (transport.requiresDomainNamesResolution())
+        if (transport.requiresDomainNameResolution())
         {
             Origin.Address address = origin.getAddress();
             getSocketAddressResolver().resolve(address.getHost(), address.getPort(), new Promise<>()

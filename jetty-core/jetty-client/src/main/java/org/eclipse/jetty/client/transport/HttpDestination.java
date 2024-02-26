@@ -76,7 +76,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
      * @param intrinsicallySecure whether the destination is intrinsically secure
      * @deprecated use {@link #HttpDestination(HttpClient, Origin)} instead
      */
-    @Deprecated
+    @Deprecated(since = "12.0.7", forRemoval = true)
     public HttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
     {
         this(client, origin);

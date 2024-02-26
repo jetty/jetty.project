@@ -80,14 +80,14 @@ public interface Transport
      *
      * @return whether this {@code Transport} requires domain names resolution
      */
-    default boolean requiresDomainNamesResolution()
+    default boolean requiresDomainNameResolution()
     {
         return false;
     }
 
     /**
      * <p>Establishes a connection to the given socket address.</p>
-     * <p>For {@code Transport}s that {@link #requiresDomainNamesResolution()
+     * <p>For {@code Transport}s that {@link #requiresDomainNameResolution()
      * require domain name resolution}, this is the IP address resolved from
      * the domain name.
      * For {@code Transport}s that do not require domain name resolution
@@ -188,7 +188,7 @@ public interface Transport
     abstract class IP extends Socket
     {
         @Override
-        public boolean requiresDomainNamesResolution()
+        public boolean requiresDomainNameResolution()
         {
             return true;
         }
@@ -364,9 +364,9 @@ public interface Transport
         }
 
         @Override
-        public boolean requiresDomainNamesResolution()
+        public boolean requiresDomainNameResolution()
         {
-            return wrapped.requiresDomainNamesResolution();
+            return wrapped.requiresDomainNameResolution();
         }
 
         @Override
