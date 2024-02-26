@@ -87,8 +87,10 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +101,45 @@ import org.slf4j.LoggerFactory;
  */
 public class ServletApiRequest implements HttpServletRequest
 {
+    public static class ForwardedServletApiRequest extends ServletApiRequest
+    {
+        protected ForwardedServletApiRequest(ServletContextRequest servletContextRequest)
+        {
+            super(servletContextRequest);
+        }
+
+        @Override
+        protected void extractQueryParameters() throws BadMessageException
+        {
+            // Extract query string parameters; these may be replaced by a forward()
+            // and may have already been extracted by mergeQueryParameters().
+            if (_queryParameters == null)
+            {
+                String forwardQueryString = (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+                String originalQueryString = getQueryString();
+                if (StringUtil.isBlank(forwardQueryString))
+                {
+                    if (StringUtil.isBlank(originalQueryString))
+                    {
+                        _queryParameters = ServletContextRequest.NO_PARAMS;
+                    }
+                    else
+                    {
+                        _queryParameters = new Fields(true);
+                        UrlEncoded.decodeTo(forwardQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                    }
+                }
+                else
+                {
+                    _queryParameters = new Fields(true);
+                    if (!StringUtil.isBlank(originalQueryString))
+                        UrlEncoded.decodeTo(originalQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                    UrlEncoded.decodeTo(forwardQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                }
+            }
+        }
+    }
+
     public static class IncludedServletApiRequest extends ServletApiRequest
     {
         protected IncludedServletApiRequest(ServletContextRequest servletContextRequest)
@@ -109,7 +150,7 @@ public class ServletApiRequest implements HttpServletRequest
             dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletContextRequest.getMatchedResource().getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
             dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletContextRequest.getMatchedResource().getMatchedPath().getPathMatch());
             dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, servletContextRequest.getMatchedResource().getMatchedPath().getPathInfo());
-            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, dispatchedRequest.getContext().getContextPath());
+            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, servletContextRequest.getContext().getContextPath());
         }
         
         @Override
@@ -147,6 +188,43 @@ public class ServletApiRequest implements HttpServletRequest
         {
             return (HttpServletMapping)getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
         }
+
+        @Override
+        public String getRequestURI()
+        {
+            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_URI);
+        }
+
+        @Override
+        protected void extractQueryParameters() throws BadMessageException
+        {
+            // Extract query string parameters; these may be replaced by a forward()
+            // and may have already been extracted by mergeQueryParameters().
+            if (_queryParameters == null)
+            {
+                String includedQueryString = (String)getAttribute(RequestDispatcher.INCLUDE_QUERY_STRING);
+                String originalQueryString = getQueryString();
+                if (StringUtil.isBlank(includedQueryString))
+                {
+                    if (StringUtil.isBlank(originalQueryString))
+                    {
+                        _queryParameters = ServletContextRequest.NO_PARAMS;
+                    }
+                    else
+                    {
+                        _queryParameters = new Fields(true);
+                        UrlEncoded.decodeTo(includedQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                    }
+                }
+                else
+                {
+                    _queryParameters = new Fields(true);
+                    if (!StringUtil.isBlank(originalQueryString))
+                        UrlEncoded.decodeTo(originalQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                    UrlEncoded.decodeTo(includedQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                }
+            }
+        }
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
@@ -161,9 +239,9 @@ public class ServletApiRequest implements HttpServletRequest
     private BufferedReader _reader;
     private String _contentType;
     private boolean _contentParamsExtracted;
-    private Fields _contentParameters;
+    protected Fields _contentParameters;
     private Fields _parameters;
-    private Fields _queryParameters;
+    protected Fields _queryParameters;
     private ServletMultiPartFormData.Parts _parts;
     private boolean _asyncSupported = true;
 
@@ -871,7 +949,7 @@ public class ServletApiRequest implements HttpServletRequest
         return Collections.unmodifiableMap(getParameters().toStringArrayMap());
     }
 
-    private Fields getParameters()
+    protected Fields getParameters()
     {
         // protect against calls to recycled requests (which is illegal, but
         // this gives better failures
@@ -986,7 +1064,7 @@ public class ServletApiRequest implements HttpServletRequest
         }
     }
 
-    private void extractQueryParameters() throws BadMessageException
+    protected void extractQueryParameters() throws BadMessageException
     {
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().

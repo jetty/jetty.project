@@ -208,10 +208,17 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             }
         }
 
-        if (getServletContextHandler().isCrossContextDispatchSupported() && DispatcherType.INCLUDE.toString().equals(getContext().getCrossContextDispatchType(getWrapped())))
-            return new ServletApiRequest.IncludedServletApiRequest(this);
+        if (getServletContextHandler().isCrossContextDispatchSupported())
+        {
+            if (DispatcherType.INCLUDE.toString().equals(getContext().getCrossContextDispatchType(getWrapped())))
+                return new ServletApiRequest.IncludedServletApiRequest(this);
+            else if (DispatcherType.FORWARD.toString().equals(getContext().getCrossContextDispatchType(getWrapped())))
+                return new ServletApiRequest.ForwardedServletApiRequest(this);
+            else
+                return new ServletApiRequest(this);
+        }
         else
-            return new ServletApiRequest(this);
+           return new ServletApiRequest(this);
     }
 
     protected ServletContextResponse newServletContextResponse(Response response)
