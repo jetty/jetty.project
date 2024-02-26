@@ -220,7 +220,6 @@ public class EventsHandlerTest extends AbstractTest
             case HTTP:
             case HTTPS:
             case FCGI:
-            case UNIX_DOMAIN:
                 await().atMost(5, TimeUnit.SECONDS).until(() -> eventsHandler.exceptions.size() / 4, allOf(greaterThanOrEqualTo(10), lessThanOrEqualTo(11)));
                 break;
             // One read, maybe one null read, one write, one write complete.

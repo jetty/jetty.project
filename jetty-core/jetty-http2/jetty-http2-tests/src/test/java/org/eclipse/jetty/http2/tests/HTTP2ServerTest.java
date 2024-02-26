@@ -108,7 +108,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(latch.await(555, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 

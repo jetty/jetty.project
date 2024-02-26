@@ -145,6 +145,18 @@ public class UnixDomainServerConnector extends AbstractConnector
         this.acceptedSendBufferSize = acceptedSendBufferSize;
     }
 
+    public SocketAddress getLocalSocketAddress()
+    {
+        try
+        {
+            return serverChannel == null ? null : serverChannel.getLocalAddress();
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
     @Override
     protected void doStart() throws Exception
     {

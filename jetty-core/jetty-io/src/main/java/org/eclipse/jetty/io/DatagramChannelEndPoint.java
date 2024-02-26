@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -32,7 +31,6 @@ import org.slf4j.LoggerFactory;
  */
 public class DatagramChannelEndPoint extends SelectableChannelEndPoint
 {
-    public static final SocketAddress EOF = InetSocketAddress.createUnresolved("", 0);
     private static final Logger LOG = LoggerFactory.getLogger(DatagramChannelEndPoint.class);
 
     public DatagramChannelEndPoint(DatagramChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
@@ -61,14 +59,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         return null;
     }
 
-    /**
-     * <p>Receives data into the given buffer from the returned address.</p>
-     * <p>This method should be used to receive UDP data.</p>
-     *
-     * @param buffer the buffer to fill with data
-     * @return the peer address that sent the data
-     * @throws IOException if the receive fails
-     */
+    @Override
     public SocketAddress receive(ByteBuffer buffer) throws IOException
     {
         if (isInputShutdown())
@@ -88,16 +79,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         return peer;
     }
 
-    /**
-     * <p>Sends to the given address the data in the given buffers.</p>
-     * <p>This methods should be used to send UDP data.</p>
-     *
-     * @param address the peer address to send data to
-     * @param buffers the buffers containing the data to send
-     * @return true if all the buffers have been consumed
-     * @throws IOException if the send fails
-     * @see #write(Callback, SocketAddress, ByteBuffer...)
-     */
+    @Override
     public boolean send(SocketAddress address, ByteBuffer... buffers) throws IOException
     {
         boolean flushedAll = true;
@@ -130,16 +112,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         return flushedAll;
     }
 
-    /**
-     * <p>Writes to the given address the data contained in the given buffers, and invokes
-     * the given callback when either all the data has been sent, or a failure occurs.</p>
-     *
-     * @param callback the callback to notify of the success or failure of the write operation
-     * @param address the peer address to send data to
-     * @param buffers the buffers containing the data to send
-     * @throws WritePendingException if a previous write was initiated but was not yet completed
-     * @see #send(SocketAddress, ByteBuffer...)
-     */
+    @Override
     public void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
     {
         getWriteFlusher().write(callback, address, buffers);

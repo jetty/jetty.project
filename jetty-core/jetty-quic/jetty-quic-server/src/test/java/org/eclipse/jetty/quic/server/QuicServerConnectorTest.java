@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-public class ServerQuicConnectorTest
+public class QuicServerConnectorTest
 {
     @Disabled
     @Test
@@ -43,7 +43,8 @@ public class ServerQuicConnectorTest
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        QuicServerConnector connector = new QuicServerConnector(server, sslContextFactory, connectionFactory);
+        ServerQuicConfiguration quicConfig = new ServerQuicConfiguration(sslContextFactory, null);
+        QuicServerConnector connector = new QuicServerConnector(server, quicConfig, connectionFactory);
         connector.setPort(8443);
         server.addConnector(connector);
 
@@ -85,7 +86,8 @@ public class ServerQuicConnectorTest
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        QuicServerConnector connector = new QuicServerConnector(server, sslContextFactory, connectionFactory);
+        ServerQuicConfiguration quicConfig = new ServerQuicConfiguration(sslContextFactory, null);
+        QuicServerConnector connector = new QuicServerConnector(server, quicConfig, connectionFactory);
         connector.setPort(8443);
         server.addConnector(connector);
 
