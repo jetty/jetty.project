@@ -82,6 +82,7 @@ import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
@@ -89,6 +90,7 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
@@ -354,51 +356,61 @@ public class Request implements HttpServletRequest
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
+    MultiMap<String> peekParameters()
+    {
+        return _parameters;
+    }
+
     private MultiMap<String> getParameters()
     {
-        if (!_contentParamsExtracted)
-        {
-            // content parameters need boolean protection as they can only be read
-            // once, but may be reset to null by a reset
-            _contentParamsExtracted = true;
-
-            // Extract content parameters; these cannot be replaced by a forward()
-            // once extracted and may have already been extracted by getParts() or
-            // by a processing happening after a form-based authentication.
-            if (_contentParameters == null)
-            {
-                try
-                {
-                    extractContentParameters();
-                }
-                catch (IllegalStateException | IllegalArgumentException e)
-                {
-                    LOG.warn(e.toString());
-                    throw new BadMessageException("Unable to parse form content", e);
-                }
-            }
-        }
-
-        // Extract query string parameters; these may be replaced by a forward()
-        // and may have already been extracted by mergeQueryParameters().
-        if (_queryParameters == null)
-            extractQueryParameters();
-
-        // Do parameters need to be combined?
-        if (isNoParams(_queryParameters) || _queryParameters.size() == 0)
-            _parameters = _contentParameters;
-        else if (isNoParams(_contentParameters) || _contentParameters.size() == 0)
-            _parameters = _queryParameters;
-        else if (_parameters == null)
-        {
-            _parameters = new MultiMap<>();
-            _parameters.addAllValues(_queryParameters);
-            _parameters.addAllValues(_contentParameters);
-        }
-
         // protect against calls to recycled requests (which is illegal, but
         // this gives better failures
         MultiMap<String> parameters = _parameters;
+        if (parameters == null)
+        {
+
+            if (!_contentParamsExtracted)
+            {
+                // content parameters need boolean protection as they can only be read
+                // once, but may be reset to null by a reset
+                _contentParamsExtracted = true;
+
+                // Extract content parameters; these cannot be replaced by a forward()
+                // once extracted and may have already been extracted by getParts() or
+                // by a processing happening after a form-based authentication.
+                if (_contentParameters == null)
+                {
+                    try
+                    {
+                        extractContentParameters();
+                    }
+                    catch (IllegalStateException | IllegalArgumentException e)
+                    {
+                        LOG.warn(e.toString());
+                        throw new BadMessageException("Unable to parse form content", e);
+                    }
+                }
+            }
+
+            // Extract query string parameters; these may be replaced by a forward()
+            // and may have already been extracted by mergeQueryParameters().
+            if (_queryParameters == null)
+                extractQueryParameters();
+
+            // Do parameters need to be combined?
+            if (isNoParams(_queryParameters) || _queryParameters.size() == 0)
+                _parameters = _contentParameters;
+            else if (isNoParams(_contentParameters) || _contentParameters.size() == 0)
+                _parameters = _queryParameters;
+            else if (_parameters == null)
+            {
+                _parameters = new MultiMap<>();
+                _parameters.addAllValues(_queryParameters);
+                _parameters.addAllValues(_contentParameters);
+            }
+            parameters = _parameters;
+        }
+
         return parameters == null ? NO_PARAMS : parameters;
     }
 
@@ -437,6 +449,24 @@ public class Request implements HttpServletRequest
             _contentParameters = NO_PARAMS;
         else
         {
+            if (_crossContextDispatchSupported && _coreRequest.getContext().isCrossContextDispatch(_coreRequest))
+            {
+                try
+                {
+                    Fields fields = FormFields.get(_coreRequest).get();
+                    _contentParameters = fields.toMultiMap();
+                    return;
+                }
+                catch (RuntimeException e)
+                {
+                    throw e;
+                }
+                catch (Throwable t)
+                {
+                    throw new RuntimeException(t);
+                }
+            }
+
             _contentParameters = new MultiMap<>();
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == INPUT_NONE)

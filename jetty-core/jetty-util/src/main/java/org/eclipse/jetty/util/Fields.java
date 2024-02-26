@@ -15,6 +15,7 @@ package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -55,6 +56,11 @@ public class Fields implements Iterable<Fields.Field>
     public Fields(boolean caseSensitive)
     {
         this(caseSensitive ? new LinkedHashMap<>() : new TreeMap<>(String::compareToIgnoreCase));
+    }
+
+    public Fields(MultiMap<String> params)
+    {
+        this(multiMapToMapOfFields(params));
     }
 
     public Fields(Map<String, Field> fields)
@@ -197,14 +203,13 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void add(String name, String value)
     {
-        String key = name;
-        fields.compute(key, (k, f) ->
+        fields.compute(name, (k, f) ->
         {
             if (f == null)
                 // Preserve the case for the field name
                 return new Field(name, value);
             else
-                return new Field(f.getName(), f.getValues(), value);
+                return new Field(f.getName(), f.getValues(), List.of(value));
         });
     }
 
@@ -216,8 +221,7 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void add(Field field)
     {
-        String s = field.getName();
-        String key = s;
+        String key = field.getName();
         fields.compute(key, (k, f) ->
         {
             if (f == null)
@@ -290,6 +294,16 @@ public class Fields implements Iterable<Fields.Field>
         return result;
     }
 
+    /**
+     * @return the fields (name and values) of this instance copied into a {@code MultiMap<String>}
+     */
+    public MultiMap<String> toMultiMap()
+    {
+        MultiMap<String> multiMap = new MultiMap<>();
+        fields.forEach((k, f) -> multiMap.addValues(k, f.getValues()));
+        return multiMap;
+    }
+
     @Override
     public String toString()
     {
@@ -309,21 +323,28 @@ public class Fields implements Iterable<Fields.Field>
 
         public Field(String name, String value)
         {
-            this(name, List.of(value));
+            this(name, List.of(value), null);
         }
 
-        private Field(String name, List<String> values, String... moreValues)
+        private Field(String name, List<String> values)
         {
-            this(name, values, List.of(moreValues));
+            this(name, values, null);
         }
 
         private Field(String name, List<String> values, List<String> moreValues)
         {
             this.name = name;
-            List<String> list = new ArrayList<>(values.size() + moreValues.size());
-            list.addAll(values);
-            list.addAll(moreValues);
-            this.values = List.copyOf(list);
+            if (moreValues == null || moreValues.isEmpty())
+            {
+                this.values = List.copyOf(values);
+            }
+            else
+            {
+                List<String> list = new ArrayList<>(values.size() + moreValues.size());
+                list.addAll(values);
+                list.addAll(moreValues);
+                this.values = List.copyOf(list);
+            }
         }
 
         @Override
@@ -416,4 +437,14 @@ public class Fields implements Iterable<Fields.Field>
         return fields;
     }
 
+    private static Map<String, Field> multiMapToMapOfFields(MultiMap<String> params)
+    {
+        if (params.isEmpty())
+            return Collections.emptyMap();
+
+        Map<String, Field> fields = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : params.entrySet())
+            fields.put(entry.getKey(), new Field(entry.getKey(), entry.getValue()));
+        return fields;
+    }
 }

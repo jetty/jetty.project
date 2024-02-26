@@ -98,6 +98,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         Object attr = request.getAttribute(FormFields.class.getName());
         if (attr instanceof FormFields futureFormFields)
             return futureFormFields;
+        else if (attr instanceof Fields fields)
+            return CompletableFuture.completedFuture(fields);
         return EMPTY;
     }
 

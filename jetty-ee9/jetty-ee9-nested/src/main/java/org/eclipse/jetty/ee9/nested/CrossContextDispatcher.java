@@ -26,9 +26,12 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MultiMap;
 
 class CrossContextDispatcher implements RequestDispatcher
 {
@@ -61,7 +64,8 @@ class CrossContextDispatcher implements RequestDispatcher
         ORIGINAL_PATH_INFO,
         ORIGINAL_SERVLET_PATH,
         ORIGINAL_SERVLET_CONTEXT,
-        ORIGINAL_CONTEXT_PATH
+        ORIGINAL_CONTEXT_PATH,
+        FormFields.class.getName()
     );
 
     private final CrossContextServletContext _targetContext;
@@ -158,7 +162,17 @@ class CrossContextDispatcher implements RequestDispatcher
                         case RequestDispatcher.INCLUDE_PATH_INFO -> REMOVED;
                         // TODO case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> httpServletRequest.getAttribute(ServletMultiPartFormData.class.getName());
                         case org.eclipse.jetty.server.handler.ContextHandler.CROSS_CONTEXT_ATTRIBUTE -> DispatcherType.FORWARD.toString();
-                        default -> null;
+                        default ->
+                        {
+                            if (FormFields.class.getName().equals(name))
+                            {
+                                Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(httpServletRequest));
+                                MultiMap<String> params = baseRequest.peekParameters();
+                                if (params != null)
+                                    yield new Fields(params);
+                            }
+                            yield null;
+                        }
                     };
                 }
 
@@ -195,7 +209,7 @@ class CrossContextDispatcher implements RequestDispatcher
 
         ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
         org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
-        coreResponse.reset(); // TODO for forward?
+        baseResponse.resetForForward();
 
         ForwardRequest forwardRequest = new ForwardRequest(coreContextRequest, httpServletRequest);
         ServletCoreResponse servletCoreResponse = new ServletCoreResponse(forwardRequest, httpServletResponse, baseResponse, coreResponse, false);

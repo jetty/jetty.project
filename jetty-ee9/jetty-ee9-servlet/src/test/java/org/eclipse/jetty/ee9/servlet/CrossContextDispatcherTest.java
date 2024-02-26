@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -161,7 +162,6 @@ public class CrossContextDispatcherTest
     }
 
     @Test
-    @Disabled
     public void testParamsBeforeCrossContextForward() throws Exception
     {
         _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
@@ -183,7 +183,6 @@ public class CrossContextDispatcherTest
     }
 
     @Test
-    @Disabled
     public void testParamsAfterCrossContextForward() throws Exception
     {
          _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
@@ -412,8 +411,9 @@ public class CrossContextDispatcherTest
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            //case the params to be parsed on the request
+            //cause the params to be parsed on the request
             Map<String, String[]> params = request.getParameterMap();
+            assertThat(params, notNullValue());
 
             chain.doFilter(request, response);
         }
