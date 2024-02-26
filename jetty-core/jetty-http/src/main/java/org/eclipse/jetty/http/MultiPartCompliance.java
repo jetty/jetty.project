@@ -105,7 +105,7 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
     /**
      * Create compliance set from string.
      * <p>
-     * Format: &lt;BASE&gt;[,[-]&lt;violation&gt;]...
+     * Format: {@code <BASE>[,[-]<violation>]...}
      * </p>
      * <p>BASE is one of:</p>
      * <dl>

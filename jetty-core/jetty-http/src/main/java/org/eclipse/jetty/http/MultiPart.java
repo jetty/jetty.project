@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -920,6 +921,7 @@ public class MultiPart
         private String fieldValue;
         private long maxParts = 1000;
         private int numParts;
+        private EnumSet<MultiPartCompliance.Violation> eols;
 
         public Parser(String boundary, Listener listener)
         {
@@ -1050,6 +1052,13 @@ public class MultiPart
                             HttpTokens.Token token = next(buffer);
                             if (token.getByte() != '-')
                                 throw new BadMessageException("bad last boundary");
+                            if (eols != null)
+                            {
+                                for (MultiPartCompliance.Violation violation: eols)
+                                {
+                                    notifyViolation(violation);
+                                }
+                            }
                             state = State.EPILOGUE;
                         }
                         case HEADER_START ->
@@ -1123,18 +1132,28 @@ public class MultiPart
                 }
                 case LF ->
                 {
+                    if (!crFlag)
+                    {
+                        addEolViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
+                    }
                     crFlag = false;
                 }
                 case CR ->
                 {
                     if (crFlag)
+                    {
+                        addEolViolation(MultiPartCompliance.Violation.CR_LINE_TERMINATION);
                         throw new BadMessageException("invalid EOL");
+                    }
                     crFlag = true;
                 }
                 default ->
                 {
                     if (crFlag)
+                    {
+                        addEolViolation(MultiPartCompliance.Violation.CR_LINE_TERMINATION);
                         throw new BadMessageException("invalid EOL");
+                    }
                 }
             }
             return t;
@@ -1194,13 +1213,9 @@ public class MultiPart
                     case CR ->
                     {
                         // Ignore CR and loop around;
-                        crFlag = true;
                     }
                     case LF ->
                     {
-                        if (!crFlag)
-                            notifyViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
-                        crFlag = false;
                         // End of fields.
                         notifyPartHeaders();
                         // A part may have an empty content.
@@ -1336,6 +1351,10 @@ public class MultiPart
                     {
                         // The boundary was fully matched, so the part is complete.
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
+                        if (!crContent)
+                        {
+                            addEolViolation(MultiPartCompliance.Violation.LF_LINE_TERMINATION);
+                        }
                         partialBoundaryMatch = 0;
                         crContent = false;
                         notifyPartContent(Content.Chunk.EOF);
@@ -1539,6 +1558,14 @@ public class MultiPart
                 if (LOG.isDebugEnabled())
                     LOG.debug("failure while notifying listener {}", listener, x);
             }
+        }
+
+        private void addEolViolation(MultiPartCompliance.Violation violation)
+        {
+            if (eols == null)
+                eols = EnumSet.of(violation);
+            else
+                eols.add(violation);
         }
 
         private void notifyViolation(MultiPartCompliance.Violation violation)

@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -543,24 +544,35 @@ public class MultiPartFormData
                 memoryFileSize = 0;
                 try (AutoLock ignored = lock.lock())
                 {
-                    if (headers.contains("content-transfer-encoding"))
+                    String value = headers.get("content-transfer-encoding");
+                    if (value != null)
                     {
-                        String value = headers.get("content-transfer-encoding");
-                        if ("base64".equals(value))
+                        String ctencoding = StringUtil.asciiToLowerCase(value);
+
+                        // Inform on specific unsupported encodings
+                        if ("base64".equalsIgnoreCase(ctencoding))
+                        {
                             complianceViolationListener.onComplianceViolation(
                                 new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
                                     MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
                                     value));
-                        if ("quoted-printable".equals(value))
+                        }
+                        else if ("quoted-printable".equalsIgnoreCase(ctencoding))
+                        {
                             complianceViolationListener.onComplianceViolation(
                                 new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
                                     MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
                                     value));
+                        }
+
+                        // Inform on general Content-Transfer-Encoding use (8bit and binary are essentially no-ops)
                         if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
+                        {
                             complianceViolationListener.onComplianceViolation(
                                 new ComplianceViolation.Event(MultiPartCompliance.RFC7578,
                                     MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
                                     value));
+                        }
                     }
 
                     MultiPart.Part part;

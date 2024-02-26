@@ -280,7 +280,6 @@ public class MultiPartFormDataTest
 
             List<ComplianceViolation.Event> events = violations.getEvents();
             List<MultiPartCompliance.Violation> expected = List.of(
-                MultiPartCompliance.Violation.LF_LINE_TERMINATION,
                 MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
                 MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING
             );
@@ -457,7 +456,6 @@ public class MultiPartFormDataTest
 
             List<ComplianceViolation.Event> events = violations.getEvents();
             List<MultiPartCompliance.Violation> expected = List.of(
-                MultiPartCompliance.Violation.LF_LINE_TERMINATION,
                 MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
                 MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING
             );
