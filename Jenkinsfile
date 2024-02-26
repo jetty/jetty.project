@@ -20,7 +20,7 @@ pipeline {
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), javaDoc()],
-                            skipPublishingChecks: true, blameDisabled: true
+                            skipPublishingChecks: true, skipBlames: true
             }
           }
         }
