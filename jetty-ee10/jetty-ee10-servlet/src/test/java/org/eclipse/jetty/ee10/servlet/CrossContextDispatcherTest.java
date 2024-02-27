@@ -456,7 +456,7 @@ public class CrossContextDispatcherTest
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            //case the params to be parsed on the request
+            //cause the params to be parsed on the request
             Map<String, String[]> params = request.getParameterMap();
 
             chain.doFilter(request, response);

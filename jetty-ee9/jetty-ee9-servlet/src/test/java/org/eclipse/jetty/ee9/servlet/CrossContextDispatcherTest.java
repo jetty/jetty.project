@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -66,6 +67,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -139,8 +141,34 @@ public class CrossContextDispatcherTest
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        // from inside the context.txt file
-        assertThat(response.getContent(), containsString("Verified!"));
+        String content = response.getContent();
+        String[] contentLines = content.split("\\n");
+
+        //verify forward attributes
+        assertThat(content, containsString("Verified!"));
+        assertThat(content, containsString("jakarta.servlet.forward.context_path=/context"));
+        assertThat(content, containsString("jakarta.servlet.forward.servlet_path=/dispatch"));
+        assertThat(content, containsString("jakarta.servlet.forward.path_info=/"));
+
+        String forwardMapping = extractLine(contentLines, "jakarta.servlet.forward.mapping=");
+        assertNotNull(forwardMapping);
+        assertThat(forwardMapping, containsString("CrossContextDispatchServlet"));
+        assertThat(content, containsString("jakarta.servlet.forward.query_string=forward=/verify"));
+        assertThat(content, containsString("jakarta.servlet.forward.request_uri=/context/dispatch/"));
+        //verify request values
+        assertThat(content, containsString("CONTEXT_PATH=/foreign"));
+        assertThat(content, containsString("SERVLET_PATH=/verify"));
+        assertThat(content, containsString("PATH_INFO=/pinfo"));
+        String mapping = extractLine(contentLines, "MAPPING=");
+        assertNotNull(mapping);
+        assertThat(mapping, containsString("VerifyForwardServlet"));
+        //TODO query string
+        String params = extractLine(contentLines, "PARAMS=");
+        assertNotNull(params);
+        params = params.substring(params.indexOf("=") + 1);
+        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward"));
+        assertThat(content, containsString("REQUEST_URI=/foreign/verify/pinfo"));
     }
 
     @Test
@@ -158,7 +186,31 @@ public class CrossContextDispatcherTest
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("Verified!"));
+        String content = response.getContent();
+        String[] contentLines = content.split("\\n");
+
+        //verify include attributes
+        assertThat(content, containsString("Verified!"));
+        assertThat(content, containsString("jakarta.servlet.include.context_path=/foreign"));
+        assertThat(content, containsString("jakarta.servlet.include.servlet_path=/verify"));
+        assertThat(content, containsString("jakarta.servlet.include.path_info=/pinfo"));
+        String includeMapping = extractLine(contentLines, "jakarta.servlet.include.mapping=");
+        assertThat(includeMapping, containsString("VerifyIncludeServlet"));
+        //TODO query string
+        assertThat(content, containsString("jakarta.servlet.include.request_uri=/foreign/verify/pinfo"));
+        //verify request values
+        assertThat(content, containsString("CONTEXT_PATH=/context"));
+        assertThat(content, containsString("SERVLET_PATH=/dispatch"));
+        assertThat(content, containsString("PATH_INFO=/"));
+        String mapping = extractLine(contentLines, "MAPPING=");
+        assertThat(mapping, containsString("CrossContextDispatchServlet"));
+        assertThat(content, containsString("QUERY_STRING=include=/verify"));
+        assertThat(content, containsString("REQUEST_URI=/context/dispatch/"));
+        String params = extractLine(contentLines, "PARAMS=");
+        assertNotNull(params);
+        params = params.substring(params.indexOf("=") + 1);
+        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
     }
 
     @Test
@@ -217,7 +269,6 @@ public class CrossContextDispatcherTest
     }
 
     @Test
-    @Disabled
     public void testForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -235,8 +286,8 @@ public class CrossContextDispatcherTest
         assertThat(response.getContent(), containsString("content goes here"));
     }
 
+    @Disabled
     @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
     public void testWrappedIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -255,7 +306,6 @@ public class CrossContextDispatcherTest
     }
 
     @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
     public void testWrappedForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -504,7 +554,7 @@ public class CrossContextDispatcherTest
             {
                 ServletContext foreign = getServletContext().getContext("/foreign");
                 assertNotNull(foreign);
-                dispatcher = foreign.getRequestDispatcher(request.getParameter("forward"));
+                dispatcher = foreign.getRequestDispatcher(request.getParameter("forward") + "/pinfo?a=b");
 
                 if (dispatcher == null)
                        response.sendError(404, "No dispatcher for forward");
@@ -669,7 +719,26 @@ public class CrossContextDispatcherTest
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             if (DispatcherType.FORWARD.equals(req.getDispatcherType()))
-                res.getWriter().print("Verified!");
+            {
+                res.getWriter().println("Verified!");
+                res.getWriter().println("----------- FORWARD ATTRIBUTES");
+                res.getWriter().println(RequestDispatcher.FORWARD_CONTEXT_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+                res.getWriter().println(RequestDispatcher.FORWARD_SERVLET_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
+                res.getWriter().println(RequestDispatcher.FORWARD_PATH_INFO  + "=" + req.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+                res.getWriter().println(RequestDispatcher.FORWARD_MAPPING + "=" + req.getAttribute(RequestDispatcher.FORWARD_MAPPING));
+                res.getWriter().println(RequestDispatcher.FORWARD_QUERY_STRING + "=" + req.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+                res.getWriter().println(RequestDispatcher.FORWARD_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
+                res.getWriter().println("----------- REQUEST");
+                HttpServletRequest httpServletRequest = (HttpServletRequest)req;
+                res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getServletContext().getContextPath());
+                res.getWriter().println("SERVLET_PATH=" + httpServletRequest.getServletPath());
+                res.getWriter().println("PATH_INFO=" + httpServletRequest.getPathInfo());
+                res.getWriter().println("MAPPING=" + httpServletRequest.getHttpServletMapping());
+                res.getWriter().println("QUERY_STRING=" + httpServletRequest.getQueryString());
+                res.getWriter().println("REQUEST_URI=" + httpServletRequest.getRequestURI());
+                Enumeration<String> names = httpServletRequest.getParameterNames();
+                res.getWriter().println("PARAMS=" + Collections.list(names));
+            }
         }
     }
 
@@ -679,7 +748,26 @@ public class CrossContextDispatcherTest
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             if (DispatcherType.INCLUDE.equals(req.getDispatcherType()))
-                res.getWriter().print("Verified!");
+            {
+                res.getWriter().println("Verified!");
+                res.getWriter().println("----------- INCLUDE ATTRIBUTES");
+                res.getWriter().println(RequestDispatcher.INCLUDE_CONTEXT_PATH + "=" + req.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH));
+                res.getWriter().println(RequestDispatcher.INCLUDE_SERVLET_PATH + "=" + req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH));
+                res.getWriter().println(RequestDispatcher.INCLUDE_PATH_INFO  + "=" + req.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO));
+                res.getWriter().println(RequestDispatcher.INCLUDE_MAPPING + "=" + req.getAttribute(RequestDispatcher.INCLUDE_MAPPING));
+                res.getWriter().println(RequestDispatcher.INCLUDE_QUERY_STRING + "=" + req.getAttribute(RequestDispatcher.INCLUDE_QUERY_STRING));
+                res.getWriter().println(RequestDispatcher.INCLUDE_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI));
+                res.getWriter().println("----------- REQUEST");
+                HttpServletRequest httpServletRequest = (HttpServletRequest)req;
+                res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getServletContext().getContextPath());
+                res.getWriter().println("SERVLET_PATH=" + httpServletRequest.getServletPath());
+                res.getWriter().println("PATH_INFO=" + httpServletRequest.getPathInfo());
+                res.getWriter().println("MAPPING=" + httpServletRequest.getHttpServletMapping());
+                res.getWriter().println("QUERY_STRING=" + httpServletRequest.getQueryString());
+                res.getWriter().println("REQUEST_URI=" + httpServletRequest.getRequestURI());
+                Enumeration<String> names = httpServletRequest.getParameterNames();
+                res.getWriter().println("PARAMS=" + Collections.list(names));
+            }
         }
     }
 
@@ -1102,5 +1190,24 @@ public class CrossContextDispatcherTest
             target = StringUtil.isBlank(target) ? "/TestServlet" : target;
             asyncContext.dispatch(target);
         }
+    }
+
+    public String extractLine(String[] lines, String startsWith)
+    {
+        if (lines == null)
+            return null;
+        if (StringUtil.isBlank(startsWith))
+            return null;
+
+        String line = null;
+
+        for (String s : lines)
+        {
+            if (s.startsWith(startsWith))
+            {
+                return s;
+            }
+        }
+        return null;
     }
 }
