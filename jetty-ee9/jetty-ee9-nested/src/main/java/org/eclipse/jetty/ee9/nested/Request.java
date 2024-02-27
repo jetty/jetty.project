@@ -2151,6 +2151,8 @@ public class Request implements HttpServletRequest
                 if (_dispatcherType == DispatcherType.INCLUDE)
                 {
                     // TODO more work to do here!
+                    // setAttributes ...
+                    // make a ServletPathMapping with the original data returned by findServletPathMapping method
                 }
             }
         }
@@ -2174,12 +2176,18 @@ public class Request implements HttpServletRequest
      */
     ServletPathMapping findServletPathMapping()
     {
-        // TODO cross context
         ServletPathMapping mapping;
         if (_dispatcherType == DispatcherType.INCLUDE)
         {
-            Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
-            mapping = (include == null) ? _servletPathMapping : include.getSourceMapping();
+            if (_crossContextDispatchSupported && DispatcherType.INCLUDE.toString().equals(_coreRequest.getContext().getCrossContextDispatchType(_coreRequest)))
+            {
+                // TODO cross context
+            }
+            else
+            {
+                Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
+                mapping = (include == null) ? _servletPathMapping : include.getSourceMapping();
+            }
         }
         else
         {
