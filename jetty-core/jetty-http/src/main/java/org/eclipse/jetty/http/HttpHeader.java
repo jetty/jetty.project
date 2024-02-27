@@ -47,6 +47,7 @@ public enum HttpHeader
     CONTENT_LOCATION("Content-Location"),
     CONTENT_MD5("Content-MD5"),
     CONTENT_RANGE("Content-Range"),
+    CONTENT_TRANSFER_ENCODING("Content-Transfer-Encoding"),
     CONTENT_TYPE("Content-Type"),
     EXPIRES("Expires"),
     LAST_MODIFIED("Last-Modified"),
