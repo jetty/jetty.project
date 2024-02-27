@@ -691,7 +691,7 @@ public class ServletApiRequest implements HttpServletRequest
                         {
                             String content = IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
                             if (_contentParameters == null)
-                                _contentParameters = new Fields();
+                                _contentParameters = new Fields(true);
                             _contentParameters.add(p.getName(), content);
                         }
                     }

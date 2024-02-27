@@ -223,7 +223,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         _maxFields = maxFields;
         _maxLength = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
-        _fields = new Fields();
+        _fields = new Fields(true);
     }
 
     @Override

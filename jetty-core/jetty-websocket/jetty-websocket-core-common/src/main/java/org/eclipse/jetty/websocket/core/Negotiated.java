@@ -54,7 +54,7 @@ public class Negotiated
         else
         {
             map = new HashMap<>();
-            Fields fields = new Fields();
+            Fields fields = new Fields(true);
             UrlEncoded.decodeUtf8To(rawQuery, fields);
             for (Fields.Field field : fields)
             {

@@ -208,7 +208,7 @@ public class Fields implements Iterable<Fields.Field>
                 // Preserve the case for the field name
                 return new Field(name, value);
             else
-                return new Field(f.getName(), f.getValues(), List.of(value));
+                return new Field(f.getName(), f.getValues(), value);
         });
     }
 
@@ -347,28 +347,57 @@ public class Fields implements Iterable<Fields.Field>
 
         public Field(String name, String value)
         {
-            this(name, List.of(value), null);
+            this(name, List.of(value));
         }
 
-        private Field(String name, List<String> values)
+        public Field(String name, List<String> values)
         {
-            this(name, values, null);
+            this.name = name;
+            this.values = List.copyOf(values);
+        }
+
+        private Field(String name, List<String> values, String extraValue)
+        {
+            this(name, append(values, extraValue));
         }
 
         private Field(String name, List<String> values, List<String> moreValues)
         {
-            this.name = name;
+            this(name, append(values, moreValues));
+        }
+
+        private static List<String> append(List<String> values, String extraValue)
+        {
+            return switch (values.size())
+            {
+                case 0 -> List.of(extraValue);
+                case 1 -> List.of(values.get(0), extraValue);
+                case 2 -> List.of(values.get(0), values.get(1), extraValue);
+                case 3 -> List.of(values.get(0), values.get(1), values.get(2), extraValue);
+                case 4 -> List.of(values.get(0), values.get(1), values.get(2), values.get(3), extraValue);
+                case 5 -> List.of(values.get(0), values.get(1), values.get(2), values.get(3), values.get(4), extraValue);
+                default ->
+                {
+                    List<String> list = new ArrayList<>(values.size() + 1);
+                    list.addAll(values);
+                    list.add(extraValue);
+                    yield list;
+                }
+            };
+        }
+
+        private static List<String> append(List<String> values, List<String> moreValues)
+        {
             if (moreValues == null || moreValues.isEmpty())
-            {
-                this.values = List.copyOf(values);
-            }
-            else
-            {
-                List<String> list = new ArrayList<>(values.size() + moreValues.size());
-                list.addAll(values);
-                list.addAll(moreValues);
-                this.values = List.copyOf(list);
-            }
+                return values;
+
+            if (moreValues.size() == 1)
+                return append(values, moreValues.get(0));
+
+            List<String> list = new ArrayList<>(values.size() + moreValues.size());
+            list.addAll(values);
+            list.addAll(moreValues);
+            return list;
         }
 
         @Override
