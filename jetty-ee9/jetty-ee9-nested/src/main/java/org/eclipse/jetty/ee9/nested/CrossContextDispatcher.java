@@ -82,10 +82,6 @@ class CrossContextDispatcher implements RequestDispatcher
                     if (name == null)
                         return null;
 
-                    //Servlet Spec 9.3.1 no include attributes if a named dispatcher
-/*                    if (_namedServlet != null && name.startsWith(Dispatcher.__INCLUDE_PREFIX))
-                        return null;*/
-
                     //Special include attributes refer to the target context and path
                     return switch (name)
                     {
@@ -134,9 +130,6 @@ class CrossContextDispatcher implements RequestDispatcher
 
     private class ForwardRequest extends ServletCoreRequest
     {
-        /**
-         * @param httpServletRequest the request to wrap
-         */
         public ForwardRequest(ContextHandler.CoreContextRequest coreContextRequest, HttpServletRequest httpServletRequest)
         {
             super(coreContextRequest, httpServletRequest, new Attributes.Synthetic(new ServletAttributes(httpServletRequest))
@@ -241,11 +234,19 @@ class CrossContextDispatcher implements RequestDispatcher
     {
         HttpServletRequest httpServletRequest = (servletRequest instanceof HttpServletRequest) ? ((HttpServletRequest)servletRequest) : new ServletRequestHttpWrapper(servletRequest);
         HttpServletResponse httpServletResponse = (servletResponse instanceof HttpServletResponse) ? (HttpServletResponse)servletResponse : new ServletResponseHttpWrapper(servletResponse);
-        // TODO ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(servletResponse);
-        /*
-        IncludeRequest includeRequest = new IncludeRequest(httpServletRequest);
-        IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse);
 
+        Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(servletRequest));
+        Response baseResponse = baseRequest.getResponse();
+
+        ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
+        org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
+
+        // TODO ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(servletResponse);
+
+        IncludeRequest includeRequest = new IncludeRequest(coreContextRequest, httpServletRequest);
+        //IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse);
+
+        /*
         try (Blocker.Callback callback = Blocker.callback())
         {
             _targetContext.getTargetContext().getContextHandler().handle(includeRequest, includeResponse, callback);
