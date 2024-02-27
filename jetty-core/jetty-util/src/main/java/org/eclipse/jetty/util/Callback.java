@@ -327,7 +327,6 @@ public interface Callback extends Invocable
             {
                 try
                 {
-                    callback.succeeded();
                     completed.run();
                 }
                 catch (Throwable t)
@@ -363,7 +362,6 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback, Throwable cause)
     {
-                    callback.succeeded();
         return new Callback()
         {
             @Override
@@ -375,16 +373,8 @@ public interface Callback extends Invocable
             @Override
             public void failed(Throwable x)
             {
-                try
-                {
-                    cause.addSuppressed(x);
-                    callback.failed(cause);
-                }
-                catch (Throwable t)
-                {
-                    ExceptionUtil.addSuppressedIfNotAssociated(t, x);
-                    throw t;
-                }
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
+                Callback.failed(callback, cause);
             }
         };
     }
