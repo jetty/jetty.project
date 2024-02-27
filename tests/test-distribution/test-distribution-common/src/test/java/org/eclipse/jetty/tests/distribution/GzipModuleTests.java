@@ -21,7 +21,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -31,7 +30,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled //TODO gzip module broken
 public class GzipModuleTests extends AbstractJettyHomeTest
 {
     @ParameterizedTest
@@ -76,7 +74,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
             }
         }
     }
-    
+
     @ParameterizedTest
     @ValueSource(strings = {"ee9", "ee10"})
     public void testGzipDefaultExcludedMimeType(String env) throws Exception
@@ -147,7 +145,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
                 "jetty.gzip.excludedMimeTypeList=image/vnd.microsoft.icon"
             };
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + " .demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
             distribution.installWar(war, "demo");
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
