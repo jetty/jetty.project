@@ -18,10 +18,10 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -142,6 +143,9 @@ public class ClientConnectorDocs
         int port = 8080;
         SocketAddress address = new InetSocketAddress(host, port);
 
+        // The Transport instance.
+        Transport transport = Transport.TCP_IP;
+
         // The ClientConnectionFactory that creates CustomConnection instances.
         ClientConnectionFactory connectionFactory = (endPoint, context) ->
         {
@@ -153,7 +157,8 @@ public class ClientConnectorDocs
         CompletableFuture<CustomConnection> connectionPromise = new Promise.Completable<>();
 
         // Populate the context with the mandatory keys to create and obtain connections.
-        Map<String, Object> context = new HashMap<>();
+        Map<String, Object> context = new ConcurrentHashMap<>();
+        context.put(Transport.class.getName(), transport);
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
@@ -257,7 +262,7 @@ public class ClientConnectorDocs
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.start();
 
-        String host = "wikipedia.org";
+        String host = "example.org";
         int port = 80;
         SocketAddress address = new InetSocketAddress(host, port);
 
@@ -267,6 +272,7 @@ public class ClientConnectorDocs
         CompletableFuture<TelnetConnection> connectionPromise = new Promise.Completable<>();
 
         Map<String, Object> context = new HashMap<>();
+        context.put(Transport.class.getName(), Transport.TCP_IP);
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
@@ -279,9 +285,7 @@ public class ClientConnectorDocs
                 connection.onLine(line -> System.getLogger("app").log(INFO, "line: {0}", line));
 
                 // Write a line.
-                connection.writeLine("" +
-                    "GET / HTTP/1.0\r\n" +
-                    "", Callback.NOOP);
+                connection.writeLine("GET / HTTP/1.0\r\n", Callback.NOOP);
             }
             else
             {
@@ -378,7 +382,7 @@ public class ClientConnectorDocs
         clientConnector.start();
 
         // Use port 443 to contact the server using encrypted HTTP.
-        String host = "wikipedia.org";
+        String host = "example.org";
         int port = 443;
         SocketAddress address = new InetSocketAddress(host, port);
 
@@ -392,7 +396,8 @@ public class ClientConnectorDocs
         // We will obtain a SslConnection now.
         CompletableFuture<SslConnection> connectionPromise = new Promise.Completable<>();
 
-        Map<String, Object> context = new HashMap<>();
+        Map<String, Object> context = new ConcurrentHashMap<>();
+        context.put(Transport.class.getName(), Transport.TCP_IP);
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
@@ -407,9 +412,7 @@ public class ClientConnectorDocs
                 connection.onLine(line -> System.getLogger("app").log(INFO, "line: {0}", line));
 
                 // Write a line.
-                connection.writeLine("" +
-                    "GET / HTTP/1.0\r\n" +
-                    "", Callback.NOOP);
+                connection.writeLine("GET / HTTP/1.0\r\n", Callback.NOOP);
             }
             else
             {
@@ -417,19 +420,6 @@ public class ClientConnectorDocs
             }
         });
         // end::tlsTelnet[]
-    }
-
-    public void unixDomain() throws Exception
-    {
-        // tag::unixDomain[]
-        // This is the path where the server "listens" on.
-        Path unixDomainPath = Path.of("/path/to/server.sock");
-
-        // Creates a ClientConnector that uses Unix-Domain
-        // sockets, not the network, to connect to the server.
-        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
-        clientConnector.start();
-        // end::unixDomain[]
     }
 
     public static void main(String[] args) throws Exception

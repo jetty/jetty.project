@@ -57,6 +57,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
@@ -79,6 +80,7 @@ public class HttpRequest implements Request
     private String path;
     private String query;
     private URI uri;
+    private Transport transport;
     private String method = HttpMethod.GET.asString();
     private HttpVersion version = HttpVersion.HTTP_1_1;
     private boolean versionExplicit;
@@ -214,6 +216,19 @@ public class HttpRequest implements Request
         this.port = port;
         this.uri = null;
         return this;
+    }
+
+    @Override
+    public Request transport(Transport transport)
+    {
+        this.transport = transport;
+        return this;
+    }
+
+    @Override
+    public Transport getTransport()
+    {
+        return transport;
     }
 
     @Override

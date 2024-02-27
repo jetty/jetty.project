@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -94,6 +95,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     private String originalQueryAttribute;
     private boolean fcgiHTTPS;
     private Set<String> fcgiEnvNames;
+    private Path unixDomainPath;
 
     @Override
     public void init() throws ServletException
@@ -118,6 +120,10 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
                 .map(String::trim)
                 .collect(Collectors.toSet());
         }
+
+        String path = getInitParameter("unixDomainPath");
+        if (path != null)
+            unixDomainPath = Path.of(path);
     }
 
     @Override
@@ -128,21 +134,12 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         if (scriptRoot == null)
             throw new IllegalArgumentException("Mandatory parameter '" + SCRIPT_ROOT_INIT_PARAM + "' not configured");
 
-        ClientConnector connector;
-        String unixDomainPath = config.getInitParameter("unixDomainPath");
-        if (unixDomainPath != null)
-        {
-            connector = ClientConnector.forUnixDomain(Path.of(unixDomainPath));
-        }
-        else
-        {
-            int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
-            String value = config.getInitParameter("selectors");
-            if (value != null)
-                selectors = Integer.parseInt(value);
-            connector = new ClientConnector();
-            connector.setSelectors(selectors);
-        }
+        int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
+        String value = config.getInitParameter("selectors");
+        if (value != null)
+            selectors = Integer.parseInt(value);
+        ClientConnector connector = new ClientConnector();
+        connector.setSelectors(selectors);
         return new HttpClient(new ProxyHttpClientTransportOverFCGI(connector, scriptRoot));
     }
 
@@ -218,6 +215,10 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             }
             proxyRequest.headers(headers -> headers.put(HttpHeader.COOKIE, builder.toString()));
         }
+
+        Path unixDomain = unixDomainPath;
+        if (unixDomain != null)
+            proxyRequest.transport(new Transport.TCPUnix(unixDomain));
 
         super.sendProxyRequest(request, proxyResponse, proxyRequest);
     }

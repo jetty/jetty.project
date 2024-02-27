@@ -19,9 +19,9 @@ Please refer to the `HttpClient` link:{javadoc-url}/org/eclipse/jetty/client/Htt
 
 The most common parameters are:
 
-* `HttpClient.idleTimeout`: same as `ClientConnector.idleTimeout` described in xref:pg-client-io-arch-network[this section].
-* `HttpClient.connectBlocking`: same as `ClientConnector.connectBlocking` described in xref:pg-client-io-arch-network[this section].
-* `HttpClient.connectTimeout`: same as `ClientConnector.connectTimeout` described in xref:pg-client-io-arch-network[this section].
+* `HttpClient.idleTimeout`: same as `ClientConnector.idleTimeout` described in xref:pg-client-io-arch-transport[this section].
+* `HttpClient.connectBlocking`: same as `ClientConnector.connectBlocking` described in xref:pg-client-io-arch-transport[this section].
+* `HttpClient.connectTimeout`: same as `ClientConnector.connectTimeout` described in xref:pg-client-io-arch-transport[this section].
 * `HttpClient.maxConnectionsPerDestination`: the max number of TCP connections that are opened for a particular destination (defaults to 64).
 * `HttpClient.maxRequestsQueuedPerDestination`: the max number of requests queued (defaults to 1024).
 

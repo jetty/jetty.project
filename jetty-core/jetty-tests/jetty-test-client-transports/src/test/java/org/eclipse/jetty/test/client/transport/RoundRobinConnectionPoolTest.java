@@ -99,7 +99,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
             assertThat(client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
-            if (transport != Transport.UNIX_DOMAIN && i > 0)
+            if (i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
@@ -195,7 +195,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
             assertThat(client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
-            if (transport != Transport.UNIX_DOMAIN && i > 0)
+            if (i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
@@ -247,10 +247,6 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         }
         assertTrue(clientLatch.await(count, TimeUnit.SECONDS));
         assertEquals(count, remotePorts.size());
-
-        // Unix Domain does not have ports.
-        if (transport == Transport.UNIX_DOMAIN)
-            return;
 
         // UDP does not have TIME_WAIT so ports may be reused by different connections.
         if (transport == Transport.H3)

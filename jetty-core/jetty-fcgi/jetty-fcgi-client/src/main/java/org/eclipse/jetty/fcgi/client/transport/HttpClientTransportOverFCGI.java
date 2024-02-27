@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.client.transport;
 
-import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -82,8 +81,7 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     @Override
     public Destination newDestination(Origin origin)
     {
-        SocketAddress address = origin.getAddress().getSocketAddress();
-        return new HttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
+        return new HttpDestination(getHttpClient(), origin);
     }
 
     @Override
