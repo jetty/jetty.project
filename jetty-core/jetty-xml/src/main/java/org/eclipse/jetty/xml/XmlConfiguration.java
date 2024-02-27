@@ -297,11 +297,7 @@ public class XmlConfiguration
     @Override
     public String toString()
     {
-        if (_location == null)
-        {
-            return "UNKNOWN-LOCATION";
-        }
-        return _location.toString();
+        return Objects.toString(_location, "UNKNOWN-LOCATION");
     }
 
     private void setConfig(XmlParser.Node config)
@@ -436,7 +432,7 @@ public class XmlConfiguration
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader() == obj.getClass().getClassLoader()) ? "" : "Object Class and type Class are from different loaders.";
-                throw new IllegalStateException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders);
+                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders);
             }
             String id = _root.getAttribute("id");
             if (id != null)
