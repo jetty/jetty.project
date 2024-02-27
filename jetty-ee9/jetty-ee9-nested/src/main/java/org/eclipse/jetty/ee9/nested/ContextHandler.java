@@ -83,8 +83,8 @@ import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -1725,7 +1725,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         // this is a dispatch with either a provided URI and/or a dispatched path
         // We will have to modify the request and then revert
         final HttpURI oldUri = baseRequest.getHttpURI();
-        final MultiMap<String> oldQueryParams = baseRequest.getQueryParameters();
+        final Fields oldQueryParams = baseRequest.getQueryFields();
         try
         {
             if (encodedPathQuery == null)
@@ -1767,7 +1767,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         finally
         {
             baseRequest.setHttpURI(oldUri);
-            baseRequest.setQueryParameters(oldQueryParams);
+            baseRequest.setQueryFields(oldQueryParams);
             baseRequest.resetParameters();
         }
     }

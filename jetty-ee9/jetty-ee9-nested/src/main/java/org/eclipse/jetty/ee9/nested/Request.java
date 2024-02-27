@@ -127,8 +127,8 @@ public class Request implements HttpServletRequest
     private static final int INPUT_NONE = 0;
     private static final int INPUT_STREAM = 1;
     private static final int INPUT_READER = 2;
-    private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
-    private static final MultiMap<String> BAD_PARAMS = new MultiMap<>();
+    private static final Fields NO_PARAMS = Fields.EMPTY;
+    private static final Fields BAD_PARAMS = new Fields(true);
 
     /**
      * Compare inputParameters to NO_PARAMS by Reference
@@ -136,7 +136,7 @@ public class Request implements HttpServletRequest
      * @param inputParameters The parameters to compare to NO_PARAMS
      * @return True if the inputParameters reference is equal to NO_PARAMS otherwise False
      */
-    private static boolean isNoParams(MultiMap<String> inputParameters)
+    private static boolean isNoParams(Fields inputParameters)
     {
         @SuppressWarnings("ReferenceEquality")
         boolean isNoParams = (inputParameters == NO_PARAMS);
@@ -194,9 +194,9 @@ public class Request implements HttpServletRequest
     private int _inputState = INPUT_NONE;
     private BufferedReader _reader;
     private String _readerEncoding;
-    private MultiMap<String> _queryParameters;
-    private MultiMap<String> _contentParameters;
-    private MultiMap<String> _parameters;
+    private Fields _queryParameters;
+    private Fields _contentParameters;
+    private Fields _parameters;
     private Charset _queryEncoding;
     private UserIdentityScope _scope;
     private long _timeStamp;
@@ -355,16 +355,16 @@ public class Request implements HttpServletRequest
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
-    MultiMap<String> peekParameters()
+    Fields peekParameters()
     {
         return _parameters;
     }
 
-    private MultiMap<String> getParameters()
+    private Fields getParameters()
     {
         // protect against calls to recycled requests (which is illegal, but
         // this gives better failures
-        MultiMap<String> parameters = _parameters;
+        Fields parameters = _parameters;
         if (parameters == null)
         {
             // Extract content parameters; these cannot be replaced by a forward()
@@ -390,15 +390,15 @@ public class Request implements HttpServletRequest
                 extractQueryParameters();
 
             // Do parameters need to be combined?
-            if (isNoParams(_queryParameters) || _queryParameters.size() == 0)
+            if (isNoParams(_queryParameters) || _queryParameters.getSize() == 0)
                 _parameters = _contentParameters;
-            else if (isNoParams(_contentParameters) || _contentParameters.size() == 0)
+            else if (isNoParams(_contentParameters) || _contentParameters.getSize() == 0)
                 _parameters = _queryParameters;
             else if (_parameters == null)
             {
-                _parameters = new MultiMap<>();
-                _parameters.addAllValues(_queryParameters);
-                _parameters.addAllValues(_contentParameters);
+                _parameters = new Fields(true);
+                _parameters.addAll(_queryParameters);
+                _parameters.addAll(_contentParameters);
             }
             parameters = _parameters;
         }
@@ -414,8 +414,8 @@ public class Request implements HttpServletRequest
         {
             try
             {
-                _queryParameters = new MultiMap<>();
-                UrlEncoded.decodeTo(_uri.getQuery(), _queryParameters, _queryEncoding);
+                _queryParameters = new Fields(true);
+                UrlEncoded.decodeTo(_uri.getQuery(), _queryParameters::add, _queryEncoding);
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
@@ -445,8 +445,7 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    Fields fields = FormFields.get(_coreRequest).get();
-                    _contentParameters = fields.toMultiMap();
+                    _contentParameters = FormFields.get(_coreRequest).get();
                     return;
                 }
                 catch (RuntimeException e)
@@ -459,7 +458,7 @@ public class Request implements HttpServletRequest
                 }
             }
 
-            _contentParameters = new MultiMap<>();
+            _contentParameters = new Fields(true);
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == INPUT_NONE)
             {
@@ -498,7 +497,7 @@ public class Request implements HttpServletRequest
         }
     }
 
-    public void extractFormParameters(MultiMap<String> params)
+    public void extractFormParameters(Fields params)
     {
         try
         {
@@ -520,7 +519,7 @@ public class Request implements HttpServletRequest
             if (_input.isAsync())
                 throw new IllegalStateException("Cannot extract parameters with async IO");
 
-            UrlEncoded.decodeTo(in, params, UrlEncoded.decodeCharset(getCharacterEncoding()), maxFormContentSize, maxFormKeys);
+            UrlEncoded.decodeTo(in, params::add, UrlEncoded.decodeCharset(getCharacterEncoding()), maxFormContentSize, maxFormKeys);
         }
         catch (IOException e)
         {
@@ -953,7 +952,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getParameter(String name)
     {
-        return getParameters().getValue(name, 0);
+        return getParameters().getValue(name);
     }
 
     @Override
@@ -965,7 +964,7 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<String> getParameterNames()
     {
-        return Collections.enumeration(getParameters().keySet());
+        return Collections.enumeration(getParameters().getNames());
     }
 
     @Override
@@ -977,19 +976,37 @@ public class Request implements HttpServletRequest
         return vals.toArray(new String[0]);
     }
 
+    @Deprecated
     public MultiMap<String> getQueryParameters()
+    {
+        return _queryParameters == null ? null : _queryParameters.toMultiMap();
+    }
+
+    public Fields getQueryFields()
     {
         return _queryParameters;
     }
 
-    public void setQueryParameters(MultiMap<String> queryParameters)
+    public void setQueryFields(Fields queryParameters)
     {
         _queryParameters = queryParameters;
     }
 
-    public void setContentParameters(MultiMap<String> contentParameters)
+    @Deprecated
+    public void setQueryParameters(MultiMap<String> queryParameters)
+    {
+        _queryParameters = queryParameters == null ? null : new Fields(queryParameters);
+    }
+
+    public void setContentFields(Fields contentParameters)
     {
         _contentParameters = contentParameters;
+    }
+
+    @Deprecated
+    public void setContentParameters(MultiMap<String> contentParameters)
+    {
+        _contentParameters = contentParameters == null ? NO_PARAMS : new Fields(contentParameters);
     }
 
     public void resetParameters()
@@ -1916,7 +1933,7 @@ public class Request implements HttpServletRequest
         return getParts(null);
     }
 
-    private Collection<Part> getParts(MultiMap<String> params) throws IOException
+    private Collection<Part> getParts(Fields params) throws IOException
     {
         if (_multiParts == null)
         {
@@ -1995,7 +2012,7 @@ public class Request implements HttpServletRequest
 
                         String content = os.toString(charset == null ? defaultCharset : Charset.forName(charset));
                         if (_contentParameters == null)
-                            _contentParameters = params == null ? new MultiMap<>() : params;
+                            _contentParameters = params == null ? new Fields(true) : params;
                         _contentParameters.add(p.getName(), content);
                     }
                     os.reset();
@@ -2046,21 +2063,21 @@ public class Request implements HttpServletRequest
 
     public void mergeQueryParameters(String oldQuery, String newQuery)
     {
-        MultiMap<String> newQueryParams = null;
+        Fields newQueryParams = null;
         // Have to assume ENCODING because we can't know otherwise.
         if (newQuery != null)
         {
-            newQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
+            newQueryParams = new Fields(true);
+            UrlEncoded.decodeTo(newQuery, newQueryParams::add, UrlEncoded.ENCODING);
         }
 
-        MultiMap<String> oldQueryParams = _queryParameters;
+        Fields oldQueryParams = _queryParameters;
         if (oldQueryParams == null && oldQuery != null)
         {
-            oldQueryParams = new MultiMap<>();
+            oldQueryParams = new Fields(true);
             try
             {
-                UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryCharset());
+                UrlEncoded.decodeTo(oldQuery, oldQueryParams::add, getQueryCharset());
             }
             catch (Throwable th)
             {
@@ -2069,19 +2086,19 @@ public class Request implements HttpServletRequest
             }
         }
 
-        MultiMap<String> mergedQueryParams;
-        if (newQueryParams == null || newQueryParams.size() == 0)
+        Fields mergedQueryParams;
+        if (newQueryParams == null || newQueryParams.getSize() == 0)
             mergedQueryParams = oldQueryParams == null ? NO_PARAMS : oldQueryParams;
-        else if (oldQueryParams == null || oldQueryParams.size() == 0)
+        else if (oldQueryParams == null || oldQueryParams.getSize() == 0)
             mergedQueryParams = newQueryParams;
         else
         {
             // Parameters values are accumulated.
-            mergedQueryParams = new MultiMap<>(newQueryParams);
-            mergedQueryParams.addAllValues(oldQueryParams);
+            mergedQueryParams = new Fields(newQueryParams);
+            mergedQueryParams.addAll(oldQueryParams);
         }
 
-        setQueryParameters(mergedQueryParams);
+        setQueryFields(mergedQueryParams);
         resetParameters();
     }
 

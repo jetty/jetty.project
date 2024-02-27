@@ -15,7 +15,6 @@ package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,6 +59,12 @@ public class Fields implements Iterable<Fields.Field>
     public Fields(MultiMap<String> params)
     {
         this(multiMapToMapOfFields(params));
+    }
+
+    public Fields(Fields fields)
+    {
+        this(fields.fields instanceof TreeMap ? new TreeMap<>(String::compareToIgnoreCase) : new LinkedHashMap<>());
+        addAll(fields);
     }
 
     public Fields(Map<String, Field> fields)
@@ -461,7 +466,7 @@ public class Fields implements Iterable<Fields.Field>
         if (params.isEmpty())
             return Collections.emptyMap();
 
-        Map<String, Field> fields = new HashMap<>();
+        Map<String, Field> fields = new LinkedHashMap<>();
         for (Map.Entry<String, List<String>> entry : params.entrySet())
             fields.put(entry.getKey(), new Field(entry.getKey(), entry.getValue()));
         return fields;

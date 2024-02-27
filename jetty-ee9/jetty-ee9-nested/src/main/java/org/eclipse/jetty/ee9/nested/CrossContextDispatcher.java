@@ -29,9 +29,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiMap;
 
 class CrossContextDispatcher implements RequestDispatcher
 {
@@ -167,9 +165,7 @@ class CrossContextDispatcher implements RequestDispatcher
                             if (FormFields.class.getName().equals(name))
                             {
                                 Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(httpServletRequest));
-                                MultiMap<String> params = baseRequest.peekParameters();
-                                if (params != null)
-                                    yield new Fields(params);
+                                yield baseRequest.peekParameters();
                             }
                             yield null;
                         }
