@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -736,8 +737,21 @@ public class PathResourceTest
     {
         Path testDir = workDir.getEmptyPathDir();
         Path resourcePath = testDir.resolve("resource.txt");
+        Path symlinkPath = null;
         IO.copy(MavenTestingUtils.getTestResourcePathFile("resource.txt").toFile(), resourcePath.toFile());
-        Path symlinkPath = Files.createSymbolicLink(testDir.resolve("symlink.txt"), resourcePath);
+        boolean symlinkSupported;
+        try
+        {
+            symlinkPath = Files.createSymbolicLink(testDir.resolve("symlink.txt"), resourcePath);
+            symlinkSupported = true;
+        }
+        catch (UnsupportedOperationException | FileSystemException e)
+        {
+            symlinkSupported = false;
+        }
+
+        assumeTrue(symlinkSupported, "Symlink not supported");
+        assertNotNull(symlinkPath);
 
         PathResource fileResource = new PathResource(resourcePath);
         assertTrue(fileResource.exists());
@@ -786,7 +800,10 @@ public class PathResourceTest
             Resource rootRes = resourceFactory.newResource(docroot);
             // Test navigation through a directory that doesn't exist
             Resource fileResViaBar = rootRes.resolve("bar/../dir/test.txt");
-            assertTrue(Resources.missing(fileResViaBar));
+            if (OS.WINDOWS.isCurrentOs()) // windows allows navigation through a non-existent directory
+                assertTrue(Resources.exists(fileResViaBar));
+            else
+                assertTrue(Resources.missing(fileResViaBar));
 
             // Test navigation through a directory that does exist
             Resource fileResViaFoo = rootRes.resolve("foo/../dir/test.txt");

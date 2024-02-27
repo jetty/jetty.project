@@ -135,16 +135,15 @@ public class ResourceFactoryTest
         // Try this as a normal String input first.
         // We are subject to the URIUtil.toURI(String) behaviors here.
         // Since the `ftp` scheme is not registered, it's not recognized as a supported URI.
-        // This will be treated as a relative path instead. (and the '//' will be compacted)
-        Resource resource = ResourceFactory.root().newResource("ftp://webtide.com/favicon.ico");
-        // Should not find this, as it doesn't exist on the filesystem.
-        assertNull(resource);
+        IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
+            () -> ResourceFactory.root().newResource("ftp://webtide.com/favicon.ico"));
+        assertThat(iae.getMessage(), containsString("URI scheme not registered: ftp"));
 
         // Now try it as a formal URI object as input.
         URI uri = URI.create("ftp://webtide.com/favicon.ico");
         // This is an unsupported URI scheme
-        IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root().newResource(uri));
-        assertThat(iae.getMessage(), containsString("URI scheme not supported"));
+        iae = assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root().newResource(uri));
+        assertThat(iae.getMessage(), containsString("URI scheme not registered: ftp"));
     }
 
     @Test
