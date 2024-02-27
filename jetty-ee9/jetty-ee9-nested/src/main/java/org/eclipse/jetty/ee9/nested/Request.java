@@ -408,19 +408,45 @@ public class Request implements HttpServletRequest
 
     private void extractQueryParameters()
     {
-        if (_uri == null || StringUtil.isEmpty(_uri.getQuery()))
+        if (_uri == null)
+        {
+            _queryParameters = NO_PARAMS;
+            return;
+        }
+
+        String query = _uri.getQuery();
+        if (StringUtil.isEmpty(query))
             _queryParameters = NO_PARAMS;
         else
         {
             try
             {
                 _queryParameters = new Fields(true);
-                UrlEncoded.decodeTo(_uri.getQuery(), _queryParameters::add, _queryEncoding);
+                UrlEncoded.decodeTo(query, _queryParameters::add, _queryEncoding);
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
                 _queryParameters = BAD_PARAMS;
                 throw new BadMessageException("Unable to parse URI query", e);
+            }
+        }
+
+        if (_crossContextDispatchSupported)
+        {
+            String dispatcherType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (dispatcherType != null)
+            {
+                String sourceQuery = (String)_coreRequest.getAttribute(
+                    DispatcherType.valueOf(dispatcherType) == DispatcherType.FORWARD
+                    ? RequestDispatcher.FORWARD_QUERY_STRING : RequestDispatcher.INCLUDE_QUERY_STRING);
+
+                if (!StringUtil.isBlank(sourceQuery))
+                {
+                    if (_queryParameters == NO_PARAMS)
+                        _queryParameters = new Fields(true);
+
+                    UrlEncoded.decodeTo(sourceQuery, _queryParameters::add, _queryEncoding);
+                }
             }
         }
     }
