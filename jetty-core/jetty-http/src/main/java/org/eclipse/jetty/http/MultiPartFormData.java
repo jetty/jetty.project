@@ -79,7 +79,7 @@ public class MultiPartFormData
     }
 
     /**
-     * Get {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578} behaviors.
+     * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
      */
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
@@ -87,7 +87,7 @@ public class MultiPartFormData
     }
 
     /**
-     * Get {@code multipart/form-data} parts using arbitrary {@link MultiPartCompliance} behaviors and listeners.
+     * Returns {@code multipart/form-data} parts using the given {@link MultiPartCompliance} and listener.
      *
      * @param attributes the attributes where the futureParts are tracked
      * @param compliance the compliance mode
@@ -651,9 +651,16 @@ public class MultiPartFormData
             @Override
             public void onViolation(MultiPartCompliance.Violation violation)
             {
-                complianceListener.onComplianceViolation(new ComplianceViolation.Event(
-                    compliance, violation, "multipart spec violation"
-                ));
+                try
+                {
+                    ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation");
+                    complianceListener.onComplianceViolation(event);
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failure while notifying listener {}", complianceListener, x);
+                }
             }
 
             private void fail(Throwable cause)

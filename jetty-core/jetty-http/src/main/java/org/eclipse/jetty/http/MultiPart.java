@@ -943,10 +943,10 @@ public class MultiPart
                     MultiPartCompliance.Violation.CR_LINE_TERMINATION,
                     MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
                     MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY
-                ).forEach(viol ->
+                ).forEach(violation ->
                 {
-                    if (compliance.allows(viol))
-                        LOG.debug("{} ignoring compliance {}: unable to allow() it.", this.getClass().getName(), viol.name());
+                    if (compliance.allows(violation))
+                        LOG.debug("{} ignoring violation {}: unable to allow it", getClass().getName(), violation.name());
                 });
             }
             reset();
@@ -1072,7 +1072,7 @@ public class MultiPart
                             HttpTokens.Token token = next(buffer);
                             if (token.getByte() != '-')
                                 throw new BadMessageException("bad last boundary");
-                            notifyEolViolations();
+                            notifyEndOfLineViolations();
                             state = State.EPILOGUE;
                         }
                         case HEADER_START ->
@@ -1122,7 +1122,7 @@ public class MultiPart
                 if (LOG.isDebugEnabled())
                     LOG.debug("parse failure {} {}", state, BufferUtil.toDetailString(buffer), x);
                 buffer.position(buffer.limit());
-                notifyEolViolations();
+                notifyEndOfLineViolations();
                 notifyFailure(x);
             }
         }
@@ -1150,7 +1150,7 @@ public class MultiPart
                     if (!crFlag)
                     {
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
-                        addEolViolation(violation);
+                        addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
                             throw new BadMessageException("invalid LF-only EOL");
                     }
@@ -1161,7 +1161,7 @@ public class MultiPart
                     if (crFlag)
                     {
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
-                        addEolViolation(violation);
+                        addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
                             throw new BadMessageException("invalid CR-only EOL");
                     }
@@ -1172,7 +1172,7 @@ public class MultiPart
                     if (crFlag)
                     {
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
-                        addEolViolation(violation);
+                        addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
                             throw new BadMessageException("invalid CR-only EOL");
                     }
@@ -1375,7 +1375,7 @@ public class MultiPart
                         if (!crContent)
                         {
                             MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
-                            addEolViolation(violation);
+                            addEndOfLineViolation(violation);
                             if (!compliance.allows(violation))
                                 throw new BadMessageException("invalid LF-only EOL");
                         }
@@ -1425,7 +1425,7 @@ public class MultiPart
                     if (!crContent)
                     {
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
-                        addEolViolation(violation);
+                        addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
                             throw new BadMessageException("invalid LF-only EOL");
                     }
@@ -1447,7 +1447,7 @@ public class MultiPart
                 else
                 {
                     MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
-                    addEolViolation(violation);
+                    addEndOfLineViolation(violation);
                     if (!compliance.allows(violation))
                         throw new BadMessageException("invalid LF-only EOL");
                 }
@@ -1602,7 +1602,7 @@ public class MultiPart
             }
         }
 
-        private void notifyEolViolations()
+        private void notifyEndOfLineViolations()
         {
             if (eols != null)
             {
@@ -1614,7 +1614,7 @@ public class MultiPart
             }
         }
 
-        private void addEolViolation(MultiPartCompliance.Violation violation)
+        private void addEndOfLineViolation(MultiPartCompliance.Violation violation)
         {
             if (eols == null)
                 eols = EnumSet.of(violation);
