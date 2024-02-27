@@ -27,7 +27,6 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -727,11 +726,6 @@ public class PathResourceTest
                 resource.resolve("deep/deeper/test.txt"),
                 resource.resolve("foo.txt")
             };
-
-            List<String> actual = allResources.stream()
-                    .map(Resource::getURI)
-                    .map(URI::toASCIIString)
-                    .toList();
 
             assertThat(allResources, containsInAnyOrder(expected));
         }

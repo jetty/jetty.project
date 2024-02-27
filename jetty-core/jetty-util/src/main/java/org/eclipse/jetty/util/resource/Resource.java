@@ -405,7 +405,16 @@ public abstract class Resource implements Iterable<Resource>
             boolean noDepth = true;
 
             for (Iterator<Resource> i = children.iterator(); noDepth && i.hasNext(); )
-                noDepth = !i.next().isDirectory();
+            {
+                Resource resource = i.next();
+                if (resource.isDirectory())
+                {
+                    // If the directory is a symlink we do not want to go any deeper.
+                    Path resourcePath = resource.getPath();
+                    if (resourcePath == null || !Files.isSymbolicLink(resourcePath))
+                        noDepth = false;
+                }
+            }
             if (noDepth)
                 return children;
 
