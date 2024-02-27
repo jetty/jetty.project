@@ -186,7 +186,6 @@ public class Request implements HttpServletRequest
     private Object _asyncNotSupportedSource = null;
     private boolean _secure;
     private boolean _handled = false;
-    private boolean _contentParamsExtracted;
     private Attributes _attributes;
     private Authentication _authentication;
     private String _contentType;
@@ -368,29 +367,22 @@ public class Request implements HttpServletRequest
         MultiMap<String> parameters = _parameters;
         if (parameters == null)
         {
-
-            if (!_contentParamsExtracted)
+            // Extract content parameters; these cannot be replaced by a forward()
+            // once extracted and may have already been extracted by getParts() or
+            // by a processing happening after a form-based authentication.
+            if (_contentParameters == null)
             {
-                // content parameters need boolean protection as they can only be read
-                // once, but may be reset to null by a reset
-                _contentParamsExtracted = true;
-
-                // Extract content parameters; these cannot be replaced by a forward()
-                // once extracted and may have already been extracted by getParts() or
-                // by a processing happening after a form-based authentication.
-                if (_contentParameters == null)
+                try
                 {
-                    try
-                    {
-                        extractContentParameters();
-                    }
-                    catch (IllegalStateException | IllegalArgumentException e)
-                    {
-                        LOG.warn(e.toString());
-                        throw new BadMessageException("Unable to parse form content", e);
-                    }
+                    extractContentParameters();
+                }
+                catch (IllegalStateException | IllegalArgumentException e)
+                {
+                    LOG.warn(e.toString());
+                    throw new BadMessageException("Unable to parse form content", e);
                 }
             }
+
 
             // Extract query string parameters; these may be replaced by a forward()
             // and may have already been extracted by mergeQueryParameters().
@@ -1580,7 +1572,6 @@ public class Request implements HttpServletRequest
         _asyncNotSupportedSource = null;
         _secure = false;
         _handled = false;
-        _contentParamsExtracted = false;
         _attributes = null;
         _authentication = Authentication.NOT_CHECKED;
         _contentType = null;

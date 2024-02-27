@@ -87,7 +87,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -238,7 +237,6 @@ public class ServletApiRequest implements HttpServletRequest
     private int _inputState = ServletContextRequest.INPUT_NONE;
     private BufferedReader _reader;
     private String _contentType;
-    private boolean _contentParamsExtracted;
     protected Fields _contentParameters;
     private Fields _parameters;
     protected Fields _queryParameters;
@@ -977,89 +975,82 @@ public class ServletApiRequest implements HttpServletRequest
 
     private void extractContentParameters() throws BadMessageException
     {
-        if (!_contentParamsExtracted)
+        // Extract content parameters; these cannot be replaced by a forward()
+        // once extracted and may have already been extracted by getParts() or
+        // by a processing happening after a form-based authentication.
+        if (_contentParameters == null)
         {
-            // content parameters need boolean protection as they can only be read
-            // once, but may be reset to null by a reset
-            _contentParamsExtracted = true;
-
-            // Extract content parameters; these cannot be replaced by a forward()
-            // once extracted and may have already been extracted by getParts() or
-            // by a processing happening after a form-based authentication.
-            if (_contentParameters == null)
+            try
             {
-                try
+                int contentLength = getContentLength();
+                if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
                 {
-                    int contentLength = getContentLength();
-                    if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
+                    String baseType = HttpField.getValueParameters(getContentType(), null);
+                    if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
+                        getRequest().getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
                     {
-                        String baseType = HttpField.getValueParameters(getContentType(), null);
-                        if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
-                            getRequest().getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
+                        try
                         {
-                            try
-                            {
-                                ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
-                                int maxKeys = contextHandler.getMaxFormKeys();
-                                int maxContentSize = contextHandler.getMaxFormContentSize();
-                                _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
-                            }
-                            catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                                   InterruptedException e)
-                            {
-                                LOG.warn(e.toString());
-                                throw new BadMessageException("Unable to parse form content", e);
-                            }
+                            ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
+                            int maxKeys = contextHandler.getMaxFormKeys();
+                            int maxContentSize = contextHandler.getMaxFormContentSize();
+                            _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
                         }
-                        else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
-                            getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) != null)
+                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
+                               InterruptedException e)
                         {
-                            try
-                            {
-                                getParts();
-                            }
-                            catch (IOException e)
-                            {
-                                String msg = "Unable to extract content parameters";
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug(msg, e);
-                                throw new RuntimeIOException(msg, e);
-                            }
-                            catch (ServletException e)
-                            {
-                                Throwable cause = e.getCause();
-                                if (cause instanceof BadMessageException badMessageException)
-                                    throw badMessageException;
-
-                                String msg = "Unable to extract content parameters";
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug(msg, e);
-                                throw new RuntimeIOException(msg, e);
-                            }
-                        }
-                        else
-                        {
-                            try
-                            {
-                                _contentParameters = FormFields.get(getRequest()).get();
-                            }
-                            catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                                   InterruptedException e)
-                            {
-                                LOG.warn(e.toString());
-                                throw new BadMessageException("Unable to parse form content", e);
-                            }
+                            LOG.warn(e.toString());
+                            throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
+                    else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
+                        getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) != null)
+                    {
+                        try
+                        {
+                            getParts();
+                        }
+                        catch (IOException e)
+                        {
+                            String msg = "Unable to extract content parameters";
+                            if (LOG.isDebugEnabled())
+                                LOG.debug(msg, e);
+                            throw new RuntimeIOException(msg, e);
+                        }
+                        catch (ServletException e)
+                        {
+                            Throwable cause = e.getCause();
+                            if (cause instanceof BadMessageException badMessageException)
+                                throw badMessageException;
 
-                    if (_contentParameters == null || _contentParameters.isEmpty())
-                        _contentParameters = ServletContextRequest.NO_PARAMS;
+                            String msg = "Unable to extract content parameters";
+                            if (LOG.isDebugEnabled())
+                                LOG.debug(msg, e);
+                            throw new RuntimeIOException(msg, e);
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            _contentParameters = FormFields.get(getRequest()).get();
+                        }
+                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
+                               InterruptedException e)
+                        {
+                            LOG.warn(e.toString());
+                            throw new BadMessageException("Unable to parse form content", e);
+                        }
+                    }
                 }
-                catch (IllegalStateException | IllegalArgumentException e)
-                {
-                    LOG.warn(e.toString());
-                    throw new BadMessageException("Unable to parse form content", e);
-                }
+
+                if (_contentParameters == null || _contentParameters.isEmpty())
+                    _contentParameters = ServletContextRequest.NO_PARAMS;
+            }
+            catch (IllegalStateException | IllegalArgumentException e)
+            {
+                LOG.warn(e.toString());
+                throw new BadMessageException("Unable to parse form content", e);
             }
         }
     }

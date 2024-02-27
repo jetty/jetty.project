@@ -193,7 +193,7 @@ public class Dispatcher implements RequestDispatcher
                     }
                     else
                     {
-                        _parameters = new Fields();
+                        _parameters = new Fields(true);
                         UrlEncoded.decodeTo(targetQuery, _parameters::add, UrlEncoded.ENCODING);
                         _parameters.addAll(parameters);
                     }
