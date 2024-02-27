@@ -401,7 +401,7 @@ public class MultiPartFormDataTest
     }
 
     @Test
-    public void testLFOnlyEOLStrict() throws Exception
+    public void testLFOnlyEOLStrict()
     {
         String boundary = "BEEF";
         String str = """
@@ -433,7 +433,7 @@ public class MultiPartFormDataTest
      * @see MultiPartCompliance.Violation#WHITESPACE_BEFORE_BOUNDARY
      */
     @Test
-    public void testWhiteSpaceBeforeBoundary() throws Exception
+    public void testWhiteSpaceBeforeBoundary()
     {
         String boundary = "BEEF";
         String str = """
@@ -460,7 +460,7 @@ public class MultiPartFormDataTest
     }
 
     @Test
-    public void testCROnlyEOL() throws Exception
+    public void testCROnlyEOL()
     {
         String boundary = "BEEF";
         String str = """
@@ -491,7 +491,7 @@ public class MultiPartFormDataTest
     }
 
     @Test
-    public void testTooManyCRs() throws Exception
+    public void testTooManyCRs()
     {
         String boundary = "BEEF";
         String str = """
@@ -1642,7 +1642,7 @@ public class MultiPartFormDataTest
 
     private static class CaptureMultiPartViolations implements ComplianceViolation.Listener
     {
-        private List<ComplianceViolation.Event> events = new ArrayList<>();
+        private final List<ComplianceViolation.Event> events = new ArrayList<>();
 
         @Override
         public void onComplianceViolation(ComplianceViolation.Event event)

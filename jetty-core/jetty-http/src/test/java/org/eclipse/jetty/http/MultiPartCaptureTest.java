@@ -42,7 +42,7 @@ public class MultiPartCaptureTest
     public void testMultipartCapture(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
         String boundary = MultiPart.extractBoundary(formExpectations.getContentType());
-        TestPartsListener listener = new TestPartsListener(formExpectations);
+        TestPartsListener listener = new TestPartsListener();
         MultiPart.Parser parser = new MultiPart.Parser(boundary, listener);
         ByteBuffer rawByteBuffer = formRequest.asByteBuffer();
         parser.parse(Content.Chunk.from(rawByteBuffer, true));
@@ -60,8 +60,6 @@ public class MultiPartCaptureTest
         MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
         parser.setUseFilesForPartsWithoutFileName(false);
         parser.setFilesDirectory(tempDir);
-        if (defaultCharset != null)
-            parser.setDefaultCharset(defaultCharset);
         ByteBufferContentSource contentSource = new ByteBufferContentSource(formRequest.asByteBuffer());
         MultiPartFormData.Parts parts = parser.parse(contentSource).get();
         formExpectations.assertParts(mapActualResults(parts), defaultCharset);
@@ -171,12 +169,6 @@ public class MultiPartCaptureTest
         // Preserve parts order.
         private final Map<String, List<MultiPart.Part>> parts = new LinkedHashMap<>();
         private final List<ByteBuffer> partByteBuffers = new ArrayList<>();
-        private final MultiPartExpectations expectations;
-
-        private TestPartsListener(MultiPartExpectations expectations)
-        {
-            this.expectations = expectations;
-        }
 
         @Override
         public void onPartContent(Content.Chunk chunk)

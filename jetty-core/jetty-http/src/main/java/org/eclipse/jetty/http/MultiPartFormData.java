@@ -296,15 +296,6 @@ public class MultiPartFormData
         }
 
         /**
-         * Set the default Charset to use if the part {@code _charset_} is missing.
-         * @param charset the charset to use, instead of null.
-         */
-        public void setDefaultCharset(Charset charset)
-        {
-            listener.setDefaultCharset(charset);
-        }
-
-        /**
          * @return the max length of a {@link MultiPart.Part} headers, in bytes, or -1 for unlimited length
          */
         public int getPartHeadersMaxLength()
@@ -451,7 +442,6 @@ public class MultiPartFormData
             private final List<Content.Chunk> partChunks = new ArrayList<>();
             private long fileSize;
             private long memoryFileSize;
-            private Charset defaultCharset;
             private Path filePath;
             private SeekableByteChannel fileChannel;
             private Throwable failure;
@@ -625,13 +615,8 @@ public class MultiPartFormData
                         .map(part -> part.getContentAsString(US_ASCII))
                         .map(Charset::forName)
                         .findFirst()
-                        .orElse(defaultCharset);
+                        .orElse(null);
                 }
-            }
-
-            void setDefaultCharset(Charset charset)
-            {
-                defaultCharset = charset;
             }
 
             int getPartsSize()
