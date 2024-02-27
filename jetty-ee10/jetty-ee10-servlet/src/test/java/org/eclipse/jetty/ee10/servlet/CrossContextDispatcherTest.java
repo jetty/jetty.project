@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -61,7 +60,6 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +67,6 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -286,7 +283,6 @@ public class CrossContextDispatcherTest
     }
 
     @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
     public void testWrappedIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -305,7 +301,6 @@ public class CrossContextDispatcherTest
     }
 
     @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
     public void testWrappedForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -721,7 +716,7 @@ public class CrossContextDispatcherTest
             {
                 res.getWriter().println("Verified!");
                 res.getWriter().println("----------- FORWARD ATTRIBUTES");
-                res.getWriter().println(RequestDispatcher.FORWARD_CONTEXT_PATH + "=" +req.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+                res.getWriter().println(RequestDispatcher.FORWARD_CONTEXT_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
                 res.getWriter().println(RequestDispatcher.FORWARD_SERVLET_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
                 res.getWriter().println(RequestDispatcher.FORWARD_PATH_INFO  + "=" + req.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
                 res.getWriter().println(RequestDispatcher.FORWARD_MAPPING + "=" + req.getAttribute(RequestDispatcher.FORWARD_MAPPING));
@@ -750,7 +745,7 @@ public class CrossContextDispatcherTest
             {
                 res.getWriter().println("Verified!");
                 res.getWriter().println("----------- INCLUDE ATTRIBUTES");
-                res.getWriter().println(RequestDispatcher.INCLUDE_CONTEXT_PATH + "=" +req.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH));
+                res.getWriter().println(RequestDispatcher.INCLUDE_CONTEXT_PATH + "=" + req.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH));
                 res.getWriter().println(RequestDispatcher.INCLUDE_SERVLET_PATH + "=" + req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH));
                 res.getWriter().println(RequestDispatcher.INCLUDE_PATH_INFO  + "=" + req.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO));
                 res.getWriter().println(RequestDispatcher.INCLUDE_MAPPING + "=" + req.getAttribute(RequestDispatcher.INCLUDE_MAPPING));
