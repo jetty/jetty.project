@@ -100,9 +100,9 @@ import org.slf4j.LoggerFactory;
  */
 public class ServletApiRequest implements HttpServletRequest
 {
-    public static class ForwardedServletApiRequest extends ServletApiRequest
+    public static class CrossContextForwarded extends ServletApiRequest
     {
-        protected ForwardedServletApiRequest(ServletContextRequest servletContextRequest)
+        protected CrossContextForwarded(ServletContextRequest servletContextRequest)
         {
             super(servletContextRequest);
         }
@@ -139,9 +139,9 @@ public class ServletApiRequest implements HttpServletRequest
         }
     }
 
-    public static class IncludedServletApiRequest extends ServletApiRequest
+    public static class CrossContextIncluded extends ServletApiRequest
     {
-        protected IncludedServletApiRequest(ServletContextRequest servletContextRequest)
+        protected CrossContextIncluded(ServletContextRequest servletContextRequest)
         {
             super(servletContextRequest);
             //ensure the request is set up with the correct INCLUDE attributes now we know the matchedResource

@@ -22,7 +22,6 @@ import java.util.Set;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
@@ -211,9 +210,9 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         if (getServletContextHandler().isCrossContextDispatchSupported())
         {
             if (DispatcherType.INCLUDE.toString().equals(getContext().getCrossContextDispatchType(getWrapped())))
-                return new ServletApiRequest.IncludedServletApiRequest(this);
+                return new ServletApiRequest.CrossContextIncluded(this);
             else if (DispatcherType.FORWARD.toString().equals(getContext().getCrossContextDispatchType(getWrapped())))
-                return new ServletApiRequest.ForwardedServletApiRequest(this);
+                return new ServletApiRequest.CrossContextForwarded(this);
             else
                 return new ServletApiRequest(this);
         }
