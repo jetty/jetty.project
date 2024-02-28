@@ -36,7 +36,6 @@ class CrossContextDispatcher implements RequestDispatcher
     public static final String ORIGINAL_URI = "org.eclipse.jetty.dispatch.originalURI";
     public static final String ORIGINAL_QUERY_STRING = "org.eclipse.jetty.dispatch.originalQueryString";
     public static final String ORIGINAL_SERVLET_MAPPING = "org.eclipse.jetty.dispatch.originalServletMapping";
-    public static final String ORIGINAL_SERVLET_CONTEXT = "org.eclipse.jetty.dispatch.originalServletContext";
     public static final String ORIGINAL_CONTEXT_PATH = "org.eclipse.jetty.dispatch.originalContextPath";
 
     public static final Set<String> ATTRIBUTES = Set.of(
@@ -57,7 +56,6 @@ class CrossContextDispatcher implements RequestDispatcher
         ORIGINAL_URI,
         ORIGINAL_QUERY_STRING,
         ORIGINAL_SERVLET_MAPPING,
-        ORIGINAL_SERVLET_CONTEXT,
         ORIGINAL_CONTEXT_PATH
     );
 
@@ -95,7 +93,6 @@ class CrossContextDispatcher implements RequestDispatcher
                         case ORIGINAL_URI -> httpServletRequest.getRequestURI();
                         case ORIGINAL_QUERY_STRING -> httpServletRequest.getQueryString();
                         case ORIGINAL_SERVLET_MAPPING -> httpServletRequest.getHttpServletMapping();
-                        case ORIGINAL_SERVLET_CONTEXT -> httpServletRequest.getServletContext();
                         case ORIGINAL_CONTEXT_PATH -> httpServletRequest.getContextPath();
 
                         default -> httpServletRequest.getAttribute(name);

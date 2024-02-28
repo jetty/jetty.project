@@ -202,7 +202,7 @@ public class ServletPathMapping implements HttpServletMapping
         "pattern=(?<pattern>[^,]+), " +
         "servletName=(?<servletName>[^,]+), " +
         "servletPath=(?<servletPath>[^,]+), " +
-        "pathInfo=(?<pathInfo>[^}]+)\\}");
+        "pathInfo=(?<pathInfo>[^}]+)}");
 
     /**
      * Obtain a {@link ServletPathMapping} instance from an object which may be an instance of a mapping

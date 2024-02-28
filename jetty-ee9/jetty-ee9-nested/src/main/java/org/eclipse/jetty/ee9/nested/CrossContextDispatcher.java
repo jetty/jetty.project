@@ -36,7 +36,7 @@ class CrossContextDispatcher implements RequestDispatcher
     public static final String ORIGINAL_URI = "org.eclipse.jetty.dispatch.originalURI";
     public static final String ORIGINAL_QUERY_STRING = "org.eclipse.jetty.dispatch.originalQueryString";
     public static final String ORIGINAL_SERVLET_MAPPING = "org.eclipse.jetty.dispatch.originalServletMapping";
-    public static final String ORIGINAL_CONTEXT_PATH = "org.ecipse.jetty.dispatch.originalContextPath";
+    public static final String ORIGINAL_CONTEXT_PATH = "org.eclipse.jetty.dispatch.originalContextPath";
 
     public static final Set<String> ATTRIBUTES = Set.of(
         RequestDispatcher.FORWARD_REQUEST_URI,
@@ -86,6 +86,12 @@ class CrossContextDispatcher implements RequestDispatcher
                         case RequestDispatcher.INCLUDE_CONTEXT_PATH -> _targetContext.getContextPath();
                         case RequestDispatcher.INCLUDE_QUERY_STRING -> (_uri == null) ? null : _uri.getQuery();
                         case org.eclipse.jetty.server.handler.ContextHandler.CROSS_CONTEXT_ATTRIBUTE -> DispatcherType.INCLUDE.toString();
+
+                        case ORIGINAL_URI -> httpServletRequest.getRequestURI();
+                        case ORIGINAL_QUERY_STRING -> httpServletRequest.getQueryString();
+                        case ORIGINAL_SERVLET_MAPPING -> httpServletRequest.getHttpServletMapping();
+                        case ORIGINAL_CONTEXT_PATH -> httpServletRequest.getContextPath();
+
                         default -> httpServletRequest.getAttribute(name);
                     };
                 }
@@ -96,11 +102,6 @@ class CrossContextDispatcher implements RequestDispatcher
                     return ATTRIBUTES;
                 }
             });
-            
-            setAttribute(ORIGINAL_URI, getServletRequest().getRequestURI());
-            setAttribute(ORIGINAL_QUERY_STRING, httpServletRequest.getQueryString());
-            setAttribute(ORIGINAL_CONTEXT_PATH, getServletRequest().getContextPath());
-            setAttribute(ORIGINAL_SERVLET_MAPPING, getServletRequest().getHttpServletMapping().toString());
         }
 
         @Override

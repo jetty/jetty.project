@@ -79,8 +79,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
-import org.eclipse.jetty.http.pathmap.MatchedPath;
-import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
@@ -2180,12 +2178,17 @@ public class Request implements HttpServletRequest
                 _dispatcherType = DispatcherType.valueOf(crossContextDispatchType);
                 if (_dispatcherType == DispatcherType.INCLUDE)
                 {
-                    // TODO more work to do here!
-                    // setAttributes ...
                     // make a ServletPathMapping with the original data returned by findServletPathMapping method
-                    String originalServletPathMappingStr = (String)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
-                    ServletPathMapping servletPathMapping = new ServletPathMapping(originalServletPathMappingStr);
-                    _coreRequest.setAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_PATH_MAPPING, servletPathMapping);
+                    Object attribute = _coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
+                    ServletPathMapping originalMapping = ServletPathMapping.from(attribute);
+                    if (originalMapping != attribute)
+                        _coreRequest.setAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING, originalMapping);
+
+                    // Set the include attributes to the target mapping
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletPathMapping);
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPathMapping.getServletPath());
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, servletPathMapping.getPathInfo());
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, getContext().getContextPath());
                 }
             }
         }
@@ -2213,7 +2216,7 @@ public class Request implements HttpServletRequest
         {
             if (_crossContextDispatchSupported && DispatcherType.INCLUDE.toString().equals(_coreRequest.getContext().getCrossContextDispatchType(_coreRequest)))
             {
-                mapping = (ServletPathMapping)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_PATH_MAPPING);
+                mapping = (ServletPathMapping)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
             }
             else
             {

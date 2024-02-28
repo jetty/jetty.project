@@ -172,7 +172,6 @@ public class CrossContextDispatcherTest
     }
 
     @Test
-    @Disabled
     public void testSimpleCrossContextInclude() throws Exception
     {
         _targetServletContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
