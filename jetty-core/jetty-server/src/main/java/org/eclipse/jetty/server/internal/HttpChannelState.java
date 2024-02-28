@@ -1114,7 +1114,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             if (writeCallback == null)
                 return null;
-            return () -> Callback.failed(writeCallback, x);
+            return () -> HttpChannelState.failed(writeCallback, x);
         }
 
         public long getContentBytesWritten()
@@ -1229,7 +1229,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (writeFailure != null)
                 {
                     Throwable failure = writeFailure;
-                    httpChannelState._writeInvoker.run(() -> Callback.failed(callback, failure));
+                    httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
                     return;
                 }
 
@@ -1297,7 +1297,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
-                httpChannel._writeInvoker.run(() -> Callback.failed(callback, x));
+                httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
         }
 
         @Override
@@ -1691,7 +1691,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             else
             {
-                Callback.failed(httpChannelState._handlerInvoker, failure);
+                HttpChannelState.failed(httpChannelState._handlerInvoker, failure);
             }
         }
 
@@ -1714,7 +1714,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannelState._response._status = _errorResponse._status;
             }
             ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
-            Callback.failed(httpChannelState._handlerInvoker, failure);
+            HttpChannelState.failed(httpChannelState._handlerInvoker, failure);
         }
 
         @Override
@@ -1881,6 +1881,27 @@ public class HttpChannelState implements HttpChannel, Components
                     LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
                 }
             }
+        }
+    }
+
+    /**
+     * Invoke a callback failure, handling any {@link Throwable} thrown
+     * by adding the passed {@code failure} as a suppressed with
+     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
+     * @param callback The callback to fail
+     * @param failure The failure
+     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
+     */
+    private static void failed(Callback callback, Throwable failure)
+    {
+        try
+        {
+            callback.failed(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+            throw t;
         }
     }
 }

@@ -328,12 +328,12 @@ public interface Callback extends Invocable
                 try
                 {
                     completed.run();
+                    callback.succeeded();
                 }
                 catch (Throwable t)
                 {
                     Callback.failed(callback, t);
                 }
-                callback.succeeded();
             }
 
             @Override
@@ -640,7 +640,7 @@ public interface Callback extends Invocable
      * @param failure The failure
      * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
      */
-    static void failed(Callback callback, Throwable failure)
+    private static void failed(Callback callback, Throwable failure)
     {
         try
         {
