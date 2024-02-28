@@ -42,7 +42,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -320,6 +319,7 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
+        contextHandler.setCrossContextDispatchSupported(true);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);
@@ -369,8 +369,10 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
+        contextHandler.setCrossContextDispatchSupported(true);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
+        ctxB.setCrossContextDispatchSupported(true);
         ctxB.addServlet(TestServletB.class, servletMapping);
         server1.start();
         int port1 = server1.getPort();
