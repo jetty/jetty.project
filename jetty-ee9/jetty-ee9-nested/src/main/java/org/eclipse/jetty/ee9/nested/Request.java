@@ -438,7 +438,7 @@ public class Request implements HttpServletRequest
             {
                 String sourceQuery = (String)_coreRequest.getAttribute(
                     DispatcherType.valueOf(dispatcherType) == DispatcherType.FORWARD
-                    ? RequestDispatcher.FORWARD_QUERY_STRING : RequestDispatcher.INCLUDE_QUERY_STRING);
+                    ? RequestDispatcher.FORWARD_QUERY_STRING : CrossContextDispatcher.ORIGINAL_QUERY_STRING);
 
                 if (!StringUtil.isBlank(sourceQuery))
                 {
@@ -2189,6 +2189,7 @@ public class Request implements HttpServletRequest
                     _coreRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPathMapping.getServletPath());
                     _coreRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, servletPathMapping.getPathInfo());
                     _coreRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, getContext().getContextPath());
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_QUERY_STRING, getHttpURI().getQuery());
                 }
             }
         }

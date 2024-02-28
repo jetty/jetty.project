@@ -284,8 +284,7 @@ public class CrossContextDispatcherTest
         // from inside the context.txt file
         assertThat(response.getContent(), containsString("content goes here"));
     }
-
-    @Disabled
+    
     @Test
     public void testWrappedIncludeToResourceHandler() throws Exception
     {
@@ -564,7 +563,7 @@ public class CrossContextDispatcherTest
             {
                 ServletContext foreign = getServletContext().getContext("/foreign");
                 assertNotNull(foreign);
-                dispatcher = foreign.getRequestDispatcher(request.getParameter("include"));
+                dispatcher = foreign.getRequestDispatcher(request.getParameter("include") + "/pinfo?a=b");
 
                 if (dispatcher == null)
                     response.sendError(404, "No dispatcher for include");
@@ -758,7 +757,7 @@ public class CrossContextDispatcherTest
                 res.getWriter().println(RequestDispatcher.INCLUDE_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI));
                 res.getWriter().println("----------- REQUEST");
                 HttpServletRequest httpServletRequest = (HttpServletRequest)req;
-                res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getServletContext().getContextPath());
+                res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getContextPath());
                 res.getWriter().println("SERVLET_PATH=" + httpServletRequest.getServletPath());
                 res.getWriter().println("PATH_INFO=" + httpServletRequest.getPathInfo());
                 res.getWriter().println("MAPPING=" + httpServletRequest.getHttpServletMapping());
