@@ -515,7 +515,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         List<ContextHandler> contexts = new ArrayList<>();
         for (ContextHandler contextHandler : getServer().getDescendants(ContextHandler.class))
         {
-            if (contextHandler == null || contextHandler == this || !contextHandler.isCrossContextDispatchSupported())
+            if (contextHandler == null || !contextHandler.isCrossContextDispatchSupported())
                 continue;
             String contextPath = contextHandler.getContextPath();
             if (path.equals(contextPath) ||
@@ -546,8 +546,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (contexts.isEmpty())
             return null;
 
-        // TODO return longest context match
-        return contexts.get(0);
+        // return the first longest
+        ContextHandler contextHandler = null;
+        for (ContextHandler c : contexts)
+        {
+            if (contextHandler == null || c.getContextPath().length() > contextHandler.getContextPath().length())
+                contextHandler = c;
+        }
+        return contextHandler;
     }
 
     /**

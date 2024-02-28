@@ -1859,7 +1859,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         public ServletContext getContext(String path)
         {
             org.eclipse.jetty.server.handler.ContextHandler context = getContextHandler().getCoreContextHandler().getCrossContextHandler(path);
-            return context == null ? null : new CrossContextServletContext(_coreContextHandler, context.getContext());
+
+            if (context == null)
+                return null;
+            if (context == _coreContextHandler)
+                return this;
+            return new CrossContextServletContext(_coreContextHandler, context.getContext());
         }
 
         @Override

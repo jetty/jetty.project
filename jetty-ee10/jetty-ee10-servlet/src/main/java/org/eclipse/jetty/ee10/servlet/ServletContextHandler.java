@@ -2709,7 +2709,11 @@ public class ServletContextHandler extends ContextHandler
         public jakarta.servlet.ServletContext getContext(String path)
         {
             ContextHandler context = getContextHandler().getCrossContextHandler(path);
-            return context == null ? null : new CrossContextServletContext(ServletContextHandler.this, context.getContext());
+            if (context == null)
+                return null;
+            if (context == ServletContextHandler.this)
+                return this;
+            return new CrossContextServletContext(ServletContextHandler.this, context.getContext());
         }
 
         @Override
