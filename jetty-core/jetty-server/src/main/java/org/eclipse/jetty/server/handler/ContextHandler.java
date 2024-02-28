@@ -515,7 +515,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         List<ContextHandler> contexts = new ArrayList<>();
         for (ContextHandler contextHandler : getServer().getDescendants(ContextHandler.class))
         {
-            if (contextHandler == null || !contextHandler.isCrossContextDispatchSupported())
+            if (contextHandler == null || contextHandler == this || !contextHandler.isCrossContextDispatchSupported())
                 continue;
             String contextPath = contextHandler.getContextPath();
             if (path.equals(contextPath) ||
