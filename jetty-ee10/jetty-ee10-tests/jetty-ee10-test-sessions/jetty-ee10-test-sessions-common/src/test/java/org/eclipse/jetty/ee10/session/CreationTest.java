@@ -322,6 +322,7 @@ public class CreationTest
         contextHandler.setCrossContextDispatchSupported(true);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
+        ctxB.setCrossContextDispatchSupported(true);
         ctxB.addServlet(TestServletB.class, servletMapping);
         server1.start();
         int port1 = server1.getPort();

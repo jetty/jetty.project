@@ -545,6 +545,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         if (contexts.isEmpty())
             return null;
+
+        // TODO return longest context match
         return contexts.get(0);
     }
 
