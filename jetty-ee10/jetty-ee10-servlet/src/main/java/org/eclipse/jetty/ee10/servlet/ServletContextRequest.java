@@ -197,29 +197,26 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         if (getHttpURI().hasViolations() && !getServletChannel().getServletContextHandler().getServletHandler().isDecodeAmbiguousURIs())
         {
             // TODO we should check if current compliance mode allows all the violations?
-            if (getHttpURI().hasViolations())
+            StringBuilder msg = null;
+            for (UriCompliance.Violation violation : getHttpURI().getViolations())
             {
-                StringBuilder msg = null;
-                for (UriCompliance.Violation violation : getHttpURI().getViolations())
+                if (UriCompliance.AMBIGUOUS_VIOLATIONS.contains(violation))
                 {
-                    if (UriCompliance.AMBIGUOUS_VIOLATIONS.contains(violation))
+                    if (msg == null)
                     {
-                        if (msg == null)
-                        {
-                            msg = new StringBuilder();
-                            msg.append("Ambiguous URI encoding: ");
-                        }
-                        else
-                        {
-                            msg.append(", ");
-                        }
-
-                        msg.append(violation.name());
+                        msg = new StringBuilder();
+                        msg.append("Ambiguous URI encoding: ");
                     }
+                    else
+                    {
+                        msg.append(", ");
+                    }
+
+                    msg.append(violation.name());
                 }
-                if (msg != null)
-                    return new ServletApiRequest.AmbiguousURI(this, msg.toString());
             }
+            if (msg != null)
+                return new ServletApiRequest.AmbiguousURI(this, msg.toString());
         }
 
         return new ServletApiRequest(this);
