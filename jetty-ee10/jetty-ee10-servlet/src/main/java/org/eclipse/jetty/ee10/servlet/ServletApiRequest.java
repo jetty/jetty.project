@@ -70,6 +70,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -141,21 +142,27 @@ public class ServletApiRequest implements HttpServletRequest
 
     public static class CrossContextIncluded extends ServletApiRequest
     {
+        private final ServletPathMapping _originalMapping;
+
         protected CrossContextIncluded(ServletContextRequest servletContextRequest)
         {
             super(servletContextRequest);
-            //ensure the request is set up with the correct INCLUDE attributes now we know the matchedResource
             Request dispatchedRequest = servletContextRequest.getWrapped();
-            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletContextRequest.getMatchedResource().getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
-            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletContextRequest.getMatchedResource().getMatchedPath().getPathMatch());
-            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, servletContextRequest.getMatchedResource().getMatchedPath().getPathInfo());
+
+            _originalMapping = ServletPathMapping.from(dispatchedRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING));
+
+            //ensure the request is set up with the correct INCLUDE attributes now we know the matchedResource
+            MatchedResource<ServletHandler.MappedServlet> matchedResource = servletContextRequest.getMatchedResource();
+            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, matchedResource.getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
+            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, matchedResource.getMatchedPath().getPathMatch());
+            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, matchedResource.getMatchedPath().getPathInfo());
             dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, servletContextRequest.getContext().getContextPath());
         }
         
         @Override
         public String getPathInfo()
         {
-            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_PATH_INFO);
+            return _originalMapping == null ? null : _originalMapping.getPathInfo();
         }
         
         @Override
@@ -173,19 +180,13 @@ public class ServletApiRequest implements HttpServletRequest
         @Override
         public String getServletPath()
         {
-            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_PATH);
-        }
-
-        @Override
-        public ServletContext getServletContext()
-        {
-            return (ServletContext)getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_CONTEXT);
+            return _originalMapping == null ? null : _originalMapping.getServletPath();
         }
 
         @Override
         public HttpServletMapping getHttpServletMapping()
         {
-            return (HttpServletMapping)getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
+            return _originalMapping;
         }
 
         @Override

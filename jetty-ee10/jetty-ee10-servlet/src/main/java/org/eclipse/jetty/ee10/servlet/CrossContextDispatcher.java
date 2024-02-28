@@ -34,8 +34,6 @@ import org.eclipse.jetty.util.IO;
 class CrossContextDispatcher implements RequestDispatcher
 {
     public static final String ORIGINAL_URI = "org.eclipse.jetty.dispatch.originalURI";
-    public static final String ORIGINAL_SERVLET_PATH = "org.eclipse.jetty.dispatch.originalServletPath";
-    public static final String ORIGINAL_PATH_INFO = "org.eclipse.jetty.dispatch.originalPathInfo";
     public static final String ORIGINAL_QUERY_STRING = "org.eclipse.jetty.dispatch.originalQueryString";
     public static final String ORIGINAL_SERVLET_MAPPING = "org.eclipse.jetty.dispatch.originalServletMapping";
     public static final String ORIGINAL_SERVLET_CONTEXT = "org.eclipse.jetty.dispatch.originalServletContext";
@@ -59,8 +57,6 @@ class CrossContextDispatcher implements RequestDispatcher
         ORIGINAL_URI,
         ORIGINAL_QUERY_STRING,
         ORIGINAL_SERVLET_MAPPING,
-        ORIGINAL_PATH_INFO,
-        ORIGINAL_SERVLET_PATH,
         ORIGINAL_SERVLET_CONTEXT,
         ORIGINAL_CONTEXT_PATH
     );
@@ -95,6 +91,13 @@ class CrossContextDispatcher implements RequestDispatcher
                         case RequestDispatcher.INCLUDE_CONTEXT_PATH -> _targetContext.getContextPath();
                         case RequestDispatcher.INCLUDE_QUERY_STRING -> (_uri == null) ? null : _uri.getQuery();
                         case ContextHandler.CROSS_CONTEXT_ATTRIBUTE -> DispatcherType.INCLUDE.toString();
+
+                        case ORIGINAL_URI -> httpServletRequest.getRequestURI();
+                        case ORIGINAL_QUERY_STRING -> httpServletRequest.getQueryString();
+                        case ORIGINAL_SERVLET_MAPPING -> httpServletRequest.getHttpServletMapping();
+                        case ORIGINAL_SERVLET_CONTEXT -> httpServletRequest.getServletContext();
+                        case ORIGINAL_CONTEXT_PATH -> httpServletRequest.getContextPath();
+
                         default -> httpServletRequest.getAttribute(name);
                     };
                 }
@@ -105,14 +108,7 @@ class CrossContextDispatcher implements RequestDispatcher
                     return ATTRIBUTES;
                 }
             });
-            
-            setAttribute(ORIGINAL_URI, getServletRequest().getRequestURI());
-            setAttribute(ORIGINAL_SERVLET_PATH, getServletRequest().getServletPath());
-            setAttribute(ORIGINAL_PATH_INFO, getServletRequest().getPathInfo());
-            setAttribute(ORIGINAL_QUERY_STRING, httpServletRequest.getQueryString());
-            setAttribute(ORIGINAL_SERVLET_MAPPING, getServletRequest().getHttpServletMapping());
-            setAttribute(ORIGINAL_SERVLET_CONTEXT, getServletRequest().getServletContext());
-            setAttribute(ORIGINAL_CONTEXT_PATH, getServletRequest().getContextPath());
+
         }
 
         @Override

@@ -753,7 +753,7 @@ public class CrossContextDispatcherTest
                 res.getWriter().println(RequestDispatcher.INCLUDE_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI));
                 res.getWriter().println("----------- REQUEST");
                 HttpServletRequest httpServletRequest = (HttpServletRequest)req;
-                res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getServletContext().getContextPath());
+                res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getContextPath());
                 res.getWriter().println("SERVLET_PATH=" + httpServletRequest.getServletPath());
                 res.getWriter().println("PATH_INFO=" + httpServletRequest.getPathInfo());
                 res.getWriter().println("MAPPING=" + httpServletRequest.getHttpServletMapping());

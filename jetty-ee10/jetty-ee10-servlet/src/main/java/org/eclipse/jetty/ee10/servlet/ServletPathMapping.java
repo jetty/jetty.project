@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.MappingMatch;
@@ -111,9 +114,10 @@ public class ServletPathMapping implements HttpServletMapping
             case PREFIX_GLOB:
                 _mappingMatch = MappingMatch.PATH;
                 _servletPath = pathSpec.getPrefix();
-                // TODO avoid the substring on the known servletPath!
                 _matchValue = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
-                _pathInfo = matchedPath != null ? matchedPath.getPathInfo() : null;
+                _pathInfo = matchedPath != null
+                    ? matchedPath.getPathInfo()
+                    : _servletPath.length() == pathInContext.length() ? null : pathInContext.substring(_servletPath.length());
                 break;
 
             case SUFFIX_GLOB:
@@ -133,6 +137,16 @@ public class ServletPathMapping implements HttpServletMapping
     public ServletPathMapping(PathSpec pathSpec, String servletName, String pathInContext)
     {
         this(pathSpec, servletName, pathInContext, null);
+    }
+
+    private ServletPathMapping(MappingMatch mappingMatch, String matchValue, String pattern, String servletName, String servletPath, String pathInfo)
+    {
+        _mappingMatch = mappingMatch;
+        _matchValue = matchValue;
+        _pattern = pattern;
+        _servletName = servletName;
+        _servletPath = servletPath;
+        _pathInfo = pathInfo;
     }
 
     @Override
@@ -173,12 +187,46 @@ public class ServletPathMapping implements HttpServletMapping
     public String toString()
     {
         return "ServletPathMapping{" +
-            "matchValue=" + _matchValue +
+            "mappingMatch=" + _mappingMatch +
+            ", matchValue=" + _matchValue +
             ", pattern=" + _pattern +
             ", servletName=" + _servletName +
-            ", mappingMatch=" + _mappingMatch +
             ", servletPath=" + _servletPath +
             ", pathInfo=" + _pathInfo +
             "}";
+    }
+
+    private static final Pattern DESERIALIZE = Pattern.compile("ServletPathMapping\\{" +
+        "mappingMatch=(?<mappingMatch>[^,]+), " +
+        "matchValue=(?<matchValue>[^,]+), " +
+        "pattern=(?<pattern>[^,]+), " +
+        "servletName=(?<servletName>[^,]+), " +
+        "servletPath=(?<servletPath>[^,]+), " +
+        "pathInfo=(?<pathInfo>[^}]+)\\}");
+
+    /**
+     * Obtain a {@link ServletPathMapping} instance from an object which may be an instance of a mapping
+     * from a different EE version obtained from a cross context cross environment dispatch
+     * @param o The object to caste or deserialize from the string representation.
+     * @return A ServletPathMapping
+     */
+    public static ServletPathMapping from(Object o)
+    {
+        if (o == null)
+            return null;
+        if (o instanceof ServletPathMapping mapping)
+            return mapping;
+        Matcher matcher = DESERIALIZE.matcher(o.toString());
+        if (matcher.find())
+            return new ServletPathMapping(
+                MappingMatch.valueOf(matcher.group("mappingMatch")),
+                matcher.group("matchValue"),
+                matcher.group("pattern"),
+                matcher.group("servletName"),
+                matcher.group("servletPath"),
+                matcher.group("pathInfo")
+            );
+
+        return null;
     }
 }
