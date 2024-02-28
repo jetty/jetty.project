@@ -54,7 +54,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -97,18 +97,18 @@ public class CrossContextDispatcherTest
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
-        _contextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("contextResources"));
+        _contextHandler.setBaseResourceAsPath(MavenPaths.findTestResourceDir("contextResources"));
         _contextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_contextHandler);
 
         _targetServletContextHandler = new ServletContextHandler();
         _targetServletContextHandler.setContextPath("/foreign");
-        _targetServletContextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest"));
+        _targetServletContextHandler.setBaseResourceAsPath(MavenPaths.findTestResourceDir("dispatchResourceTest"));
         _targetServletContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_targetServletContextHandler);
 
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest")));
+        resourceHandler.setBaseResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("dispatchResourceTest")));
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(resourceHandler);
         resourceContextHandler.setCrossContextDispatchSupported(true);
