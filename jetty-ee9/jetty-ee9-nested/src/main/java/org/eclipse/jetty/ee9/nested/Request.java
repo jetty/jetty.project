@@ -79,6 +79,8 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
+import org.eclipse.jetty.http.pathmap.MatchedPath;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
@@ -754,8 +756,18 @@ public class Request implements HttpServletRequest
     @Override
     public String getContextPath()
     {
-        // TODO this is not correctly implemented for Cross Context
-        // The context path returned is normally for the current context.  Except during a cross context
+        //During a cross context INCLUDE dispatch, the context path is that of the originating
+        //request
+        if (_crossContextDispatchSupported)
+        {
+            String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (DispatcherType.INCLUDE.toString().equals(crossContextDispatchType))
+            {
+                return (String)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_CONTEXT_PATH);
+            }
+        }
+
+        // The context path returned is normally for the current context.  Except during an
         // INCLUDE dispatch, in which case this method returns the context path of the source context,
         // which we recover from the IncludeAttributes wrapper.
         ContextHandler.APIContext context;
@@ -1093,6 +1105,15 @@ public class Request implements HttpServletRequest
     @Override
     public String getQueryString()
     {
+        if (_crossContextDispatchSupported)
+        {
+            String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (DispatcherType.INCLUDE.toString().equals(crossContextDispatchType))
+            {
+                return (String)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_QUERY_STRING);
+            }
+        }
+
         return _uri == null ? null : _uri.getQuery();
     }
 
@@ -1214,6 +1235,14 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
+        if (_crossContextDispatchSupported)
+        {
+            String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (DispatcherType.INCLUDE.toString().equals(crossContextDispatchType))
+            {
+                return (String)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_URI);
+            }
+        }
         return _uri == null ? null : _uri.getPath();
     }
 
@@ -1289,6 +1318,7 @@ public class Request implements HttpServletRequest
     @Override
     public ServletContext getServletContext()
     {
+        //TODO cross context include must return the context of the originating request
         return _context;
     }
 
@@ -2153,10 +2183,12 @@ public class Request implements HttpServletRequest
                     // TODO more work to do here!
                     // setAttributes ...
                     // make a ServletPathMapping with the original data returned by findServletPathMapping method
+                    String originalServletPathMappingStr = (String)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
+                    ServletPathMapping servletPathMapping = new ServletPathMapping(originalServletPathMappingStr);
+                    _coreRequest.setAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_PATH_MAPPING, servletPathMapping);
                 }
             }
         }
-
         _servletPathMapping = servletPathMapping;
     }
 
@@ -2176,12 +2208,12 @@ public class Request implements HttpServletRequest
      */
     ServletPathMapping findServletPathMapping()
     {
-        ServletPathMapping mapping;
+        ServletPathMapping mapping = null;
         if (_dispatcherType == DispatcherType.INCLUDE)
         {
             if (_crossContextDispatchSupported && DispatcherType.INCLUDE.toString().equals(_coreRequest.getContext().getCrossContextDispatchType(_coreRequest)))
             {
-                // TODO cross context
+                mapping = (ServletPathMapping)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_PATH_MAPPING);
             }
             else
             {

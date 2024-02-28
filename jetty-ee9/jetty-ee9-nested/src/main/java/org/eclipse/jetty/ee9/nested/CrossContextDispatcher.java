@@ -34,11 +34,8 @@ import org.eclipse.jetty.util.IO;
 class CrossContextDispatcher implements RequestDispatcher
 {
     public static final String ORIGINAL_URI = "org.eclipse.jetty.dispatch.originalURI";
-    public static final String ORIGINAL_SERVLET_PATH = "org.eclipse.jetty.dispatch.originalServletPath";
-    public static final String ORIGINAL_PATH_INFO = "org.eclipse.jetty.dispatch.originalPathInfo";
     public static final String ORIGINAL_QUERY_STRING = "org.eclipse.jetty.dispatch.originalQueryString";
     public static final String ORIGINAL_SERVLET_MAPPING = "org.eclipse.jetty.dispatch.originalServletMapping";
-    public static final String ORIGINAL_SERVLET_CONTEXT = "org.eclipse.jetty.dispatch.originalServletContext";
     public static final String ORIGINAL_CONTEXT_PATH = "org.ecipse.jetty.dispatch.originalContextPath";
 
     public static final Set<String> ATTRIBUTES = Set.of(
@@ -59,9 +56,6 @@ class CrossContextDispatcher implements RequestDispatcher
         ORIGINAL_URI,
         ORIGINAL_QUERY_STRING,
         ORIGINAL_SERVLET_MAPPING,
-        ORIGINAL_PATH_INFO,
-        ORIGINAL_SERVLET_PATH,
-        ORIGINAL_SERVLET_CONTEXT,
         ORIGINAL_CONTEXT_PATH,
         FormFields.class.getName()
     );
@@ -104,12 +98,9 @@ class CrossContextDispatcher implements RequestDispatcher
             });
             
             setAttribute(ORIGINAL_URI, getServletRequest().getRequestURI());
-            setAttribute(ORIGINAL_SERVLET_PATH, getServletRequest().getServletPath());
-            setAttribute(ORIGINAL_PATH_INFO, getServletRequest().getPathInfo());
             setAttribute(ORIGINAL_QUERY_STRING, httpServletRequest.getQueryString());
-            setAttribute(ORIGINAL_SERVLET_MAPPING, getServletRequest().getHttpServletMapping());
-            setAttribute(ORIGINAL_SERVLET_CONTEXT, getServletRequest().getServletContext());
             setAttribute(ORIGINAL_CONTEXT_PATH, getServletRequest().getContextPath());
+            setAttribute(ORIGINAL_SERVLET_MAPPING, getServletRequest().getHttpServletMapping().toString());
         }
 
         @Override
@@ -241,12 +232,9 @@ class CrossContextDispatcher implements RequestDispatcher
         ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
         org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
 
-        // TODO ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(servletResponse);
-
         IncludeRequest includeRequest = new IncludeRequest(coreContextRequest, httpServletRequest);
-        //IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse);
+        IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse, baseResponse, coreResponse);
 
-        /*
         try (Blocker.Callback callback = Blocker.callback())
         {
             _targetContext.getTargetContext().getContextHandler().handle(includeRequest, includeResponse, callback);
@@ -256,7 +244,5 @@ class CrossContextDispatcher implements RequestDispatcher
         {
             throw new ServletException(e);
         }
-
-         */
     }
 }
