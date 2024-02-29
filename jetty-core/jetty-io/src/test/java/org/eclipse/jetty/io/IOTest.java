@@ -473,6 +473,22 @@ public class IOTest
     }
 
     @Test
+    public void testDeleteTreeDeep(WorkDir workDir) throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        FS.ensureEmpty(dir);
+
+        Files.createDirectory(dir.resolve("foo"));
+        Files.createDirectory(dir.resolve("foo/bar"));
+        Files.createDirectory(dir.resolve("foo/zed"));
+        Files.createDirectory(dir.resolve("foo/zed/one"));
+        Files.writeString(dir.resolve("foo/bar/test.txt"), "Test");
+        Files.writeString(dir.resolve("foo/zed/one/test.txt"), "Test");
+
+        assertTrue(IO.delete(dir));
+    }
+
+    @Test
     public void testIsEmptyNull()
     {
         assertTrue(IO.isEmptyDir(null));

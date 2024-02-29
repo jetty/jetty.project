@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.client.transport.internal;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
@@ -67,6 +68,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (LOG.isDebugEnabled())
             LOG.debug("Reading, fillInterestIfNeeded={} in {}", fillInterestIfNeeded, this);
         Stream stream = getHttpChannel().getStream();
+        if (stream == null)
+            return Content.Chunk.from(new EOFException("Channel has been released"));
         Stream.Data data = stream.readData();
         if (LOG.isDebugEnabled())
             LOG.debug("Read stream data {} in {}", data, this);

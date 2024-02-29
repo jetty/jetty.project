@@ -1024,6 +1024,8 @@ public class HttpURITest
             // Path choices
             Arguments.of("http", "example.org", 0, "/a/b/c/d", null, null, "http://example.org/a/b/c/d"),
             Arguments.of("http", "example.org", 0, "/a%20b/c%20d", null, null, "http://example.org/a%20b/c%20d"),
+            Arguments.of("http", "example.org", 0, "/foo%2Fbaz", null, null, "http://example.org/foo%2Fbaz"),
+            Arguments.of("http", "example.org", 0, "/foo%252Fbaz", null, null, "http://example.org/foo%252Fbaz"),
             // Query specified
             Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
             Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
@@ -1044,6 +1046,24 @@ public class HttpURITest
     {
         HttpURI httpURI = HttpURI.from(scheme, server, port, path, query, fragment);
         assertThat(httpURI.asString(), is(expectedStr));
+    }
+
+    public static Stream<Arguments> fromStringAsStringCases()
+    {
+        return Stream.of(
+            Arguments.of("http://localhost:4444/", "http://localhost:4444/"),
+            Arguments.of("/foo/baz", "/foo/baz"),
+            Arguments.of("/foo%2Fbaz", "/foo%2Fbaz"),
+            Arguments.of("/foo%252Fbaz", "/foo%252Fbaz")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fromStringAsStringCases")
+    public void testFromStringAsString(String input, String expected)
+    {
+        HttpURI httpURI = HttpURI.from(input);
+        assertThat(httpURI.asString(), is(expected));
     }
 
     /**

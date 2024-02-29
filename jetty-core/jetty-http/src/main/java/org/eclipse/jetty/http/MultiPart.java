@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -908,6 +909,7 @@ public class MultiPart
         private final Utf8StringBuilder text = new Utf8StringBuilder();
         private final String boundary;
         private final SearchPattern boundaryFinder;
+        private final MultiPartCompliance compliance;
         private final Listener listener;
         private int partHeadersLength;
         private int partHeadersMaxLength = -1;
@@ -920,13 +922,33 @@ public class MultiPart
         private String fieldValue;
         private long maxParts = 1000;
         private int numParts;
+        private EnumSet<MultiPartCompliance.Violation> eols;
 
         public Parser(String boundary, Listener listener)
+        {
+            this(boundary, MultiPartCompliance.RFC7578, listener);
+        }
+
+        public Parser(String boundary, MultiPartCompliance compliance, Listener listener)
         {
             this.boundary = boundary;
             // While the spec mandates CRLF before the boundary, be more lenient and only require LF.
             this.boundaryFinder = SearchPattern.compile("\n--" + boundary);
+            this.compliance = compliance;
             this.listener = listener;
+
+            if (LOG.isDebugEnabled())
+            {
+                List.of(
+                    MultiPartCompliance.Violation.CR_LINE_TERMINATION,
+                    MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                    MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY
+                ).forEach(violation ->
+                {
+                    if (compliance.allows(violation))
+                        LOG.debug("{} ignoring violation {}: unable to allow it", getClass().getName(), violation.name());
+                });
+            }
             reset();
         }
 
@@ -1050,6 +1072,7 @@ public class MultiPart
                             HttpTokens.Token token = next(buffer);
                             if (token.getByte() != '-')
                                 throw new BadMessageException("bad last boundary");
+                            notifyEndOfLineViolations();
                             state = State.EPILOGUE;
                         }
                         case HEADER_START ->
@@ -1099,6 +1122,7 @@ public class MultiPart
                 if (LOG.isDebugEnabled())
                     LOG.debug("parse failure {} {}", state, BufferUtil.toDetailString(buffer), x);
                 buffer.position(buffer.limit());
+                notifyEndOfLineViolations();
                 notifyFailure(x);
             }
         }
@@ -1123,18 +1147,35 @@ public class MultiPart
                 }
                 case LF ->
                 {
+                    if (!crFlag)
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                        addEndOfLineViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid LF-only EOL");
+                    }
                     crFlag = false;
                 }
                 case CR ->
                 {
                     if (crFlag)
-                        throw new BadMessageException("invalid EOL");
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
+                        addEndOfLineViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid CR-only EOL");
+                    }
                     crFlag = true;
                 }
                 default ->
                 {
                     if (crFlag)
-                        throw new BadMessageException("invalid EOL");
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
+                        addEndOfLineViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid CR-only EOL");
+                    }
                 }
             }
             return t;
@@ -1331,6 +1372,13 @@ public class MultiPart
                     {
                         // The boundary was fully matched, so the part is complete.
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
+                        if (!crContent)
+                        {
+                            MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                            addEndOfLineViolation(violation);
+                            if (!compliance.allows(violation))
+                                throw new BadMessageException("invalid LF-only EOL");
+                        }
                         partialBoundaryMatch = 0;
                         crContent = false;
                         notifyPartContent(Content.Chunk.EOF);
@@ -1373,7 +1421,16 @@ public class MultiPart
             if (boundaryOffset >= 0)
             {
                 if (boundaryOffset == 0)
+                {
+                    if (!crContent)
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                        addEndOfLineViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid LF-only EOL");
+                    }
                     crContent = false;
+                }
 
                 // Emit as content the last CR byte of the previous chunk, if any.
                 notifyCRContent();
@@ -1384,7 +1441,16 @@ public class MultiPart
                 // BoundaryFinder is configured to search for '\n--Boundary';
                 // if '\r\n--Boundary' is found, then the '\r' is not content.
                 if (length > 0 && buffer.get(position + length - 1) == '\r')
+                {
                     --length;
+                }
+                else
+                {
+                    MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                    addEndOfLineViolation(violation);
+                    if (!compliance.allows(violation))
+                        throw new BadMessageException("invalid LF-only EOL");
+                }
                 Content.Chunk content = asSlice(chunk, position, length, true);
                 buffer.position(position + boundaryOffset + boundaryFinder.getLength());
                 notifyPartContent(content);
@@ -1536,6 +1602,39 @@ public class MultiPart
             }
         }
 
+        private void notifyEndOfLineViolations()
+        {
+            if (eols != null)
+            {
+                for (MultiPartCompliance.Violation violation: eols)
+                {
+                    notifyViolation(violation);
+                }
+                eols = null;
+            }
+        }
+
+        private void addEndOfLineViolation(MultiPartCompliance.Violation violation)
+        {
+            if (eols == null)
+                eols = EnumSet.of(violation);
+            else
+                eols.add(violation);
+        }
+
+        private void notifyViolation(MultiPartCompliance.Violation violation)
+        {
+            try
+            {
+                listener.onViolation(violation);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
+        }
+
         /**
          * <p>A listener for events emitted by a {@link Parser}.</p>
          */
@@ -1596,6 +1695,16 @@ public class MultiPart
              * @param failure the failure cause
              */
             default void onFailure(Throwable failure)
+            {
+            }
+
+            /**
+             * <p>Callback method invoked when the low level parser encounters
+             * a fundamental multipart violation</p>>
+             *
+             * @param violation the violation detected
+             */
+            default void onViolation(MultiPartCompliance.Violation violation)
             {
             }
         }

@@ -176,7 +176,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public URI getURI()
         {
-            return URIUtil.correctFileURI(uri);
+            return URIUtil.correctURI(uri);
         }
 
         @Override

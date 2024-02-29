@@ -57,7 +57,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @ExtendWith(WorkDirExtension.class)
 public class URIUtilTest
 {
-
     public WorkDir workDir;
 
     public static Stream<Arguments> encodePathSource()
@@ -668,10 +667,10 @@ public class URIUtilTest
 
     @ParameterizedTest
     @MethodSource("correctBadFileURICases")
-    public void testCorrectFileURI(String input, String expected)
+    public void testCorrectURI(String input, String expected)
     {
         URI inputUri = URI.create(input);
-        URI actualUri = URIUtil.correctFileURI(inputUri);
+        URI actualUri = URIUtil.correctURI(inputUri);
         URI expectedUri = URI.create(expected);
         assertThat(actualUri.toASCIIString(), is(expectedUri.toASCIIString()));
     }
@@ -695,8 +694,8 @@ public class URIUtilTest
         assertThat(fileUri.toASCIIString(), not(containsString("://")));
         assertThat(fileUrlUri.toASCIIString(), not(containsString("://")));
 
-        assertThat(URIUtil.correctFileURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
-        assertThat(URIUtil.correctFileURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.correctURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.correctURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
     }
 
     public static Stream<Arguments> encodeSpecific()
@@ -1061,6 +1060,49 @@ public class URIUtilTest
         URI input = URIUtil.toURI(inputRawUri);
         URI actual = URIUtil.unwrapContainer(input);
         assertThat(actual.toASCIIString(), is(expected));
+    }
+
+    public static Stream<Arguments> toURICases()
+    {
+        List<Arguments> args = new ArrayList<>();
+
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            // Windows format (absolute and relative)
+            args.add(Arguments.of("C:\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:\\path\\to\\bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("\\path\\to\\bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // unix format (relative)
+            args.add(Arguments.of("C:/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:/path/to/bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // URI format (absolute)
+            args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
+            args.add(Arguments.of("file:/e:/zed/yotta.txt", "file:///e:/zed/yotta.txt"));
+            args.add(Arguments.of("jar:file:///E:/path/to/bar.jar", "jar:file:///E:/path/to/bar.jar"));
+        }
+        else
+        {
+            // URI (and unix) format (relative)
+            args.add(Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"));
+        }
+        // URI format (absolute)
+        args.add(Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"));
+        args.add(Arguments.of("jar:file:///path/to/bar.jar", "jar:file:///path/to/bar.jar"));
+
+        return args.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("toURICases")
+    public void testToURI(String inputRaw, String expectedUri)
+    {
+        URI actual = URIUtil.toURI(inputRaw);
+        URI expected = URI.create(expectedUri);
+        assertEquals(expected, actual);
     }
 
     @Test

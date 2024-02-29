@@ -1,0 +1,21 @@
+Request-Header|Accept|text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Request-Header|Accept-Encoding|gzip, deflate, br
+Request-Header|Accept-Language|en-US,en;q=0.9,pt;q=0.8
+Request-Header|Cache-Control|no-cache
+Request-Header|Connection|keep-alive
+Request-Header|Content-Length|334
+Request-Header|Content-Type|multipart/form-data; boundary=----WebKitFormBoundary7kHAnf6TKNGH3Ac3
+Request-Header|Cookie|visited=yes
+Request-Header|Host|localhost:9090
+Request-Header|Origin|http://localhost:9090
+Request-Header|Pragma|no-cache
+Request-Header|Referer|http://localhost:9090/form-fileupload.html
+Request-Header|Sec-Fetch-Dest|document
+Request-Header|Sec-Fetch-Mode|navigate
+Request-Header|Sec-Fetch-Site|same-origin
+Request-Header|Upgrade-Insecure-Requests|1
+Request-Header|User-Agent|Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36
+Parts-Count|2
+Part-ContainsContents|description|whitespace-16
+Part-Filename|file|whitespace-16.bytes
+Part-Sha1sum|file|6f2520646be7df341572a818b6e6b5a5685020e1
