@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 
 /**
  * Http URI.
@@ -265,8 +264,7 @@ public interface HttpURI
     {
         try
         {
-            String query = getQuery();
-            return new URI(getScheme(), null, getHost(), getPort(), getPath(), query == null ? null : UrlEncoded.decodeString(query), null);
+            return new URI(toString());
         }
         catch (URISyntaxException x)
         {
@@ -510,19 +508,6 @@ public interface HttpURI
         public String toString()
         {
             return asString();
-        }
-
-        @Override
-        public URI toURI()
-        {
-            try
-            {
-                return new URI(_scheme, null, _host, URIUtil.normalizePortForScheme(_scheme, _port), _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
-            }
-            catch (URISyntaxException x)
-            {
-                throw new RuntimeException(x);
-            }
         }
     }
 
@@ -978,18 +963,6 @@ public interface HttpURI
         public String toString()
         {
             return asString();
-        }
-
-        public URI toURI()
-        {
-            try
-            {
-                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), null);
-            }
-            catch (URISyntaxException x)
-            {
-                throw new RuntimeException(x);
-            }
         }
 
         public Mutable uri(HttpURI uri)
