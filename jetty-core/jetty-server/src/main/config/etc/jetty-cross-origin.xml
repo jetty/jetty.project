@@ -5,9 +5,7 @@
   <Call name="insertHandler">
     <Arg>
       <New id="CrossOriginHandler" class="org.eclipse.jetty.server.handler.CrossOriginHandler">
-        <Set name="allowCredentials">
-          <Property name="jetty.crossorigin.allowCredentials" default="true" />
-        </Set>
+        <Set name="allowCredentials" property="jetty.crossorigin.allowCredentials" />
         <Call name="setAllowedHeaders">
           <Arg type="Set">
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
@@ -30,7 +28,7 @@
           <Arg type="Set">
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
               <Arg>
-                <Property name="jetty.crossorigin.allowedOriginPatterns" default="*" />
+                <Property name="jetty.crossorigin.allowedOriginPatterns" default="" />
               </Arg>
             </Call>
           </Arg>

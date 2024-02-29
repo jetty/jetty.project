@@ -1134,6 +1134,8 @@ public class HTTPServerDocs
 
         // Add the CrossOriginHandler to protect from CSRF attacks.
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://domain.com"));
+        crossOriginHandler.setAllowCredentials(true);
         server.setHandler(crossOriginHandler);
 
         // Create a ServletContextHandler with contextPath.
