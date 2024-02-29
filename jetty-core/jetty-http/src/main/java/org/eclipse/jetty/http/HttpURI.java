@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -28,7 +27,6 @@ import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 
 /**
  * Http URI.
@@ -263,15 +261,7 @@ public interface HttpURI
 
     default URI toURI()
     {
-        try
-        {
-            String query = getQuery();
-            return new URI(getScheme(), null, getHost(), getPort(), getPath(), query == null ? null : UrlEncoded.decodeString(query), null);
-        }
-        catch (URISyntaxException x)
-        {
-            throw new RuntimeException(x);
-        }
+        return URI.create(toString());
     }
 
     class Immutable implements HttpURI, Serializable
@@ -510,19 +500,6 @@ public interface HttpURI
         public String toString()
         {
             return asString();
-        }
-
-        @Override
-        public URI toURI()
-        {
-            try
-            {
-                return new URI(_scheme, null, _host, URIUtil.normalizePortForScheme(_scheme, _port), _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
-            }
-            catch (URISyntaxException x)
-            {
-                throw new RuntimeException(x);
-            }
         }
     }
 
@@ -978,18 +955,6 @@ public interface HttpURI
         public String toString()
         {
             return asString();
-        }
-
-        public URI toURI()
-        {
-            try
-            {
-                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), null);
-            }
-            catch (URISyntaxException x)
-            {
-                throw new RuntimeException(x);
-            }
         }
 
         public Mutable uri(HttpURI uri)
