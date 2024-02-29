@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -262,14 +261,7 @@ public interface HttpURI
 
     default URI toURI()
     {
-        try
-        {
-            return new URI(toString());
-        }
-        catch (URISyntaxException x)
-        {
-            throw new RuntimeException(x);
-        }
+        return URI.create(toString());
     }
 
     class Immutable implements HttpURI, Serializable
