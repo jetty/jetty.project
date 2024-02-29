@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -55,8 +56,15 @@ import static org.eclipse.jetty.util.URIUtil.encodePath;
  * The current implementation does not support any read operations.
  * </p>
  */
-class ServletCoreRequest implements Request
+public class ServletCoreRequest implements Request
 {
+    public Request wrap(HttpServletRequest httpServletRequest)
+    {
+        org.eclipse.jetty.ee9.nested.Request baseRequest = Objects.requireNonNull(org.eclipse.jetty.ee9.nested.Request.getBaseRequest(httpServletRequest));
+        ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
+        return new ServletCoreRequest(coreContextRequest, httpServletRequest, coreContextRequest);
+    }
+
     private final HttpServletRequest _servletRequest;
     private final ContextHandler.CoreContextRequest _coreContextRequest;
     private final HttpFields _httpFields;

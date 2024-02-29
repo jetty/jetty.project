@@ -37,19 +37,25 @@ import org.eclipse.jetty.util.IO;
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
  * All write operations are internally converted to blocking writes on the servlet API.
  */
-class ServletCoreResponse implements org.eclipse.jetty.server.Response
+public class ServletCoreResponse implements org.eclipse.jetty.server.Response
 {
+    public static org.eclipse.jetty.server.Response wrap(org.eclipse.jetty.server.Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
+    {
+        Response baseResponse = Objects.requireNonNull(Response.getBaseResponse(httpServletResponse));
+        return new ServletCoreResponse(coreRequest, httpServletResponse, baseResponse, baseResponse.getHttpChannel().getCoreResponse(), included);
+    }
+
     private final HttpServletResponse _httpServletResponse;
-    private final org.eclipse.jetty.server.Request _servletCoreRequest;
+    private final org.eclipse.jetty.server.Request _coreRequest;
     private final HttpFields.Mutable _httpFields;
     private final boolean _included;
     private final Response _baseResponse;
     private final org.eclipse.jetty.server.Response _coreResponse;
     private final boolean _wrapped;
 
-    public ServletCoreResponse(ServletCoreRequest servletCoreRequest, HttpServletResponse httpServletResponse, Response baseResponse, org.eclipse.jetty.server.Response coreResponse, boolean included)
+    ServletCoreResponse(org.eclipse.jetty.server.Request coreRequest, HttpServletResponse httpServletResponse, Response baseResponse, org.eclipse.jetty.server.Response coreResponse, boolean included)
     {
-        _servletCoreRequest = servletCoreRequest;
+        _coreRequest = coreRequest;
         _httpServletResponse = httpServletResponse;
         _baseResponse = baseResponse;
         _coreResponse = coreResponse;
@@ -171,7 +177,7 @@ class ServletCoreResponse implements org.eclipse.jetty.server.Response
     @Override
     public org.eclipse.jetty.server.Request getRequest()
     {
-        return _servletCoreRequest;
+        return _coreRequest;
     }
 
     @Override
@@ -214,7 +220,7 @@ class ServletCoreResponse implements org.eclipse.jetty.server.Response
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._servletCoreRequest, _httpServletResponse);
+        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _httpServletResponse);
     }
 
     private static class HttpServletResponseHttpFields implements HttpFields.Mutable

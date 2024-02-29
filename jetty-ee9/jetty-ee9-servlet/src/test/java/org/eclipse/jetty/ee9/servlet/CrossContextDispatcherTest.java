@@ -61,10 +61,7 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -78,8 +75,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CrossContextDispatcherTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CrossContextDispatcherTest.class);
-
     private Server _server;
     private LocalConnector _connector;
     private ServletContextHandler _contextHandler;

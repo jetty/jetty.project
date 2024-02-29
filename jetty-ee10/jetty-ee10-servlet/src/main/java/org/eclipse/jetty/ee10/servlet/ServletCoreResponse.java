@@ -40,8 +40,13 @@ import org.eclipse.jetty.util.StringUtil;
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
  * All write operations are internally converted to blocking writes on the servlet API.
  */
-class ServletCoreResponse implements Response
+public class ServletCoreResponse implements Response
 {
+    public Response wrap(Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
+    {
+        return new ServletCoreResponse(coreRequest, httpServletResponse, included);
+    }
+
     private final HttpServletResponse _httpServletResponse;
     private final Request _coreRequest;
     private final HttpFields.Mutable _httpFields;
@@ -49,7 +54,7 @@ class ServletCoreResponse implements Response
     private final ServletContextResponse _servletContextResponse;
     private final boolean _wrapped;
 
-    public ServletCoreResponse(Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
+    ServletCoreResponse(Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
     {
         _coreRequest = coreRequest;
         _httpServletResponse = httpServletResponse;

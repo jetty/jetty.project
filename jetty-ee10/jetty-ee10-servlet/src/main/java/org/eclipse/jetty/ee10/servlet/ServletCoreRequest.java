@@ -55,8 +55,13 @@ import static org.eclipse.jetty.util.URIUtil.encodePath;
  * The current implementation does not support any read operations.
  * </p>
  */
-class ServletCoreRequest implements Request
+public class ServletCoreRequest implements Request
 {
+    public static Request wrap(HttpServletRequest httpServletRequest)
+    {
+        return new ServletCoreRequest(httpServletRequest, null);
+    }
+
     private final HttpServletRequest _servletRequest;
     private final ServletContextRequest _servletContextRequest;
     private final HttpFields _httpFields;
@@ -65,17 +70,12 @@ class ServletCoreRequest implements Request
     private final boolean _wrapped;
     private Content.Source _source;
 
-    ServletCoreRequest(HttpServletRequest request)
-    {
-        this (request, new ServletAttributes(request));
-    }
-
     ServletCoreRequest(HttpServletRequest request, Attributes attributes)
     {
         _servletRequest = request;
         _wrapped = !(request instanceof ServletApiRequest);
         _servletContextRequest = ServletContextRequest.getServletContextRequest(_servletRequest);
-        _attributes = attributes;
+        _attributes = attributes == null ? _servletContextRequest : attributes;
 
         HttpFields.Mutable fields = HttpFields.build();
 
