@@ -234,16 +234,18 @@ public class CrossContextDispatcherTest
     public void testParamsAfterCrossContextForward() throws Exception
     {
          _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
-         CountDownLatch latch = new CountDownLatch(1);
+         CountDownLatch latch = new CountDownLatch(2);
          Servlet dispatcher = new CrossContextDispatchServlet()
          {
              @Override
              protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
              {
                  super.doGet(request, response);
-                 String checkParam = request.getParameter("param");
-                    if (!StringUtil.isBlank(checkParam))
-                        latch.countDown();
+
+                 if (!StringUtil.isBlank(request.getParameter("param")))
+                     latch.countDown();
+                 if (!StringUtil.isBlank(request.getParameter("a")))
+                     latch.countDown();
              }
          };
 
@@ -697,13 +699,6 @@ public class CrossContextDispatcherTest
                     res.getWriter().println(Arrays.asList(val));
                 }
             }
-
-/*          System.err.println(req.getAttribute("jakarta.servlet.forward.mapping"));
-            System.err.println(req.getAttribute("jakarta.servlet.forward.request_uri"));
-            System.err.println(req.getAttribute("jakarta.servlet.forward.context_path"));
-            System.err.println(req.getAttribute("jakarta.servlet.forward.servlet_path"));
-            System.err.println(req.getAttribute("jakarta.servlet.forward.path_info"));
-            System.err.println(req.getAttribute("jakarta.servlet.forward.query_string"));*/
         }
     }
 
