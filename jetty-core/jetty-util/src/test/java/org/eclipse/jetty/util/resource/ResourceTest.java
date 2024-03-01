@@ -49,7 +49,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -263,7 +262,7 @@ public class ResourceTest
         if (data.exists)
             assertThat("Exists: " + res.getName(), res.exists(), equalTo(data.exists));
         else
-            assertNull(res);
+            assertFalse(res.exists());
     }
 
     @ParameterizedTest
@@ -395,7 +394,7 @@ public class ResourceTest
         Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
         // at this point we have a directory reference that does not exist
         Resource resource = resourceFactory.newResource(dir);
-        assertNull(resource);
+        assertFalse(resource.exists());
     }
 
     @Test
@@ -407,7 +406,7 @@ public class ResourceTest
         // at this point we have a file reference that does not exist
         assertFalse(Files.exists(file));
         Resource resource = resourceFactory.newResource(file);
-        assertNull(resource);
+        assertFalse(resource.exists());
     }
 
     @Test

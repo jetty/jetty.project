@@ -153,11 +153,16 @@ public class CombinedResource extends Resource
 
         // Attempt a simple (single) Resource lookup that exists
         Resource resolved = null;
+        Resource notFound = null;
         for (Resource res : _resources)
         {
             resolved = res.resolve(subUriPath);
             if (Resources.missing(resolved))
+            {
+                if (notFound == null)
+                    notFound = resolved;
                 continue; // skip, doesn't exist
+            }
             if (!resolved.isDirectory())
                 return resolved; // Return simple (non-directory) Resource
             if (resources == null)
@@ -166,7 +171,7 @@ public class CombinedResource extends Resource
         }
 
         if (resources == null)
-            return resolved; // This will not exist
+            return notFound; // This will not exist
 
         if (resources.size() == 1)
             return resources.get(0);

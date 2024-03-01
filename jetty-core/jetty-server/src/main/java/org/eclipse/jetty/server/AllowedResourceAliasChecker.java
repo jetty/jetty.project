@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,8 +186,9 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
                 // If the path is the same file as any protected resources, then it is protected.
                 for (String protectedTarget : _protected)
                 {
+                    // TODO these resolves can be done in doStart
                     Resource p = _baseResource.resolve(protectedTarget);
-                    if (p == null)
+                    if (Resources.missing(p))
                         continue;
                     for (Resource r : p)
                     {
