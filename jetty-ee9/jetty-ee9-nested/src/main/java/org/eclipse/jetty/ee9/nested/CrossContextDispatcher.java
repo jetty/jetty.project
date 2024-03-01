@@ -51,6 +51,7 @@ class CrossContextDispatcher implements RequestDispatcher
         RequestDispatcher.INCLUDE_SERVLET_PATH,
         RequestDispatcher.INCLUDE_QUERY_STRING,
         RequestDispatcher.INCLUDE_PATH_INFO,
+        //TODO include javax.servlet.?
         // TODO MULTIPART_CONFIG_ELEMENT,
         org.eclipse.jetty.server.handler.ContextHandler.CROSS_CONTEXT_ATTRIBUTE,
         ORIGINAL_URI,
@@ -70,6 +71,17 @@ class CrossContextDispatcher implements RequestDispatcher
         {
             super(coreContextRequest, httpServletRequest, new Attributes.Synthetic(new ServletAttributes(httpServletRequest))
             {
+                @Override
+                public Object getAttribute(String name)
+                {
+                    //handle cross-environment dispatch from ee8
+                    //TODO what will happen with ee8 conversion?
+/*                    if (name.startsWith("javax.servlet."))
+                        name = "jakarta.servlet." + name.substring(14);*/
+
+                    return super.getAttribute(name);
+                }
+
                 @Override
                 protected Object getSyntheticAttribute(String name)
                 {
@@ -101,6 +113,20 @@ class CrossContextDispatcher implements RequestDispatcher
                 {
                     return ATTRIBUTES;
                 }
+
+                @Override
+                public Object setAttribute(String name, Object attribute)
+                {
+                    if (name == null)
+                        return null;
+
+                    //handle cross-environment dispatch from ee8
+                    //TODO what will happen with ee8 conversion?
+  /*                  if (name.startsWith("javax.servlet."))
+                        name = "jakarta.servlet." + name.substring(14);*/
+
+                    return super.setAttribute(name, attribute);
+                }
             });
         }
 
@@ -129,6 +155,13 @@ class CrossContextDispatcher implements RequestDispatcher
                 @Override
                 protected Object getSyntheticAttribute(String name)
                 {
+                    if (name == null)
+                        return null;
+
+                    //handle cross-environment dispatch from ee8
+                    if (name.startsWith("javax.servlet."))
+                        name = "jakarta.servlet." + name.substring(14);
+
                     return switch (name)
                     {
                         case RequestDispatcher.FORWARD_REQUEST_URI -> httpServletRequest.getRequestURI();

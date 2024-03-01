@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -194,6 +195,47 @@ public class CrossContextDispatcherTest
         assertThat(includeMapping, containsString("VerifyIncludeServlet"));
         //TODO query string
         assertThat(content, containsString("jakarta.servlet.include.request_uri=/foreign/verify/pinfo"));
+        //verify request values
+        assertThat(content, containsString("CONTEXT_PATH=/context"));
+        assertThat(content, containsString("SERVLET_PATH=/dispatch"));
+        assertThat(content, containsString("PATH_INFO=/"));
+        String mapping = extractLine(contentLines, "MAPPING=");
+        assertThat(mapping, containsString("CrossContextDispatchServlet"));
+        assertThat(content, containsString("QUERY_STRING=include=/verify"));
+        assertThat(content, containsString("REQUEST_URI=/context/dispatch/"));
+        String params = extractLine(contentLines, "PARAMS=");
+        assertNotNull(params);
+        params = params.substring(params.indexOf("=") + 1);
+        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
+    }
+
+    @Test
+    public void testSimulatedCrossContextIncludeToEE8() throws Exception
+    {
+        _targetServletContextHandler.addServlet(VerifySimulatedEE8IncludeServlet.class, "/verify/*");
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+
+        String rawResponse = _connector.getResponse("""
+            GET /context/dispatch/?include=/verify HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        String content = response.getContent();
+        String[] contentLines = content.split("\\n");
+
+        //verify include attributes
+        assertThat(content, containsString("Verified!"));
+        assertThat(content, containsString("javax.servlet.include.context_path=/foreign"));
+        assertThat(content, containsString("javax.servlet.include.servlet_path=/verify"));
+        assertThat(content, containsString("javax.servlet.include.path_info=/pinfo"));
+        String includeMapping = extractLine(contentLines, "javax.servlet.include.mapping=");
+        assertThat(includeMapping, containsString("VerifySimulatedEE8IncludeServlet"));
+        //TODO query string
+        assertThat(content, containsString("javax.servlet.include.request_uri=/foreign/verify/pinfo"));
         //verify request values
         assertThat(content, containsString("CONTEXT_PATH=/context"));
         assertThat(content, containsString("SERVLET_PATH=/dispatch"));
@@ -738,24 +780,59 @@ public class CrossContextDispatcherTest
         {
             if (DispatcherType.INCLUDE.equals(req.getDispatcherType()))
             {
-                res.getWriter().println("Verified!");
-                res.getWriter().println("----------- INCLUDE ATTRIBUTES");
-                res.getWriter().println(RequestDispatcher.INCLUDE_CONTEXT_PATH + "=" + req.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH));
-                res.getWriter().println(RequestDispatcher.INCLUDE_SERVLET_PATH + "=" + req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH));
-                res.getWriter().println(RequestDispatcher.INCLUDE_PATH_INFO  + "=" + req.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO));
-                res.getWriter().println(RequestDispatcher.INCLUDE_MAPPING + "=" + req.getAttribute(RequestDispatcher.INCLUDE_MAPPING));
-                res.getWriter().println(RequestDispatcher.INCLUDE_QUERY_STRING + "=" + req.getAttribute(RequestDispatcher.INCLUDE_QUERY_STRING));
-                res.getWriter().println(RequestDispatcher.INCLUDE_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI));
-                res.getWriter().println("----------- REQUEST");
+                PrintWriter writer = res.getWriter();
+                writer.println("Verified!");
+                writer.println("----------- INCLUDE ATTRIBUTES");
+                printAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, req, writer);
+                printAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, req, writer);
+                printAttribute(RequestDispatcher.INCLUDE_PATH_INFO, req, writer);
+                printAttribute(RequestDispatcher.INCLUDE_MAPPING, req, writer);
+                printAttribute(RequestDispatcher.INCLUDE_QUERY_STRING, req, writer);
+                printAttribute(RequestDispatcher.INCLUDE_REQUEST_URI, req, writer);
+                writer.println("----------- REQUEST");
                 HttpServletRequest httpServletRequest = (HttpServletRequest)req;
-                res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getContextPath());
-                res.getWriter().println("SERVLET_PATH=" + httpServletRequest.getServletPath());
-                res.getWriter().println("PATH_INFO=" + httpServletRequest.getPathInfo());
-                res.getWriter().println("MAPPING=" + httpServletRequest.getHttpServletMapping());
-                res.getWriter().println("QUERY_STRING=" + httpServletRequest.getQueryString());
-                res.getWriter().println("REQUEST_URI=" + httpServletRequest.getRequestURI());
+                writer.println("CONTEXT_PATH=" + httpServletRequest.getContextPath());
+                writer.println("SERVLET_PATH=" + httpServletRequest.getServletPath());
+                writer.println("PATH_INFO=" + httpServletRequest.getPathInfo());
+                writer.println("MAPPING=" + httpServletRequest.getHttpServletMapping());
+                writer.println("QUERY_STRING=" + httpServletRequest.getQueryString());
+                writer.println("REQUEST_URI=" + httpServletRequest.getRequestURI());
                 Enumeration<String> names = httpServletRequest.getParameterNames();
-                res.getWriter().println("PARAMS=" + Collections.list(names));
+                writer.println("PARAMS=" + Collections.list(names));
+            }
+        }
+
+        protected void printAttribute(String attributeName, ServletRequest request, PrintWriter writer)
+        {
+            writer.println(attributeName + "=" + request.getAttribute(attributeName));
+        }
+    }
+
+    public static class VerifySimulatedEE8IncludeServlet extends VerifyIncludeServlet
+    {
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            if (DispatcherType.INCLUDE.equals(req.getDispatcherType()))
+            {
+                PrintWriter writer = res.getWriter();
+                writer.println("Verified!");
+                writer.println("----------- INCLUDE ATTRIBUTES");
+                printAttribute("javax.servlet.include.context_path", req, writer);
+                printAttribute("javax.servlet.include.servlet_path", req, writer);
+                printAttribute("javax.servlet.include.path_info", req, writer);
+                printAttribute("javax.servlet.include.mapping", req, writer);
+                printAttribute("javax.servlet.include.query_string", req, writer);
+                printAttribute("javax.servlet.include.request_uri", req, writer);
+                writer.println("----------- REQUEST");
+                HttpServletRequest httpServletRequest = (HttpServletRequest)req;
+                writer.println("CONTEXT_PATH=" + httpServletRequest.getContextPath());
+                writer.println("SERVLET_PATH=" + httpServletRequest.getServletPath());
+                writer.println("PATH_INFO=" + httpServletRequest.getPathInfo());
+                writer.println("MAPPING=" + httpServletRequest.getHttpServletMapping());
+                writer.println("QUERY_STRING=" + httpServletRequest.getQueryString());
+                writer.println("REQUEST_URI=" + httpServletRequest.getRequestURI());
+                Enumeration<String> names = httpServletRequest.getParameterNames();
+                writer.println("PARAMS=" + Collections.list(names));
             }
         }
     }

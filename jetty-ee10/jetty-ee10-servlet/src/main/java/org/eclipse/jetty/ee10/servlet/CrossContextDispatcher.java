@@ -51,6 +51,12 @@ class CrossContextDispatcher implements RequestDispatcher
         RequestDispatcher.INCLUDE_SERVLET_PATH,
         RequestDispatcher.INCLUDE_QUERY_STRING,
         RequestDispatcher.INCLUDE_PATH_INFO,
+        "javax.servlet.include.request_uri",
+        "javax.servlet.include.mapping",
+        "javax.servlet.include.context_path",
+        "javax.servlet.include.servlet_path",
+        "javax.servlet.include.query_string",
+        "javax.servlet.include.path_info",
         ServletContextRequest.MULTIPART_CONFIG_ELEMENT,
         ContextHandler.CROSS_CONTEXT_ATTRIBUTE,
         ORIGINAL_URI,
@@ -69,6 +75,16 @@ class CrossContextDispatcher implements RequestDispatcher
         {
             super(httpServletRequest, new Attributes.Synthetic(new ServletAttributes(httpServletRequest))
             {
+                @Override
+                public Object getAttribute(String name)
+                {
+                    //handle cross-environment dispatch from ee8
+                    if (name.startsWith("javax.servlet."))
+                        name = "jakarta.servlet." + name.substring(14);
+
+                    return super.getAttribute(name);
+                }
+
                 @Override
                 protected Object getSyntheticAttribute(String name)
                 {
@@ -104,8 +120,20 @@ class CrossContextDispatcher implements RequestDispatcher
                 {
                     return ATTRIBUTES;
                 }
-            });
 
+                @Override
+                public Object setAttribute(String name, Object attribute)
+                {
+                    if (name == null)
+                        return null;
+
+                    //handle cross-environment dispatch from ee8
+                    if (name.startsWith("javax.servlet."))
+                        name = "jakarta.servlet." + name.substring(14);
+
+                    return super.setAttribute(name, attribute);
+                }
+            });
         }
 
         @Override
@@ -136,6 +164,13 @@ class CrossContextDispatcher implements RequestDispatcher
                 @Override
                 protected Object getSyntheticAttribute(String name)
                 {
+                    if (name == null)
+                        return null;
+
+                    //handle cross-environment dispatch from ee8
+                    if (name.startsWith("javax.servlet."))
+                        name = "jakarta.servlet." + name.substring(14);
+
                     return switch (name)
                     {
                         case RequestDispatcher.FORWARD_REQUEST_URI -> httpServletRequest.getRequestURI();
@@ -150,7 +185,8 @@ class CrossContextDispatcher implements RequestDispatcher
                         case RequestDispatcher.INCLUDE_QUERY_STRING -> REMOVED;
                         case RequestDispatcher.INCLUDE_SERVLET_PATH -> REMOVED;
                         case RequestDispatcher.INCLUDE_PATH_INFO -> REMOVED;
-                        case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> httpServletRequest.getAttribute(ServletMultiPartFormData.class.getName());
+                        //TODO
+                        //case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> httpServletRequest.getAttribute(ServletMultiPartFormData.class.getName());
                         case ContextHandler.CROSS_CONTEXT_ATTRIBUTE -> DispatcherType.FORWARD.toString();
                         default -> null;
                     };
