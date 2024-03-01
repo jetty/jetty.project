@@ -227,7 +227,7 @@ public interface RetainableByteBuffer extends Retainable
          * {@link RetainableByteBuffer}s with zero-copy if the {@link #append(RetainableByteBuffer)} API is used
          * @param pool The pool from which to allocate buffers
          * @param direct true if direct buffers should be used
-         * @param maxCapacity The maximum requested length of the accumulated buffers or -1 for no limit.
+         * @param maxCapacity The maximum requested length of the accumulated buffers or -1 for 2GB limit.
          *                    Note that the pool may provide a buffer that exceeds this capacity.
          */
         public Aggregator(ByteBufferPool pool, boolean direct, int maxCapacity)
@@ -241,7 +241,7 @@ public interface RetainableByteBuffer extends Retainable
          * @param pool The pool from which to allocate buffers
          * @param direct true if direct buffers should be used
          * @param growBy the size to grow the buffer by or &lt;= 0 for a heuristic
-         * @param maxCapacity The maximum requested length of the accumulated buffers or -1 for no limit.
+         * @param maxCapacity The maximum requested length of the accumulated buffers or -1 for 2GB limit.
          *                    Note that the pool may provide a buffer that exceeds this capacity.
          */
         public Aggregator(ByteBufferPool pool, boolean direct, int growBy, int maxCapacity)
@@ -368,13 +368,13 @@ public interface RetainableByteBuffer extends Retainable
          * {@link RetainableByteBuffer}s with zero-copy if the {@link #append(RetainableByteBuffer)} API is used
          * @param pool The pool from which to allocate buffers
          * @param direct true if direct buffers should be used
-         * @param maxLength The maximum length of the accumulated buffers or -1 for no limit
+         * @param maxLength The maximum length of the accumulated buffers or -1 for 2GB limit
          */
         public Accumulator(ByteBufferPool pool, boolean direct, long maxLength)
         {
             _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
             _direct = direct;
-            _maxLength = maxLength < 0 ? Long.MAX_VALUE : maxLength;
+            _maxLength = maxLength < 0 ? Integer.MAX_VALUE : maxLength;
         }
 
         @Override
@@ -531,7 +531,7 @@ public interface RetainableByteBuffer extends Retainable
                     {
                         if (i < _buffers.size())
                         {
-                            _buffers.get(i).writeTo(sink, ++i == _buffers.size() || !last, this);
+                            _buffers.get(i).writeTo(sink, last && ++i == _buffers.size(), this);
                             return Action.SCHEDULED;
                         }
                         return Action.SUCCEEDED;
