@@ -192,29 +192,6 @@ public interface RetainableByteBuffer extends Retainable
         BufferUtil.clear(getByteBuffer());
     }
 
-    /** Append byte array to the buffer, potentially limited by capacity.
-     * @param bytes the byte array to append
-     * @param offset the offset into the array
-     * @param length the number of bytes to try to append
-     * @return the number of bytes actually appended.
-     */
-    default int append(byte[] bytes, int offset, int length)
-    {
-        ByteBuffer to = getByteBuffer();
-
-        int pos = BufferUtil.flipToFill(to);
-        try
-        {
-            length = Math.min(length, to.remaining());
-            to.put(bytes, offset, length);
-        }
-        finally
-        {
-            BufferUtil.flipToFlush(to, pos);
-        }
-        return length;
-    }
-
     default boolean append(ByteBuffer bytes)
     {
         BufferUtil.append(getByteBuffer(), bytes);
@@ -343,13 +320,6 @@ public interface RetainableByteBuffer extends Retainable
         public int capacity()
         {
             return Math.max(_buffer.capacity(), _maxCapacity);
-        }
-
-        @Override
-        public int append(byte[] bytes, int offset, int length)
-        {
-            ensureSpace(length);
-            return RetainableByteBuffer.super.append(bytes, offset, length);
         }
 
         @Override
@@ -492,42 +462,21 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public int append(byte[] bytes, int offset, int length)
-        {
-            length = ensureMaxLength(length);
-
-            if (_canAggregate)
-            {
-                RetainableByteBuffer last = _buffers.get(_buffers.size() - 1);
-                if (length <= last.space())
-                {
-                    last.append(bytes, offset, length);
-                    return length;
-                }
-            }
-
-            RetainableByteBuffer buffer = _pool.acquire(length, _direct);
-            buffer.append(bytes, offset, length);
-            _buffers.add(buffer);
-            _canAggregate = true;
-            return length;
-        }
-
-        @Override
         public boolean append(ByteBuffer bytes)
         {
             int remaining = bytes.remaining();
             int length = ensureMaxLength(remaining);
             // if the length was restricted by maxLength, slice the bytes smaller
+            ByteBuffer out = bytes;
             if (length < remaining)
             {
                 ByteBuffer slice = bytes.slice();
                 slice.limit(slice.position() + length);
                 bytes.position(bytes.position() + length);
-                bytes = slice;
+                out = slice;
             }
             RetainableByteBuffer buffer = _pool.acquire(length, _direct);
-            buffer.append(bytes);
+            buffer.append(out);
             _buffers.add(buffer);
             _canAggregate = true;
             return !bytes.hasRemaining();

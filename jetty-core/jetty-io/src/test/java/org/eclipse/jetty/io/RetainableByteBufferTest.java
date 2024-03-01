@@ -48,7 +48,7 @@ public class RetainableByteBufferTest
         assertThat("Leaks: " + _pool.dumpLeaks(), _pool.getLeaks().size(), is(0));
     }
 
-    static Stream<Arguments> buffers()
+    public static Stream<Arguments> buffers()
     {
         return Stream.of(
             Arguments.of(_pool.acquire(MIN_CAPACITY, true)),
@@ -80,7 +80,7 @@ public class RetainableByteBufferTest
     {
         byte[] bytes = new byte[] {'-', 'X', '-'};
         while (!buffer.isFull())
-            assertThat(buffer.append(bytes, 1, 1), is(1));
+            assertThat(buffer.append(ByteBuffer.wrap(bytes, 1, 1)), is(true));
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
         buffer.release();
@@ -92,7 +92,18 @@ public class RetainableByteBufferTest
     {
         byte[] bytes = new byte[MAX_CAPACITY * 2];
         Arrays.fill(bytes, (byte)'X');
-        assertThat(buffer.append(bytes, 0, bytes.length), is(buffer.capacity()));
+        ByteBuffer b = ByteBuffer.wrap(bytes);
+
+        if (buffer.append(b))
+        {
+            assertTrue(BufferUtil.isEmpty(b));
+            assertThat(buffer.capacity(), greaterThanOrEqualTo(MAX_CAPACITY * 2));
+        }
+        else
+        {
+            assertFalse(BufferUtil.isEmpty(b));
+            assertThat(b.remaining(), is(MAX_CAPACITY * 2 - buffer.capacity()));
+        }
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
         assertTrue(buffer.isFull());
