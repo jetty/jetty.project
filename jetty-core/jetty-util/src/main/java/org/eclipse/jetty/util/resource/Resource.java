@@ -268,7 +268,7 @@ public abstract class Resource implements Iterable<Resource>
      * Resolve an existing Resource.
      *
      * @param subUriPath the encoded subUriPath
-     * @return an existing Resource representing the requested subUriPath, which may not {@link #exists() exist},
+     * @return a Resource representing the requested subUriPath, which may not {@link #exists() exist},
      * or null if the resource cannot exist.
      * @throws IllegalArgumentException if subUriPath is invalid
      */
