@@ -16,7 +16,6 @@ package org.eclipse.jetty.util;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,44 +35,35 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @State(Scope.Benchmark)
 public class TrieBenchmark
 {
-    @Param({
-        "ArrayTrie",
-        "TernaryTrie",
-        "ArrayTernaryTrie",
-        "TreeTrie",
-        "HashTrie",
-    })
-    public static String TRIE_TYPE;
-
-    private AbstractTrie<String> trie;
-
     private static final String LONG_HIT = "This-is-a-Moderately-Long-Key-that-will-hit";
     private static final String LONG_MISS = "This-is-a-Moderately-Long-Key-that-will-miss";
 
+    public enum TrieType
+    {
+        ARRAY_TRIE,
+        ARRAY_TERNARY_TRIE,
+        TREE_TRIE,
+        HASH_TRIE,
+    }
+
+    @Param
+    public TrieType trieType;
+
+    private AbstractTrie<String> trie;
+
     @Setup
-    public void setUp() throws Exception
+    public void setUp()
     {
         boolean caseSensitive = false;
-        Set<Character> alphabet = new HashSet<>();
         int capacity = 4096;
 
-        switch (TRIE_TYPE)
+        trie = switch (trieType)
         {
-            case "ArrayTrie":
-                trie = new ArrayTrie<>(caseSensitive, capacity);
-                break;
-            case "ArrayTernaryTrie":
-                trie = new ArrayTernaryTrie<>(caseSensitive, capacity);
-                break;
-            case "TreeTrie":
-                trie = new TreeTrie();
-                break;
-            case "HashTrie":
-                trie = new HashTrie(caseSensitive);
-                break;
-            default:
-                throw new AssertionError("No trie for " + TRIE_TYPE);
-        }
+            case ARRAY_TRIE -> new ArrayTrie<>(caseSensitive, capacity);
+            case ARRAY_TERNARY_TRIE -> new ArrayTernaryTrie<>(caseSensitive, capacity);
+            case TREE_TRIE -> new TreeTrie();
+            case HASH_TRIE -> new HashTrie(caseSensitive);
+        };
 
         for (String k : HttpParser.CACHE.keySet())
             if (!trie.put(k, HttpParser.CACHE.get(k).toString()))

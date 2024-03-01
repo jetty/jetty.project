@@ -68,6 +68,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             session.setStreamIdleTimeout(streamIdleTimeout);
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, endPoint, session, sessionPromise, listener);
+        context.put(HTTP2Connection.class.getName(), connection);
         connection.addEventListener(connectionListener);
         parser.init(connection);
 

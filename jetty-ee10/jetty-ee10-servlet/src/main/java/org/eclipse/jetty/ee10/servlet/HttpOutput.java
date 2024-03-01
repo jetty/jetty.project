@@ -432,7 +432,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (content != null)
-            channelWrite(content, true, new CompleteWriteCompleteCB());
+            channelWrite(content, true, new WriteCompleteCB());
     }
 
     /**
@@ -1764,17 +1764,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
-        }
-    }
-
-    private class CompleteWriteCompleteCB extends WriteCompleteCB
-    {
-        @Override
-        public void failed(Throwable x)
-        {
-            // TODO why is this needed for h2/h3?
-            HttpOutput.this._servletChannel.abort(x);
-            super.failed(x);
         }
     }
 }

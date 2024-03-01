@@ -239,7 +239,8 @@ public class WebInfConfiguration extends AbstractConfiguration
 
                 if (war != null)
                 {
-                    Path warPath = Path.of(war);
+                    Path warPath = Path.of(URIUtil.toURI(war));
+                    
                     // look for a sibling like "foo/" to a "foo.war"
                     if (FileID.isWebArchive(warPath) && Files.exists(warPath))
                     {
@@ -290,8 +291,17 @@ public class WebInfConfiguration extends AbstractConfiguration
                         if (originalWarResource.lastModified().isAfter(Files.getLastModifiedTime(extractedWebAppDir).toInstant()) || extractionLock.exists())
                         {
                             extractionLock.createNewFile();
-                            IO.delete(extractedWebAppDir);
-                            Files.createDirectory(extractedWebAppDir);
+                            // Best effort delete
+                            if (IO.delete(extractedWebAppDir))
+                            {
+                                // Recreate the directory if it was deleted.
+                                Files.createDirectory(extractedWebAppDir);
+                            }
+                            else
+                            {
+                                if (LOG.isInfoEnabled())
+                                    LOG.info("Unable to delete path {}, reusing existing path", extractedWebAppDir);
+                            }
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                             try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())

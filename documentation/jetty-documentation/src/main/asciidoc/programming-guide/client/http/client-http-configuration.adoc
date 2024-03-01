@@ -19,9 +19,9 @@ Please refer to the `HttpClient` link:{javadoc-url}/org/eclipse/jetty/client/Htt
 
 The most common parameters are:
 
-* `HttpClient.idleTimeout`: same as `ClientConnector.idleTimeout` described in xref:pg-client-io-arch-network[this section].
-* `HttpClient.connectBlocking`: same as `ClientConnector.connectBlocking` described in xref:pg-client-io-arch-network[this section].
-* `HttpClient.connectTimeout`: same as `ClientConnector.connectTimeout` described in xref:pg-client-io-arch-network[this section].
+* `HttpClient.idleTimeout`: same as `ClientConnector.idleTimeout` described in xref:pg-client-io-arch-transport[this section].
+* `HttpClient.connectBlocking`: same as `ClientConnector.connectBlocking` described in xref:pg-client-io-arch-transport[this section].
+* `HttpClient.connectTimeout`: same as `ClientConnector.connectTimeout` described in xref:pg-client-io-arch-transport[this section].
 * `HttpClient.maxConnectionsPerDestination`: the max number of TCP connections that are opened for a particular destination (defaults to 64).
 * `HttpClient.maxRequestsQueuedPerDestination`: the max number of requests queued (defaults to 1024).
 
@@ -57,16 +57,31 @@ You can configure the `SslContextFactory.Client` to skip the validation of the s
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsNoValidation]
 ----
 
-When you disable the validation of the server host name at the TLS level, you are strongly recommended to enable it at the application level, otherwise you may risk to connect to a server different from the one you intend to connect to:
+When you disable the validation of the server host name at the TLS level, you are strongly recommended to enable it at the application level.
+Failing to do so puts you at risk of connecting to a server different from the one you intend to connect to:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsAppValidation]
 ----
 
-You may have the validation of the server host name enabled at both the TLS level and application level, typically when you want to further restrict the client to connect only to a smaller set of server hosts than those allowed in the certificate sent by the server.
+Enabling server host name validation at both the TLS level and application level allow you to further restrict the set of server hosts the client can connect to, among those allowed in the certificate sent by the server.
+
+Entirely disabling server host name validation is not recommended, but may be done in controlled environments.
+
+Even with server host name validation disabled, the validation of the certificate chain, by validating cryptographic signatures and validity dates is still performed.
 
 Please refer to the `SslContextFactory.Client` link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[javadocs] for the complete list of configurable parameters.
+
+[[pg-client-http-configuration-tls-listener]]
+====== HttpClient `SslHandshakeListener`
+
+Applications may register a `org.eclipse.jetty.io.ssl.SslHandshakeListener` to be notified of TLS handshakes success or failure, by adding the `SslHandshakeListener` as a bean to `HttpClient`:
+
+[source,java,indent=0,options=nowrap]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=sslHandshakeListener]
+----
 
 [[pg-client-http-configuration-tls-truststore]]
 ====== HttpClient TLS TrustStore Configuration

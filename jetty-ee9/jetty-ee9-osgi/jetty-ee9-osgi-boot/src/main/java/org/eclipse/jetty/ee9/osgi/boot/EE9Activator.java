@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.osgi.boot;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -49,6 +48,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
@@ -356,7 +356,7 @@ public class EE9Activator implements BundleActivator
         {
             OSGiApp osgiApp = OSGiApp.class.cast(app);
             String jettyHome = (String)app.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
-            Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
+            Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : Paths.get(URIUtil.toURI(jettyHome));
 
             WebAppContext webApp = new WebAppContext();
 

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.6-SNAPSHOT</version>
+  <version>12.0.7-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -165,7 +165,7 @@
     <build-helper.maven.plugin.version>3.5.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.12.7</checkstyle.version>
+    <checkstyle.version>10.13.0</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.25.0</commons.compress.version>
@@ -204,7 +204,7 @@
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.3.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.18.0</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.20.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>

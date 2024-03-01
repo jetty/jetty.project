@@ -209,8 +209,11 @@ public class ServletChannel
         return _state;
     }
 
-    public long getBytesWritten()
+    private long getBytesWritten()
     {
+        // This returns the bytes written to the network,
+        // which may be different from those written by the
+        // application as they might have been compressed.
         return Response.getContentBytesWritten(getServletContextResponse());
     }
 
@@ -496,15 +499,24 @@ public class ServletChannel
                                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform error handling, aborting", cause);
-                            if (_state.isResponseCommitted())
+
+                            try
                             {
-                                // Perform the same behavior as when the callback is failed.
-                                _state.errorHandlingComplete(cause);
+                                if (_state.isResponseCommitted())
+                                {
+                                    // Perform the same behavior as when the callback is failed.
+                                    _state.errorHandlingComplete(cause);
+                                }
+                                else
+                                {
+                                    getServletContextResponse().resetContent();
+                                    sendErrorResponseAndComplete();
+                                }
                             }
-                            else
+                            catch (Throwable t)
                             {
-                                getServletContextResponse().resetContent();
-                                sendErrorResponseAndComplete();
+                                ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
+                                throw t;
                             }
                         }
                         finally
@@ -534,24 +546,29 @@ public class ServletChannel
 
                     case COMPLETE:
                     {
-                        if (!getServletContextResponse().isCommitted())
+                        ServletContextResponse response = getServletContextResponse();
+                        if (!response.isCommitted())
                         {
                             // Indicate Connection:close if we can't consume all.
-                            if (getServletContextResponse().getStatus() >= 200)
-                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
+                            if (response.getStatus() >= 200)
+                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, response);
                         }
 
                         // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.
-                        if (!_servletContextRequest.isHead() && getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304)
+                        if (!_servletContextRequest.isHead() && response.getStatus() != HttpStatus.NOT_MODIFIED_304)
                         {
-                            long written = getBytesWritten();
-                            if (getServletContextResponse().isContentIncomplete(written) && sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, getServletContextResponse().getContentLength())))
+                            // Compare the bytes written by the application, even if
+                            // they might be compressed (or changed) by child Handlers.
+                            long written = response.getContentBytesWritten();
+                            if (response.isContentIncomplete(written))
+                            {
+                                sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, response.getContentLength()));
                                 break;
+                            }
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        getServletContextResponse().completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
-
+                        response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
                         break;
                     }
 
@@ -726,7 +743,7 @@ public class ServletChannel
     {
         ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
         if (LOG.isDebugEnabled())
-            LOG.debug("onCompleted for {} written={}", apiRequest.getRequestURI(), getBytesWritten());
+            LOG.debug("onCompleted for {} written app={} net={}", apiRequest.getRequestURI(), getHttpOutput().getWritten(), getBytesWritten());
 
         if (getServer().getRequestLog() instanceof CustomRequestLog)
         {

@@ -14,23 +14,32 @@
 package org.eclipse.jetty.quic.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.server.internal.SimpleTokenMinter;
 import org.eclipse.jetty.quic.server.internal.SimpleTokenValidator;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,17 +51,22 @@ public class ServerQuicConnection extends QuicConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicConnection.class);
 
-    private final QuicServerConnector connector;
+    private final Map<SocketAddress, InetSocketAddress> remoteSocketAddresses = new ConcurrentHashMap<>();
+    private final Connector connector;
+    private final ServerQuicConfiguration quicConfiguration;
     private final SessionTimeouts sessionTimeouts;
+    private final InetSocketAddress inetLocalAddress;
 
-    public ServerQuicConnection(QuicServerConnector connector, EndPoint endPoint)
+    public ServerQuicConnection(Connector connector, ServerQuicConfiguration quicConfiguration, EndPoint endPoint)
     {
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
+        this.quicConfiguration = quicConfiguration;
         this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
+        this.inetLocalAddress = endPoint.getLocalSocketAddress() instanceof InetSocketAddress inet ? inet : new InetSocketAddress(InetAddress.getLoopbackAddress(), 443);
     }
 
-    public QuicServerConnector getQuicServerConnector()
+    public Connector getQuicServerConnector()
     {
         return connector;
     }
@@ -64,19 +78,27 @@ public class ServerQuicConnection extends QuicConnection
         fillInterested();
     }
 
+    private InetSocketAddress toInetSocketAddress(SocketAddress socketAddress)
+    {
+        if (socketAddress instanceof InetSocketAddress inet)
+            return inet;
+        return remoteSocketAddresses.computeIfAbsent(socketAddress, key -> new InetSocketAddress(InetAddress.getLoopbackAddress(), 0xFA93));
+    }
+
     @Override
     protected QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
+        InetSocketAddress inetRemote = toInetSocketAddress(remoteAddress);
         ByteBufferPool bufferPool = getByteBufferPool();
         // TODO make the token validator configurable
-        QuicheConnection quicheConnection = QuicheConnection.tryAccept(connector.newQuicheConfig(), new SimpleTokenValidator((InetSocketAddress)remoteAddress), cipherBuffer, getEndPoint().getLocalAddress(), remoteAddress);
+        QuicheConnection quicheConnection = QuicheConnection.tryAccept(newQuicheConfig(), new SimpleTokenValidator(inetRemote), cipherBuffer, inetLocalAddress, inetRemote);
         if (quicheConnection == null)
         {
             RetainableByteBuffer negotiationBuffer = bufferPool.acquire(getOutputBufferSize(), true);
             ByteBuffer byteBuffer = negotiationBuffer.getByteBuffer();
             int pos = BufferUtil.flipToFill(byteBuffer);
             // TODO make the token minter configurable
-            if (!QuicheConnection.negotiate(new SimpleTokenMinter((InetSocketAddress)remoteAddress), cipherBuffer, byteBuffer))
+            if (!QuicheConnection.negotiate(new SimpleTokenMinter(inetRemote), cipherBuffer, byteBuffer))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("QUIC connection negotiation failed, dropping packet");
@@ -102,6 +124,48 @@ public class ServerQuicConnection extends QuicConnection
     protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
     {
         return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector());
+    }
+
+    @Override
+    public InetSocketAddress getLocalInetSocketAddress()
+    {
+        return inetLocalAddress;
+    }
+
+    @Override
+    protected Runnable process(QuicSession session, SocketAddress remoteAddress, ByteBuffer cipherBuffer)
+    {
+        InetSocketAddress inetRemote = toInetSocketAddress(remoteAddress);
+        return super.process(session, inetRemote, cipherBuffer);
+    }
+
+    private QuicheConfig newQuicheConfig()
+    {
+        QuicheConfig quicheConfig = new QuicheConfig();
+        Map<String, Object> implConfig = quicConfiguration.getImplementationConfiguration();
+        Path privateKeyPath = (Path)implConfig.get(QuicConfiguration.PRIVATE_KEY_PEM_PATH_KEY);
+        quicheConfig.setPrivKeyPemPath(privateKeyPath.toString());
+        Path certificatesPath = (Path)implConfig.get(QuicConfiguration.CERTIFICATE_CHAIN_PEM_PATH_KEY);
+        quicheConfig.setCertChainPemPath(certificatesPath.toString());
+        Path trustedCertificatesPath = (Path)implConfig.get(QuicConfiguration.TRUSTED_CERTIFICATES_PEM_PATH_KEY);
+        if (trustedCertificatesPath != null)
+            quicheConfig.setTrustedCertsPemPath(trustedCertificatesPath.toString());
+        SslContextFactory.Server sslContextFactory = quicConfiguration.getSslContextFactory();
+        quicheConfig.setVerifyPeer(sslContextFactory.getNeedClientAuth() || sslContextFactory.getWantClientAuth());
+        // Idle timeouts must not be managed by Quiche.
+        quicheConfig.setMaxIdleTimeout(0L);
+        quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());
+        quicheConfig.setInitialMaxStreamDataBidiLocal((long)quicConfiguration.getBidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamDataBidiRemote((long)quicConfiguration.getBidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamDataUni((long)quicConfiguration.getUnidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamsUni((long)quicConfiguration.getMaxUnidirectionalRemoteStreams());
+        quicheConfig.setInitialMaxStreamsBidi((long)quicConfiguration.getMaxBidirectionalRemoteStreams());
+        quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
+        List<String> protocols = connector.getProtocols();
+        // This is only needed for Quiche example clients.
+        protocols.add(0, "http/0.9");
+        quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
+        return quicheConfig;
     }
 
     public void schedule(ServerQuicSession session)

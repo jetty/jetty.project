@@ -50,12 +50,14 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -80,7 +82,7 @@ import org.slf4j.LoggerFactory;
  * for cases where this is needed.</p>
  * <p>HttpClient also acts as a central configuration point for cookies, via {@link #getHttpCookieStore()}.</p>
  * <p>Typical usage:</p>
- * <pre>
+ * <pre>{@code
  * HttpClient httpClient = new HttpClient();
  * httpClient.start();
  *
@@ -94,15 +96,12 @@ import org.slf4j.LoggerFactory;
  * int status = response.status();
  *
  * // Asynchronously
- * httpClient.newRequest("http://localhost:8080").send(new Response.CompleteListener()
+ * httpClient.newRequest("http://localhost:8080").send(result ->
  * {
- *     &#64;Override
- *     public void onComplete(Result result)
- *     {
- *         ...
- *     }
+ *     Response response = result.getResponse();
+ *     ...
  * });
- * </pre>
+ * }</pre>
  */
 @ManagedObject("The HTTP client")
 public class HttpClient extends ContainerLifeCycle
@@ -470,7 +469,16 @@ public class HttpClient extends ContainerLifeCycle
         host = host.toLowerCase(Locale.ENGLISH);
         int port = request.getPort();
         port = normalizePort(scheme, port);
-        return new Origin(scheme, host, port, request.getTag(), protocol);
+        Transport transport = request.getTransport();
+        if (transport == null)
+        {
+            // Ask the ClientConnector for backwards compatibility
+            // until ClientConnector.Configurator is removed.
+            transport = connector.newTransport();
+            if (transport == null)
+                transport = Transport.TCP_IP;
+        }
+        return new Origin(scheme, new Origin.Address(host, port), request.getTag(), protocol, transport);
     }
 
     /**
@@ -528,39 +536,54 @@ public class HttpClient extends ContainerLifeCycle
         List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
         context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, protocols);
 
+        Origin origin = destination.getOrigin();
         ProxyConfiguration.Proxy proxy = destination.getProxy();
-        Origin.Address address = proxy == null ? destination.getOrigin().getAddress() : proxy.getAddress();
-        getSocketAddressResolver().resolve(address.getHost(), address.getPort(), new Promise<>()
+        if (proxy != null)
+            origin = proxy.getOrigin();
+
+        Transport transport = origin.getTransport();
+        context.put(Transport.class.getName(), transport);
+
+        if (transport.requiresDomainNameResolution())
         {
-            @Override
-            public void succeeded(List<InetSocketAddress> socketAddresses)
+            Origin.Address address = origin.getAddress();
+            getSocketAddressResolver().resolve(address.getHost(), address.getPort(), new Promise<>()
             {
-                connect(socketAddresses, 0, context);
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                promise.failed(x);
-            }
-
-            private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
-            {
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
+                @Override
+                public void succeeded(List<InetSocketAddress> socketAddresses)
                 {
-                    @Override
-                    public void failed(Throwable x)
+                    connect(socketAddresses, 0, context);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    promise.failed(x);
+                }
+
+                private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
+                {
+                    context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
                     {
-                        int nextIndex = index + 1;
-                        if (nextIndex == socketAddresses.size())
-                            super.failed(x);
-                        else
-                            connect(socketAddresses, nextIndex, context);
-                    }
-                });
-                transport.connect((SocketAddress)socketAddresses.get(index), context);
-            }
-        });
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            int nextIndex = index + 1;
+                            if (nextIndex == socketAddresses.size())
+                                super.failed(x);
+                            else
+                                connect(socketAddresses, nextIndex, context);
+                        }
+                    });
+                    HttpClient.this.transport.connect((SocketAddress)socketAddresses.get(index), context);
+                }
+            });
+        }
+        else
+        {
+            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
+            this.transport.connect(transport.getSocketAddress(), context);
+        }
     }
 
     private HttpConversation newConversation()
@@ -1099,11 +1122,17 @@ public class HttpClient extends ContainerLifeCycle
         return proxyConfig;
     }
 
+    /**
+     * Return a normalized port suitable for use by Origin and Address
+     * @param scheme the scheme to use for the default port (if port is unspecified)
+     * @param port the port (0 or negative means the port is unspecified)
+     * @return the normalized port.
+     */
     public static int normalizePort(String scheme, int port)
     {
         if (port > 0)
             return port;
-        return HttpScheme.getDefaultPort(scheme);
+        return URIUtil.getDefaultPortForScheme(scheme);
     }
 
     public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)

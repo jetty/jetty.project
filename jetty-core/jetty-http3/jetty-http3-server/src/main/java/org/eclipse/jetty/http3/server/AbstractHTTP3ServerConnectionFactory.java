@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -33,21 +34,31 @@ import org.eclipse.jetty.server.HttpConfiguration;
 
 public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConnectionFactory implements ProtocolSession.Factory
 {
-    private final HTTP3Configuration configuration = new HTTP3Configuration();
+    private final HTTP3Configuration http3Configuration = new HTTP3Configuration();
+    private final ServerQuicConfiguration quicConfiguration;
     private final HttpConfiguration httpConfiguration;
     private final Session.Server.Listener listener;
 
-    public AbstractHTTP3ServerConnectionFactory(HttpConfiguration httpConfiguration, Session.Server.Listener listener)
+    public AbstractHTTP3ServerConnectionFactory(ServerQuicConfiguration quicConfiguration, HttpConfiguration httpConfiguration, Session.Server.Listener listener)
     {
         super("h3");
-        installBean(configuration);
+        this.quicConfiguration = Objects.requireNonNull(quicConfiguration);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
-        installBean(httpConfiguration);
         this.listener = listener;
-        configuration.setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
-        configuration.setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
-        configuration.setMaxRequestHeadersSize(httpConfiguration.getRequestHeaderSize());
-        configuration.setMaxResponseHeadersSize(httpConfiguration.getResponseHeaderSize());
+        // Max concurrent streams that a client can open.
+        quicConfiguration.setMaxBidirectionalRemoteStreams(128);
+        // HTTP/3 requires a few mandatory unidirectional streams.
+        quicConfiguration.setMaxUnidirectionalRemoteStreams(8);
+        quicConfiguration.setUnidirectionalStreamRecvWindow(1024 * 1024);
+        http3Configuration.setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
+        http3Configuration.setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
+        http3Configuration.setMaxRequestHeadersSize(httpConfiguration.getRequestHeaderSize());
+        http3Configuration.setMaxResponseHeadersSize(httpConfiguration.getResponseHeaderSize());
+    }
+
+    public ServerQuicConfiguration getQuicConfiguration()
+    {
+        return quicConfiguration;
     }
 
     public HttpConfiguration getHttpConfiguration()
@@ -57,7 +68,16 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
 
     public HTTP3Configuration getHTTP3Configuration()
     {
-        return configuration;
+        return http3Configuration;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        addBean(quicConfiguration);
+        addBean(http3Configuration);
+        addBean(httpConfiguration);
+        super.doStart();
     }
 
     @Override

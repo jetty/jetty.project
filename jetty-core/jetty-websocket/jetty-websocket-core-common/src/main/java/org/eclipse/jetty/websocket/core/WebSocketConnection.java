@@ -69,7 +69,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final Flusher flusher;
     private final Random random;
     private DemandState demand = DemandState.NOT_DEMANDING;
-    private boolean fillingAndParsing;
+    private boolean fillingAndParsing = true;
     private final LongAdder messagesIn = new LongAdder();
     private final LongAdder bytesIn = new LongAdder();
     // Read / Parse variables
@@ -199,11 +199,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
-    /**
-     * Physical connection disconnect.
-     * <p>
-     * Not related to WebSocket close handshake.
-     */
     @Override
     public void onClose(Throwable cause)
     {
@@ -236,11 +231,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return true;
     }
 
-    /**
-     * Event for no activity on connection (read or write)
-     *
-     * @return true to signal that the endpoint must be closed, false to keep the endpoint open
-     */
     @Override
     protected boolean onReadTimeout(TimeoutException timeout)
     {
@@ -394,7 +384,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 case NOT_DEMANDING ->
                 {
                     fillingAndParsing = false;
-                    if (!networkBuffer.hasRemaining())
+                    if (networkBuffer != null && !networkBuffer.hasRemaining())
                         releaseNetworkBuffer();
                     return false;
                 }
@@ -530,9 +520,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         BufferUtil.flipToFlush(buffer, 0);
     }
 
-    /**
-     * Physical connection Open.
-     */
     @Override
     public void onOpen()
     {
@@ -542,6 +529,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         // Open Session
         super.onOpen();
         coreSession.onOpen();
+        if (moreDemand())
+            fillAndParse();
     }
 
     @Override

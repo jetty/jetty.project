@@ -121,7 +121,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     }
 
     @Override
-    protected void parsedValueAndParams(StringBuffer buffer)
+    protected void parsedValueAndParams(StringBuilder buffer)
     {
         super.parsedValueAndParams(buffer);
 
@@ -131,7 +131,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     }
 
     @Override
-    protected void parsedValue(StringBuffer buffer)
+    protected void parsedValue(StringBuilder buffer)
     {
         super.parsedValue(buffer);
 
@@ -144,7 +144,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     }
 
     @Override
-    protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+    protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
     {
         _sorted = false;
 

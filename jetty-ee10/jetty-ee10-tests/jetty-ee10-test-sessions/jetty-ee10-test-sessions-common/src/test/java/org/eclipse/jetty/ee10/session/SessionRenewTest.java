@@ -42,8 +42,10 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.session.test.TestSessionDataStore;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -190,10 +192,10 @@ public class SessionRenewTest
             ManagedSession sessiona = ((TestSessionCache)contextA.getSessionHandler().getSessionCache()).getWithoutReferenceCount(updatedId);
             ManagedSession sessionb = ((TestSessionCache)contextB.getSessionHandler().getSessionCache()).getWithoutReferenceCount(updatedId);
 
-            //sessions should nor have any usecounts
-            assertEquals(0, sessiona.getRequests());
-            assertEquals(0, sessionb.getRequests());
 
+            //sessions should nor have any usecounts
+            await().atMost(5, TimeUnit.SECONDS).until(sessiona::getRequests, Matchers.is(0L));
+            await().atMost(5, TimeUnit.SECONDS).until(sessionb::getRequests, Matchers.is(0L));
         }
         finally
         {

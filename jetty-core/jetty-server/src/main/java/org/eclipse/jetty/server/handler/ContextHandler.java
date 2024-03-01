@@ -631,6 +631,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             if (!Resources.isReadable(baseResource))
                 throw new IllegalArgumentException("Base Resource is not valid: " + baseResource);
+            if (baseResource.isAlias())
+                LOG.warn("Base Resource should not be an alias");
         }
 
         _availability.set(Availability.STARTING);
@@ -1126,7 +1128,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             File tempDirectory = ContextHandler.this.getTempDirectory();
             if (tempDirectory == null)
-                tempDirectory = getServer().getTempDirectory();
+                tempDirectory = getServer().getContext().getTempDirectory();
             return tempDirectory;
         }
 

@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * <li>If the added bean is !running and the container is started, it will be added as an unmanaged bean.</li>
  * </ul>
  * When the container is started, then all contained managed beans will also be started.
- * Any contained AUTO beans will be check for their status and if already started will be switched unmanaged beans,
+ * Any contained AUTO beans will be checked for their status and if already started will be switched unmanaged beans,
  * else they will be started and switched to managed beans.
  * Beans added after a container is started are not started and their state needs to be explicitly managed.
  * <p>
@@ -104,9 +104,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             {
                 if (!isStarting())
                     break;
-                if (b._bean instanceof LifeCycle)
+                if (b._bean instanceof LifeCycle l)
                 {
-                    LifeCycle l = (LifeCycle)b._bean;
                     switch (b._managed)
                     {
                         case MANAGED:
@@ -139,9 +138,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             Collections.reverse(reverse);
             for (Bean b : reverse)
             {
-                if (b._bean instanceof LifeCycle && b._managed == Managed.MANAGED)
+                if (b._bean instanceof LifeCycle l && b._managed == Managed.MANAGED)
                 {
-                    LifeCycle l = (LifeCycle)b._bean;
                     if (l.isRunning())
                     {
                         try
@@ -197,9 +195,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         {
             if (!isStopping())
                 break;
-            if (b._managed == Managed.MANAGED && b._bean instanceof LifeCycle)
+            if (b._managed == Managed.MANAGED && b._bean instanceof LifeCycle l)
             {
-                LifeCycle l = (LifeCycle)b._bean;
                 try
                 {
                     stop(l);
@@ -224,9 +221,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         Collections.reverse(reverse);
         for (Bean b : reverse)
         {
-            if (b._bean instanceof Destroyable && (b._managed == Managed.MANAGED || b._managed == Managed.POJO))
+            if (b._bean instanceof Destroyable d && (b._managed == Managed.MANAGED || b._managed == Managed.POJO))
             {
-                Destroyable d = (Destroyable)b._bean;
                 try
                 {
                     d.destroy();
@@ -312,7 +308,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     public boolean addBean(Object o)
     {
-        return addBean(o, o instanceof LifeCycle l ? (l.isRunning() ? Managed.UNMANAGED : Managed.AUTO) : Managed.POJO);
+        if (o instanceof LifeCycle l)
+            return addBean(o, l.isRunning() ? Managed.UNMANAGED : Managed.AUTO);
+        return addBean(o, Managed.POJO);
     }
 
     /**
@@ -370,9 +368,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     break;
 
                 case AUTO:
-                    if (o instanceof LifeCycle)
+                    if (o instanceof LifeCycle l)
                     {
-                        LifeCycle l = (LifeCycle)o;
                         if (isStarting())
                         {
                             if (l.isRunning())
@@ -506,9 +503,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 // already been added, so we will not enter this branch.
                 addBean(listener);
 
-            if (listener instanceof Container.Listener)
+            if (listener instanceof Container.Listener cl)
             {
-                Container.Listener cl = (Container.Listener)listener;
                 _listeners.add(cl);
 
                 // tell it about existing beans
@@ -537,9 +533,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         if (super.removeEventListener(listener))
         {
             removeBean(listener);
-            if (listener instanceof Container.Listener && _listeners.remove(listener))
+            if (listener instanceof Container.Listener cl && _listeners.remove(listener))
             {
-                Container.Listener cl = (Container.Listener)listener;
                 // remove existing beans
                 for (Bean b : _beans)
                 {
@@ -820,15 +815,12 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
         public boolean isManageable()
         {
-            switch (_managed)
+            return switch (_managed)
             {
-                case MANAGED:
-                    return true;
-                case AUTO:
-                    return _bean instanceof LifeCycle && ((LifeCycle)_bean).isStopped();
-                default:
-                    return false;
-            }
+                case MANAGED -> true;
+                case AUTO -> _bean instanceof LifeCycle && ((LifeCycle)_bean).isStopped();
+                default -> false;
+            };
         }
 
         @Override

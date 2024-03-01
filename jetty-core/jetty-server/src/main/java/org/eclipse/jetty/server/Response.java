@@ -356,10 +356,7 @@ public interface Response extends Content.Sink
             if (!request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
             {
                 // make the location an absolute URI
-                StringBuilder url = new StringBuilder(128);
-                URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
-                url.append(location);
-                location = url.toString();
+                location = URIUtil.newURI(uri.getScheme(), Request.getServerName(request), Request.getServerPort(request), location, null);
             }
         }
         return location;
@@ -621,7 +618,7 @@ public interface Response extends Content.Sink
 
     /**
      * @param response the HTTP response
-     * @return the number of response content bytes written so far,
+     * @return the number of response content bytes written to the network so far,
      * or {@code -1} if the number is unknown
      */
     static long getContentBytesWritten(Response response)

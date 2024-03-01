@@ -79,7 +79,7 @@ public class HttpReceiverOverHTTPTest
         client = new HttpClient();
         client.setHttpCompliance(compliance);
         client.start();
-        destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
+        destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
         endPoint = new ByteArrayEndPoint();
         connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>());

@@ -124,7 +124,9 @@ public class CrossOriginHandlerTest
     public void testSimpleRequestWithWildcardOrigin() throws Exception
     {
         String origin = "http://foo.example.com";
-        start(new CrossOriginHandler());
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("*"));
+        start(crossOriginHandler);
 
         String request = """
             GET / HTTP/1.1\r
@@ -138,7 +140,7 @@ public class CrossOriginHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
         assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
-        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+        assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
         assertTrue(response.contains(HttpHeader.VARY));
     }
 
@@ -148,6 +150,7 @@ public class CrossOriginHandlerTest
         String origin = "http://subdomain.example.com";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
         crossOriginHandler.setAllowedOriginPatterns(Set.of("http://.*\\.example\\.com"));
+        crossOriginHandler.setAllowCredentials(true);
         start(crossOriginHandler);
 
         String request = """
@@ -186,7 +189,7 @@ public class CrossOriginHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
         assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
-        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+        assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
         assertTrue(response.contains(HttpHeader.VARY));
     }
 
@@ -196,6 +199,7 @@ public class CrossOriginHandlerTest
         String origin = "http://localhost";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
         crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
+        crossOriginHandler.setAllowCredentials(true);
         start(crossOriginHandler);
 
         String request = """
@@ -237,7 +241,7 @@ public class CrossOriginHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
         assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
-        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+        assertFalse(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
         assertFalse(response.contains(HttpHeader.TIMING_ALLOW_ORIGIN));
         assertTrue(response.contains(HttpHeader.VARY));
     }
@@ -249,6 +253,7 @@ public class CrossOriginHandlerTest
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
         crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
         crossOriginHandler.setAllowedTimingOriginPatterns(Set.of(origin));
+        crossOriginHandler.setAllowCredentials(true);
         start(crossOriginHandler);
 
         String request = """
@@ -275,6 +280,7 @@ public class CrossOriginHandlerTest
         String otherOrigin = "http://127\\.0\\.0\\.1";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
         crossOriginHandler.setAllowedOriginPatterns(Set.of(origin, otherOrigin));
+        crossOriginHandler.setAllowCredentials(true);
         start(crossOriginHandler);
 
         // Use 2 spaces as separator in the Origin header
@@ -298,7 +304,9 @@ public class CrossOriginHandlerTest
     @Test
     public void testSimpleRequestWithoutCredentials() throws Exception
     {
+        String origin = "http://localhost";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
         crossOriginHandler.setAllowCredentials(false);
         start(crossOriginHandler);
 
@@ -306,9 +314,9 @@ public class CrossOriginHandlerTest
             GET / HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
-            Origin: http://localhost\r
+            Origin: %s\r
             \r
-            """;
+            """.formatted(origin);
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -324,7 +332,10 @@ public class CrossOriginHandlerTest
         // we'll trust browsers to do it right, so responses to actual requests
         // will contain the CORS response headers.
 
-        start(new CrossOriginHandler());
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("*"));
+        crossOriginHandler.setAllowCredentials(true);
+        start(crossOriginHandler);
 
         String request = """
             PUT / HTTP/1.1\r
@@ -345,18 +356,22 @@ public class CrossOriginHandlerTest
     public void testOptionsRequestButNotPreflight() throws Exception
     {
         // We cannot know if an actual request has performed the preflight before:
-        // we'll trust browsers to do it right, so responses to actual requests
+        // we'll trust browsers to do it right, so responses to OPTIONS requests
         // will contain the CORS response headers.
 
-        start(new CrossOriginHandler());
+        String origin = "http://localhost";
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
+        crossOriginHandler.setAllowCredentials(true);
+        start(crossOriginHandler);
 
         String request = """
             OPTIONS / HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
-            Origin: http://localhost\r
+            Origin: %s\r
             \r
-            """;
+            """.formatted(origin);
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -369,6 +384,8 @@ public class CrossOriginHandlerTest
     public void testPreflightWithWildcardCustomHeaders() throws Exception
     {
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("*"));
+        crossOriginHandler.setAllowCredentials(true);
         crossOriginHandler.setAllowedHeaders(Set.of("*"));
         start(crossOriginHandler);
 
@@ -393,7 +410,10 @@ public class CrossOriginHandlerTest
     @Test
     public void testPUTRequestWithPreflight() throws Exception
     {
+        String origin = "http://localhost";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
+        crossOriginHandler.setAllowCredentials(true);
         crossOriginHandler.setAllowedMethods(Set.of("PUT"));
         start(crossOriginHandler);
 
@@ -403,9 +423,9 @@ public class CrossOriginHandlerTest
             Host: localhost\r
             Connection: close\r
             Access-Control-Request-Method: PUT\r
-            Origin: http://localhost\r
+            Origin: %s\r
             \r
-            """;
+            """.formatted(origin);
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -435,9 +455,12 @@ public class CrossOriginHandlerTest
     @Test
     public void testDELETERequestWithPreflightAndAllowedCustomHeaders() throws Exception
     {
+        String origin = "http://localhost";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
         crossOriginHandler.setAllowedMethods(Set.of("GET", "HEAD", "POST", "PUT", "DELETE"));
         crossOriginHandler.setAllowedHeaders(Set.of("X-Requested-With"));
+        crossOriginHandler.setAllowCredentials(true);
         start(crossOriginHandler);
 
         // Preflight request.
@@ -447,9 +470,9 @@ public class CrossOriginHandlerTest
             Connection: close\r
             Access-Control-Request-Method: DELETE\r
             Access-Control-Request-Headers: origin,x-custom,x-requested-with\r
-            Origin: http://localhost\r
+            Origin: %s\r
             \r
-            """;
+            """.formatted(origin);
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -467,9 +490,9 @@ public class CrossOriginHandlerTest
             Connection: close\r
             X-Custom: value\r
             X-Requested-With: local\r
-            Origin: http://localhost\r
+            Origin: %s\r
             \r
-            """;
+            """.formatted(origin);
         response = HttpTester.parseResponse(connector.getResponse(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -482,6 +505,7 @@ public class CrossOriginHandlerTest
     public void testDELETERequestWithPreflightAndNotAllowedCustomHeaders() throws Exception
     {
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("*"));
         crossOriginHandler.setAllowedMethods(Set.of("GET", "HEAD", "POST", "PUT", "DELETE"));
         start(crossOriginHandler);
 
@@ -508,7 +532,9 @@ public class CrossOriginHandlerTest
     @Test
     public void testSimpleRequestWithExposedHeaders() throws Exception
     {
+        String origin = "http://localhost";
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of(origin));
         crossOriginHandler.setExposedHeaders(Set.of("Content-Length"));
         start(crossOriginHandler);
 
@@ -516,9 +542,9 @@ public class CrossOriginHandlerTest
             GET / HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
-            Origin: http://localhost\r
+            Origin: %s\r
             \r
-            """;
+            """.formatted(origin);
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -530,6 +556,7 @@ public class CrossOriginHandlerTest
     public void testDoNotDeliverPreflightRequest() throws Exception
     {
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("*"));
         crossOriginHandler.setDeliverPreflightRequests(false);
         start(crossOriginHandler);
 
@@ -553,6 +580,8 @@ public class CrossOriginHandlerTest
     public void testDeliverWebSocketUpgradeRequest() throws Exception
     {
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("*"));
+        crossOriginHandler.setAllowCredentials(true);
         start(crossOriginHandler);
 
         // Preflight request.

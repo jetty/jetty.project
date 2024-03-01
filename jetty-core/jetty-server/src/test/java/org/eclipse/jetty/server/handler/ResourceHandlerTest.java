@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.TrailingSlashAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -3132,6 +3133,7 @@ public class ResourceHandlerTest
     @Test
     public void testRelativeRedirect() throws Exception
     {
+        _contextHandler.addAliasCheck(new TrailingSlashAliasChecker());
         Path dir = docRoot.resolve("dir");
         FS.ensureDirExists(dir);
         Path index = dir.resolve("index.html");
@@ -3180,6 +3182,7 @@ public class ResourceHandlerTest
     @Test
     public void testResourceRedirect() throws Exception
     {
+        _contextHandler.addAliasCheck(new TrailingSlashAliasChecker());
         setupSimpleText(docRoot);
 
         HttpTester.Response response = HttpTester.parseResponse(
