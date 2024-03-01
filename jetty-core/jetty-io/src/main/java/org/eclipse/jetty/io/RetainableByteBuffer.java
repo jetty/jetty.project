@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -206,11 +204,6 @@ public interface RetainableByteBuffer extends Retainable
     default void putTo(ByteBuffer toInfillMode)
     {
         toInfillMode.put(getByteBuffer());
-    }
-
-    default void writeTo(OutputStream out) throws IOException
-    {
-        BufferUtil.writeTo(getByteBuffer(), out);
     }
 
     default void writeTo(Content.Sink sink, boolean last, Callback callback)
@@ -520,13 +513,6 @@ public interface RetainableByteBuffer extends Retainable
         {
             for (RetainableByteBuffer buffer : _buffers)
                 buffer.putTo(toInfillMode);
-        }
-
-        @Override
-        public void writeTo(OutputStream out) throws IOException
-        {
-            for (RetainableByteBuffer buffer : _buffers)
-                buffer.writeTo(out);
         }
 
         @Override

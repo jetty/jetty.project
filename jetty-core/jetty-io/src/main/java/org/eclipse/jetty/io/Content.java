@@ -471,6 +471,29 @@ public class Content
     public interface Sink
     {
         /**
+         * <p>Wraps the given {@link OutputStream} as a {@link Sink}.
+         * @param out The stream to wrap
+         * @return A sink wrapping the stream
+         */
+        static Sink from(OutputStream out)
+        {
+            return (last, byteBuffer, callback) ->
+            {
+                try
+                {
+                    BufferUtil.writeTo(byteBuffer, out);
+                    if (last)
+                        out.close();
+                    callback.succeeded();
+                }
+                catch (Throwable t)
+                {
+                    callback.failed(t);
+                }
+            };
+        }
+
+        /**
          * <p>Wraps the given content sink with a buffering sink.</p>
          *
          * @param sink the sink to write to
