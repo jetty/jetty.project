@@ -46,9 +46,8 @@ public class AliasCheckerMultipleResourceBasesTest
     private ServerConnector _connector;
     private HttpClient _client;
     private ContextHandler _context;
-    private Path _webRootPath;
-    private Path _altDir1Symlink;
-    private Path _altDir2Symlink;
+    private Path _baseResource1;
+    private Path _baseResource2;
 
     private static Path getResource(String path) throws Exception
     {
@@ -59,7 +58,8 @@ public class AliasCheckerMultipleResourceBasesTest
 
     private static void delete(Path path)
     {
-        IO.delete(path.toFile());
+        if (path != null)
+            IO.delete(path.toFile());
     }
 
     private void setAliasCheckers(AliasCheck... aliasChecks)
@@ -77,17 +77,20 @@ public class AliasCheckerMultipleResourceBasesTest
     @BeforeEach
     public void before() throws Exception
     {
-        _webRootPath = getResource("webroot");
+        Path webRootPath = getResource("webroot");
 
-        _altDir1Symlink = _webRootPath.resolve("../altDir1Symlink");
-        delete(_altDir1Symlink);
-        Path altDir1 = _webRootPath.resolve("../altDir1").toAbsolutePath();
-        Files.createSymbolicLink(_altDir1Symlink, altDir1).toFile().deleteOnExit();
+        _baseResource1 = webRootPath.resolve("../altDir1").toAbsolutePath();
+        delete(_baseResource1);
+        Files.createDirectory(_baseResource1);
+        Path file1Symlink = _baseResource1.resolve("file1");
+        Files.createSymbolicLink(file1Symlink, getResource("file1")).toFile().deleteOnExit();
 
-        _altDir2Symlink = _webRootPath.resolve("../altDir2Symlink");
-        delete(_altDir2Symlink);
-        Path altDir2 = _webRootPath.resolve("../altDir2").toAbsolutePath();
-        Files.createSymbolicLink(_altDir2Symlink, altDir2).toFile().deleteOnExit();
+        _baseResource2 = webRootPath.resolve("../altDir2").toAbsolutePath();
+        delete(_baseResource2);
+        Files.createDirectory(_baseResource2);
+        Path file2Symlink = _baseResource2.resolve("file2");
+        delete(file2Symlink);
+        Files.createSymbolicLink(file2Symlink, getResource("file2")).toFile().deleteOnExit();
 
         // Create and start Server and Client.
         _server = new Server();
@@ -96,7 +99,7 @@ public class AliasCheckerMultipleResourceBasesTest
         _context = new ContextHandler();
 
         _context.setContextPath("/");
-        _context.setBaseResourceAsPath(_webRootPath);
+        _context.setBaseResourceAsPath(webRootPath);
         _server.setHandler(_context);
         _context.clearAliasChecks();
 
@@ -107,8 +110,8 @@ public class AliasCheckerMultipleResourceBasesTest
     @AfterEach
     public void after() throws Exception
     {
-        Files.delete(_altDir1Symlink);
-        Files.delete(_altDir2Symlink);
+        delete(_baseResource1);
+        delete(_baseResource2);
 
         _client.stop();
         _server.stop();
@@ -131,8 +134,8 @@ public class AliasCheckerMultipleResourceBasesTest
     public void test() throws Exception
     {
         Handler.Sequence handlers = new Handler.Sequence();
-        handlers.addHandler(newResourceHandler(_altDir1Symlink));
-        handlers.addHandler(newResourceHandler(_altDir2Symlink));
+        handlers.addHandler(newResourceHandler(_baseResource1));
+        handlers.addHandler(newResourceHandler(_baseResource2));
         _context.setHandler(handlers);
         _server.start();
 
@@ -148,8 +151,8 @@ public class AliasCheckerMultipleResourceBasesTest
 
         // Set alias checkers to allow content under these alternative resource bases.
         setAliasCheckers(
-            new SymlinkAllowedResourceAliasChecker(_context, toResource(_altDir1Symlink)),
-            new SymlinkAllowedResourceAliasChecker(_context, toResource(_altDir2Symlink))
+            new SymlinkAllowedResourceAliasChecker(_context, toResource(_baseResource1)),
+            new SymlinkAllowedResourceAliasChecker(_context, toResource(_baseResource2))
         );
 
         // Now we have set alias checkers we can access file 1.

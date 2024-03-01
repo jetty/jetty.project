@@ -102,17 +102,17 @@ public final class WSURI
     public static URI toWebsocket(final URI inputUri) throws URISyntaxException
     {
         Objects.requireNonNull(inputUri, "Input URI must not be null");
-        String httpScheme = inputUri.getScheme();
-        if (httpScheme == null)
+        String scheme = inputUri.getScheme();
+        if (scheme == null)
             throw new URISyntaxException(inputUri.toString(), "Undefined HTTP scheme");
 
-        if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
+        if ("ws".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme))
             return inputUri;
 
-        String afterScheme = inputUri.toString().substring(httpScheme.length());
-        if ("http".equalsIgnoreCase(httpScheme))
+        String afterScheme = inputUri.toString().substring(scheme.length());
+        if ("http".equalsIgnoreCase(scheme))
             return new URI("ws" + afterScheme);
-        if ("https".equalsIgnoreCase(httpScheme))
+        if ("https".equalsIgnoreCase(scheme))
             return new URI("wss" + afterScheme);
 
         throw new URISyntaxException(inputUri.toString(), "Unrecognized HTTP scheme");

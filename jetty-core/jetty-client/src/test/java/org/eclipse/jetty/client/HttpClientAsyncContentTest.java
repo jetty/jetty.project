@@ -392,7 +392,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         Thread.sleep(500);
         demandRef.get().accept(1);
 
-        assertTrue(resultLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 */
 }

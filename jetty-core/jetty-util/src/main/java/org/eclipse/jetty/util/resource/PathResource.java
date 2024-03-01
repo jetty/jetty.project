@@ -171,7 +171,7 @@ public class PathResource extends Resource
         {
             String uriString = uri.toASCIIString();
             if (!uriString.endsWith("/"))
-                uri = URIUtil.correctFileURI(URI.create(uriString + "/"));
+                uri = URIUtil.correctURI(URI.create(uriString + "/"));
         }
 
         this.path = path;
@@ -310,7 +310,7 @@ public class PathResource extends Resource
     @Override
     public boolean isDirectory()
     {
-        return Files.isDirectory(getPath(), LinkOption.NOFOLLOW_LINKS);
+        return Files.isDirectory(getPath());
     }
 
     @Override

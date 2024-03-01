@@ -21,6 +21,7 @@
     <module>jetty-ee10-test-felix-webapp</module>
     <module>jetty-ee10-test-http2-webapp</module>
     <module>jetty-ee10-test-integration</module>
+    <module>jetty-ee10-test-jersey</module>
     <module>jetty-ee10-test-jmx</module>
     <module>jetty-ee10-test-jndi</module>
     <module>jetty-ee10-test-loginservice</module>

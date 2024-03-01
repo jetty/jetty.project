@@ -36,18 +36,20 @@ import org.eclipse.jetty.http3.client.transport.internal.HttpConnectionOverHTTP3
 import org.eclipse.jetty.http3.client.transport.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
 
 public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport implements ProtocolSession.Factory
 {
     private final HTTP3ClientConnectionFactory factory = new HTTP3ClientConnectionFactory();
-    private final HTTP3Client client;
+    private final HTTP3Client http3Client;
 
-    public HttpClientTransportOverHTTP3(HTTP3Client client)
+    public HttpClientTransportOverHTTP3(HTTP3Client http3Client)
     {
-        this.client = Objects.requireNonNull(client);
-        addBean(client);
+        this.http3Client = Objects.requireNonNull(http3Client);
+        addBean(http3Client);
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
@@ -57,16 +59,16 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
 
     public HTTP3Client getHTTP3Client()
     {
-        return client;
+        return http3Client;
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        if (!client.isStarted())
+        if (!http3Client.isStarted())
         {
             HttpClient httpClient = getHttpClient();
-            ClientConnector clientConnector = this.client.getClientConnector();
+            ClientConnector clientConnector = this.http3Client.getClientConnector();
             clientConnector.setExecutor(httpClient.getExecutor());
             clientConnector.setScheduler(httpClient.getScheduler());
             clientConnector.setByteBufferPool(httpClient.getByteBufferPool());
@@ -74,7 +76,7 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
             clientConnector.setConnectBlocking(httpClient.isConnectBlocking());
             clientConnector.setBindAddress(httpClient.getBindAddress());
             clientConnector.setIdleTimeout(Duration.ofMillis(httpClient.getIdleTimeout()));
-            HTTP3Configuration configuration = client.getHTTP3Configuration();
+            HTTP3Configuration configuration = http3Client.getHTTP3Configuration();
             configuration.setInputBufferSize(httpClient.getResponseBufferSize());
             configuration.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
             configuration.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
@@ -85,14 +87,16 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     @Override
     public Origin newOrigin(Request request)
     {
+        Transport transport = request.getTransport();
+        if (transport == null)
+            request.transport(new QuicTransport(http3Client.getQuicConfiguration()));
         return getHttpClient().createOrigin(request, new Origin.Protocol(List.of("h3"), false));
     }
 
     @Override
     public Destination newDestination(Origin origin)
     {
-        SocketAddress address = origin.getAddress().getSocketAddress();
-        return new HttpDestination(getHttpClient(), origin, getHTTP3Client().getClientConnector().isIntrinsicallySecure(address));
+        return new HttpDestination(getHttpClient(), origin);
     }
 
     @Override
@@ -104,17 +108,11 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     @Override
     public void connect(SocketAddress address, Map<String, Object> context)
     {
-        HttpClient httpClient = getHttpClient();
-        ClientConnector clientConnector = client.getClientConnector();
-        clientConnector.setConnectTimeout(Duration.ofMillis(httpClient.getConnectTimeout()));
-        clientConnector.setConnectBlocking(httpClient.isConnectBlocking());
-        clientConnector.setBindAddress(httpClient.getBindAddress());
-
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, destination.getClientConnectionFactory());
 
         SessionClientListener listener = new TransportSessionClientListener(context);
-        getHTTP3Client().connect(address, listener, context)
+        getHTTP3Client().connect(destination.getOrigin().getTransport(), address, listener, context)
             .whenComplete(listener::onConnect);
     }
 

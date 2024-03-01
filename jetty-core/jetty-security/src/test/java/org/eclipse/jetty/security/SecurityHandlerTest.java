@@ -134,7 +134,7 @@ public class SecurityHandlerTest
 
         response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: BWTP://"));
+        assertThat(response, containsString("Location: bwtp://"));
         assertThat(response, containsString(":9999"));
         assertThat(response, not(containsString("OK")));
 
@@ -161,7 +161,7 @@ public class SecurityHandlerTest
 
         response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: BWTP://"));
+        assertThat(response, containsString("Location: bwtp://"));
         assertThat(response, containsString(":9999"));
         assertThat(response, not(containsString("OK")));
 

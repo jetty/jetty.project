@@ -48,7 +48,7 @@ public class LocalConnector extends AbstractConnector
 
     public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, bufferPool, acceptors, factories);
+        super(server, executor, scheduler, bufferPool, Math.max(1, acceptors), factories);
         setIdleTimeout(30000);
     }
 

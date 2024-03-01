@@ -409,7 +409,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         }
 
         @Override
-        protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+        protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
         {
             if (valueLength == 0 && paramValue > paramName)
             {

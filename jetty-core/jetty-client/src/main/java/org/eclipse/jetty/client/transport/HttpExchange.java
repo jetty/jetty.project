@@ -233,6 +233,14 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         return result;
     }
 
+    boolean isResponseCompleteOrTerminated()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            return responseState == State.COMPLETED || responseState == State.TERMINATED;
+        }
+    }
+
     public void abort(Throwable failure, Promise<Boolean> promise)
     {
         // Atomically change the state of this exchange to be completed.

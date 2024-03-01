@@ -20,10 +20,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyStore;
 import java.util.EventListener;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -33,12 +30,9 @@ import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
-import org.eclipse.jetty.quic.quiche.PemExporter;
-import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -48,54 +42,63 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * <p>A server side network connector that uses a {@link DatagramChannel} to listen on a network port for QUIC traffic.</p>
- * <p>This connector uses {@link ConnectionFactory}s to configure the protocols to support.
+ * <p>This connector uses {@link ConnectionFactory}s to configure the protocols to be transported by QUIC.
  * The protocol is negotiated during the connection establishment by {@link QuicSession}, and for each QUIC stream
  * managed by a {@link QuicSession} a {@link ConnectionFactory} is used to create a {@link Connection} for the
  * correspondent {@link QuicStreamEndPoint}.</p>
  *
- * @see QuicConfiguration
+ * @see ServerQuicConfiguration
  */
 public class QuicServerConnector extends AbstractNetworkConnector
 {
-    private final QuicConfiguration quicConfiguration = new QuicConfiguration();
     private final QuicSessionContainer container = new QuicSessionContainer();
     private final ServerDatagramSelectorManager selectorManager;
-    private final SslContextFactory.Server sslContextFactory;
-    private Path privateKeyPemPath;
-    private Path certificateChainPemPath;
-    private Path trustedCertificatesPemPath;
+    private final QuicServerConnectionFactory connectionFactory;
     private volatile DatagramChannel datagramChannel;
     private volatile int localPort = -1;
-    private int inputBufferSize = 2048;
-    private int outputBufferSize = 2048;
-    private boolean useInputDirectByteBuffers = true;
-    private boolean useOutputDirectByteBuffers = true;
 
+    /**
+     * @param server the {@link Server}
+     * @param sslContextFactory the {@link SslContextFactory.Server}
+     * @param factories the {@link ConnectionFactory}s of the protocols transported by QUIC
+     * @deprecated use {@link #QuicServerConnector(Server, ServerQuicConfiguration, ConnectionFactory...)} instead
+     */
+    @Deprecated(since = "12.0.7", forRemoval = true)
     public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
-        this(server, null, null, null, sslContextFactory, factories);
+        this(server, new ServerQuicConfiguration(sslContextFactory, null), factories);
     }
 
+    public QuicServerConnector(Server server, ServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)
+    {
+        this(server, null, null, null, quicConfiguration, factories);
+    }
+
+    /**
+     * @param server the {@link Server}
+     * @param executor the {@link Executor}
+     * @param scheduler the {@link Scheduler}
+     * @param bufferPool the {@link ByteBufferPool}
+     * @param sslContextFactory the {@link SslContextFactory.Server}
+     * @param factories the {@link ConnectionFactory}s of the protocols transported by QUIC
+     * @deprecated use {@link #QuicServerConnector(Server, Executor, Scheduler, ByteBufferPool, ServerQuicConfiguration, ConnectionFactory...)} instead
+     */
+    @Deprecated(since = "12.0.7", forRemoval = true)
     public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    {
+        this(server, executor, scheduler, bufferPool, new ServerQuicConfiguration(sslContextFactory, null), factories);
+    }
+
+    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, ServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, 0, factories);
         this.selectorManager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), 1);
-        addBean(this.selectorManager);
-        this.sslContextFactory = sslContextFactory;
-        addBean(this.sslContextFactory);
-        addBean(quicConfiguration);
-        addBean(container);
-        // Initialize to sane defaults for a server.
-        quicConfiguration.setSessionRecvWindow(4 * 1024 * 1024);
-        quicConfiguration.setBidirectionalStreamRecvWindow(2 * 1024 * 1024);
-        // One bidirectional stream to simulate the TCP stream, and no unidirectional streams.
-        quicConfiguration.setMaxBidirectionalRemoteStreams(1);
-        quicConfiguration.setMaxUnidirectionalRemoteStreams(0);
+        this.connectionFactory = new QuicServerConnectionFactory(quicConfiguration);
     }
 
-    public QuicConfiguration getQuicConfiguration()
+    public ServerQuicConfiguration getQuicConfiguration()
     {
-        return quicConfiguration;
+        return connectionFactory.getQuicConfiguration();
     }
 
     @Override
@@ -106,42 +109,42 @@ public class QuicServerConnector extends AbstractNetworkConnector
 
     public int getInputBufferSize()
     {
-        return inputBufferSize;
+        return getQuicConfiguration().getInputBufferSize();
     }
 
     public void setInputBufferSize(int inputBufferSize)
     {
-        this.inputBufferSize = inputBufferSize;
+        getQuicConfiguration().setInputBufferSize(inputBufferSize);
     }
 
     public int getOutputBufferSize()
     {
-        return outputBufferSize;
+        return getQuicConfiguration().getOutputBufferSize();
     }
 
     public void setOutputBufferSize(int outputBufferSize)
     {
-        this.outputBufferSize = outputBufferSize;
+        getQuicConfiguration().setOutputBufferSize(outputBufferSize);
     }
 
     public boolean isUseInputDirectByteBuffers()
     {
-        return useInputDirectByteBuffers;
+        return getQuicConfiguration().isUseInputDirectByteBuffers();
     }
 
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+        getQuicConfiguration().setUseInputDirectByteBuffers(useInputDirectByteBuffers);
     }
 
     public boolean isUseOutputDirectByteBuffers()
     {
-        return useOutputDirectByteBuffers;
+        return getQuicConfiguration().isUseOutputDirectByteBuffers();
     }
 
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
-        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+        getQuicConfiguration().setUseOutputDirectByteBuffers(useOutputDirectByteBuffers);
     }
 
     @Override
@@ -154,27 +157,18 @@ public class QuicServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStart() throws Exception
     {
+        addBean(container);
+        addBean(selectorManager);
+        addBean(connectionFactory);
+
         for (EventListener l : getBeans(SelectorManager.SelectorManagerListener.class))
             selectorManager.addEventListener(l);
-        super.doStart();
-        selectorManager.accept(datagramChannel);
 
-        Set<String> aliases = sslContextFactory.getAliases();
-        if (aliases.isEmpty())
-            throw new IllegalStateException("Missing or invalid KeyStore: a SslContextFactory configured with a valid, non-empty KeyStore is required");
-        String alias = sslContextFactory.getCertAlias();
-        if (alias == null)
-            alias = aliases.stream().findFirst().orElseThrow();
-        String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
-        char[] password = keyManagerPassword == null ? sslContextFactory.getKeyStorePassword().toCharArray() : keyManagerPassword.toCharArray();
-        KeyStore keyStore = sslContextFactory.getKeyStore();
-        Path certificateWorkPath = findPemWorkDirectory();
-        Path[] keyPair = PemExporter.exportKeyPair(keyStore, alias, password, certificateWorkPath);
-        privateKeyPemPath = keyPair[0];
-        certificateChainPemPath = keyPair[1];
-        KeyStore trustStore = sslContextFactory.getTrustStore();
-        if (trustStore != null)
-            trustedCertificatesPemPath = PemExporter.exportTrustStore(trustStore, certificateWorkPath);
+        connectionFactory.getQuicConfiguration().setPemWorkDirectory(findPemWorkDirectory());
+
+        super.doStart();
+
+        selectorManager.accept(datagramChannel);
     }
 
     private Path findPemWorkDirectory()
@@ -222,29 +216,6 @@ public class QuicServerConnector extends AbstractNetworkConnector
         }
     }
 
-    QuicheConfig newQuicheConfig()
-    {
-        QuicheConfig quicheConfig = new QuicheConfig();
-        quicheConfig.setPrivKeyPemPath(privateKeyPemPath.toString());
-        quicheConfig.setCertChainPemPath(certificateChainPemPath.toString());
-        quicheConfig.setTrustedCertsPemPath(trustedCertificatesPemPath == null ? null : trustedCertificatesPemPath.toString());
-        quicheConfig.setVerifyPeer(sslContextFactory.getNeedClientAuth() || sslContextFactory.getWantClientAuth());
-        // Idle timeouts must not be managed by Quiche.
-        quicheConfig.setMaxIdleTimeout(0L);
-        quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());
-        quicheConfig.setInitialMaxStreamDataBidiLocal((long)quicConfiguration.getBidirectionalStreamRecvWindow());
-        quicheConfig.setInitialMaxStreamDataBidiRemote((long)quicConfiguration.getBidirectionalStreamRecvWindow());
-        quicheConfig.setInitialMaxStreamDataUni((long)quicConfiguration.getUnidirectionalStreamRecvWindow());
-        quicheConfig.setInitialMaxStreamsUni((long)quicConfiguration.getMaxUnidirectionalRemoteStreams());
-        quicheConfig.setInitialMaxStreamsBidi((long)quicConfiguration.getMaxBidirectionalRemoteStreams());
-        quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
-        List<String> protocols = getProtocols();
-        // This is only needed for Quiche example clients.
-        protocols.add(0, "http/0.9");
-        quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
-        return quicheConfig;
-    }
-
     @Override
     public void setIdleTimeout(long idleTimeout)
     {
@@ -255,13 +226,6 @@ public class QuicServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStop() throws Exception
     {
-        deleteFile(privateKeyPemPath);
-        privateKeyPemPath = null;
-        deleteFile(certificateChainPemPath);
-        certificateChainPemPath = null;
-        deleteFile(trustedCertificatesPemPath);
-        trustedCertificatesPemPath = null;
-
         // We want the DatagramChannel to be stopped by the SelectorManager.
         super.doStop();
 
@@ -269,22 +233,10 @@ public class QuicServerConnector extends AbstractNetworkConnector
         datagramChannel = null;
         localPort = -2;
 
+        removeBean(connectionFactory);
+
         for (EventListener l : getBeans(EventListener.class))
             selectorManager.removeEventListener(l);
-    }
-
-    private void deleteFile(Path file)
-    {
-        try
-        {
-            if (file != null)
-                Files.delete(file);
-        }
-        catch (IOException x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("could not delete {}", file, x);
-        }
     }
 
     @Override
@@ -312,7 +264,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
 
     protected ServerQuicConnection newConnection(EndPoint endpoint)
     {
-        return new ServerQuicConnection(QuicServerConnector.this, endpoint);
+        return connectionFactory.newConnection(QuicServerConnector.this, endpoint);
     }
 
     private class ServerDatagramSelectorManager extends SelectorManager
@@ -333,13 +285,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
-            ServerQuicConnection connection = QuicServerConnector.this.newConnection(endpoint);
-            connection.addEventListener(container);
-            connection.setInputBufferSize(getInputBufferSize());
-            connection.setOutputBufferSize(getOutputBufferSize());
-            connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-            connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
-            return connection;
+            return QuicServerConnector.this.newConnection(endpoint);
         }
 
         @Override

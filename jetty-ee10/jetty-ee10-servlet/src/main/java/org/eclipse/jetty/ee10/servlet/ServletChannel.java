@@ -499,15 +499,24 @@ public class ServletChannel
                                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform error handling, aborting", cause);
-                            if (_state.isResponseCommitted())
+
+                            try
                             {
-                                // Perform the same behavior as when the callback is failed.
-                                _state.errorHandlingComplete(cause);
+                                if (_state.isResponseCommitted())
+                                {
+                                    // Perform the same behavior as when the callback is failed.
+                                    _state.errorHandlingComplete(cause);
+                                }
+                                else
+                                {
+                                    getServletContextResponse().resetContent();
+                                    sendErrorResponseAndComplete();
+                                }
                             }
-                            else
+                            catch (Throwable t)
                             {
-                                getServletContextResponse().resetContent();
-                                sendErrorResponseAndComplete();
+                                ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
+                                throw t;
                             }
                         }
                         finally

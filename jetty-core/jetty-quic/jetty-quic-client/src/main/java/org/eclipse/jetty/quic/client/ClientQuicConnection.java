@@ -14,14 +14,15 @@
 package org.eclipse.jetty.quic.client;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -49,16 +50,19 @@ public class ClientQuicConnection extends QuicConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnection.class);
 
-    private final Map<SocketAddress, ClientQuicSession> pendingSessions = new ConcurrentHashMap<>();
     private final ClientConnector connector;
     private final Map<String, Object> context;
+    private final InetSocketAddress inetLocalAddress;
     private Scheduler.Task connectTask;
+    private ClientQuicSession pendingSession;
+    private InetSocketAddress inetRemoteAddress;
 
     public ClientQuicConnection(ClientConnector connector, EndPoint endPoint, Map<String, Object> context)
     {
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
         this.context = context;
+        this.inetLocalAddress = getEndPoint().getLocalSocketAddress() instanceof InetSocketAddress inet ? inet : new InetSocketAddress(InetAddress.getLoopbackAddress(), 0xFA93);
     }
 
     @Override
@@ -83,9 +87,15 @@ public class ClientQuicConnection extends QuicConnection
             quicheConfig.setDisableActiveMigration(quicConfiguration.isDisableActiveMigration());
             quicheConfig.setVerifyPeer(!connector.getSslContextFactory().isTrustAll());
             Map<String, Object> implCtx = quicConfiguration.getImplementationConfiguration();
-            quicheConfig.setTrustedCertsPemPath((String)implCtx.get(QuicClientConnectorConfigurator.TRUSTED_CERTIFICATES_PEM_PATH_KEY));
-            quicheConfig.setPrivKeyPemPath((String)implCtx.get(QuicClientConnectorConfigurator.PRIVATE_KEY_PEM_PATH_KEY));
-            quicheConfig.setCertChainPemPath((String)implCtx.get(QuicClientConnectorConfigurator.CERTIFICATE_CHAIN_PEM_PATH_KEY));
+            Path trustedCertificatesPath = (Path)implCtx.get(QuicConfiguration.TRUSTED_CERTIFICATES_PEM_PATH_KEY);
+            if (trustedCertificatesPath != null)
+                quicheConfig.setTrustedCertsPemPath(trustedCertificatesPath.toString());
+            Path privateKeyPath = (Path)implCtx.get(QuicConfiguration.PRIVATE_KEY_PEM_PATH_KEY);
+            if (privateKeyPath != null)
+                quicheConfig.setPrivKeyPemPath(privateKeyPath.toString());
+            Path certificatesPath = (Path)implCtx.get(QuicConfiguration.CERTIFICATE_CHAIN_PEM_PATH_KEY);
+            if (certificatesPath != null)
+                quicheConfig.setCertChainPemPath(certificatesPath.toString());
             // Idle timeouts must not be managed by Quiche.
             quicheConfig.setMaxIdleTimeout(0L);
             quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());
@@ -96,14 +106,15 @@ public class ClientQuicConnection extends QuicConnection
             quicheConfig.setInitialMaxStreamsBidi((long)quicConfiguration.getMaxBidirectionalRemoteStreams());
             quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
-            InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+            SocketAddress remoteAddress = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+            inetRemoteAddress = remoteAddress instanceof InetSocketAddress inet ? inet : new InetSocketAddress(InetAddress.getLoopbackAddress(), 443);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("connecting to {} with protocols {}", remoteAddress, protocols);
 
-            QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, getEndPoint().getLocalAddress(), remoteAddress);
-            ClientQuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
-            pendingSessions.put(remoteAddress, session);
+            QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, inetLocalAddress, inetRemoteAddress);
+            ClientQuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, inetRemoteAddress, context);
+            pendingSession = session;
             if (LOG.isDebugEnabled())
                 LOG.debug("created {}", session);
 
@@ -132,30 +143,41 @@ public class ClientQuicConnection extends QuicConnection
         if (LOG.isDebugEnabled())
             LOG.debug("connect timeout {} ms to {} on {}", connector.getConnectTimeout(), remoteAddress, this);
         close();
-        outwardClose(remoteAddress, new SocketTimeoutException("connect timeout"));
+        outwardClose(new SocketTimeoutException("connect timeout"));
     }
 
     @Override
     protected QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
-        ClientQuicSession session = pendingSessions.get(remoteAddress);
-        if (session != null)
+        InetSocketAddress inetRemote = remoteAddress instanceof InetSocketAddress inet ? inet : inetRemoteAddress;
+        Runnable task = pendingSession.process(inetRemote, cipherBuffer);
+        pendingSession.offerTask(task);
+        if (pendingSession.isConnectionEstablished())
         {
-            Runnable task = session.process(remoteAddress, cipherBuffer);
-            session.offerTask(task);
-            if (session.isConnectionEstablished())
-            {
-                pendingSessions.remove(remoteAddress);
-                return session;
-            }
+            ClientQuicSession session = pendingSession;
+            pendingSession = null;
+            return session;
         }
         return null;
     }
 
     @Override
+    public InetSocketAddress getLocalInetSocketAddress()
+    {
+        return inetLocalAddress;
+    }
+
+    @Override
+    protected Runnable process(QuicSession session, SocketAddress remoteAddress, ByteBuffer cipherBuffer)
+    {
+        InetSocketAddress inetRemote = remoteAddress instanceof InetSocketAddress inet ? inet : inetRemoteAddress;
+        return super.process(session, inetRemote, cipherBuffer);
+    }
+
+    @Override
     protected void onFailure(Throwable failure)
     {
-        pendingSessions.values().forEach(session -> outwardClose(session, failure));
+        outwardClose(pendingSession, failure);
         super.onFailure(failure);
     }
 
@@ -178,21 +200,15 @@ public class ClientQuicConnection extends QuicConnection
     public void outwardClose(QuicSession session, Throwable failure)
     {
         super.outwardClose(session, failure);
-        SocketAddress remoteAddress = session.getRemoteAddress();
-        outwardClose(remoteAddress, failure);
+        outwardClose(failure);
     }
 
-    private void outwardClose(SocketAddress remoteAddress, Throwable failure)
+    private void outwardClose(Throwable failure)
     {
-        if (remoteAddress != null)
-        {
-            if (pendingSessions.remove(remoteAddress) != null)
-            {
-                Promise<?> promise = (Promise<?>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
-                if (promise != null)
-                    promise.failed(failure);
-            }
-        }
+        pendingSession = null;
+        Promise<?> promise = (Promise<?>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+        if (promise != null)
+            promise.failed(failure);
         getEndPoint().close(failure);
     }
 }

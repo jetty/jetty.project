@@ -44,6 +44,11 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2CServerConnectionFactory.class);
 
+    public HTTP2CServerConnectionFactory()
+    {
+        this(new HttpConfiguration());
+    }
+
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
         this(httpConfiguration, "h2c");

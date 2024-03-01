@@ -34,6 +34,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * URIUtil Tests.
@@ -55,7 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class URIUtilTest
 {
-
     public WorkDir workDir;
 
     public static Stream<Arguments> encodePathSource()
@@ -666,10 +667,10 @@ public class URIUtilTest
 
     @ParameterizedTest
     @MethodSource("correctBadFileURICases")
-    public void testCorrectFileURI(String input, String expected)
+    public void testCorrectURI(String input, String expected)
     {
         URI inputUri = URI.create(input);
-        URI actualUri = URIUtil.correctFileURI(inputUri);
+        URI actualUri = URIUtil.correctURI(inputUri);
         URI expectedUri = URI.create(expected);
         assertThat(actualUri.toASCIIString(), is(expectedUri.toASCIIString()));
     }
@@ -693,8 +694,8 @@ public class URIUtilTest
         assertThat(fileUri.toASCIIString(), not(containsString("://")));
         assertThat(fileUrlUri.toASCIIString(), not(containsString("://")));
 
-        assertThat(URIUtil.correctFileURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
-        assertThat(URIUtil.correctFileURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.correctURI(fileUri).toASCIIString(), is(expectedUri.toASCIIString()));
+        assertThat(URIUtil.correctURI(fileUrlUri).toASCIIString(), is(expectedUri.toASCIIString()));
     }
 
     public static Stream<Arguments> encodeSpecific()
@@ -1061,6 +1062,49 @@ public class URIUtilTest
         assertThat(actual.toASCIIString(), is(expected));
     }
 
+    public static Stream<Arguments> toURICases()
+    {
+        List<Arguments> args = new ArrayList<>();
+
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            // Windows format (absolute and relative)
+            args.add(Arguments.of("C:\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:\\path\\to\\bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("\\path\\to\\bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // unix format (relative)
+            args.add(Arguments.of("C:/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:/path/to/bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // URI format (absolute)
+            args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
+            args.add(Arguments.of("file:/e:/zed/yotta.txt", "file:///e:/zed/yotta.txt"));
+            args.add(Arguments.of("jar:file:///E:/path/to/bar.jar", "jar:file:///E:/path/to/bar.jar"));
+        }
+        else
+        {
+            // URI (and unix) format (relative)
+            args.add(Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"));
+        }
+        // URI format (absolute)
+        args.add(Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"));
+        args.add(Arguments.of("jar:file:///path/to/bar.jar", "jar:file:///path/to/bar.jar"));
+
+        return args.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("toURICases")
+    public void testToURI(String inputRaw, String expectedUri)
+    {
+        URI actual = URIUtil.toURI(inputRaw);
+        URI expected = URI.create(expectedUri);
+        assertEquals(expected, actual);
+    }
+
     @Test
     public void testSplitSingleJar()
     {
@@ -1186,7 +1230,7 @@ public class URIUtilTest
         assertThat(uris, contains(expected));
     }
 
-    public static Stream<Arguments> appendSchemeHostPortCases()
+    public static Stream<Arguments> schemeHostPortShortCases()
     {
         return Stream.of(
             // Default behaviors of stripping a port number based on scheme
@@ -1203,12 +1247,29 @@ public class URIUtilTest
             Arguments.of("http", "example.org", 12345, "http://example.org:12345"),
             Arguments.of("https", "example.org", 54321, "https://example.org:54321"),
             Arguments.of("ws", "example.org", 6666, "ws://example.org:6666"),
-            Arguments.of("wss", "example.org", 7777, "wss://example.org:7777")
+            Arguments.of("wss", "example.org", 7777, "wss://example.org:7777"),
+            // Non-lowercase Schemes
+            Arguments.of("HTTP", "example.org", 8181, "http://example.org:8181"),
+            Arguments.of("hTTps", "example.org", 443, "https://example.org"),
+            Arguments.of("WS", "example.org", 8282, "ws://example.org:8282"),
+            Arguments.of("wsS", "example.org", 8383, "wss://example.org:8383"),
+            // Undefined Ports
+            Arguments.of("http", "example.org", 0, "http://example.org"),
+            Arguments.of("https", "example.org", -1, "https://example.org"),
+            Arguments.of("ws", "example.org", -80, "ws://example.org"),
+            Arguments.of("wss", "example.org", -2, "wss://example.org"),
+            // Unrecognized (non-http) schemes
+            Arguments.of("foo", "example.org", 0, "foo://example.org"),
+            Arguments.of("ssh", "example.org", 22, "ssh://example.org"),
+            Arguments.of("ftp", "example.org", 21, "ftp://example.org"),
+            Arguments.of("ssh", "example.org", 2222, "ssh://example.org:2222"),
+            Arguments.of("ftp", "example.org", 2121, "ftp://example.org:2121"),
+            Arguments.of("file", "etc", -1, "file://etc")
         );
     }
 
     @ParameterizedTest
-    @MethodSource("appendSchemeHostPortCases")
+    @MethodSource("schemeHostPortShortCases")
     public void testAppendSchemeHostPortBuilder(String scheme, String server, int port, String expectedStr)
     {
         StringBuilder actual = new StringBuilder();
@@ -1217,11 +1278,211 @@ public class URIUtilTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendSchemeHostPortCases")
+    @MethodSource("schemeHostPortShortCases")
     public void testAppendSchemeHostPortBuffer(String scheme, String server, int port, String expectedStr)
     {
         StringBuffer actual = new StringBuffer();
         URIUtil.appendSchemeHostPort(actual, scheme, server, port);
         assertEquals(expectedStr, actual.toString());
+    }
+
+    public static List<Arguments> getNewURICases()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        cases.addAll(List.of(
+            // Default behaviors of stripping a port number based on scheme
+            // Query specified
+            Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
+            Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
+            Arguments.of("http", "example.org", 0, null, "a=b", null, "http://example.org/?a=b"),
+            Arguments.of("http", "example.org", 0, null, "", null, "http://example.org/?")
+        ));
+        return cases;
+    }
+
+    public static List<Arguments> schemeHostPortCases()
+    {
+        return List.of(
+            // Default behaviors of stripping a port number based on scheme
+            Arguments.of("http", "example.org", 80, "http://example.org"),
+            Arguments.of("https", "example.org", 443, "https://example.org"),
+            Arguments.of("ws", "example.org", 80, "ws://example.org"),
+            Arguments.of("wss", "example.org", 443, "wss://example.org"),
+            // Mismatches between scheme and port
+            Arguments.of("http", "example.org", 443, "http://example.org:443"),
+            Arguments.of("https", "example.org", 80, "https://example.org:80"),
+            Arguments.of("ws", "example.org", 443, "ws://example.org:443"),
+            Arguments.of("wss", "example.org", 80, "wss://example.org:80"),
+            // Odd ports
+            Arguments.of("http", "example.org", 12345, "http://example.org:12345"),
+            Arguments.of("https", "example.org", 54321, "https://example.org:54321"),
+            Arguments.of("ws", "example.org", 6666, "ws://example.org:6666"),
+            Arguments.of("wss", "example.org", 7777, "wss://example.org:7777"),
+            // Non-lowercase Schemes
+            Arguments.of("HTTP", "example.org", 8181, "http://example.org:8181"),
+            Arguments.of("hTTps", "example.org", 443, "https://example.org"),
+            Arguments.of("WS", "example.org", 8282, "ws://example.org:8282"),
+            Arguments.of("wsS", "example.org", 8383, "wss://example.org:8383"),
+            // Undefined Ports
+            Arguments.of("http", "example.org", 0, "http://example.org"),
+            Arguments.of("https", "example.org", -1, "https://example.org"),
+            Arguments.of("ws", "example.org", -80, "ws://example.org"),
+            Arguments.of("wss", "example.org", -2, "wss://example.org"),
+            // Unrecognized (non-http) schemes
+            Arguments.of("foo", "example.org", 0, "foo://example.org"),
+            Arguments.of("ssh", "example.org", 22, "ssh://example.org"),
+            Arguments.of("ftp", "example.org", 21, "ftp://example.org"),
+            Arguments.of("ssh", "example.org", 2222, "ssh://example.org:2222"),
+            Arguments.of("ftp", "example.org", 2121, "ftp://example.org:2121")
+        );
+    }
+
+    public static List<Arguments> schemeHostPortPathCases()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        cases.addAll(List.of(
+            // Default behaviors of stripping a port number based on scheme
+            Arguments.of("http", "example.org", 80, "/", null, null, "http://example.org/"),
+            Arguments.of("https", "example.org", 443, "/", null, null, "https://example.org/"),
+            Arguments.of("ws", "example.org", 80, "/", null, null, "ws://example.org/"),
+            Arguments.of("wss", "example.org", 443, "/", null, null, "wss://example.org/"),
+            // Mismatches between scheme and port
+            Arguments.of("http", "example.org", 443, "/", null, null, "http://example.org:443/"),
+            Arguments.of("https", "example.org", 80, "/", null, null, "https://example.org:80/"),
+            Arguments.of("ws", "example.org", 443, "/", null, null, "ws://example.org:443/"),
+            Arguments.of("wss", "example.org", 80, "/", null, null, "wss://example.org:80/"),
+            // Odd ports
+            Arguments.of("http", "example.org", 12345, "/", null, null, "http://example.org:12345/"),
+            Arguments.of("https", "example.org", 54321, "/", null, null, "https://example.org:54321/"),
+            Arguments.of("ws", "example.org", 6666, "/", null, null, "ws://example.org:6666/"),
+            Arguments.of("wss", "example.org", 7777, "/", null, null, "wss://example.org:7777/"),
+            // Non-lowercase Schemes
+            Arguments.of("HTTP", "example.org", 8181, "/", null, null, "http://example.org:8181/"),
+            Arguments.of("hTTps", "example.org", 443, "/", null, null, "https://example.org/"),
+            Arguments.of("WS", "example.org", 8282, "/", null, null, "ws://example.org:8282/"),
+            Arguments.of("wsS", "example.org", 8383, "/", null, null, "wss://example.org:8383/"),
+            // Undefined Ports
+            Arguments.of("http", "example.org", 0, "/", null, null, "http://example.org/"),
+            Arguments.of("https", "example.org", -1, "/", null, null, "https://example.org/"),
+            Arguments.of("ws", "example.org", -80, "/", null, null, "ws://example.org/"),
+            Arguments.of("wss", "example.org", -2, "/", null, null, "wss://example.org/"),
+            // Unrecognized (non-http) schemes
+            Arguments.of("foo", "example.org", 0, "/", null, null, "foo://example.org/"),
+            Arguments.of("ssh", "example.org", 22, "/", null, null, "ssh://example.org/"),
+            Arguments.of("ftp", "example.org", 21, "/", null, null, "ftp://example.org/"),
+            Arguments.of("ssh", "example.org", 2222, "/", null, null, "ssh://example.org:2222/"),
+            Arguments.of("ftp", "example.org", 2121, "/", null, null, "ftp://example.org:2121/"),
+            // Path choices
+            Arguments.of("http", "example.org", 0, "/a/b/c/d", null, null, "http://example.org/a/b/c/d"),
+            Arguments.of("http", "example.org", 0, "/a%20b/c%20d", null, null, "http://example.org/a%20b/c%20d"),
+            // Query specified
+            Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
+            Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
+            Arguments.of("http", "example.org", 0, null, "a=b", null, "http://example.org/?a=b"),
+            Arguments.of("http", "example.org", 0, null, "", null, "http://example.org/?")
+        ));
+        return cases;
+    }
+
+    public static List<Arguments> schemeHostPortFragmentCases()
+    {
+        List<Arguments> cases = new ArrayList<>();
+        cases.addAll(schemeHostPortPathCases());
+
+        cases.addAll(List.of(
+            // Fragment specified
+            Arguments.of("http", "example.org", 0, "/", null, "", "http://example.org/#"),
+            Arguments.of("http", "example.org", 0, "/", null, "toc", "http://example.org/#toc"),
+            Arguments.of("http", "example.org", 0, null, null, "toc", "http://example.org/#toc"),
+            // Empty query & fragment - behavior matches java URI and URL
+            Arguments.of("http", "example.org", 0, null, "", "", "http://example.org/?#")
+        ));
+
+        return cases;
+    }
+
+    @ParameterizedTest
+    @MethodSource("schemeHostPortCases")
+    public void testNewURIShort(String scheme, String server, int port, String expectedStr)
+    {
+        String actual = URIUtil.newURI(scheme, server, port);
+        assertEquals(expectedStr, actual.toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource("schemeHostPortPathCases")
+    public void testNewURI(String scheme, String server, int port, String path, String query, String fragment, String expectedStr)
+    {
+        assumeTrue(StringUtil.isBlank(fragment), "Skip tests with fragments, as this newURI doesn't have them");
+        String actual = URIUtil.newURI(scheme, server, port, path, query);
+        assertEquals(expectedStr, actual.toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource("schemeHostPortFragmentCases")
+    public void testNewURIFragment(String scheme, String server, int port, String path, String query, String fragment, String expectedStr)
+    {
+        String actual = URIUtil.newURI(scheme, server, port, path, query, fragment);
+        assertEquals(expectedStr, actual.toString());
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+        "http,80",
+        "https,443",
+        "ws,80",
+        "wss,443",
+        "ssh,22",
+        "file,-1",
+        "bundle,-1",
+        "HTTP,80",
+        "HttPs,443",
+        "http+ssl,-1"
+    })
+    public void testGetDefaultPortForScheme(String scheme, int expectedPort)
+    {
+        int actual = URIUtil.getDefaultPortForScheme(scheme);
+        assertEquals(expectedPort, actual);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+        "http,80,0",
+        "https,443,0",
+        "https,8443,8443",
+        "ws,80,0",
+        "ws,9999,9999",
+        "wss,443,0",
+        "wss,-1,0",
+        "wss,0,0",
+        "ssh,22,0",
+        "file,-1,0",
+        "bundle,-1,0",
+        "HTTP,80,0",
+        "HttPs,443,0",
+        "http+ssl,-1,0"
+    })
+    public void testNormalizePortForScheme(String scheme, int port, int expectedPort)
+    {
+        int actual = URIUtil.normalizePortForScheme(scheme, port);
+        assertEquals(expectedPort, actual);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+        "http,http",
+        "https,https",
+        "HTTP,http",
+        "WSS,wss",
+        "WS,ws",
+        "XRTP,xrtp",
+        "Https,https"
+    })
+    public void testNormalizeScheme(String input, String expected)
+    {
+        String actual = URIUtil.normalizeScheme(input);
+        assertThat(actual, is(expected));
     }
 }

@@ -531,6 +531,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 chunk.release();
             chunk = Content.Chunk.from(failure, true);
         }
+        connection.onFailure(failure);
         return httpChannel.onFailure(failure);
     }
 }

@@ -121,7 +121,15 @@ public interface Callback extends Invocable
             @Override
             public void failed(Throwable x)
             {
-                completable.completeExceptionally(x);
+                try
+                {
+                    completable.completeExceptionally(x);
+                }
+                catch (Throwable t)
+                {
+                    ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                    throw t;
+                }
             }
 
             @Override
@@ -165,7 +173,15 @@ public interface Callback extends Invocable
             @Override
             public void failed(Throwable x)
             {
-                failure.accept(x);
+                try
+                {
+                    failure.accept(x);
+                }
+                catch (Throwable t)
+                {
+                    ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                    throw t;
+                }
             }
 
             @Override
@@ -272,14 +288,7 @@ public interface Callback extends Invocable
             @Override
             public void failed(Throwable x)
             {
-                try
-                {
-                    callback.failed(x);
-                }
-                finally
-                {
-                    completed.accept(x);
-                }
+                Callback.failed(callback::failed, completed, x);
             }
         };
     }
@@ -307,22 +316,19 @@ public interface Callback extends Invocable
                 }
                 catch (Throwable t)
                 {
-                    callback.failed(t);
+                    Callback.failed(callback, t);
                 }
+            }
+
+            private void completed(Throwable ignored)
+            {
+                completed.run();
             }
 
             @Override
             public void failed(Throwable x)
             {
-                try
-                {
-                    completed.run();
-                }
-                catch (Throwable t)
-                {
-                    x.addSuppressed(t);
-                }
-                callback.failed(x);
+                Callback.failed(this::completed, callback::failed, x);
             }
         };
     }
@@ -348,8 +354,8 @@ public interface Callback extends Invocable
             @Override
             public void failed(Throwable x)
             {
-                cause.addSuppressed(x);
-                callback.failed(cause);
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
+                Callback.failed(callback, cause);
             }
         };
     }
@@ -381,7 +387,15 @@ public interface Callback extends Invocable
         @Override
         default void failed(Throwable x)
         {
-            completed();
+            try
+            {
+                completed();
+            }
+            catch (Throwable t)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                throw t;
+            }
         }
     }
 
@@ -408,6 +422,11 @@ public interface Callback extends Invocable
         {
         }
 
+        private void completed(Throwable ignored)
+        {
+            completed();
+        }
+
         @Override
         public void succeeded()
         {
@@ -424,14 +443,7 @@ public interface Callback extends Invocable
         @Override
         public void failed(Throwable x)
         {
-            try
-            {
-                callback.failed(x);
-            }
-            finally
-            {
-                completed();
-            }
+            Callback.failed(callback::failed, this::completed, x);
         }
 
         @Override
@@ -472,18 +484,7 @@ public interface Callback extends Invocable
             @Override
             public void failed(Throwable x)
             {
-                try
-                {
-                    cb1.failed(x);
-                }
-                catch (Throwable t)
-                {
-                    ExceptionUtil.addSuppressedIfNotAssociated(x, t);
-                }
-                finally
-                {
-                    cb2.failed(x);
-                }
+                Callback.failed(cb1::failed, cb2::failed, x);
             }
 
             @Override
@@ -533,8 +534,7 @@ public interface Callback extends Invocable
                 @Override
                 public void failed(Throwable x)
                 {
-                    callback.failed(x);
-                    super.failed(x);
+                    Callback.failed(callback::failed, super::failed, x);
                 }
             };
         }
@@ -590,6 +590,66 @@ public interface Callback extends Invocable
                     completable.failed(x);
             });
             return completable;
+        }
+    }
+
+    /**
+     * Invoke a callback failure, handling any {@link Throwable} thrown
+     * by adding the passed {@code failure} as a suppressed with
+     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
+     * @param callback The callback to fail
+     * @param failure The failure
+     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
+     */
+    private static void failed(Callback callback, Throwable failure)
+    {
+        try
+        {
+            callback.failed(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+            throw t;
+        }
+    }
+
+    /**
+     * Invoke two consumers of a failure, handling any {@link Throwable} thrown
+     * by adding the passed {@code failure} as a suppressed with
+     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
+     * @param first The first consumer of a failure
+     * @param second The first consumer of a failure
+     * @param failure The failure
+     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
+     */
+    private static void failed(Consumer<Throwable> first, Consumer<Throwable> second,  Throwable failure)
+    {
+        // This is an improved version of:
+        // try
+        // {
+        //     first.accept(failure);
+        // }
+        // finally
+        // {
+        //     second.accept(failure);
+        // }
+        try
+        {
+            first.accept(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, t);
+        }
+        try
+        {
+            second.accept(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+            throw t;
         }
     }
 }

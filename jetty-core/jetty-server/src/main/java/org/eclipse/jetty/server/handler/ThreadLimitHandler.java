@@ -609,7 +609,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         }
 
         @Override
-        protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+        protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
         {
             if (valueLength == 0 && paramValue > paramName)
             {

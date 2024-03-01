@@ -17,7 +17,7 @@ etc/jetty-cross-origin.xml
 [ini-template]
 #tag::documentation[]
 ## Whether cross-origin requests can include credentials such as cookies or authentication headers.
-# jetty.crossorigin.allowCredentials=true
+# jetty.crossorigin.allowCredentials=false
 
 ## A comma-separated list of headers allowed in cross-origin requests.
 # jetty.crossorigin.allowedHeaders=Content-Type
@@ -26,7 +26,7 @@ etc/jetty-cross-origin.xml
 # jetty.crossorigin.allowedMethods=GET,POST,HEAD
 
 ## A comma-separated list of origins regex patterns allowed in cross-origin requests.
-# jetty.crossorigin.allowedOriginPatterns=*
+# jetty.crossorigin.allowedOriginPatterns=
 
 ## A comma-separated list of timing origins regex patterns allowed in cross-origin requests.
 # jetty.crossorigin.allowedTimingOriginPatterns=

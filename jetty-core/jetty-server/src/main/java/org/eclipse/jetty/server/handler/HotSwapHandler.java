@@ -71,9 +71,7 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
             if (handler != null)
             {
                 handler.setServer(server);
-                addBean(handler, true);
-                if (oldHandler != null && oldHandler.isStarted())
-                    handler.start();
+                addManaged(handler);
             }
             _handler = handler;
             if (oldHandler != null)
