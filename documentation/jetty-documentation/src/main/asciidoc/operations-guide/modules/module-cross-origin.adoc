@@ -18,10 +18,16 @@ The `cross-origin` module provides support for the link:https://developer.mozill
 
 This module installs the xref:{prog-guide}#pg-server-http-handler-use-cross-origin[`CrossOriginHandler`] in the `Handler` tree; `CrossOriginHandler` inspects cross-origin requests and adds the relevant CORS response headers.
 
-`CrossOriginHandler` should be used when an application performs cross-origin requests to your server, to protect from link:https://owasp.org/www-community/attacks/csrf[cross-site request forgery] attacks.
+`CrossOriginHandler` should be used when an application performs cross-origin requests to your domain, to protect from link:https://owasp.org/www-community/attacks/csrf[cross-site request forgery] attacks.
 
 The module properties are:
 
 ----
 include::{jetty-home}/modules/cross-origin.mod[tags=documentation]
 ----
+
+You must configure at least the property `jetty.crossorigin.allowedOriginPatterns` to allow one or more origins.
+
+It is recommended that you consider configuring also the property `jetty.crossorigin.allowCredentials`.
+When set to `true`, clients send cookies and authentication headers in cross-origin requests to your domain.
+When set to `false`, cookies and authentication headers are not sent.

@@ -83,7 +83,7 @@ import static org.eclipse.jetty.ee9.nested.ContextHandler.DEFAULT_MAX_FORM_KEYS;
  * }</pre>
  * @see <a href="https://tools.ietf.org/html/rfc7578">https://tools.ietf.org/html/rfc7578</a>
  */
-public class MultiPartFormInputStream
+public class MultiPartFormInputStream implements MultiPart.Parser
 {
     private enum State
     {
@@ -94,14 +94,12 @@ public class MultiPartFormInputStream
         DELETED
     }
 
-    record NonCompliance(ComplianceViolation.Mode mode, MultiPartCompliance.Violation violation, String detail) {}
-
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
-    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().build();
+    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEscapeOnlyForQuotes().allowEmbeddedQuotes().build();
 
     private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
-    private final List<NonCompliance> _nonComplianceWarnings = new ArrayList<>();
+    private final List<ComplianceViolation.Event> _nonComplianceWarnings = new ArrayList<>();
     private final InputStream _in;
     private final MultipartConfigElement _config;
     private final File _contextTmpDir;
@@ -117,7 +115,8 @@ public class MultiPartFormInputStream
     /**
      * @return an EnumSet of non compliances with the RFC that were accepted by this parser
      */
-    public List<NonCompliance> getNonComplianceWarnings()
+    @Override
+    public List<ComplianceViolation.Event> getNonComplianceWarnings()
     {
         return _nonComplianceWarnings;
     }
@@ -487,6 +486,7 @@ public class MultiPartFormInputStream
      * @return the parts
      * @throws IOException if unable to get the parts
      */
+    @Override
     public Collection<Part> getParts() throws IOException
     {
         parse();
@@ -501,6 +501,7 @@ public class MultiPartFormInputStream
      * @return the parts
      * @throws IOException if unable to get the part
      */
+    @Override
     public Part getPart(String name) throws IOException
     {
         parse();
@@ -703,7 +704,7 @@ public class MultiPartFormInputStream
             if (key.equalsIgnoreCase("content-transfer-encoding"))
             {
                 if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
-                    _nonComplianceWarnings.add(new NonCompliance(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
+                    _nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
             }
         }
 
@@ -723,8 +724,6 @@ public class MultiPartFormInputStream
                 {
                     throw new IOException("Missing content-disposition");
                 }
-
-                QUOTED_STRING_TOKENIZER.tokenize(contentDisposition);
 
                 String name = null;
                 String filename = null;

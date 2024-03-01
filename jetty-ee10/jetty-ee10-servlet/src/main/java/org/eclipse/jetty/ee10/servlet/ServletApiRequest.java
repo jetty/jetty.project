@@ -1432,21 +1432,24 @@ public class ServletApiRequest implements HttpServletRequest
 
     static class AmbiguousURI extends ServletApiRequest
     {
-        protected AmbiguousURI(ServletContextRequest servletContextRequest)
+        private final String msg;
+
+        protected AmbiguousURI(ServletContextRequest servletContextRequest, String msg)
         {
             super(servletContextRequest);
+            this.msg = msg;
         }
 
         @Override
         public String getPathInfo()
         {
-            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
+            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, msg);
         }
 
         @Override
         public String getServletPath()
         {
-            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
+            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, msg);
         }
     }
 
