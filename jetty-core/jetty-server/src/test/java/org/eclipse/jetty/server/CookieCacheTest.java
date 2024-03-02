@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -172,6 +174,27 @@ public class CookieCacheTest
         cookie = cookies1.get(1);
         assertThat(cookie.getName(), is("other"));
         assertThat(cookie.getValue(), is("different"));
+    }
+
+    @Test
+    public void testApiCookie()
+    {
+        _fields.put("Some", "Header");
+        _fields.put("Cookie", "name=value");
+        _fields.add("Cookie", "other=cookie");
+        _fields.put("Other", "header");
+        List<HttpCookie> cookies0 = _cache.getCookies(_fields.asImmutable());
+        assertThat(cookies0, hasSize(2));
+        HttpCookie cookie = cookies0.get(0);
+        assertThat(cookie.getName(), is("name"));
+        assertThat(cookie.getValue(), is("value"));
+        cookie = cookies0.get(1);
+        assertThat(cookie.getName(), is("other"));
+        assertThat(cookie.getValue(), is("cookie"));
+
+        String[] strings = _cache.getApiCookies(String.class, c -> c.getName() + "=" + c.getValue());
+        assertThat(Arrays.asList(strings), contains("name=value", "other=cookie"));
+        assertThat(_cache.getApiCookies(String.class, null), sameInstance(strings));
     }
 
 }
