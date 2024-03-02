@@ -96,7 +96,7 @@
     <xmemcached.version>2.4.8</xmemcached.version>
 
     <!-- some maven plugins versions -->
-    <asciidoctor.plugin.version>2.2.4</asciidoctor.plugin.version>
+    <asciidoctor.plugin.version>2.2.6</asciidoctor.plugin.version>
     <appassembler.plugin.version>2.1.0</appassembler.plugin.version>
     <build-helper.plugin.version>3.5.0</build-helper.plugin.version>
     <buildnumber.plugin.version>3.2.0</buildnumber.plugin.version>
