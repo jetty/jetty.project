@@ -26,9 +26,7 @@ import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
-import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -65,7 +63,6 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -83,6 +80,7 @@ import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.server.CookieCache;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Server;
@@ -800,22 +798,40 @@ public class Request implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        ContextHandler.CoreContextRequest coreRequest = getCoreRequest();
-        if (coreRequest == null)
-            return null;
+        return CookieCache.getApiCookies(getCoreRequest(), Cookie.class, this::convertCookie);
+    }
 
-        List<HttpCookie> httpCookies = org.eclipse.jetty.server.Request.getCookies(coreRequest);
-        if (httpCookies.isEmpty())
-            return null;
+    private Cookie convertCookie(HttpCookie cookie)
+    {
+        try
+        {
+            Cookie result = new Cookie(cookie.getName(), cookie.getValue());
 
-        if (httpCookies instanceof ServletCookieList servletCookieList)
-            return servletCookieList.getServletCookies();
+            if (getCoreRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance().allows(CookieCompliance.Violation.ATTRIBUTE_VALUES))
+            {
+                if (cookie.getVersion() > 0)
+                    result.setVersion(cookie.getVersion());
 
-        ServletCookieList servletCookieList = new ServletCookieList(httpCookies, coreRequest.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
-        coreRequest.setAttribute(org.eclipse.jetty.server.Request.COOKIE_ATTRIBUTE, servletCookieList);
-        if (coreRequest.getComponents().getCache().getAttribute(org.eclipse.jetty.server.Request.CACHE_ATTRIBUTE) instanceof CookieCache cookieCache)
-            cookieCache.replaceCookieList(servletCookieList);
-        return servletCookieList.getServletCookies();
+                String path = cookie.getPath();
+                if (StringUtil.isNotBlank(path))
+                    result.setPath(path);
+
+                String domain = cookie.getDomain();
+                if (StringUtil.isNotBlank(domain))
+                    result.setDomain(domain);
+
+                String comment = cookie.getComment();
+                if (StringUtil.isNotBlank(comment))
+                    result.setComment(comment);
+            }
+            return result;
+        }
+        catch (Exception x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Bad Cookie", x);
+        }
+        return null;
     }
 
     @Override
@@ -2215,7 +2231,7 @@ public class Request implements HttpServletRequest
      */
     ServletPathMapping findServletPathMapping()
     {
-        ServletPathMapping mapping = null;
+        ServletPathMapping mapping;
         if (_dispatcherType == DispatcherType.INCLUDE)
         {
             if (_crossContextDispatchSupported && DispatcherType.INCLUDE.toString().equals(_coreRequest.getContext().getCrossContextDispatchType(_coreRequest)))
@@ -2250,80 +2266,5 @@ public class Request implements HttpServletRequest
         // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
         // which we recover from the IncludeAttributes wrapper.
         return findServletPathMapping();
-    }
-
-    /**
-     * Extended list of HttpCookies that converts and caches a servlet Cookie array.
-     */
-    private static class ServletCookieList extends AbstractList<HttpCookie>
-    {
-        private final List<HttpCookie> _httpCookies;
-        private final Cookie[] _cookies;
-
-        ServletCookieList(List<HttpCookie> httpCookies, CookieCompliance compliance)
-        {
-            _httpCookies = httpCookies;
-            Cookie[] cookies = new Cookie[_httpCookies.size()];
-            int i = 0;
-            for (HttpCookie httpCookie : _httpCookies)
-            {
-                Cookie cookie = convertCookie(httpCookie, compliance);
-                if (cookie == null)
-                    cookies = Arrays.copyOf(cookies, cookies.length - 1);
-                else
-                    cookies[i++] = cookie;
-            }
-            _cookies = cookies;
-        }
-
-        @Override
-        public HttpCookie get(int index)
-        {
-            return _httpCookies.get(index);
-        }
-
-        public Cookie[] getServletCookies()
-        {
-            return _cookies;
-        }
-
-        @Override
-        public int size()
-        {
-            return _cookies.length;
-        }
-
-        private static Cookie convertCookie(HttpCookie cookie, CookieCompliance compliance)
-        {
-            try
-            {
-                Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-
-                if (compliance.allows(CookieCompliance.Violation.ATTRIBUTE_VALUES))
-                {
-                    if (cookie.getVersion() > 0)
-                        result.setVersion(cookie.getVersion());
-
-                    String path = cookie.getPath();
-                    if (StringUtil.isNotBlank(path))
-                        result.setPath(path);
-
-                    String domain = cookie.getDomain();
-                    if (StringUtil.isNotBlank(domain))
-                        result.setDomain(domain);
-
-                    String comment = cookie.getComment();
-                    if (StringUtil.isNotBlank(comment))
-                        result.setComment(comment);
-                }
-                return result;
-            }
-            catch (Exception x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Bad Cookie", x);
-            }
-            return null;
-        }
     }
 }

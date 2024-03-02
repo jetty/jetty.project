@@ -11,15 +11,26 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.server;
 
+import java.lang.reflect.Array;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.function.Function;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.http.CookieParser;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +42,51 @@ import org.slf4j.LoggerFactory;
  * cookies are not re-parsed.
  * 
  */
-public class CookieCache implements CookieParser.Handler, ComplianceViolation.Listener
+public class CookieCache extends AbstractList<HttpCookie> implements CookieParser.Handler, ComplianceViolation.Listener
 {
+    public static List<HttpCookie> getCookies(Request request)
+    {
+        @SuppressWarnings("unchecked")
+        List<HttpCookie> cookies = (List<HttpCookie>)request.getAttribute(Request.COOKIE_ATTRIBUTE);
+        if (cookies != null)
+            return cookies;
+
+        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(Request.COOKIE_ATTRIBUTE);
+        if (cookieCache == null)
+        {
+            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
+            request.getComponents().getCache().setAttribute(Request.COOKIE_ATTRIBUTE, cookieCache);
+        }
+
+        cookieCache.parseCookies(request.getHeaders(), HttpChannel.from(request).getComplianceViolationListener());
+        request.setAttribute(Request.COOKIE_ATTRIBUTE, cookieCache);
+        return cookieCache;
+    }
+
+    public static <C> C[] getApiCookies(Request request, Class<C> cookieClass, Function<HttpCookie, C> convertor)
+    {
+        CookieCache cookieCache = (CookieCache)request.getAttribute(Request.COOKIE_ATTRIBUTE);
+        if (cookieCache == null)
+        {
+            cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(Request.COOKIE_ATTRIBUTE);
+            if (cookieCache == null)
+            {
+                cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
+                request.getComponents().getCache().setAttribute(Request.COOKIE_ATTRIBUTE, cookieCache);
+            }
+
+            cookieCache.parseCookies(request.getHeaders(), HttpChannel.from(request).getComplianceViolationListener());
+            request.setAttribute(Request.COOKIE_ATTRIBUTE, cookieCache);
+        }
+
+        return cookieCache.getApiCookies(cookieClass, convertor);
+    }
+
     protected static final Logger LOG = LoggerFactory.getLogger(CookieCache.class);
     protected final List<String> _rawFields = new ArrayList<>();
-    protected List<HttpCookie> _cookieList;
     private final CookieParser _parser;
+    private List<HttpCookie> _httpCookies = Collections.emptyList();
+    private  Map<Class<?>, Object[]> _apiCookies;
     private List<ComplianceViolation.Event> _violations;
 
     public CookieCache()
@@ -47,6 +97,18 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
     public CookieCache(CookieCompliance compliance)
     {
         _parser = CookieParser.newParser(this, compliance, this);
+    }
+
+    @Override
+    public HttpCookie get(int index)
+    {
+        return _httpCookies.get(index);
+    }
+
+    @Override
+    public int size()
+    {
+        return _httpCookies.size();
     }
 
     @Override
@@ -61,7 +123,7 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
     public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
     {
         if (StringUtil.isEmpty(cookieDomain) && StringUtil.isEmpty(cookiePath) && cookieVersion <= 0 && StringUtil.isEmpty(cookieComment))
-            _cookieList.add(HttpCookie.from(cookieName, cookieValue));
+            _httpCookies.add(HttpCookie.from(cookieName, cookieValue));
         else
         {
             Map<String, String> attributes = new HashMap<>();
@@ -71,16 +133,17 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
                 attributes.put(HttpCookie.PATH_ATTRIBUTE, cookiePath);
             if (!StringUtil.isEmpty(cookieComment))
                 attributes.put(HttpCookie.COMMENT_ATTRIBUTE, cookieComment);
-            _cookieList.add(HttpCookie.from(cookieName, cookieValue, cookieVersion, attributes));
+            _httpCookies.add(HttpCookie.from(cookieName, cookieValue, cookieVersion, attributes));
         }
     }
 
-    public List<HttpCookie> getCookies(HttpFields headers)
+    List<HttpCookie> getCookies(HttpFields headers)
     {
-        return getCookies(headers, ComplianceViolation.Listener.NOOP);
+        parseCookies(headers, ComplianceViolation.Listener.NOOP);
+        return _httpCookies;
     }
 
-    public List<HttpCookie> getCookies(HttpFields headers, ComplianceViolation.Listener complianceViolationListener)
+    public void parseCookies(HttpFields headers, ComplianceViolation.Listener complianceViolationListener)
     {
         boolean building = false;
         ListIterator<String> raw = _rawFields.listIterator();
@@ -147,7 +210,8 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
         // If we ended up in building mode, reparse the cookie list from the raw fields.
         if (building)
         {
-            _cookieList = new ArrayList<>();
+            _httpCookies = new ArrayList<>();
+            _apiCookies = null;
             try
             {
                 if (_violations != null)
@@ -162,17 +226,38 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
 
         if (_violations != null && !_violations.isEmpty())
             _violations.forEach(complianceViolationListener::onComplianceViolation);
-
-        return _cookieList == null ? Collections.emptyList() : _cookieList;
     }
 
-    /**
-     * Replace the cookie list with
-     * @param cookies The replacement cookie list, which must be equal to the existing list
-     */
-    public void replaceCookieList(List<HttpCookie> cookies)
+    public <C> C[] getApiCookies(Class<C> apiClass, Function<HttpCookie, C> convertor)
     {
-        assert _cookieList.equals(cookies);
-        _cookieList = cookies;
+        if (_httpCookies.isEmpty())
+            return null;
+
+        if (_apiCookies == null)
+        {
+            C[] apiCookies = convert(apiClass, convertor);
+            _apiCookies = Map.of(apiClass, apiCookies);
+            return apiCookies;
+        }
+
+        @SuppressWarnings("unchecked")
+        C[] apiCookies = (C[])_apiCookies.get(apiClass);
+        if (apiCookies == null)
+        {
+            if (_apiCookies.size() == 1)
+                _apiCookies = new HashMap<>(_apiCookies);
+            apiCookies = convert(apiClass, convertor);
+            _apiCookies.put(apiClass, apiCookies);
+        }
+        return apiCookies;
+    }
+
+    private <C> C[] convert(Class<C> apiClass, Function<HttpCookie, C> convertor)
+    {
+        @SuppressWarnings("unchecked")
+        C[] apiCookies = (C[])Array.newInstance(apiClass, _httpCookies.size());
+        for (int i = 0; i < apiCookies.length; i++)
+            apiCookies[i] = convertor.apply(_httpCookies.get(i));
+        return apiCookies;
     }
 }

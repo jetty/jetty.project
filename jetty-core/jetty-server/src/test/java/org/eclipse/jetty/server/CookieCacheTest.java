@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.util.List;
 import java.util.ListIterator;
 
-import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
