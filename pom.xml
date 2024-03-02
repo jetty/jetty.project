@@ -297,7 +297,7 @@
     <license.maven.plugin.version>4.3</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.23.0</log4j2.version>
-    <logback.version>1.4.14</logback.version>
+    <logback.version>1.5.1</logback.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.3.3</mariadb.version>
     <maven-plugin.plugin.version>3.11.0</maven-plugin.plugin.version>
