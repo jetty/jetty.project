@@ -191,7 +191,7 @@
     <hazelcast.version>5.3.6</hazelcast.version>
     <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.18.Final</infinispan.version>
+    <infinispan.version>14.0.25.Final</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
@@ -270,7 +270,7 @@
     <mina.core.version>2.2.3</mina.core.version>
     <mongo.docker.version>3.2.20</mongo.docker.version>
     <mongodb.version>3.12.14</mongodb.version>
-    <netty.version>4.1.100.Final</netty.version>
+    <netty.version>4.1.107.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -1172,44 +1172,37 @@
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-digest</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-external</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-gs2</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-gssapi</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-oauth2</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-plain</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-scram</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
