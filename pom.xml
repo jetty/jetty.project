@@ -1140,36 +1140,6 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven.plugin-tools</groupId>
-        <artifactId>maven-plugin-annotations</artifactId>
-        <version>${maven.plugin-tools.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-xhtml-schemas</artifactId>
-        <version>${jetty.xhtml.schemas-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.measurement</artifactId>
-        <version>${osgi-util-measurement-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.position</artifactId>
-        <version>${osgi-util-position-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.xml</artifactId>
-        <version>${osgi-util-xml-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-digest</artifactId>
         <version>2.3.1.Final</version>
@@ -1203,6 +1173,36 @@
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-scram</artifactId>
         <version>2.3.1.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${maven.plugin-tools.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-xhtml-schemas</artifactId>
+        <version>${jetty.xhtml.schemas-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.measurement</artifactId>
+        <version>${osgi-util-measurement-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.position</artifactId>
+        <version>${osgi-util-position-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.xml</artifactId>
+        <version>${osgi-util-xml-version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
