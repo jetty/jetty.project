@@ -614,6 +614,8 @@ public class Request implements HttpServletRequest
                 return _channel;
             if (Connection.class.getName().equals(name))
                 return _channel.getCoreRequest().getConnectionMetaData().getConnection();
+            if (MultiPart.Parser.class.getName().equals(name))
+                return _multiParts;
         }
         return (_attributes == null) ? null : _attributes.getAttribute(name);
     }
@@ -1383,7 +1385,8 @@ public class Request implements HttpServletRequest
         {
             try
             {
-                _multiParts.deleteParts();
+                if (!_crossContextDispatchSupported || !_coreRequest.getContext().isCrossContextDispatch(_coreRequest))
+                    _multiParts.deleteParts();
             }
             catch (Throwable e)
             {
@@ -2008,6 +2011,18 @@ public class Request implements HttpServletRequest
     {
         if (_multiParts == null)
         {
+            if (_crossContextDispatchSupported)
+            {
+                // the request prior or after dispatch may have parsed the multipart
+                Object multipart = _coreRequest.getAttribute(MultiPart.Parser.class.getName());
+                //TODO support cross environment multipart
+                if (multipart instanceof MultiPart.Parser multiPartParser)
+                {
+                    _multiParts = multiPartParser;
+                    return _multiParts.getParts();
+                }
+            }
+
             MultipartConfigElement config = (MultipartConfigElement)getAttribute(MULTIPART_CONFIG_ELEMENT);
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
@@ -2091,6 +2106,9 @@ public class Request implements HttpServletRequest
                     os.reset();
                 }
             }
+
+            if (_crossContextDispatchSupported)
+                _coreRequest.setAttribute(MultiPart.Parser.class.getName(), _multiParts);
         }
 
         return _multiParts.getParts();

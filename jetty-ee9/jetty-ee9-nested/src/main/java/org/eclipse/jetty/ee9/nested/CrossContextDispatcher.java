@@ -67,7 +67,9 @@ class CrossContextDispatcher implements RequestDispatcher
 
     private class IncludeRequest extends ServletCoreRequest
     {
-        public IncludeRequest(ContextHandler.CoreContextRequest coreContextRequest, HttpServletRequest httpServletRequest)
+        private Request _baseRequest;
+
+        public IncludeRequest(ContextHandler.CoreContextRequest coreContextRequest, Request request, HttpServletRequest httpServletRequest)
         {
             super(coreContextRequest, httpServletRequest, new Attributes.Synthetic(new ServletAttributes(httpServletRequest))
             {
@@ -128,6 +130,7 @@ class CrossContextDispatcher implements RequestDispatcher
                     return super.setAttribute(name, attribute);
                 }
             });
+            _baseRequest = request;
         }
 
         @Override
@@ -135,6 +138,14 @@ class CrossContextDispatcher implements RequestDispatcher
         {
             //return the uri of the dispatch target
             return _uri;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (MultiPart.Parser.class.getName().equals(name))
+                return _baseRequest.getAttribute(name);
+            return super.getAttribute(name);
         }
     }
 
@@ -148,7 +159,9 @@ class CrossContextDispatcher implements RequestDispatcher
 
     private class ForwardRequest extends ServletCoreRequest
     {
-        public ForwardRequest(ContextHandler.CoreContextRequest coreContextRequest, HttpServletRequest httpServletRequest)
+        private Request _baseRequest;
+
+        public ForwardRequest(ContextHandler.CoreContextRequest coreContextRequest, Request request, HttpServletRequest httpServletRequest)
         {
             super(coreContextRequest, httpServletRequest, new Attributes.Synthetic(new ServletAttributes(httpServletRequest))
             {
@@ -196,6 +209,15 @@ class CrossContextDispatcher implements RequestDispatcher
                     return ATTRIBUTES;
                 }
             });
+            _baseRequest = request;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (MultiPart.Parser.class.getName().equals(name))
+                return _baseRequest.getAttribute(name);
+            return super.getAttribute(name);
         }
 
         @Override
@@ -225,7 +247,7 @@ class CrossContextDispatcher implements RequestDispatcher
         org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
         baseResponse.resetForForward();
 
-        ForwardRequest forwardRequest = new ForwardRequest(coreContextRequest, httpServletRequest);
+        ForwardRequest forwardRequest = new ForwardRequest(coreContextRequest, baseRequest, httpServletRequest);
         ServletCoreResponse servletCoreResponse = new ServletCoreResponse(forwardRequest, httpServletResponse, baseResponse, coreResponse, false);
 
         try (Blocker.Callback callback = Blocker.callback())
@@ -266,7 +288,7 @@ class CrossContextDispatcher implements RequestDispatcher
         ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
         org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
 
-        IncludeRequest includeRequest = new IncludeRequest(coreContextRequest, httpServletRequest);
+        IncludeRequest includeRequest = new IncludeRequest(coreContextRequest, baseRequest, httpServletRequest);
         IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse, baseResponse, coreResponse);
 
         try (Blocker.Callback callback = Blocker.callback())

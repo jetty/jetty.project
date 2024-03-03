@@ -160,7 +160,6 @@ public class CrossContextDispatcherTest
         String mapping = extractLine(contentLines, "MAPPING=");
         assertNotNull(mapping);
         assertThat(mapping, containsString("VerifyForwardServlet"));
-        //TODO query string
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
@@ -193,7 +192,6 @@ public class CrossContextDispatcherTest
         assertThat(content, containsString("jakarta.servlet.include.path_info=/pinfo"));
         String includeMapping = extractLine(contentLines, "jakarta.servlet.include.mapping=");
         assertThat(includeMapping, containsString("VerifyIncludeServlet"));
-        //TODO query string
         assertThat(content, containsString("jakarta.servlet.include.request_uri=/foreign/verify/pinfo"));
         //verify request values
         assertThat(content, containsString("CONTEXT_PATH=/context"));
@@ -234,7 +232,6 @@ public class CrossContextDispatcherTest
         assertThat(content, containsString("javax.servlet.include.path_info=/pinfo"));
         String includeMapping = extractLine(contentLines, "javax.servlet.include.mapping=");
         assertThat(includeMapping, containsString("VerifySimulatedEE8IncludeServlet"));
-        //TODO query string
         assertThat(content, containsString("javax.servlet.include.request_uri=/foreign/verify/pinfo"));
         //verify request values
         assertThat(content, containsString("CONTEXT_PATH=/context"));
