@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.lang.reflect.Array;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +45,15 @@ import org.slf4j.LoggerFactory;
  */
 public class CookieCache extends AbstractList<HttpCookie> implements CookieParser.Handler, ComplianceViolation.Listener
 {
+    /**
+     * Get the core HttpCookies for a request.
+     * Cookies may be cached as a {@link Request#getAttribute(String) request attribute}, failing that they may be
+     * cached in the {@link Components#getCache() Component cache}, in which case they will be checked to see if they
+     * have changed since a previous request.  Otherwise, they are parsed from the request headers and both caches updated.
+     * @param request The request to obtain cookies from
+     * @return A list of core {@link HttpCookie}s from the request.
+     * @see #getApiCookies(Request, Class, Function)
+     */
     public static List<HttpCookie> getCookies(Request request)
     {
         @SuppressWarnings("unchecked")
@@ -63,8 +73,23 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
         return cookieCache;
     }
 
+    /**
+     * Get the API specific cookies for a request.
+     * Internally the same caching/parsing is done as by {@link #getCookies(Request)} and the core {@link HttpCookie}s are
+     * obtained. The passed {@code convertor} function is used to covert the core {@link HttpCookie}s to API specific cookies
+     * and the results cached along with the core {@link HttpCookie}s
+     * @param request The request to get the cookies from.
+     * @param cookieClass The class of the cookie API
+     * @param convertor A function to convert from a {@link HttpCookie} to an API cookie of type {@code cookieClass}. The
+     *                  function may return null if the cookie is not compliant with the API.
+     * @param <C>       The class of the cookie API
+     * @return          An array of API specific cookies.
+     */
     public static <C> C[] getApiCookies(Request request, Class<C> cookieClass, Function<HttpCookie, C> convertor)
     {
+        if (request == null)
+            return null;
+
         CookieCache cookieCache = (CookieCache)request.getAttribute(Request.COOKIE_ATTRIBUTE);
         if (cookieCache == null)
         {
@@ -230,11 +255,14 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
 
     public <C> C[] getApiCookies(Class<C> apiClass, Function<HttpCookie, C> convertor)
     {
+        // No APIs if no Cookies
         if (_httpCookies.isEmpty())
             return null;
 
+        // If only the core APIs have been used, then no apiCookie map has been created
         if (_apiCookies == null)
         {
+            // When a cookie API is ued, the most common case in only a single API, so used a cheap Map
             C[] apiCookies = convert(apiClass, convertor);
             _apiCookies = Map.of(apiClass, apiCookies);
             return apiCookies;
@@ -244,6 +272,8 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
         C[] apiCookies = (C[])_apiCookies.get(apiClass);
         if (apiCookies == null)
         {
+            // Only in the case of cross environment dispatch will more than 1 API be needed, so only invest in a real
+            // map when we know it is required.
             if (_apiCookies.size() == 1)
                 _apiCookies = new HashMap<>(_apiCookies);
             apiCookies = convert(apiClass, convertor);
@@ -256,8 +286,16 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
     {
         @SuppressWarnings("unchecked")
         C[] apiCookies = (C[])Array.newInstance(apiClass, _httpCookies.size());
-        for (int i = 0; i < apiCookies.length; i++)
-            apiCookies[i] = convertor.apply(_httpCookies.get(i));
+        int i = 0;
+        for (HttpCookie httpCookie : _httpCookies)
+        {
+            C apiCookie = convertor.apply(httpCookie);
+            // Exclude any API cookies that are not convertable to that API
+            if (apiCookie == null)
+                apiCookies = Arrays.copyOf(apiCookies, apiCookies.length - 1);
+            else
+                apiCookies[i++] = apiCookie;
+        }
         return apiCookies;
     }
 }
