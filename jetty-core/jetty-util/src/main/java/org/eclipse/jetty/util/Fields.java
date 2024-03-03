@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>A container for name/value pairs, known as fields.</p>
- * <p>A {@link Field} is composed of a name string that can be case-sensitive
+ * <p>A {@link Field} is immutable and is composed of a name string that can be case-sensitive
  * or case-insensitive (by specifying the option at the constructor) and
  * of a case-sensitive set of value strings.</p>
  * <p>The implementation of this class is not thread safe.</p>
@@ -61,20 +61,27 @@ public class Fields implements Iterable<Fields.Field>
         this(multiMapToMapOfFields(params));
     }
 
-    public Fields(Fields fields)
-    {
-        this(fields.fields instanceof TreeMap ? new TreeMap<>(String::compareToIgnoreCase) : new LinkedHashMap<>());
-        addAll(fields);
-    }
-
     public Fields(Map<String, Field> fields)
     {
         this.fields = fields;
     }
 
+    public Fields(Fields fields)
+    {
+        if (fields.fields instanceof TreeMap<String, Field>)
+            this.fields = new TreeMap<>(String::compareToIgnoreCase);
+        else if (fields.fields instanceof LinkedHashMap<String, Field>)
+            this.fields = new LinkedHashMap<>();
+        else if (Collections.unmodifiableMap(fields.fields) == fields.fields)
+            this.fields = fields.fields;
+        else
+            throw new IllegalStateException("unknown case sensitivity");
+    }
+
     public Fields asImmutable()
     {
-        return new Fields(Collections.unmodifiableMap(fields));
+        Map<String, Field> unmodifiable = Collections.unmodifiableMap(fields);
+        return unmodifiable == fields ? this : new Fields(unmodifiable);
     }
 
     @Override
@@ -394,10 +401,31 @@ public class Fields implements Iterable<Fields.Field>
             if (moreValues.size() == 1)
                 return append(values, moreValues.get(0));
 
-            List<String> list = new ArrayList<>(values.size() + moreValues.size());
-            list.addAll(values);
-            list.addAll(moreValues);
-            return list;
+            return switch (values.size())
+            {
+                case 0 -> moreValues;
+                case 1 -> switch (moreValues.size())
+                {
+                    case 2 -> List.of(values.get(0), moreValues.get(0), moreValues.get(1));
+                    case 3 -> List.of(values.get(0), moreValues.get(0), moreValues.get(1), moreValues.get(2));
+                    case 4 -> List.of(values.get(0), moreValues.get(0), moreValues.get(1), moreValues.get(2), moreValues.get(3));
+                    case 5 -> List.of(values.get(0), moreValues.get(0), moreValues.get(1), moreValues.get(2), moreValues.get(3), moreValues.get(4));
+                    default ->
+                    {
+                        List<String> list = new ArrayList<>(moreValues.size() + 1);
+                        list.add(values.get(0));
+                        list.addAll(moreValues);
+                        yield list;
+                    }
+                };
+                default ->
+                {
+                    List<String> list = new ArrayList<>(values.size() + moreValues.size());
+                    list.addAll(values);
+                    list.addAll(moreValues);
+                    yield list;
+                }
+            };
         }
 
         @Override
@@ -473,7 +501,7 @@ public class Fields implements Iterable<Fields.Field>
     /**
      * <p>Combine two Fields</p>
      * @param a The base Fields or null
-     * @param b The overlayed Fields or null
+     * @param b The overlay Fields or null
      * @return Fields, which may be empty, but never null.
      */
     public static Fields combine(Fields a, Fields b)

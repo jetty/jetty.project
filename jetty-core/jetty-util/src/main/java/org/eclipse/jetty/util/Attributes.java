@@ -61,7 +61,6 @@ public interface Attributes
      * Get the immutable set of attribute names.
      * @return Set of attribute names
      */
-    // TODO: change to getAttributeNames() once jetty-core is cleaned of servlet-api usages
     Set<String> getAttributeNameSet();
 
     default Map<String, Object> asAttributeMap()
@@ -566,7 +565,7 @@ public interface Attributes
      * but is instead calculated as needed. Modifications to synthetic attributes are maintained
      * in a separate layer and no modifications are made to the backing {@link Attributes}.
      * <p>
-     * Non synthetic attributes are handled normally by the backing {@link Attributes}
+     * Non-synthetic attributes are handled normally by the backing {@link Attributes}
      * <p>
      * Uses of this class must provide implementations for
      * {@link #getSyntheticNameSet()} amd {@link #getSyntheticAttribute(String)}.
