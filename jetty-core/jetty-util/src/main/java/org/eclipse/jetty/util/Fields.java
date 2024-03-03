@@ -69,13 +69,22 @@ public class Fields implements Iterable<Fields.Field>
     public Fields(Fields fields)
     {
         if (fields.fields instanceof TreeMap<String, Field>)
+        {
             this.fields = new TreeMap<>(String::compareToIgnoreCase);
+            this.fields.putAll(fields.fields);
+        }
         else if (fields.fields instanceof LinkedHashMap<String, Field>)
-            this.fields = new LinkedHashMap<>();
+        {
+            this.fields = new LinkedHashMap<>(fields.fields);
+        }
         else if (Collections.unmodifiableMap(fields.fields) == fields.fields)
+        {
             this.fields = fields.fields;
+        }
         else
+        {
             throw new IllegalStateException("unknown case sensitivity");
+        }
     }
 
     public Fields asImmutable()
