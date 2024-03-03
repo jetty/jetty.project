@@ -178,11 +178,20 @@ public class HttpParser
         .maxCapacity(0)
         .build();
 
-    private static final int HTTP_AS_INT = ('H' & 0xFF) << 24 | ('T' & 0xFF) << 16 | ('T' & 0xFF) << 8 | ('P' & 0xFF);
-    private static final int HTTP_1_0_AS_INT = ('/' & 0xFF) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('0' & 0xFF);
-    private static final int HTTP_1_1_AS_INT = ('/' & 0xFF) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('1' & 0xFF);
+    private static final long HTTP_AS_LONG = ('H' & 0xFF) << 24 | ('T' & 0xFF) << 16 | ('T' & 0xFF) << 8 | ('P' & 0xFF);
+    private static final long HTTP_1_0_AS_LONG = (HTTP_AS_LONG << 32) + (('/' & 0xFF) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('0' & 0xFF));
+    private static final long HTTP_1_1_AS_LONG = (HTTP_AS_LONG << 32) + (('/' & 0xFF) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('1' & 0xFF));
     private static final int HTTP_VERSION_LEN = 8;
-    private static final int INT_LEN = 4;
+
+    private static final long GET_SLASH_HT_AS_LONG =
+        ('G' & 0xFFL) << 56 | ('E' & 0xFFL) << 48 | ('T' & 0xFFL) << 40 | (' ' & 0xFFL) << 32 | ('/' & 0xFFL) << 24 | (' ' & 0xFFL) << 16 | ('H' & 0xFFL) << 8 | ('T' & 0xFFL);
+    private static final long TP_SLASH_1_0_CRLF =
+        ('T' & 0xFFL) << 56 | ('P' & 0xFFL) << 48 | ('/' & 0xFFL) << 40 | ('1' & 0xFFL) << 32 | ('.' & 0xFFL) << 24 | ('0' & 0xFFL) << 16 | ('\r' & 0xFFL) << 8 | ('\n' & 0xFFL);
+    private static final long TP_SLASH_1_1_CRLF =
+        ('T' & 0xFFL) << 56 | ('P' & 0xFFL) << 48 | ('/' & 0xFFL) << 40 | ('1' & 0xFFL) << 32 | ('.' & 0xFFL) << 24 | ('1' & 0xFFL) << 16 | ('\r' & 0xFFL) << 8 | ('\n' & 0xFFL);
+
+    private static final long SPACE_200_OK_CR_AS_LONG =
+        (' ' & 0xFFL) << 56 | ('2' & 0xFFL) << 48 | ('0' & 0xFFL) << 40 | ('0' & 0xFFL) << 32 | (' ' & 0xFFL) << 24 | ('O' & 0xFFL) << 16 | ('K' & 0xFFL) << 8 | ('\r' & 0xFFL);
 
     // States
     public enum FieldState
@@ -515,27 +524,72 @@ public class HttpParser
         int position = buffer.position();
         if (_requestHandler != null)
         {
+            // Try to match "GET / HTTP/1.x\r\n" with two longs
+            if (buffer.remaining() >= 16 && buffer.getLong(position) == GET_SLASH_HT_AS_LONG)
+            {
+                long v = buffer.getLong(position + 8);
+                if (v == TP_SLASH_1_1_CRLF)
+                {
+                    buffer.position(position + 16);
+                    _methodString = HttpMethod.GET.asString();
+                    _version = HttpVersion.HTTP_1_1;
+                    setState(State.HEADER);
+                    _requestHandler.startRequest(_methodString, "/", _version);
+                    return;
+                }
+                if (v == TP_SLASH_1_0_CRLF)
+                {
+                    buffer.position(position + 16);
+                    _methodString = HttpMethod.GET.asString();
+                    _version = HttpVersion.HTTP_1_0;
+                    setState(State.HEADER);
+                    _requestHandler.startRequest(_methodString, "/", _version);
+                    return;
+                }
+            }
+
+            // otherwise just try to match the method
             _method = HttpMethod.lookAheadGet(buffer);
             if (_method != null)
             {
                 _methodString = _method.asString();
                 // The lookAheadGet method above checks for the trailing space,
                 // so it is safe to move the position 1 more than the method length.
-                buffer.position(position + _methodString.length() + 1);
-
+                position = position + _methodString.length() + 1;
+                buffer.position(position);
                 setState(State.SPACE1);
                 return;
             }
         }
-        else if (_responseHandler != null && buffer.remaining() >= (HTTP_VERSION_LEN + 1) && buffer.getInt(position) == HTTP_AS_INT)
+        else if (_responseHandler != null && buffer.remaining() > HTTP_VERSION_LEN)
         {
-            int v = buffer.getInt(position + INT_LEN);
-            _version = v == HTTP_1_1_AS_INT ? HttpVersion.HTTP_1_1 : v == HTTP_1_0_AS_INT ? HttpVersion.HTTP_1_0 : null;
-            if (_version != null && buffer.get(position + HTTP_VERSION_LEN) == ' ')
+            // Match version as a long
+            long v = buffer.getLong(position);
+            if (v == HTTP_1_1_AS_LONG)
+                _version = HttpVersion.HTTP_1_1;
+            else if (v == HTTP_1_0_AS_LONG)
+                _version = HttpVersion.HTTP_1_0;
+
+            if (_version != null)
             {
-                buffer.position(position + HTTP_VERSION_LEN + 1);
-                setState(State.SPACE1);
-                return;
+                position += HTTP_VERSION_LEN;
+
+                // Try to make 200 OK as a long
+                if (buffer.remaining() > 16 &&
+                    buffer.get(position + 8) == '\n' &&
+                    buffer.getLong(position) == SPACE_200_OK_CR_AS_LONG)
+                {
+                    buffer.position(position + 9);
+                    _responseStatus = HttpStatus.OK_200;
+                    _fieldCache.prepare();
+                    setState(State.HEADER);
+                    _responseHandler.startResponse(_version, _responseStatus, "OK");
+                }
+                else if (buffer.get(position) == ' ')
+                {
+                    buffer.position(position + 1);
+                    setState(State.SPACE1);
+                }
             }
         }
 
@@ -796,30 +850,27 @@ public class HttpParser
                     switch (t.getType())
                     {
                         case SPACE:
-                            if (remaining >= (HTTP_VERSION_LEN + 1) && buffer.getInt(position) == HTTP_AS_INT)
+                            int endOfVersion = position + HTTP_VERSION_LEN;
+                            if (remaining >= (HTTP_VERSION_LEN + 2) &&
+                                buffer.get(endOfVersion) == CARRIAGE_RETURN &&
+                                buffer.get(endOfVersion + 1) == LINE_FEED)
                             {
-                                // try look ahead for request HTTP Version
-                                int v = buffer.getInt(position + INT_LEN);
-                                HttpVersion version = v == HTTP_1_1_AS_INT ? HttpVersion.HTTP_1_1 : v == HTTP_1_0_AS_INT ? HttpVersion.HTTP_1_0 : null;
+                                // try look-ahead for request HTTP Version
+                                long versionAsLong = buffer.getLong(position);
+                                HttpVersion version = versionAsLong == HTTP_1_1_AS_LONG
+                                    ? HttpVersion.HTTP_1_1
+                                    : versionAsLong == HTTP_1_0_AS_LONG ? HttpVersion.HTTP_1_0 : null;
 
                                 if (version != null)
                                 {
-                                    int p = position + HTTP_VERSION_LEN;
-                                    byte next = buffer.get(p++);
-                                    if (next == CARRIAGE_RETURN && remaining >= (HTTP_VERSION_LEN + 2))
-                                        next = buffer.get(p++);
-
-                                    if (next == LINE_FEED)
-                                    {
-                                        buffer.position(p);
-                                        _version = version;
-                                        _string.setLength(0);
-                                        checkVersion();
-                                        _fieldCache.prepare();
-                                        setState(State.HEADER);
-                                        _requestHandler.startRequest(_methodString, _uri.toCompleteString(), _version);
-                                        continue;
-                                    }
+                                    buffer.position(endOfVersion + 2);
+                                    _version = version;
+                                    _string.setLength(0);
+                                    checkVersion();
+                                    _fieldCache.prepare();
+                                    setState(State.HEADER);
+                                    _requestHandler.startRequest(_methodString, _uri.toCompleteString(), _version);
+                                    continue;
                                 }
                             }
                             setState(State.SPACE2);
