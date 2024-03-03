@@ -512,7 +512,7 @@ public class Fields implements Iterable<Fields.Field>
         if (a == null || a.isEmpty())
             return b;
 
-        Fields fields = new Fields();
+        Fields fields = new Fields(a.fields instanceof LinkedHashMap<String, Field>);
         fields.addAll(a);
         fields.addAll(b);
         return fields;
