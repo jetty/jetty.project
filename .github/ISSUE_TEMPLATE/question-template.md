@@ -2,7 +2,7 @@
 name: Question
 about: Asking questions about Eclipse Jetty
 title: ''
-labels: Question
+labels: ''
 assignees: ''
 
 ---
@@ -15,5 +15,3 @@ assignees: ''
 **Java Version**
 
 **Question**
-
-
