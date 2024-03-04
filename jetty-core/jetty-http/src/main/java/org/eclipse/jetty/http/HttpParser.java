@@ -178,12 +178,13 @@ public class HttpParser
         .maxCapacity(0)
         .build();
 
+    private static final int BYTES_IN_INT = 4;
     private static final int BYTES_IN_LONG = 8;
     private static final long HTTP_1_0_AS_LONG = stringAsLong("HTTP/1.0");
     private static final long HTTP_1_1_AS_LONG = stringAsLong("HTTP/1.1");
     private static final long GET_SLASH_HT_AS_LONG = stringAsLong("GET / HT");
-    private static final long TP_SLASH_1_0_CRLF = stringAsLong("TP/1.0\r\n");
-    private static final long TP_SLASH_1_1_CRLF = stringAsLong("TP/1.1\r\n");
+    private static final long TP_SLASH_1_0_CRLF_AS_LONG = stringAsLong("TP/1.0\r\n");
+    private static final long TP_SLASH_1_1_CRLF_AS_LONG = stringAsLong("TP/1.1\r\n");
     private static final long SPACE_200_OK_CR_AS_LONG = stringAsLong(" 200 OK\r");
 
     private static long stringAsLong(String s)
@@ -527,34 +528,47 @@ public class HttpParser
     private void quickStart(ByteBuffer buffer)
     {
         int position = buffer.position();
+        int remaining = buffer.remaining();
         if (_requestHandler != null)
         {
             // Try to match "GET / HTTP/1.x\r\n" with two longs
-            if (buffer.remaining() >= 16 && buffer.getLong(position) == GET_SLASH_HT_AS_LONG)
+            if (remaining >= 2 * BYTES_IN_LONG)
             {
-                long v = buffer.getLong(position + 8);
-                if (v == TP_SLASH_1_1_CRLF)
+                long lookahead = buffer.getLong(position);
+                if (lookahead == GET_SLASH_HT_AS_LONG)
                 {
-                    buffer.position(position + 16);
-                    _methodString = HttpMethod.GET.asString();
-                    _version = HttpVersion.HTTP_1_1;
-                    setState(State.HEADER);
-                    _requestHandler.startRequest(_methodString, "/", _version);
-                    return;
+                    long v = buffer.getLong(position + BYTES_IN_LONG);
+                    if (v == TP_SLASH_1_1_CRLF_AS_LONG)
+                    {
+                        buffer.position(position + 2 * BYTES_IN_LONG);
+                        _methodString = HttpMethod.GET.asString();
+                        _version = HttpVersion.HTTP_1_1;
+                        setState(State.HEADER);
+                        _requestHandler.startRequest(_methodString, "/", _version);
+                        return;
+                    }
+                    if (v == TP_SLASH_1_0_CRLF_AS_LONG)
+                    {
+                        buffer.position(position + 2 * BYTES_IN_LONG);
+                        _methodString = HttpMethod.GET.asString();
+                        _version = HttpVersion.HTTP_1_0;
+                        setState(State.HEADER);
+                        _requestHandler.startRequest(_methodString, "/", _version);
+                        return;
+                    }
                 }
-                if (v == TP_SLASH_1_0_CRLF)
+                else
                 {
-                    buffer.position(position + 16);
-                    _methodString = HttpMethod.GET.asString();
-                    _version = HttpVersion.HTTP_1_0;
-                    setState(State.HEADER);
-                    _requestHandler.startRequest(_methodString, "/", _version);
-                    return;
+                    // lookup the method using the first 4 bytes of the already fetched long as a lookahead.
+                    _method = HttpMethod.lookAheadGet(buffer, (int)((lookahead >> 32)));
                 }
             }
+            else
+            {
+                // otherwise try a lookahead to match the method
+                _method = HttpMethod.lookAheadGet(buffer);
+            }
 
-            // otherwise just try to match the method
-            _method = HttpMethod.lookAheadGet(buffer);
             if (_method != null)
             {
                 _methodString = _method.asString();
@@ -566,7 +580,7 @@ public class HttpParser
                 return;
             }
         }
-        else if (_responseHandler != null && buffer.remaining() > BYTES_IN_LONG)
+        else if (_responseHandler != null && remaining > BYTES_IN_LONG)
         {
             // Match version as a long
             long v = buffer.getLong(position);
@@ -580,8 +594,8 @@ public class HttpParser
                 position += BYTES_IN_LONG;
 
                 // Try to make 200 OK as a long
-                if (buffer.remaining() > 16 &&
-                    buffer.get(position + 8) == '\n' &&
+                if (remaining > 2 * BYTES_IN_LONG &&
+                    buffer.get(position + BYTES_IN_LONG) == '\n' &&
                     buffer.getLong(position) == SPACE_200_OK_CR_AS_LONG)
                 {
                     buffer.position(position + 9);
