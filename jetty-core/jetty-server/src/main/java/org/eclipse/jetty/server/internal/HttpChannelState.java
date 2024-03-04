@@ -1072,7 +1072,7 @@ public class HttpChannelState implements HttpChannel, Components
         private static final CompletableFuture<Void> COMMITTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("Committed"));
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
-        protected int _status = HttpStatus.OK_200;
+        protected int _status;
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
         private Callback _writeCallback;
@@ -1339,7 +1339,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void reset()
         {
-            _status = HttpStatus.OK_200;
+            _status = 0;
             _trailers = null;
             _contentBytesWritten = 0;
             _request.getHttpChannelState().resetResponse();
@@ -1383,6 +1383,10 @@ public class HttpChannelState implements HttpChannel, Components
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)
         {
             assert _request._lock.isHeldByCurrentThread();
+
+            // Assume 200 unless told otherwise.
+            if (_status == 0)
+                _status = HttpStatus.OK_200;
 
             // Can we set the content length?
             HttpFields.Mutable mutableHeaders = _httpFields.getMutableHttpFields();
