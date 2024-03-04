@@ -178,20 +178,25 @@ public class HttpParser
         .maxCapacity(0)
         .build();
 
-    private static final long HTTP_AS_LONG = ('H' & 0xFF) << 24 | ('T' & 0xFF) << 16 | ('T' & 0xFF) << 8 | ('P' & 0xFF);
-    private static final long HTTP_1_0_AS_LONG = (HTTP_AS_LONG << 32) + (('/' & 0xFF) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('0' & 0xFF));
-    private static final long HTTP_1_1_AS_LONG = (HTTP_AS_LONG << 32) + (('/' & 0xFF) << 24 | ('1' & 0xFF) << 16 | ('.' & 0xFF) << 8 | ('1' & 0xFF));
-    private static final int HTTP_VERSION_LEN = 8;
+    private static final int BYTES_IN_LONG = 8;
+    private static final long HTTP_1_0_AS_LONG = stringAsLong("HTTP/1.0");
+    private static final long HTTP_1_1_AS_LONG = stringAsLong("HTTP/1.1");
+    private static final long GET_SLASH_HT_AS_LONG = stringAsLong("GET / HT");
+    private static final long TP_SLASH_1_0_CRLF = stringAsLong("TP/1.0\r\n");
+    private static final long TP_SLASH_1_1_CRLF = stringAsLong("TP/1.1\r\n");
+    private static final long SPACE_200_OK_CR_AS_LONG = stringAsLong(" 200 OK\r");
 
-    private static final long GET_SLASH_HT_AS_LONG =
-        ('G' & 0xFFL) << 56 | ('E' & 0xFFL) << 48 | ('T' & 0xFFL) << 40 | (' ' & 0xFFL) << 32 | ('/' & 0xFFL) << 24 | (' ' & 0xFFL) << 16 | ('H' & 0xFFL) << 8 | ('T' & 0xFFL);
-    private static final long TP_SLASH_1_0_CRLF =
-        ('T' & 0xFFL) << 56 | ('P' & 0xFFL) << 48 | ('/' & 0xFFL) << 40 | ('1' & 0xFFL) << 32 | ('.' & 0xFFL) << 24 | ('0' & 0xFFL) << 16 | ('\r' & 0xFFL) << 8 | ('\n' & 0xFFL);
-    private static final long TP_SLASH_1_1_CRLF =
-        ('T' & 0xFFL) << 56 | ('P' & 0xFFL) << 48 | ('/' & 0xFFL) << 40 | ('1' & 0xFFL) << 32 | ('.' & 0xFFL) << 24 | ('1' & 0xFFL) << 16 | ('\r' & 0xFFL) << 8 | ('\n' & 0xFFL);
-
-    private static final long SPACE_200_OK_CR_AS_LONG =
-        (' ' & 0xFFL) << 56 | ('2' & 0xFFL) << 48 | ('0' & 0xFFL) << 40 | ('0' & 0xFFL) << 32 | (' ' & 0xFFL) << 24 | ('O' & 0xFFL) << 16 | ('K' & 0xFFL) << 8 | ('\r' & 0xFFL);
+    private static long stringAsLong(String s)
+    {
+        if (s == null || s.length() != 8)
+            throw new IllegalArgumentException();
+        long l = 0;
+        for (char c : s.toCharArray())
+        {
+            l = l << 8 | ((long)c & 0xFFL);
+        }
+        return l;
+    }
 
     // States
     public enum FieldState
@@ -561,7 +566,7 @@ public class HttpParser
                 return;
             }
         }
-        else if (_responseHandler != null && buffer.remaining() > HTTP_VERSION_LEN)
+        else if (_responseHandler != null && buffer.remaining() > BYTES_IN_LONG)
         {
             // Match version as a long
             long v = buffer.getLong(position);
@@ -572,7 +577,7 @@ public class HttpParser
 
             if (_version != null)
             {
-                position += HTTP_VERSION_LEN;
+                position += BYTES_IN_LONG;
 
                 // Try to make 200 OK as a long
                 if (buffer.remaining() > 16 &&
@@ -850,8 +855,8 @@ public class HttpParser
                     switch (t.getType())
                     {
                         case SPACE:
-                            int endOfVersion = position + HTTP_VERSION_LEN;
-                            if (remaining >= (HTTP_VERSION_LEN + 2) &&
+                            int endOfVersion = position + BYTES_IN_LONG;
+                            if (remaining >= (BYTES_IN_LONG + 2) &&
                                 buffer.get(endOfVersion) == CARRIAGE_RETURN &&
                                 buffer.get(endOfVersion + 1) == LINE_FEED)
                             {
