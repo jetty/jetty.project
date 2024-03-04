@@ -77,9 +77,8 @@ class CrossContextDispatcher implements RequestDispatcher
                 public Object getAttribute(String name)
                 {
                     //handle cross-environment dispatch from ee8
-                    //TODO what will happen with ee8 conversion?
-/*                    if (name.startsWith("javax.servlet."))
-                        name = "jakarta.servlet." + name.substring(14);*/
+                    if (name.startsWith("javax.servlet."))
+                        name = "jakarta.servlet." + name.substring(14); //EE9EE8-NO-TRANSLATE
 
                     return super.getAttribute(name);
                 }
@@ -124,8 +123,8 @@ class CrossContextDispatcher implements RequestDispatcher
 
                     //handle cross-environment dispatch from ee8
                     //TODO what will happen with ee8 conversion?
-  /*                  if (name.startsWith("javax.servlet."))
-                        name = "jakarta.servlet." + name.substring(14);*/
+                    if (name.startsWith("javax.servlet."))
+                        name = "jakarta.servlet." + name.substring(14); //EE9EE8-NO-TRANSLATE
 
                     return super.setAttribute(name, attribute);
                 }
@@ -173,7 +172,7 @@ class CrossContextDispatcher implements RequestDispatcher
 
                     //handle cross-environment dispatch from ee8
                     if (name.startsWith("javax.servlet."))
-                        name = "jakarta.servlet." + name.substring(14);
+                        name = "jakarta.servlet." + name.substring(14); //EE9EE8-NO-TRANSLATE
 
                     return switch (name)
                     {
