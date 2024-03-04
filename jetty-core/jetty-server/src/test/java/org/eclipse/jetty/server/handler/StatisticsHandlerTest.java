@@ -311,7 +311,8 @@ public class StatisticsHandlerTest
     @Test
     public void testHandlerWriteRecordsStatus200() throws Exception
     {
-        _statsHandler.setHandler(new Handler.Abstract() {
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
