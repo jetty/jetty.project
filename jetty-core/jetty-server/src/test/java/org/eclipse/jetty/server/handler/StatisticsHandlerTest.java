@@ -48,6 +48,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -309,7 +310,63 @@ public class StatisticsHandlerTest
     }
 
     @Test
-    public void testHandlerWriteRecordsStatus200() throws Exception
+    public void testIncompleteContentRecordsStatus200() throws Exception
+    {
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                POST / HTTP/1.1
+                Host: localhost
+                Transfer-Encoding: chunked
+                Connection: close
+                
+                0a
+                0123456789
+                """;
+
+        String response = _connector.getResponse(request);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Connection: close"));
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses2xx, is(1));
+    }
+
+    @Test
+    public void testInvalidContentLengthRecordsStatus500() throws Exception
+    {
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().put("content-length", 1L);
+                callback.succeeded();
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
+
+        String response = _connector.getResponse(request);
+        assertThat(response, is(nullValue()));
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses5xx, is(1));
+    }
+
+    @Test
+    public void testImplicitStatus200Recorded() throws Exception
     {
         _statsHandler.setHandler(new Handler.Abstract()
         {
@@ -328,13 +385,9 @@ public class StatisticsHandlerTest
             Host: localhost\r
             \r
             """;
-
-        try (LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest(request))
-        {
-            localEndPoint.waitForResponse(false, 5, TimeUnit.SECONDS);
-        }
-
-        assertEquals(1, _statsHandler.getResponses2xx());
+        String response = _connector.getResponse(request);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses2xx, is(1));
     }
 
     @Test
