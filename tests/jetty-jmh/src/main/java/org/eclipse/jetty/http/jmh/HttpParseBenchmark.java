@@ -68,7 +68,7 @@ public class HttpParseBenchmark
         }
     }
 
-    @Param({"0", "10", "2000000000"})
+    @Param({"100", "10", "1", "0"})
     int hits;
 
     public static RequestLine parse(ByteBuffer buffer)
@@ -117,17 +117,17 @@ public class HttpParseBenchmark
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public RequestLine testParse() throws Exception
+    public RequestLine testParse()
     {
-        ByteBuffer request = (hits == 0 || ThreadLocalRandom.current().nextInt(hits) == 0) ? POST : GET;
+        ByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
         return parse(request.slice());
     }
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public RequestLine testLookAhead() throws Exception
+    public RequestLine testLookAhead()
     {
-        ByteBuffer request = (hits == 0 || ThreadLocalRandom.current().nextInt(hits) == 0) ? POST : GET;
+        ByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
         return lookAhead(request.slice());
     }
 
