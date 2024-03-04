@@ -309,13 +309,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return true;
     }
 
-    // Overridden for visibility.
-    @Override
-    protected void offerTask(Runnable task, boolean dispatch)
-    {
-        super.offerTask(task, dispatch);
-    }
-
     @Override
     public String getId()
     {

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.test.support;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -169,7 +169,7 @@ public class XmlBasedJettyServer
 
     public void setScheme(String scheme)
     {
-        this._scheme = scheme;
+        this._scheme = URIUtil.normalizeScheme(scheme);
     }
 
     public void start() throws Exception

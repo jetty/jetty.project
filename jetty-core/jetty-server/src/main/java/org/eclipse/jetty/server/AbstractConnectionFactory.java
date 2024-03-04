@@ -90,15 +90,15 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         return nextProtocol;
     }
 
-    protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
+    protected <T extends AbstractConnection> T configure(T connection, Connector connector, EndPoint endPoint)
     {
-        connection.setInputBufferSize(getInputBufferSize());
-
-        // Add Connection.Listeners from Connector
+        // Add Connection.Listeners from Connector.
         connector.getEventListeners().forEach(connection::addEventListener);
 
-        // Add Connection.Listeners from this factory
+        // Add Connection.Listeners from this factory.
         getEventListeners().forEach(connection::addEventListener);
+
+        connection.setInputBufferSize(getInputBufferSize());
 
         return connection;
     }

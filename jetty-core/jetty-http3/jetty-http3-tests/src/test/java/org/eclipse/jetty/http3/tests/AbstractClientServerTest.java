@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
-import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 
@@ -31,9 +29,12 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.ClientConnectionFactoryOverHTTP3;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
-import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -53,19 +54,28 @@ public class AbstractClientServerTest
     public WorkDir workDir;
 
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context ->
+    public final BeforeTestExecutionCallback printMethodName = context ->
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected Server server;
-    protected HTTP3ServerConnector connector;
+    protected QuicServerConnector connector;
     protected HTTP3Client http3Client;
     protected HttpClient httpClient;
 
     protected void start(Handler handler) throws Exception
     {
-        prepareServer(new HTTP3ServerConnectionFactory());
+        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration();
+        prepareServer(quicConfiguration, new HTTP3ServerConnectionFactory(quicConfiguration));
         server.setHandler(handler);
         server.start();
         startClient();
+    }
+
+    private ServerQuicConfiguration newServerQuicConfiguration()
+    {
+        SslContextFactory.Server sslServer = new SslContextFactory.Server();
+        sslServer.setKeyStorePath("src/test/resources/keystore.p12");
+        sslServer.setKeyStorePassword("storepwd");
+        return new ServerQuicConfiguration(sslServer, workDir.getEmptyPathDir());
     }
 
     protected void start(Session.Server.Listener listener) throws Exception
@@ -76,20 +86,17 @@ public class AbstractClientServerTest
 
     protected void startServer(Session.Server.Listener listener) throws Exception
     {
-        prepareServer(new RawHTTP3ServerConnectionFactory(listener));
+        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration();
+        prepareServer(quicConfiguration, new RawHTTP3ServerConnectionFactory(quicConfiguration, listener));
         server.start();
     }
 
-    private void prepareServer(ConnectionFactory serverConnectionFactory)
+    private void prepareServer(ServerQuicConfiguration quicConfiguration, ConnectionFactory serverConnectionFactory)
     {
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        connector = new HTTP3ServerConnector(server, sslContextFactory, serverConnectionFactory);
-        connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
+        connector = new QuicServerConnector(server, quicConfiguration, serverConnectionFactory);
         server.addConnector(connector);
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbeanContainer);
@@ -97,20 +104,15 @@ public class AbstractClientServerTest
 
     protected void startClient() throws Exception
     {
-        KeyStore trustStore = KeyStore.getInstance("PKCS12");
-        try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
-        {
-            trustStore.load(is, "storepwd".toCharArray());
-        }
-
-        http3Client = new HTTP3Client();
-        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
-        clientSslContextFactory.setTrustStore(trustStore);
-        http3Client.getClientConnector().setSslContextFactory(clientSslContextFactory);
-        httpClient = new HttpClient(new HttpClientTransportDynamic(new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
+        ClientConnector clientConnector = new ClientConnector();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        httpClient.setExecutor(clientThreads);
+        clientConnector.setExecutor(clientThreads);
+        SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
+        clientConnector.setSslContextFactory(sslClient);
+        ClientQuicConfiguration quicConfiguration = new ClientQuicConfiguration(sslClient, null);
+        http3Client = new HTTP3Client(quicConfiguration, clientConnector);
+        httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
         httpClient.addBean(mbeanContainer);

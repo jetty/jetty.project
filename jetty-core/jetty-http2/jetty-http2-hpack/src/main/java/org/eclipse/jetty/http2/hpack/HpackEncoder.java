@@ -99,10 +99,11 @@ public class HpackEncoder
     private int _maxHeaderListSize;
     private int _headerListSize;
     private boolean _validateEncoding = true;
+    private boolean _maxDynamicTableSizeSent = false;
 
     public HpackEncoder()
     {
-        _context = new HpackContext(0);
+        _context = new HpackContext(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
         _debug = LOG.isDebugEnabled();
         setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
         setTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
@@ -197,8 +198,11 @@ public class HpackEncoder
 
             // If max table size changed, send the correspondent instruction.
             int tableCapacity = getTableCapacity();
-            if (tableCapacity != _context.getMaxDynamicTableSize())
+            if (!_maxDynamicTableSizeSent || tableCapacity != _context.getMaxDynamicTableSize())
+            {
+                _maxDynamicTableSizeSent = true;
                 encodeMaxDynamicTableSize(buffer, tableCapacity);
+            }
 
             // Add Request/response meta fields
             if (metadata.isRequest())

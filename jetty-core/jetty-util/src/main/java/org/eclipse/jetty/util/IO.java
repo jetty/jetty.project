@@ -380,6 +380,12 @@ public class IO
         return file.delete();
     }
 
+    /**
+     * Delete the path, recursively.
+     *
+     * @param path the path to delete
+     * @return true if able to delete the path, false if unable to delete the path.
+     */
     public static boolean delete(Path path)
     {
         if (path == null)
@@ -406,6 +412,8 @@ public class IO
         }
         catch (IOException e)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to delete path: {}", path, e);
             return false;
         }
     }

@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,21 +79,30 @@ public class MultiPartFormData
     }
 
     /**
-     * @deprecated use {@link #from(Attributes, ComplianceViolation.Listener, String, Function)} instead.  This method will be removed in Jetty 12.1.0
+     * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
      */
-    @Deprecated(since = "12.0.6", forRemoval = true)
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
-        return from(attributes, ComplianceViolation.Listener.NOOP, boundary, parse);
+        return from(attributes, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP, boundary, parse);
     }
 
-    public static CompletableFuture<Parts> from(Attributes attributes, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    /**
+     * Returns {@code multipart/form-data} parts using the given {@link MultiPartCompliance} and listener.
+     *
+     * @param attributes the attributes where the futureParts are tracked
+     * @param compliance the compliance mode
+     * @param listener the compliance violation listener
+     * @param boundary the boundary for the {@code multipart/form-data} parts
+     * @param parse the parser completable future
+     * @return the future parts
+     */
+    public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         @SuppressWarnings("unchecked")
         CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
         if (futureParts == null)
         {
-            futureParts = parse.apply(new Parser(boundary, listener));
+            futureParts = parse.apply(new Parser(boundary, compliance, listener));
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
         }
         return futureParts;
@@ -209,7 +219,8 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
-        private ComplianceViolation.Listener complianceViolationListener;
+        private final MultiPartCompliance compliance;
+        private final ComplianceViolation.Listener complianceListener;
         private boolean useFilesForPartsWithoutFileName;
         private Path filesDirectory;
         private long maxFileSize = -1;
@@ -220,13 +231,14 @@ public class MultiPartFormData
 
         public Parser(String boundary)
         {
-            this(boundary, null);
+            this(boundary, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP);
         }
 
-        public Parser(String boundary, ComplianceViolation.Listener complianceViolationListener)
+        public Parser(String boundary, MultiPartCompliance multiPartCompliance, ComplianceViolation.Listener complianceViolationListener)
         {
-            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
-            this.complianceViolationListener = complianceViolationListener != null ? complianceViolationListener : ComplianceViolation.Listener.NOOP;
+            compliance = Objects.requireNonNull(multiPartCompliance);
+            complianceListener = Objects.requireNonNull(complianceViolationListener);
+            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), compliance, listener);
         }
 
         public CompletableFuture<Parts> parse(Content.Source content)
@@ -533,11 +545,38 @@ public class MultiPartFormData
                 memoryFileSize = 0;
                 try (AutoLock ignored = lock.lock())
                 {
-                    if (headers.contains("content-transfer-encoding"))
+                    // Content-Transfer-Encoding is not a multi-valued field.
+                    String value = headers.get(HttpHeader.CONTENT_TRANSFER_ENCODING);
+                    if (value != null)
                     {
-                        String value = headers.get("content-transfer-encoding");
-                        if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
-                            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
+                        switch (StringUtil.asciiToLowerCase(value))
+                        {
+                            case "base64" ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                                        value));
+                            }
+                            case "quoted-printable" ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
+                                        value));
+                            }
+                            case "8bit", "binary" ->
+                            {
+                                // ignore
+                            }
+                            default ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
+                                        value));
+                            }
+                        }
                     }
 
                     MultiPart.Part part;
@@ -592,6 +631,21 @@ public class MultiPartFormData
             public void onFailure(Throwable failure)
             {
                 fail(failure);
+            }
+
+            @Override
+            public void onViolation(MultiPartCompliance.Violation violation)
+            {
+                try
+                {
+                    ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation");
+                    complianceListener.onComplianceViolation(event);
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failure while notifying listener {}", complianceListener, x);
+                }
             }
 
             private void fail(Throwable cause)

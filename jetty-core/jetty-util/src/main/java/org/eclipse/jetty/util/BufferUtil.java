@@ -717,7 +717,7 @@ public class BufferUtil
     }
 
     /**
-     * Convert the buffer to an ISO-8859-1 String
+     * Convert buffer to a String with specified Charset
      *
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes

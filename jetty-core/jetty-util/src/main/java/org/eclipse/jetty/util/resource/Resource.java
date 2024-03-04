@@ -109,8 +109,8 @@ public abstract class Resource implements Iterable<Resource>
             return false;
 
         // Ensure that if `file` scheme is used, it's using a consistent convention to allow for startsWith check
-        String thisURIString = URIUtil.correctFileURI(thisURI).toASCIIString();
-        String otherURIString = URIUtil.correctFileURI(otherURI).toASCIIString();
+        String thisURIString = URIUtil.correctURI(thisURI).toASCIIString();
+        String otherURIString = URIUtil.correctURI(otherURI).toASCIIString();
 
         return otherURIString.startsWith(thisURIString) &&
             (thisURIString.length() == otherURIString.length() || otherURIString.charAt(thisURIString.length()) == '/');
@@ -315,7 +315,7 @@ public abstract class Resource implements Iterable<Resource>
                 }
                 return;
             }
-            throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo");
+            throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo: " + this);
         }
 
         // Do we have to copy a single file?
@@ -326,12 +326,18 @@ public abstract class Resource implements Iterable<Resource>
             {
                 // to a directory, preserve the filename
                 Path destPath = destination.resolve(src.getFileName().toString());
-                Files.copy(src, destPath, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(src, destPath,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.COPY_ATTRIBUTES,
+                    StandardCopyOption.REPLACE_EXISTING);
             }
             else
             {
                 // to a file, use destination as-is
-                Files.copy(src, destination, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(src, destination,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.COPY_ATTRIBUTES,
+                    StandardCopyOption.REPLACE_EXISTING);
             }
             return;
         }
@@ -405,7 +411,16 @@ public abstract class Resource implements Iterable<Resource>
             boolean noDepth = true;
 
             for (Iterator<Resource> i = children.iterator(); noDepth && i.hasNext(); )
-                noDepth = !i.next().isDirectory();
+            {
+                Resource resource = i.next();
+                if (resource.isDirectory())
+                {
+                    // If the directory is a symlink we do not want to go any deeper.
+                    Path resourcePath = resource.getPath();
+                    if (resourcePath == null || !Files.isSymbolicLink(resourcePath))
+                        noDepth = false;
+                }
+            }
             if (noDepth)
                 return children;
 
@@ -422,5 +437,23 @@ public abstract class Resource implements Iterable<Resource>
         {
             throw new IllegalStateException(e);
         }
+    }
+
+    public boolean isSameFile(Path path)
+    {
+        Path resourcePath = getPath();
+        if (Objects.equals(path, resourcePath))
+            return true;
+        try
+        {
+            if (Files.isSameFile(path, resourcePath))
+                return true;
+        }
+        catch (Throwable t)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ignored", t);
+        }
+        return false;
     }
 }

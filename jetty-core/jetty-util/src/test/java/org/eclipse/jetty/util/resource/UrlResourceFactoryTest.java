@@ -266,7 +266,7 @@ public class UrlResourceFactoryTest
         assertThat("resource /path/to/example.jar/WEB-INF/web.xml doesn't exist", webResource.exists(), is(false));
         assertThat(webResource.isDirectory(), is(false));
 
-        URI expectedURI = URIUtil.correctFileURI(URI.create("file:" + path.toUri().toASCIIString() + "/WEB-INF/web.xml"));
+        URI expectedURI = URIUtil.correctURI(URI.create("file:" + path.toUri().toASCIIString() + "/WEB-INF/web.xml"));
         assertThat(webResource.getURI(), is(expectedURI));
     }
 
@@ -288,7 +288,7 @@ public class UrlResourceFactoryTest
         assertThat("resource /path/to/example.jar/WEB-INF/web.xml doesn't exist", webResource.exists(), is(false));
         assertThat(webResource.isDirectory(), is(false));
 
-        URI expectedURI = URIUtil.correctFileURI(URI.create(path.toUri().toASCIIString() + "/WEB-INF/web.xml"));
+        URI expectedURI = URIUtil.correctURI(URI.create(path.toUri().toASCIIString() + "/WEB-INF/web.xml"));
         assertThat(webResource.getURI(), is(expectedURI));
     }
 

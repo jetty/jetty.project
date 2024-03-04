@@ -207,4 +207,14 @@ updates:
       # Restrict updates in this branch to jetty in the 9.4.x space
       - dependency-name: "org.infinispan:*"
         versions: [ ">=12" ]
+      - dependency-name: "com.hazelcast:*"
       - dependency-name: "org.apache.directory*"
+      - dependency-name: "org.apache.felix:*"
+        versions: [ ">=4" ]
+      - dependency-name: "org.jboss.weld.servlet:*"
+        versions: [ ">=4" ]
+      - dependency-name: "ch.qos.logback:*"
+        versions: [ ">=1.3" ]
+      - dependency-name: "org.asciidoctor:asciidoctor-maven-plugin"
+        versions: [ ">=3" ]
+

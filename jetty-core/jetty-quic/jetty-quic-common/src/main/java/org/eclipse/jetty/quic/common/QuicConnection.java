@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.common;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -71,17 +72,9 @@ public abstract class QuicConnection extends AbstractConnection
     protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
-        if (!(endPoint instanceof DatagramChannelEndPoint))
-            throw new IllegalArgumentException("EndPoint must be a " + DatagramChannelEndPoint.class.getSimpleName());
         this.scheduler = scheduler;
         this.bufferPool = bufferPool;
         this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor());
-    }
-
-    @Override
-    public DatagramChannelEndPoint getEndPoint()
-    {
-        return (DatagramChannelEndPoint)super.getEndPoint();
     }
 
     public Scheduler getScheduler()
@@ -211,6 +204,8 @@ public abstract class QuicConnection extends AbstractConnection
 
     protected abstract QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException;
 
+    public abstract InetSocketAddress getLocalInetSocketAddress();
+
     public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
     {
         flusher.offer(callback, remoteAddress, buffers);
@@ -232,10 +227,9 @@ public abstract class QuicConnection extends AbstractConnection
             {
                 BufferUtil.clear(cipherBuffer);
                 SocketAddress remoteAddress = getEndPoint().receive(cipherBuffer);
-                int fill = remoteAddress == DatagramChannelEndPoint.EOF ? -1 : cipherBuffer.remaining();
+                int fill = remoteAddress == EndPoint.EOF ? -1 : cipherBuffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled cipher buffer with {} byte(s)", fill);
-                // DatagramChannelEndPoint will only return -1 if input is shut down.
                 if (fill < 0)
                 {
                     buffer.release();
@@ -314,7 +308,7 @@ public abstract class QuicConnection extends AbstractConnection
         }
     }
 
-    private Runnable process(QuicSession session, SocketAddress remoteAddress, ByteBuffer cipherBuffer)
+    protected Runnable process(QuicSession session, SocketAddress remoteAddress, ByteBuffer cipherBuffer)
     {
         try
         {

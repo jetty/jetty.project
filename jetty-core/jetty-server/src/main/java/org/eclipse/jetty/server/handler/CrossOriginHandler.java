@@ -47,9 +47,13 @@ import org.slf4j.LoggerFactory;
  * Origin: http://domain.com
  * }</pre>
  * <p>The cross server at {@code cross.domain.com} must decide whether these cross-origin requests
- * are allowed or not, and it may easily do so by configuring the {@link CrossOriginHandler},
- * for example configuring the {@link #setAllowedOriginPatterns(Set) allowed origins} to contain only
+ * are allowed or not, by configuring the {@link CrossOriginHandler}
+ * {@link #setAllowedOriginPatterns(Set) allowed origins} to contain only
  * the origin server with origin {@code http://domain.com}.</p>
+ * <p>The cross server must also decide whether cross-origin requests are allowed to contain
+ * credentials (cookies and authentication headers) or not, by configuring
+ * {@link #setAllowCredentials(boolean)}.</p>
+ * <p>By default, no origin is allowed, and credentials are not allowed.</p>
  */
 @ManagedObject
 public class CrossOriginHandler extends Handler.Wrapper
@@ -58,10 +62,10 @@ public class CrossOriginHandler extends Handler.Wrapper
     private static final PreEncodedHttpField ACCESS_CONTROL_ALLOW_CREDENTIALS_TRUE = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
     private static final PreEncodedHttpField VARY_ORIGIN = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ORIGIN.asString());
 
-    private boolean allowCredentials = true;
+    private boolean allowCredentials = false;
     private Set<String> allowedHeaders = Set.of("Content-Type");
     private Set<String> allowedMethods = Set.of("GET", "POST", "HEAD");
-    private Set<String> allowedOrigins = Set.of("*");
+    private Set<String> allowedOrigins = Set.of();
     private Set<String> allowedTimingOrigins = Set.of();
     private boolean deliverPreflight = false;
     private boolean deliverNonAllowedOrigin = true;
@@ -314,6 +318,10 @@ public class CrossOriginHandler extends Handler.Wrapper
         accessControlAllowHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", getAllowedHeaders()));
         accessControlExposeHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(",", getExposedHeaders()));
         accessControlMaxAge = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_MAX_AGE, getPreflightMaxAge().toSeconds());
+
+        if (anyOriginAllowed && isAllowCredentials())
+            LOG.warn("{} configured with insecure parameters allowedOrigins=* and allowCredentials=true", getClass().getSimpleName());
+
         super.doStart();
     }
 
