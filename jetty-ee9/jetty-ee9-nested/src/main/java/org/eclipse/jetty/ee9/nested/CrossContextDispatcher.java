@@ -38,6 +38,8 @@ class CrossContextDispatcher implements RequestDispatcher
     public static final String ORIGINAL_SERVLET_MAPPING = "org.eclipse.jetty.dispatch.originalServletMapping";
     public static final String ORIGINAL_CONTEXT_PATH = "org.eclipse.jetty.dispatch.originalContextPath";
 
+    private static final String ORIGIN_SERVLET_PACKAGE = "javax.servlet."; //EE8EE9-TRANSLATE
+
     public static final Set<String> ATTRIBUTES = Set.of(
         RequestDispatcher.FORWARD_REQUEST_URI,
         RequestDispatcher.FORWARD_MAPPING,
@@ -77,8 +79,8 @@ class CrossContextDispatcher implements RequestDispatcher
                 public Object getAttribute(String name)
                 {
                     //handle cross-environment dispatch from ee8
-                    if (name.startsWith("javax.servlet."))
-                        name = "jakarta.servlet." + name.substring(14); //EE9EE8-NO-TRANSLATE
+                    if (name.startsWith(ORIGIN_SERVLET_PACKAGE))
+                        name = "jakarta.servlet." + name.substring(ORIGIN_SERVLET_PACKAGE.length());
 
                     return super.getAttribute(name);
                 }
@@ -122,9 +124,8 @@ class CrossContextDispatcher implements RequestDispatcher
                         return null;
 
                     //handle cross-environment dispatch from ee8
-                    //TODO what will happen with ee8 conversion?
-                    if (name.startsWith("javax.servlet."))
-                        name = "jakarta.servlet." + name.substring(14); //EE9EE8-NO-TRANSLATE
+                    if (name.startsWith(ORIGIN_SERVLET_PACKAGE))
+                        name = "jakarta.servlet." + name.substring(ORIGIN_SERVLET_PACKAGE.length());
 
                     return super.setAttribute(name, attribute);
                 }
@@ -171,8 +172,8 @@ class CrossContextDispatcher implements RequestDispatcher
                         return null;
 
                     //handle cross-environment dispatch from ee8
-                    if (name.startsWith("javax.servlet."))
-                        name = "jakarta.servlet." + name.substring(14); //EE9EE8-NO-TRANSLATE
+                    if (name.startsWith(ORIGIN_SERVLET_PACKAGE))
+                        name = "jakarta.servlet." + name.substring(ORIGIN_SERVLET_PACKAGE.length());
 
                     return switch (name)
                     {
