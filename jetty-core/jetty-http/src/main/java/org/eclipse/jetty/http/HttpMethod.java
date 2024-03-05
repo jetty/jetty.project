@@ -177,7 +177,7 @@ public enum HttpMethod
      *                  with the equivalent of {@code buffer.getInt(buffer.position())}
      * @return An HttpMethod if a match or null if no easy match.
      */
-    public static HttpMethod lookAheadGet(ByteBuffer buffer, int lookAhead)
+    static HttpMethod lookAheadGet(ByteBuffer buffer, int lookAhead)
     {
         return switch (lookAhead)
         {
