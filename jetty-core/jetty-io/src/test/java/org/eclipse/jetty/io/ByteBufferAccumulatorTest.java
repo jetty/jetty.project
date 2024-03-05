@@ -26,10 +26,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Deprecated(forRemoval = true)
 public class ByteBufferAccumulatorTest
 {
     private CountingBufferPool bufferPool;
@@ -51,19 +50,19 @@ public class ByteBufferAccumulatorTest
         ByteBuffer slice = content.slice();
 
         // We completely fill up the internal buffer with the first write.
-        RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
+        RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
         ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
         assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(allocationSize));
         writeInFlushMode(slice, byteBuffer);
         assertThat(BufferUtil.space(byteBuffer), is(0));
 
         // If we ask for min size of 0 we get the same buffer which is full.
-        internalBuffer = accumulator.accessInternalBuffer(0, allocationSize);
+        internalBuffer = accumulator.ensureBuffer(0, allocationSize);
         byteBuffer = internalBuffer.getByteBuffer();
         assertThat(BufferUtil.space(byteBuffer), is(0));
 
         // If we need at least 1 minSpace we must allocate a new buffer.
-        internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
+        internalBuffer = accumulator.ensureBuffer(1, allocationSize);
         byteBuffer = internalBuffer.getByteBuffer();
         assertThat(BufferUtil.space(byteBuffer), greaterThan(0));
         assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(allocationSize));
@@ -79,31 +78,31 @@ public class ByteBufferAccumulatorTest
         // If we request anything under the amount remaining we get back the same buffer.
         for (int i = 0; i <= 13; i++)
         {
-            internalBuffer = accumulator.accessInternalBuffer(i, allocationSize);
+            internalBuffer = accumulator.ensureBuffer(i, allocationSize);
             byteBuffer = internalBuffer.getByteBuffer();
             assertThat(BufferUtil.space(byteBuffer), is(13));
         }
 
         // If we request over 13 then we get a new buffer.
-        internalBuffer = accumulator.accessInternalBuffer(14, allocationSize);
+        internalBuffer = accumulator.ensureBuffer(14, allocationSize);
         byteBuffer = internalBuffer.getByteBuffer();
         assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1024));
 
         // Copy the rest of the content.
         while (slice.hasRemaining())
         {
-            internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
+            internalBuffer = accumulator.ensureBuffer(1, allocationSize);
             byteBuffer = internalBuffer.getByteBuffer();
             assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1));
             writeInFlushMode(slice, byteBuffer);
         }
 
         // Check we have the same content as the original buffer.
-        assertThat(accumulator.getLength(), is((long)size));
+        assertThat(accumulator.getLength(), is(size));
         assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
         RetainableByteBuffer combinedBuffer = accumulator.toRetainableByteBuffer();
         assertThat(bufferPool.getAcquireCount(), is(1L));
-        assertThat(accumulator.getLength(), is((long)size));
+        assertThat(accumulator.getLength(), is(size));
         assertThat(combinedBuffer.getByteBuffer(), is(content));
 
         // Close the accumulator and make sure all is returned to bufferPool.
@@ -122,18 +121,18 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
+            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
             ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
             assertThat(BufferUtil.space(byteBuffer), greaterThanOrEqualTo(1));
             writeInFlushMode(slice, byteBuffer);
         }
 
         // Check we have the same content as the original buffer.
-        assertThat(accumulator.getLength(), is((long)size));
+        assertThat(accumulator.getLength(), is(size));
         assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
         RetainableByteBuffer combinedBuffer = accumulator.takeRetainableByteBuffer();
         assertThat(bufferPool.getAcquireCount(), is(1L));
-        assertThat(accumulator.getLength(), is(0L));
+        assertThat(accumulator.getLength(), is(0));
         accumulator.close();
         assertThat(bufferPool.getAcquireCount(), is(1L));
         assertThat(combinedBuffer.getByteBuffer(), is(content));
@@ -154,17 +153,17 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
+            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
             ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
             writeInFlushMode(slice, byteBuffer);
         }
 
         // Check we have the same content as the original buffer.
-        assertThat(accumulator.getLength(), is((long)size));
+        assertThat(accumulator.getLength(), is(size));
         assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
         byte[] combinedBuffer = accumulator.toByteArray();
         assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
-        assertThat(accumulator.getLength(), is((long)size));
+        assertThat(accumulator.getLength(), is(size));
         assertThat(BufferUtil.toBuffer(combinedBuffer), is(content));
 
         // Close the accumulator and make sure all is returned to bufferPool.
@@ -177,7 +176,7 @@ public class ByteBufferAccumulatorTest
     {
         RetainableByteBuffer combinedBuffer = accumulator.toRetainableByteBuffer();
         assertThat(combinedBuffer.remaining(), is(0));
-        assertThat(bufferPool.getAcquireCount(), is(0L));
+        assertThat(bufferPool.getAcquireCount(), is(1L));
         accumulator.close();
         assertThat(bufferPool.getAcquireCount(), is(0L));
     }
@@ -188,7 +187,7 @@ public class ByteBufferAccumulatorTest
         RetainableByteBuffer combinedBuffer = accumulator.takeRetainableByteBuffer();
         assertThat(combinedBuffer.remaining(), is(0));
         accumulator.close();
-        assertThat(bufferPool.getAcquireCount(), is(0L));
+        assertThat(bufferPool.getAcquireCount(), is(1L));
         combinedBuffer.release();
         assertThat(bufferPool.getAcquireCount(), is(0L));
     }
@@ -204,16 +203,16 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
+            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
             ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
             writeInFlushMode(slice, byteBuffer);
         }
 
         // Check we have the same content as the original buffer.
         assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
-        RetainableByteBuffer combinedBuffer = bufferPool.acquire((int)accumulator.getLength(), false);
+        RetainableByteBuffer combinedBuffer = bufferPool.acquire(accumulator.getLength(), false);
         accumulator.writeTo(combinedBuffer.getByteBuffer());
-        assertThat(accumulator.getLength(), is((long)size));
+        assertThat(accumulator.getLength(), is(size));
         assertThat(combinedBuffer.getByteBuffer(), is(content));
         combinedBuffer.release();
 
@@ -233,14 +232,14 @@ public class ByteBufferAccumulatorTest
         // Copy the content.
         while (slice.hasRemaining())
         {
-            RetainableByteBuffer internalBuffer = accumulator.accessInternalBuffer(1, allocationSize);
+            RetainableByteBuffer internalBuffer = accumulator.ensureBuffer(1, allocationSize);
             ByteBuffer byteBuffer = internalBuffer.getByteBuffer();
             writeInFlushMode(slice, byteBuffer);
         }
 
         // Writing to a buffer too small gives buffer overflow.
         assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
-        ByteBuffer combinedBuffer = BufferUtil.toBuffer(new byte[(int)accumulator.getLength() - 1]);
+        ByteBuffer combinedBuffer = BufferUtil.toBuffer(new byte[accumulator.getLength() - 1]);
         BufferUtil.clear(combinedBuffer);
         assertThrows(BufferOverflowException.class, () -> accumulator.writeTo(combinedBuffer));
 
@@ -268,38 +267,15 @@ public class ByteBufferAccumulatorTest
 
         // Check we have the same content as the original buffer.
         assertThat(bufferPool.getAcquireCount(), greaterThan(1L));
-        RetainableByteBuffer combinedBuffer = bufferPool.acquire((int)accumulator.getLength(), false);
+        RetainableByteBuffer combinedBuffer = bufferPool.acquire(accumulator.getLength(), false);
         accumulator.writeTo(combinedBuffer.getByteBuffer());
-        assertThat(accumulator.getLength(), is((long)size));
+        assertThat(accumulator.getLength(), is(size));
         assertThat(combinedBuffer.getByteBuffer(), is(content));
         combinedBuffer.release();
 
         // Close the accumulator and make sure all is returned to bufferPool.
         accumulator.close();
         assertThat(bufferPool.getAcquireCount(), is(0L));
-    }
-
-    @Test
-    public void testAdd()
-    {
-        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Ground Hog Day\n"), counter);
-        accumulator.addBuffer(buffer);
-        assertTrue(buffer.isRetained());
-        accumulator.addBuffer(buffer);
-        accumulator.addBuffer(buffer);
-        accumulator.addBuffer(buffer);
-
-        ByteBuffer taken = accumulator.takeByteBuffer();
-        assertFalse(buffer.isRetained());
-        assertTrue(buffer.release());
-
-        assertThat(BufferUtil.toString(taken), is("""
-            Ground Hog Day
-            Ground Hog Day
-            Ground Hog Day
-            Ground Hog Day
-            """));
     }
 
     private ByteBuffer randomBytes(int size)
@@ -346,44 +322,6 @@ public class ByteBufferAccumulatorTest
         public long getAcquireCount()
         {
             return _acquires.get();
-        }
-    }
-
-    @Test
-    public void testAggregateFullInSingleShot()
-    {
-        try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator(bufferPool, true, 16))
-        {
-            ByteBuffer byteBuffer1 = ByteBuffer.wrap(new byte[16]);
-            assertThat(accumulator.aggregate(byteBuffer1), is(true));
-            assertThat(byteBuffer1.remaining(), is(0));
-
-            ByteBuffer byteBuffer2 = ByteBuffer.wrap(new byte[16]);
-            assertThat(accumulator.aggregate(byteBuffer2), is(true));
-            assertThat(byteBuffer2.remaining(), is(16));
-
-            RetainableByteBuffer retainableByteBuffer = accumulator.takeRetainableByteBuffer();
-            assertThat(retainableByteBuffer.getByteBuffer().remaining(), is(16));
-            assertThat(retainableByteBuffer.release(), is(true));
-        }
-    }
-
-    @Test
-    public void testAggregateFullInMultipleShots()
-    {
-        try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator(bufferPool, true, 16))
-        {
-            ByteBuffer byteBuffer1 = ByteBuffer.wrap(new byte[15]);
-            assertThat(accumulator.aggregate(byteBuffer1), is(false));
-            assertThat(byteBuffer1.remaining(), is(0));
-
-            ByteBuffer byteBuffer2 = ByteBuffer.wrap(new byte[16]);
-            assertThat(accumulator.aggregate(byteBuffer2), is(true));
-            assertThat(byteBuffer2.remaining(), is(15));
-
-            RetainableByteBuffer retainableByteBuffer = accumulator.takeRetainableByteBuffer();
-            assertThat(retainableByteBuffer.getByteBuffer().remaining(), is(16));
-            assertThat(retainableByteBuffer.release(), is(true));
         }
     }
 }
