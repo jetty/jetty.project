@@ -157,14 +157,12 @@ public class CombinedResource extends Resource
         for (Resource res : _resources)
         {
             resolved = res.resolve(subUriPath);
-            if (Resources.missing(resolved))
-            {
-                if (notFound == null)
-                    notFound = resolved;
-                continue; // skip, doesn't exist
-            }
-            if (!resolved.isDirectory())
+            if (!Resources.missing(resolved) && !resolved.isDirectory())
                 return resolved; // Return simple (non-directory) Resource
+
+            if (Resources.missing(resolved) && notFound == null)
+                notFound = resolved;
+
             if (resources == null)
                 resources = new ArrayList<>();
             resources.add(resolved);
@@ -294,6 +292,8 @@ public class CombinedResource extends Resource
         Collection<Resource> all = getAllResources();
         for (Resource r : all)
         {
+            if (!r.exists())
+                continue;
             Path relative = getPathTo(r);
             Path pathTo = Objects.equals(relative.getFileSystem(), destination.getFileSystem())
                 ? destination.resolve(relative)
@@ -380,6 +380,8 @@ public class CombinedResource extends Resource
             // return true it's relative location to the first matching resource.
             for (Resource r : _resources)
             {
+                if (!r.exists())
+                    continue;
                 Path path = r.getPath();
                 if (otherPath.startsWith(path))
                     return path.relativize(otherPath);
@@ -392,8 +394,14 @@ public class CombinedResource extends Resource
         Path relative = null;
         loop : for (Resource o : other)
         {
+            if (!o.exists())
+                continue;
+
             for (Resource r : _resources)
             {
+                if (!r.exists())
+                    continue;
+
                 if (o.getPath().startsWith(r.getPath()))
                 {
                     Path rel = r.getPath().relativize(o.getPath());

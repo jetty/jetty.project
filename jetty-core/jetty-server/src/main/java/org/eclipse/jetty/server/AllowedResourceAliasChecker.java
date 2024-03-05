@@ -186,7 +186,6 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
                 // If the path is the same file as any protected resources, then it is protected.
                 for (String protectedTarget : _protected)
                 {
-                    // TODO these resolves can be done in doStart
                     Resource p = _baseResource.resolve(protectedTarget);
                     if (Resources.missing(p))
                         continue;
