@@ -242,8 +242,10 @@ public class CrossContextDispatcherTest
     }
 
     @Test
-    public void testSimulatedCrossContextIncludeToEE8() throws Exception
+    public void testSimulatedCrossContextCrossEnvironmentInclude() throws Exception
     {
+        // test that if a dispatch from EE10 was received by an EE8 context,
+        // the EE8 api constants can be used to retrieve their EE10 equivalents.
         _targetServletContextHandler.addServlet(VerifySimulatedEE8IncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 

@@ -38,7 +38,7 @@ class CrossContextDispatcher implements RequestDispatcher
     public static final String ORIGINAL_SERVLET_MAPPING = "org.eclipse.jetty.dispatch.originalServletMapping";
     public static final String ORIGINAL_CONTEXT_PATH = "org.eclipse.jetty.dispatch.originalContextPath";
 
-    private static final String ORIGIN_SERVLET_PACKAGE = "javax.servlet."; //EE8EE9-TRANSLATE
+    private static final String FOREIGN_SERVLET_PACKAGE = "javax.servlet."; //EE8EE9-TRANSLATE
 
     public static final Set<String> ATTRIBUTES = Set.of(
         RequestDispatcher.FORWARD_REQUEST_URI,
@@ -53,7 +53,6 @@ class CrossContextDispatcher implements RequestDispatcher
         RequestDispatcher.INCLUDE_SERVLET_PATH,
         RequestDispatcher.INCLUDE_QUERY_STRING,
         RequestDispatcher.INCLUDE_PATH_INFO,
-        //TODO include javax.servlet.?
         // TODO MULTIPART_CONFIG_ELEMENT,
         org.eclipse.jetty.server.handler.ContextHandler.CROSS_CONTEXT_ATTRIBUTE,
         ORIGINAL_URI,
@@ -79,8 +78,8 @@ class CrossContextDispatcher implements RequestDispatcher
                 public Object getAttribute(String name)
                 {
                     //handle cross-environment dispatch from ee8
-                    if (name.startsWith(ORIGIN_SERVLET_PACKAGE))
-                        name = "jakarta.servlet." + name.substring(ORIGIN_SERVLET_PACKAGE.length());
+                    if (name.startsWith(FOREIGN_SERVLET_PACKAGE))
+                        name = "jakarta.servlet." + name.substring(FOREIGN_SERVLET_PACKAGE.length());
 
                     return super.getAttribute(name);
                 }
@@ -124,8 +123,8 @@ class CrossContextDispatcher implements RequestDispatcher
                         return null;
 
                     //handle cross-environment dispatch from ee8
-                    if (name.startsWith(ORIGIN_SERVLET_PACKAGE))
-                        name = "jakarta.servlet." + name.substring(ORIGIN_SERVLET_PACKAGE.length());
+                    if (name.startsWith(FOREIGN_SERVLET_PACKAGE))
+                        name = "jakarta.servlet." + name.substring(FOREIGN_SERVLET_PACKAGE.length());
 
                     return super.setAttribute(name, attribute);
                 }
@@ -172,8 +171,8 @@ class CrossContextDispatcher implements RequestDispatcher
                         return null;
 
                     //handle cross-environment dispatch from ee8
-                    if (name.startsWith(ORIGIN_SERVLET_PACKAGE))
-                        name = "jakarta.servlet." + name.substring(ORIGIN_SERVLET_PACKAGE.length());
+                    if (name.startsWith(FOREIGN_SERVLET_PACKAGE))
+                        name = "jakarta.servlet." + name.substring(FOREIGN_SERVLET_PACKAGE.length());
 
                     return switch (name)
                     {
