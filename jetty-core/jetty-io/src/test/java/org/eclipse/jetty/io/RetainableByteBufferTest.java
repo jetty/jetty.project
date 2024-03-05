@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -137,5 +142,42 @@ public class RetainableByteBufferTest
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
         assertTrue(buffer.isFull());
         buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testNonRetainableWriteTo(RetainableByteBuffer buffer) throws Exception
+    {
+        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
+        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" ")));
+        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer("World!")));
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FutureCallback callback = new FutureCallback();
+        buffer.writeTo(Content.Sink.from(out), true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+        assertThat(out.toString(StandardCharsets.ISO_8859_1), is("Hello World!"));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testRetainableWriteTo(RetainableByteBuffer buffer) throws Exception
+    {
+        CountDownLatch released = new CountDownLatch(3);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffer.append(buffers[0] = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), released::countDown));
+        buffer.append(buffers[1] = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" "), released::countDown));
+        buffer.append(buffers[2] = RetainableByteBuffer.wrap(BufferUtil.toBuffer("World!"), released::countDown));
+        Arrays.asList(buffers).forEach(RetainableByteBuffer::release);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FutureCallback callback = new FutureCallback();
+        buffer.writeTo(Content.Sink.from(out), true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+        assertThat(out.toString(StandardCharsets.ISO_8859_1), is("Hello World!"));
+
+        buffer.release();
+        assertTrue(released.await(5, TimeUnit.SECONDS));
     }
 }

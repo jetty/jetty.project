@@ -715,4 +715,44 @@ public class ContentSourceTest
         len = in.read(buffer);
         assertThat(len, is(-1));
     }
+
+    @Test
+    public void testAsRetainableByteBuffer() throws Exception
+    {
+        TestContentSource source = new TestContentSource();
+
+        FuturePromise<RetainableByteBuffer> promise = new FuturePromise<>()
+        {
+            @Override
+            public void succeeded(RetainableByteBuffer result)
+            {
+                result.retain();
+                super.succeeded(result);
+            }
+        };
+        Content.Source.asRetainableByteBuffer(source, promise);
+
+        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter(3);
+
+        Runnable todo = source.takeDemand();
+        assertNotNull(todo);
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, counter));
+        todo.run();
+        assertFalse(promise.isDone());
+
+        todo = source.takeDemand();
+        assertNotNull(todo);
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" cruel"), false, counter));
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" world"), true, counter));
+        todo.run();
+
+        todo = source.takeDemand();
+        assertNull(todo);
+        assertTrue(promise.isDone());
+
+        RetainableByteBuffer buffer = promise.get();
+        assertNotNull(buffer);
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), equalTo("hello cruel world"));
+    }
 }

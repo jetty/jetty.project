@@ -20,7 +20,7 @@ import java.util.List;
 import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 
 /**
  * <p>A pooled {@link ByteBuffer} which maintains a reference count that is
@@ -123,6 +123,10 @@ public interface RetainableByteBuffer extends Retainable
     {
         return new AbstractRetainableByteBuffer(byteBuffer)
         {
+            {
+                acquire();
+            }
+
             @Override
             public boolean release()
             {
@@ -139,6 +143,19 @@ public interface RetainableByteBuffer extends Retainable
      * @return the wrapped, not {@code null}, {@code ByteBuffer}
      */
     ByteBuffer getByteBuffer();
+
+    /**
+     * @return A copy of this RetainableByteBuffer that is entirely independent
+     */
+    default RetainableByteBuffer copy()
+    {
+        return new AbstractRetainableByteBuffer(BufferUtil.copy(getByteBuffer()))
+        {
+            {
+                acquire();
+            }
+        };
+    }
 
     /**
      * @return whether the {@code ByteBuffer} is direct
@@ -310,6 +327,30 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public RetainableByteBuffer copy()
+        {
+            RetainableByteBuffer buffer = _buffer;
+            buffer.retain();
+            return new AbstractRetainableByteBuffer(buffer.getByteBuffer().slice())
+            {
+                {
+                    acquire();
+                }
+
+                @Override
+                public boolean release()
+                {
+                    if (super.release())
+                    {
+                        buffer.release();
+                        return true;
+                    }
+                    return false;
+                }
+            };
+        }
+
+        @Override
         public int capacity()
         {
             return Math.max(_buffer.capacity(), _maxCapacity);
@@ -357,6 +398,7 @@ public interface RetainableByteBuffer extends Retainable
      */
     class Accumulator implements RetainableByteBuffer
     {
+        private final ReferenceCounter _retainable = new ReferenceCounter(1);
         private final ByteBufferPool _pool;
         private final boolean _direct;
         private final long _maxLength;
@@ -384,27 +426,37 @@ public interface RetainableByteBuffer extends Retainable
             {
                 case 0 -> RetainableByteBuffer.EMPTY.getByteBuffer();
                 case 1 -> _buffers.get(0).getByteBuffer();
-                default -> copyBuffer();
+                default ->
+                {
+                    int length = remaining();
+                    RetainableByteBuffer combinedBuffer = _pool.acquire(length, _direct);
+                    ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
+                    BufferUtil.flipToFill(byteBuffer);
+                    for (RetainableByteBuffer buffer : _buffers)
+                    {
+                        buffer.putTo(byteBuffer);
+                        buffer.clear();
+                        buffer.release();
+                    }
+                    BufferUtil.flipToFlush(byteBuffer, 0);
+                    _buffers.clear();
+                    _buffers.add(combinedBuffer);
+                    _canAggregate = true;
+                    yield combinedBuffer.getByteBuffer();
+                }
             };
         }
 
-        public ByteBuffer copyBuffer()
+        public RetainableByteBuffer copy()
         {
             int length = remaining();
             RetainableByteBuffer combinedBuffer = _pool.acquire(length, _direct);
             ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
             BufferUtil.flipToFill(byteBuffer);
             for (RetainableByteBuffer buffer : _buffers)
-            {
                 buffer.putTo(byteBuffer);
-                buffer.clear();
-                buffer.release();
-            }
             BufferUtil.flipToFlush(byteBuffer, 0);
-            _buffers.clear();
-            _buffers.add(combinedBuffer);
-            _canAggregate = true;
-            return combinedBuffer.getByteBuffer();
+            return combinedBuffer;
         }
 
         /**
@@ -441,10 +493,32 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public boolean canRetain()
+        {
+            return _retainable.canRetain();
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return _retainable.isRetained();
+        }
+
+        @Override
+        public void retain()
+        {
+            _retainable.retain();
+        }
+
+        @Override
         public boolean release()
         {
-            clear();
-            return true;
+            if (_retainable.release())
+            {
+                clear();
+                return true;
+            }
+            return false;
         }
 
         @Override
@@ -524,7 +598,7 @@ public interface RetainableByteBuffer extends Retainable
             {
                 case 0 -> callback.succeeded();
                 case 1 -> _buffers.get(0).writeTo(sink, last, callback);
-                default -> new IteratingCallback()
+                default -> new IteratingNestedCallback(callback)
                 {
                     private int i = 0;
 

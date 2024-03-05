@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.internal.ByteBufferChunk;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
+import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -159,6 +160,19 @@ public class Content
         static void asByteBuffer(Source source, Promise<ByteBuffer> promise)
         {
             new ContentSourceByteBuffer(source, promise).run();
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @param promise the promise to notify when the whole content has been read into a RetainableByteBuffer.
+         *                The consumer of the promise must {@link RetainableByteBuffer#retain() retain} the buffer
+         *                if it is to be held beyond the call to {@link Promise#succeeded(Object)}.
+         */
+        static void asRetainableByteBuffer(Source source, Promise<RetainableByteBuffer> promise)
+        {
+            new ContentSourceRetainableByteBuffer(source, promise).run();
         }
 
         /**

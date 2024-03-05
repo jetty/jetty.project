@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.io.internal;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Promise;
 
-public class ContentSourceByteBuffer implements Runnable
+public class ContentSourceRetainableByteBuffer implements Runnable
 {
     private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator(null, false, -1);
     private final Content.Source source;
-    private final Promise<ByteBuffer> promise;
+    private final Promise<RetainableByteBuffer> promise;
 
-    public ContentSourceByteBuffer(Content.Source source, Promise<ByteBuffer> promise)
+    public ContentSourceRetainableByteBuffer(Content.Source source, Promise<RetainableByteBuffer> promise)
     {
         this.source = source;
         this.promise = promise;
@@ -57,13 +55,8 @@ public class ContentSourceByteBuffer implements Runnable
 
             if (chunk.isLast())
             {
-                RetainableByteBuffer copy = accumulator.copy();
+                promise.succeeded(accumulator);
                 accumulator.release();
-
-                // We know the accumulator is not using a pool, so whilst we release after succeeded, it is safe
-                // for the promise to retain the ByteBuffer after the call.
-                promise.succeeded(copy.getByteBuffer());
-                copy.release();
                 return;
             }
         }
