@@ -629,6 +629,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
+        //TODO support parts read during a cross context dispatch to environment other than EE10
         if (_parts == null)
         {
             try
@@ -693,7 +694,7 @@ public class ServletApiRequest implements HttpServletRequest
                         try (InputStream is = p.getInputStream())
                         {
                             String content = IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
-                            if (_contentParameters == null)
+                            if (_contentParameters == null || _contentParameters.isEmpty())
                                 _contentParameters = new Fields(true);
                             _contentParameters.add(p.getName(), content);
                         }

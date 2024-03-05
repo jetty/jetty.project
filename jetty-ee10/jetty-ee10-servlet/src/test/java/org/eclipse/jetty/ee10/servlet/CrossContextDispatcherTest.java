@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -33,6 +34,7 @@ import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.GenericServlet;
+import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContext;
@@ -47,6 +49,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -69,6 +72,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -77,7 +81,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CrossContextDispatcherTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(CrossContextDispatcherTest.class);
+    public static final String MULTIPART = "--AaB03x\r\n" +
+        "content-disposition: form-data; name=\"field1\"\r\n" +
+        "\r\n" +
+        "Joe Blow\r\n" +
+        "--AaB03x\r\n" +
+        "content-disposition: form-data; name=\"stuff\"\r\n" +
+        "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
+        "\r\n" +
+        "000000000000000000000000000000000000000000000000000\r\n" +
+        "--AaB03x--\r\n";
 
+    public static final String MULTIPART_HEADERS = "Host: whatever\r\n" +
+        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
+        "Content-Length: " + MULTIPART.getBytes().length + "\r\n" +
+        "Connection: close\r\n";
+
+    public static final String GET_INCLUDE = "GET /context/dispatch/?include=/reader HTTP/1.1\r\n";
+    public static final String MULTIPART_INCLUDE_REQUEST = GET_INCLUDE +
+        MULTIPART_HEADERS +
+        "\r\n" +
+        MULTIPART;
+
+    public static final String GET_FORWARD = "GET /context/dispatch/?forward=/reader HTTP/1.1\r\n";
+
+    public static final String MULTIPART_FORWARD_REQUEST = GET_FORWARD +
+        MULTIPART_HEADERS +
+        "\r\n" +
+        MULTIPART;
+
+    private static final MultipartConfigElement MULTIPART_CONFIG_ELEMENT = new MultipartConfigElement(System.getProperty("java.io.tmpdir"), -1, -1, 2);
     private Server _server;
     private LocalConnector _connector;
     private ServletContextHandler _contextHandler;
@@ -246,6 +279,49 @@ public class CrossContextDispatcherTest
         params = params.substring(params.indexOf("=") + 1);
         params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
+    }
+
+    @Test
+    public void testMultiPartBeforeCrossContextForward() throws Exception
+    {
+        _targetServletContextHandler.addServlet(MultiPartReadingServlet.class, "/reader/*");
+        _contextHandler.addFilter(MultiPartReadingFilter.class, "/dispatch/*", EnumSet.of(DispatcherType.REQUEST));
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+
+        String rawResponse = _connector.getResponse(MULTIPART_FORWARD_REQUEST);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String content = response.getContent();
+        assertThat(content, containsString("field1=yes"));
+        assertThat(content, containsString("stuff=yes"));
+    }
+
+    @Test
+    public void testMultiPartAfterCrossContextForward() throws Exception
+    {
+        _targetServletContextHandler.addServlet(MultiPartReadingServlet.class, "/reader/*");
+        CountDownLatch latch = new CountDownLatch(2);
+        Servlet dispatcher = new CrossContextDispatchServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                super.doGet(request, response);
+
+                Part field1 = request.getPart("field1");
+                if (field1 != null)
+                    latch.countDown();
+                Part stuff = request.getPart("stuff");
+                if (stuff != null)
+                    latch.countDown();
+            }
+        };
+        _contextHandler.addServlet(new ServletHolder(dispatcher), "/dispatch/*");
+
+        String rawResponse = _connector.getResponse(MULTIPART_FORWARD_REQUEST);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -489,6 +565,38 @@ public class CrossContextDispatcherTest
             request.setAttribute("org.eclipse.jetty.server.Request.queryEncoding", "cp1251");
             dispatcher = getServletContext().getRequestDispatcher("/AssertForwardServlet?do=end&else=%D0%B2%D1%8B%D0%B1%D1%80%D0%B0%D0%BD%D0%BE%3D%D0%A2%D0%B5%D0%BC%D0%BF%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0");
             dispatcher.forward(request, response);
+        }
+    }
+
+    public static class MultiPartReadingFilter implements Filter
+    {
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            //cause the MULTIPART to be parsed on the request
+            HttpServletRequest httpServletRequest = (HttpServletRequest)request;
+            httpServletRequest.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, MULTIPART_CONFIG_ELEMENT);
+            Collection<Part> parts = httpServletRequest.getParts();
+            assertThat(parts, notNullValue());
+
+            chain.doFilter(request, response);
+        }
+    }
+
+    public static class MultiPartReadingServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            HttpServletRequest httpServletRequest = (HttpServletRequest)req;
+            if (httpServletRequest.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) == null)
+                httpServletRequest.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, MULTIPART_CONFIG_ELEMENT);
+            Collection<Part> parts = httpServletRequest.getParts();
+            assertThat(parts, notNullValue());
+            Part field1 = httpServletRequest.getPart("field1");
+            res.getWriter().println("field1=" + (field1 == null ? "no" : "yes"));
+            Part stuff = httpServletRequest.getPart("stuff");
+            res.getWriter().println("stuff=" + (stuff == null ? "no" : "yes"));
         }
     }
 
