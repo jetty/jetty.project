@@ -158,7 +158,8 @@ public class EventsHandlerTest
     {
         List<String> events = new CopyOnWriteArrayList<>();
 
-        EventsHandler eventsHandler = new EventsHandler(new Handler.Abstract() {
+        EventsHandler eventsHandler = new EventsHandler(new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
