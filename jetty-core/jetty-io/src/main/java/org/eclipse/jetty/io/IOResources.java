@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.resource.MemoryResource;
@@ -199,6 +200,7 @@ public class IOResources
         private final Content.Sink sink;
         private final Predicate<Throwable> onTransientError;
         private final Callback callback;
+        private boolean lastWritten;
 
         public ContentCopierIteratingCallback(Content.Source source, Content.Sink target, Predicate<Throwable> onTransientError, Callback callback)
         {
@@ -211,6 +213,9 @@ public class IOResources
         @Override
         protected Action process() throws Throwable
         {
+            if (lastWritten)
+                return Action.SUCCEEDED;
+
             Content.Chunk chunk = source.read();
             if (chunk == null)
             {
@@ -230,11 +235,20 @@ public class IOResources
             {
                 ByteBuffer byteBuffer = chunk.getByteBuffer();
                 sink.write(chunk.isLast(), byteBuffer, Callback.from(chunk::release, this));
+                lastWritten = chunk.isLast();
                 return Action.SCHEDULED;
             }
-
-            chunk.release();
-            return chunk.isLast() ? Action.SUCCEEDED : Action.SCHEDULED;
+            else if (chunk.isLast())
+            {
+                sink.write(true, BufferUtil.EMPTY_BUFFER, Callback.from(chunk::release, this));
+                lastWritten = true;
+                return Action.SCHEDULED;
+            }
+            else
+            {
+                chunk.release();
+                return Action.SCHEDULED;
+            }
         }
 
         @Override
