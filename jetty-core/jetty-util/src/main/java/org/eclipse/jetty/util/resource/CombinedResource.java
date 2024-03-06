@@ -180,13 +180,28 @@ public class CombinedResource extends Resource
     @Override
     public boolean exists()
     {
-        return _resources.stream().anyMatch(Resource::exists);
+        for (Resource r : _resources)
+            if (r.exists())
+                return true;
+        return false;
     }
 
     @Override
     public Path getPath()
     {
-        return null;
+        int exists = 0;
+        Path path = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                path = r.getPath();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getPath();
+            case 1 -> path;
+            default -> null;
+        };
     }
 
     @Override
@@ -216,7 +231,19 @@ public class CombinedResource extends Resource
     @Override
     public URI getURI()
     {
-        return null;
+        int exists = 0;
+        URI uri = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                uri = r.getURI();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getURI();
+            case 1 -> uri;
+            default -> null;
+        };
     }
 
     @Override
