@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.util.thread.jmh;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -41,8 +41,8 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 4, time = 5000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 4, time = 5000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 4, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 4, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class ReservedThreadPoolBenchmark
 {
     public enum Type
@@ -58,6 +58,8 @@ public class ReservedThreadPoolBenchmark
 
     QueuedThreadPool qtp;
     TryExecutor pool;
+    LongAdder jobs = new LongAdder();
+    LongAdder complete = new LongAdder();
 
     @Setup // (Level.Iteration)
     public void buildPool()
@@ -108,6 +110,8 @@ public class ReservedThreadPoolBenchmark
     @TearDown // (Level.Iteration)
     public void shutdownPool()
     {
+        while (complete.sum() < jobs.sum())
+            Thread.onSpinWait();
         LifeCycle.stop(pool);
         LifeCycle.stop(qtp);
         pool = null;
@@ -140,18 +144,16 @@ public class ReservedThreadPoolBenchmark
 
     void doJob() throws Exception
     {
-        CountDownLatch latch = new CountDownLatch(1);
+        jobs.increment();
         Runnable task = () ->
         {
             Blackhole.consumeCPU(1);
             Thread.yield();
             Blackhole.consumeCPU(1);
-            latch.countDown();
-            Blackhole.consumeCPU(1);
+            complete.increment();
         };
         if (!pool.tryExecute(task))
             qtp.execute(task);
-        latch.await();
     }
 
     public static void main(String[] args) throws RunnerException

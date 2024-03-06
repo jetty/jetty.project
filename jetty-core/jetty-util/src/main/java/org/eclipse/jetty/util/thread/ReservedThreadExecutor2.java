@@ -73,7 +73,7 @@ public class ReservedThreadExecutor2 extends AbstractLifeCycle implements TryExe
      */
     public ReservedThreadExecutor2(Executor executor, int capacity)
     {
-        this (executor, capacity, 64);
+        this (executor, capacity, 256);
     }
 
     /**

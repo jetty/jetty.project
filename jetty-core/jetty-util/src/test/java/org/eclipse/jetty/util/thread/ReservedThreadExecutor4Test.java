@@ -175,13 +175,13 @@ public class ReservedThreadExecutor4Test
     @Test
     public void stressTest() throws Exception
     {
-        QueuedThreadPool pool = new QueuedThreadPool(20);
+        QueuedThreadPool pool = new QueuedThreadPool(128);
         pool.start();
-        ReservedThreadExecutor reserved = new ReservedThreadExecutor(pool, 10);
+        ReservedThreadExecutor reserved = new ReservedThreadExecutor(pool, 8);
         reserved.setIdleTimeout(0, null);
         reserved.start();
 
-        final int LOOPS = 200000;
+        final int LOOPS = 20000000;
         final AtomicInteger executions = new AtomicInteger(LOOPS);
         final CountDownLatch executed = new CountDownLatch(LOOPS);
         final AtomicInteger usedReserved = new AtomicInteger(0);
