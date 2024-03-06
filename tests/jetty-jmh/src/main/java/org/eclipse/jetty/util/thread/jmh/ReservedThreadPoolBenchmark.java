@@ -41,8 +41,8 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 4, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 4, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 3000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 3000, timeUnit = TimeUnit.MILLISECONDS)
 public class ReservedThreadPoolBenchmark
 {
     public enum Type
@@ -50,7 +50,7 @@ public class ReservedThreadPoolBenchmark
         RTP, RTP2, RTP2_NO_SPIN, RTP3, RTP4
     }
 
-    @Param({"RTP", "RTP4"})
+    @Param({"RTP", "RTP2"})
     Type type;
 
     @Param({"16"})
@@ -121,7 +121,7 @@ public class ReservedThreadPoolBenchmark
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @Threads(1)
-    public void testFew() throws Exception
+    public void test001Threads() throws Exception
     {
         doJob();
     }
@@ -129,7 +129,7 @@ public class ReservedThreadPoolBenchmark
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @Threads(8)
-    public void testSome() throws Exception
+    public void test008Threads() throws Exception
     {
         doJob();
     }
@@ -137,7 +137,7 @@ public class ReservedThreadPoolBenchmark
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @Threads(200)
-    public void testMany() throws Exception
+    public void test200Threads() throws Exception
     {
         doJob();
     }
