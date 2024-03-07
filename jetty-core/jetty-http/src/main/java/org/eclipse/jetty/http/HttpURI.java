@@ -16,10 +16,12 @@ package org.eclipse.jetty.http;
 import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.http.UriCompliance.Violation;
@@ -553,7 +555,7 @@ public interface HttpURI
          * Encoded character sequences that violate the Servlet 6.0 spec
          * https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization
          */
-        private static final Index<Boolean> __suspiciousEncodedPathSequences;
+        private static final Index<Boolean> __suspiciousPathSequences;
 
         /**
          * Unencoded US-ASCII character sequences not allowed by HTTP or URI specs in path segments.
@@ -616,18 +618,18 @@ public interface HttpURI
             // suspicious path sequences
             Index.Builder<Boolean> suspiciousSequencesBuilder = new Index.Builder<Boolean>();
             suspiciousSequencesBuilder.caseSensitive(false);
-            // backslash
-            suspiciousSequencesBuilder.with("%5c", Boolean.TRUE);
-            suspiciousSequencesBuilder.with("%u005c", Boolean.TRUE);
-            // control characters
-            suspiciousSequencesBuilder.with("%7f", Boolean.TRUE);
-            suspiciousSequencesBuilder.with("%u007f", Boolean.TRUE);
-            for (int i = 0x00; i <= 0x1F; i++)
+            List<Byte> suspiciousChars = new ArrayList<>();
+            suspiciousChars.add((byte)'\\'); // backslash
+            suspiciousChars.add((byte)0x7F); // DEL
+            for (int i = 0; i <= 0x1F; i++)
+                suspiciousChars.add((byte)i);
+            suspiciousChars.forEach(b ->
             {
-                suspiciousSequencesBuilder.with(String.format("%%%02x", i), Boolean.TRUE);
-                suspiciousSequencesBuilder.with(String.format("%%u00%02x", i), Boolean.TRUE);
-            }
-            __suspiciousEncodedPathSequences = suspiciousSequencesBuilder.build();
+                suspiciousSequencesBuilder.with(Character.toString(b), Boolean.TRUE);
+                suspiciousSequencesBuilder.with(String.format("%%%02x", b), Boolean.TRUE);
+                suspiciousSequencesBuilder.with(String.format("%%u00%02x", b), Boolean.TRUE);
+            });
+            __suspiciousPathSequences = suspiciousSequencesBuilder.build();
         }
 
         private String _scheme;
@@ -1573,16 +1575,13 @@ public interface HttpURI
                 // The RFC does not allow unencoded path characters that are outside the ABNF
                 if (c > __illegalPathCharacters.length || __illegalPathCharacters[c])
                     addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
-                // Look for suspicious encoded sequence
-                if (c == '%')
+                // Look for suspicious sequences
+                Boolean suspicious = __suspiciousPathSequences.getBest(uri, i, end - i);
+                if (suspicious != null)
                 {
-                    Boolean suspicious = __suspiciousEncodedPathSequences.getBest(uri, i, end - i);
-                    if (suspicious != null)
-                    {
-                        // The segment is suspicious.
-                        if (Boolean.TRUE.equals(suspicious))
-                            addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
-                    }
+                    // The segment is suspicious.
+                    if (Boolean.TRUE.equals(suspicious))
+                        addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
                 }
             }
         }

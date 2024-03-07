@@ -661,16 +661,21 @@ public class HttpURITest
         return Stream.of(
             // backslash
             Arguments.of("/a%5Cb"),
+            Arguments.of("/a\\b"),
             Arguments.of("/foo/bar/zed/%5c"),
+            Arguments.of("/foo/bar/..\\zed"),
             Arguments.of("/foo/bar/zed/%5C"),
             // TAB
             Arguments.of("/%09b"),
+            Arguments.of("/a\tb"),
             Arguments.of("/%09"),
             // CR / LF
             Arguments.of("/%0A"),
             Arguments.of("/%0a"),
             Arguments.of("/%0D"),
             Arguments.of("/%0d"),
+            Arguments.of("/a/\r/\n/b"),
+            Arguments.of("/foo\r\nbar/"),
             Arguments.of("/%0d%0a")
         );
     }
