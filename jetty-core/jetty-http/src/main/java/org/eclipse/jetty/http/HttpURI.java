@@ -981,6 +981,9 @@ public interface HttpURI
             _uri = null;
             _path = null;
             _canonicalPath = null;
+            // eliminate current _param if provided here
+            if (path.indexOf(';') >= 0)
+                _param = null;
             parse(State.PATH, path);
 
             // If the passed path does not have a parameter, then keep the current parameter
@@ -1104,6 +1107,7 @@ public interface HttpURI
         {
             int mark = 0; // the start of the current section being parsed
             int pathMark = 0; // the start of the path section
+            int paramMark = -1; // the start of the path parameters
             int segment = 0; // the start of the current segment within the path
             boolean encodedPath = false; // set to true if the path contains % encoded characters
             boolean encodedUtf16 = false; // Is the current encoding for UTF16?
@@ -1128,6 +1132,7 @@ public interface HttpURI
                                 break;
                             case ';':
                                 checkSegment(uri, segment, i, true);
+                                paramMark = i;
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
@@ -1192,6 +1197,7 @@ public interface HttpURI
                                 break;
                             case ';':
                                 // must have been in a path
+                                paramMark = i;
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
@@ -1361,6 +1367,7 @@ public interface HttpURI
                             {
                                 case ';':
                                     checkSegment(uri, segment, i, true);
+                                    paramMark = i;
                                     mark = i + 1;
                                     state = State.PARAM;
                                     break;
@@ -1494,10 +1501,10 @@ public interface HttpURI
 
             if (!encodedPath && !dot)
             {
-                if (_param == null)
+                if (_param == null || paramMark < 0)
                     _canonicalPath = _path;
                 else
-                    _canonicalPath = _path.substring(0, _path.length() - _param.length() - 1);
+                    _canonicalPath = _path.substring(0, paramMark - pathMark);
             }
             else if (_path != null)
             {
