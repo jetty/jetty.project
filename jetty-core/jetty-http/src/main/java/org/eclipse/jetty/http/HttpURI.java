@@ -1570,7 +1570,7 @@ public interface HttpURI
             for (int i = segment; i < end; i++)
             {
                 char c = uri.charAt(i);
-                // The RFC does not allow raw path characters that are outside the ABNF {@code unreserved / pct-encoded / sub-delims / ":" / "@"}
+                // The RFC does not allow unencoded path characters that are outside the ABNF
                 if (c > __illegalPathCharacters.length || __illegalPathCharacters[c])
                     addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
                 // Look for suspicious encoded sequence
