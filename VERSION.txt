@@ -1,10 +1,46 @@
-jetty-12.0.7-SNAPSHOT
+jetty-12.0.8-SNAPSHOT
+
+jetty-12.0.7 - 29 February 2024
+ + 6140 Report total number of keys in SelectorManager
+ + 7750 HttpURI.toURI() does not copy fragment
+ + 8887 Jetty-12 client calls onDataAvailable with producing thread
+ + 8979 Jetty 12 - HttpClientTransport network "modes"
+ + 10805 Jetty response with an invalid HTTP2 packet if the client set the
+   hpack table size as 0
+ + 11278 500 response when trying to display symlinked directory
+ + 11310 Uploading big multipart files via jetty 12.0.5 with spring boot 3.2.1
+   cause problems
+ + 11353 The default virtual thread executor should created named threads
+ + 11356 Allow ServerWebSocketContainer to be created without ContextHandler
+ + 11361 Update UriCompliance.checkUriCompliance
+ + 11363 ContentSourcePublisher throws from request
+ + 11370 IllegalStateException when last write fails
+ + 11371 Review ArrayByteBufferPool eviction
+ + 11372 Scheduler queue in the HTTP client grows infinitely when a server
+   times out
+ + 11377 Jetty 12 fails to start WebApp Bundle with OSGi Boot bundle (or when
+   packaged)
+ + 11387 Reintroduce MultiPartCompliance.LEGACY (not as default) too allow for
+   parsing of non-compliant `multipart/form-data`
+ + 11396 NullPointerException when getting parts from HttpServletRequest
+ + 11398 WebSocket ClosedChannelException when demanding frames in onOpen
+ + 11401 Replace StringBuffer with StringBuilder
+ + 11403 Expose `SslEndPoint` in `SslHandshakeListener`
+ + 11410 PathMappingsHandler does not start ResourceHandler properly
+ + 11414 When producing URI/URL strings follow spec and produce lowercase
+   schemes and drop default ports
+ + 11424 What is the `jetty.deploy.scanInterval` default?  module, ini, code,
+   and documentation do not agree.
+ + 11432 Review number of acceptor threads
+ + 11441 Quote escaping in HTML file
+ + 11448 UriCompliance.Violation ignored despite being set
+ + 11465 HttpURI.toURI() sets userInfo to null
 
 jetty-12.0.6 - 29 January 2024
  + 10220 Implement CrossOriginHandler
  + 10870 How to set HttpConfiguration.securePort when the HTTPS port is
    dynamic?
- + 11080 Can't able to make multipart request and getting error.
+ + 11080 Can't able to make multipart request and getting error
  + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
    handling
  + 11095 Jetty 12.0.5 (ee10) throws IllegalStateException for completed
@@ -18,8 +54,8 @@ jetty-12.0.6 - 29 January 2024
  + 11223 WebSocketClient.connect with URI including query parameters don't work
    for HTTP2 connector
  + 11230 Problem with parsing of form parameters without values in Jetty 12?
- + 11253 Jetty 12 ComplianceViolation.Listener not notified for URI, Cookie,
-   and Multipart violations.
+ + 11253 Jetty 12 ComplianceViolation.Listener not notified for URI, Cookie and
+   Multipart violations.
  + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
    (CVE-2024-22201)
  + 11260 QuickStartConfiguration cannot be mixed with contexts that do not have
@@ -201,7 +237,7 @@ jetty-9.4.54.v20240208 - 08 February 2024
  + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
    (CVE-2024-22201)
  + 11389 Strip default ports on ws/wss scheme uris too
- 
+
 jetty-11.0.20 - 29 January 2024
  + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
    handling
