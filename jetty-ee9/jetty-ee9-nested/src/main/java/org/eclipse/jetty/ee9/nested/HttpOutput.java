@@ -1233,7 +1233,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             callback);
     }
 
-
     /**
      * Asynchronous send of whole content.
      *
