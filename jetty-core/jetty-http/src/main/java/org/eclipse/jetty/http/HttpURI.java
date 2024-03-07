@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -548,6 +549,87 @@ public interface HttpURI
             .with("%u002e%u002e", Boolean.TRUE)
             .build();
 
+        /**
+         * Encoded character sequences that violate the Servlet 6.0 spec
+         * https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization
+         */
+        private static final Index<Boolean> __suspiciousEncodedPathSequences;
+
+        /**
+         * Unencoded US-ASCII character sequences not allowed by HTTP or URI specs in path segments.
+         */
+        private static final boolean[] __illegalPathCharacters;
+
+        static
+        {
+            // Establish allowed and disallowed characters per the path rules of
+            // https://datatracker.ietf.org/doc/html/rfc3986#section-3.3
+            // ABNF
+            //   path          = path-abempty    ; begins with "/" or is empty
+            //                 / path-absolute   ; begins with "/" but not "//"
+            //                 / path-noscheme   ; begins with a non-colon segment
+            //                 / path-rootless   ; begins with a segment
+            //                 / path-empty      ; zero characters
+            //   path-abempty  = *( "/" segment )
+            //   path-absolute = "/" [ segment-nz *( "/" segment ) ]
+            //   path-noscheme = segment-nz-nc *( "/" segment )
+            //   path-rootless = segment-nz *( "/" segment )
+            //   path-empty    = 0<pchar>
+            //
+            //   segment       = *pchar
+            //   segment-nz    = 1*pchar
+            //   segment-nz-nc = 1*( unreserved / pct-encoded / sub-delims / "@" )
+            //                 ; non-zero-length segment without any colon ":"
+            //   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+            //   pct-encoded   = "%" HEXDIG HEXDIG
+            //
+            //   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+            //   reserved      = gen-delims / sub-delims
+            //   gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+            //   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+            //                 / "*" / "+" / "," / ";" / "="
+
+            // we are limited to US-ASCII per https://datatracker.ietf.org/doc/html/rfc3986#section-2
+            boolean[] illegalChars = new boolean[128];
+            Arrays.fill(illegalChars, true);
+            // pct-encoded
+            illegalChars['%'] = false;
+            // unreserved
+            for (int i = 0; i < illegalChars.length; i++)
+            {
+                if (((i >= 'a') && (i <= 'z')) || // ALPHA (lower)
+                    ((i >= 'A') && (i <= 'Z')) ||  // ALPHA (upper)
+                    ((i >= '0') && (i <= '9')) || // DIGIT
+                    (i == '-') || (i == '.') || (i == '_') || (i == '_') || (i == '~')
+                )
+                {
+                    illegalChars[i] = false;
+                }
+            }
+            // reserved
+            String reserved = ":/?#[]@!$&'()*+,=";
+            for (char c: reserved.toCharArray())
+                illegalChars[c] = false;
+            __illegalPathCharacters = illegalChars;
+            // anything else in the US-ASCII space is not allowed
+
+            // suspicious path sequences
+            Index.Builder<Boolean> suspiciousSequencesBuilder = new Index.Builder<Boolean>();
+            suspiciousSequencesBuilder.caseSensitive(false);
+            // backslash
+            suspiciousSequencesBuilder.with("%5c", Boolean.TRUE);
+            suspiciousSequencesBuilder.with("%u005c", Boolean.TRUE);
+            // control characters
+            suspiciousSequencesBuilder.with("%7f", Boolean.TRUE);
+            suspiciousSequencesBuilder.with("%u007f", Boolean.TRUE);
+            for (int i = 0x00; i <= 0x1F; i++)
+            {
+                suspiciousSequencesBuilder.with(String.format("%%%02x", i), Boolean.TRUE);
+                suspiciousSequencesBuilder.with(String.format("%%u00%02x", i), Boolean.TRUE);
+            }
+            __suspiciousEncodedPathSequences = suspiciousSequencesBuilder.build();
+        }
+
         private String _scheme;
         private String _user;
         private String _host;
@@ -895,8 +977,9 @@ public interface HttpURI
             if (!URIUtil.isPathValid(path))
                 throw new IllegalArgumentException("Path not correctly encoded: " + path);
             _uri = null;
-            _path = path;
+            _path = null;
             _canonicalPath = null;
+            parse(State.PATH, path);
 
             // If the passed path does not have a parameter, then keep the current parameter
             // else delete the current parameter
@@ -1482,6 +1565,25 @@ public interface HttpURI
                 // The segment is ambiguous only when followed by a parameter.
                 if (param)
                     addViolation(Violation.AMBIGUOUS_PATH_PARAMETER);
+            }
+
+            for (int i = segment; i < end; i++)
+            {
+                char c = uri.charAt(i);
+                // The RFC does not allow raw path characters that are outside the ABNF {@code unreserved / pct-encoded / sub-delims / ":" / "@"}
+                if (c > __illegalPathCharacters.length || __illegalPathCharacters[c])
+                    addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
+                // Look for suspicious encoded sequence
+                if (c == '%')
+                {
+                    Boolean suspicious = __suspiciousEncodedPathSequences.getBest(uri, i, end - i);
+                    if (suspicious != null)
+                    {
+                        // The segment is suspicious.
+                        if (Boolean.TRUE.equals(suspicious))
+                            addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
+                    }
+                }
             }
         }
 

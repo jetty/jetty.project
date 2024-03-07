@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -639,6 +640,91 @@ public class HttpURITest
         assertThat(uri.hasAmbiguousSeparator(), is(expected.contains(Violation.AMBIGUOUS_PATH_SEPARATOR)));
         assertThat(uri.hasAmbiguousParameter(), is(expected.contains(Violation.AMBIGUOUS_PATH_PARAMETER)));
         assertThat(uri.hasAmbiguousEncoding(), is(expected.contains(Violation.AMBIGUOUS_PATH_ENCODING)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/a%2Fb",
+        "/a%2F",
+        "/%2f",
+        "/%2f/"
+    })
+    public void testAmbiguousViaBuilderPath(String input)
+    {
+        HttpURI uri = HttpURI.build().path(input);
+        assertThat("has any violation", uri.hasViolations(), is(true));
+        assertThat("is ambiguous", uri.isAmbiguous(), is(true));
+    }
+
+    public static Stream<Arguments> suspiciousPathCharacterData()
+    {
+        return Stream.of(
+            // backslash
+            Arguments.of("/a%5Cb"),
+            Arguments.of("/foo/bar/zed/%5c"),
+            Arguments.of("/foo/bar/zed/%5C"),
+            // TAB
+            Arguments.of("/%09b"),
+            Arguments.of("/%09"),
+            // CR / LF
+            Arguments.of("/%0A"),
+            Arguments.of("/%0a"),
+            Arguments.of("/%0D"),
+            Arguments.of("/%0d"),
+            Arguments.of("/%0d%0a")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("suspiciousPathCharacterData")
+    public void testSuspiciousPathCharacterBuilderPath(String input)
+    {
+        HttpURI uri = HttpURI.build().path(input);
+        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat("has SUSPICIOUS_PATH_CHARACTERS violation", uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS), is(true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("suspiciousPathCharacterData")
+    public void testSuspiciousPathCharacterFromString(String input)
+    {
+        HttpURI uri = HttpURI.from(input);
+        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat("has SUSPICIOUS_PATH_CHARACTERS violation", uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS), is(true));
+    }
+
+    public static Stream<Arguments> illegalPathCharacterData()
+    {
+        return Stream.of(
+            // backslash
+            Arguments.of("/a\\b"),
+            Arguments.of("/a/..\\b"),
+            // control character
+            Arguments.of("/a\tb"),
+            Arguments.of("/a\r\nb"),
+            // Pipe symbol
+            Arguments.of("/a|b"),
+            // space character
+            Arguments.of("/a b")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("illegalPathCharacterData")
+    public void testIllegalPathCharacterBuilderPath(String input)
+    {
+        HttpURI uri = HttpURI.build().path(input);
+        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat("has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("illegalPathCharacterData")
+    public void testIllegalPathCharacterFromString(String input)
+    {
+        HttpURI uri = HttpURI.from(input);
+        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat("has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
     }
 
     public static Stream<Arguments> parseData()
