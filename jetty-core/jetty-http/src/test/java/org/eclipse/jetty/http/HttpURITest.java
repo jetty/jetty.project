@@ -701,11 +701,16 @@ public class HttpURITest
             Arguments.of("/a/..\\b"),
             // control character
             Arguments.of("/a\tb"),
-            Arguments.of("/a\r\nb"),
-            // Pipe symbol
+            Arguments.of("/a\rb"),
+            Arguments.of("/a\nb"),
+            // Pipe / piping symbols
             Arguments.of("/a|b"),
+            Arguments.of("/a<b"),
+            Arguments.of("/a>b"),
             // space character
-            Arguments.of("/a b")
+            Arguments.of("/a b"),
+            // double-quotes
+            Arguments.of("/a\"b")
         );
     }
 
