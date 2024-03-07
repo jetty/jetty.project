@@ -22,6 +22,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -60,6 +61,8 @@ public class ResourceTest
     private static final boolean DIR = true;
     private static final boolean EXISTS = true;
     private static final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
+
+    public WorkDir workDir;
 
     @AfterAll
     public static void afterAll()
@@ -287,6 +290,37 @@ public class ResourceTest
         assertThat("Content: " + data.test, c, startsWith(data.content));
     }
 
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testResourceCopyToDirectory(Scenario data)
+        throws Exception
+    {
+        Resource resource = data.getResource();
+        Assumptions.assumeTrue(resource != null);
+
+        Path targetDir = workDir.getEmptyPathDir().resolve(resource.getFileName());
+        resource.copyTo(targetDir);
+
+        assertResourceSameAsPath(resource, targetDir);
+    }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testResourceCopyToFile(Scenario data)
+        throws Exception
+    {
+        Resource resource = data.getResource();
+        Assumptions.assumeTrue(resource != null);
+        Assumptions.assumeTrue(!resource.isDirectory());
+
+        String filename = resource.getFileName();
+        Path targetDir = workDir.getEmptyPathDir();
+        Path targetFile = targetDir.resolve(filename);
+        resource.copyTo(targetFile);
+
+        assertResourceSameAsPath(resource, targetFile);
+    }
+
     @Test
     public void testGlobPath()
     {
@@ -465,5 +499,29 @@ public class ResourceTest
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(true));
         assertThat(resource.length(), is(0L));
+    }
+
+    private static void assertResourceSameAsPath(Resource resource, Path copy) throws IOException
+    {
+        if (!resource.isDirectory())
+        {
+            assertFalse(Files.isDirectory(copy), "Resource is not dir (" + resource + "), copy is dir (" + copy + ")");
+            try (InputStream sourceIs = resource.newInputStream();
+                 InputStream targetIs = Files.newInputStream(copy))
+            {
+                String source = IO.toString(sourceIs);
+                String target = IO.toString(targetIs);
+                assertEquals(source, target, "Resource (" + resource + ") and copy (" + copy + ") contents do not match");
+            }
+        }
+        else
+        {
+            assertTrue(Files.isDirectory(copy), "Resource is dir (" + resource + "), copy is not dir (" + copy + ")");
+            List<Resource> subResources = resource.list();
+            for (Resource subResource : subResources)
+            {
+                assertResourceSameAsPath(subResource, copy.resolve(subResource.getFileName()));
+            }
+        }
     }
 }
