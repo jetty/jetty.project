@@ -67,10 +67,11 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                 // Add the segment to the path and realURI.
                 segmentPath.append("/").append(segment);
                 Resource fromBase = _baseResource.resolve(segmentPath.toString());
-                for (Resource r : fromBase)
-                {
-                    Path p = r.getPath();
 
+                // If there is a single path, check it
+                Path p = fromBase.getPath();
+                if (p != null)
+                {
                     // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
                     // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
                     // This does not allow symlinks like /WeB-InF->/var/lib/other
@@ -80,10 +81,28 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                     // If the ancestor is not allowed then do not allow.
                     if (!isAllowed(p))
                         return false;
-
-                    // TODO as we are building the realURI of the resource, it would be possible to
-                    //  re-check that against security constraints.
                 }
+                else
+                {
+                    // otherwise check all possibles
+                    for (Resource r : fromBase)
+                    {
+                        p = r.getPath();
+
+                        // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
+                        // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
+                        // This does not allow symlinks like /WeB-InF->/var/lib/other
+                        if (Files.isSymbolicLink(p))
+                            return !getContextHandler().isProtectedTarget(segmentPath.toString());
+
+                        // If the ancestor is not allowed then do not allow.
+                        if (!isAllowed(p))
+                            return false;
+                    }
+                }
+
+                // TODO as we are building the realURI of the resource, it would be possible to
+                //  re-check that against security constraints.
             }
         }
         catch (Throwable t)

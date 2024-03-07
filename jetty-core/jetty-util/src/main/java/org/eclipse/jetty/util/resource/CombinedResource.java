@@ -367,6 +367,37 @@ public class CombinedResource extends Resource
         return Objects.hash(_resources);
     }
 
+    @Override
+    public boolean isAlias()
+    {
+        for (Resource r : _resources)
+        {
+            if (r.isAlias())
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public URI getRealURI()
+    {
+        if (!isAlias())
+            return getURI();
+        int exists = 0;
+        URI uri = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                uri = r.getRealURI();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getRealURI();
+            case 1 -> uri;
+            default -> null;
+        };
+    }
+
     /**
      * @return the list of resources
      */
