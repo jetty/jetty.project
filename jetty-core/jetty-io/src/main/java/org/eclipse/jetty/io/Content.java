@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -502,18 +503,32 @@ public class Content
          */
         static Sink from(OutputStream out)
         {
-            return (last, byteBuffer, callback) ->
+            return new Sink()
             {
-                try
+                boolean closed;
+
+                @Override
+                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
                 {
-                    BufferUtil.writeTo(byteBuffer, out);
-                    if (last)
-                        out.close();
-                    callback.succeeded();
-                }
-                catch (Throwable t)
-                {
-                    callback.failed(t);
+                    if (closed)
+                    {
+                        callback.failed(new EOFException());
+                        return;
+                    }
+                    try
+                    {
+                        BufferUtil.writeTo(byteBuffer, out);
+                        if (last)
+                        {
+                            closed = true;
+                            out.close();
+                        }
+                        callback.succeeded();
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                    }
                 }
             };
         }
