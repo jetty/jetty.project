@@ -25,6 +25,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -717,7 +718,7 @@ public class ContentSourceTest
     }
 
     @Test
-    public void testAsRetainableByteBuffer() throws Exception
+    public void testAsRetainableByteBufferWithPromise() throws Exception
     {
         TestContentSource source = new TestContentSource();
 
@@ -730,7 +731,7 @@ public class ContentSourceTest
                 super.succeeded(result);
             }
         };
-        Content.Source.asRetainableByteBuffer(source, promise);
+        Content.Source.asRetainableByteBuffer(source, null, false, -1, promise);
 
         Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter(3);
 
@@ -754,5 +755,68 @@ public class ContentSourceTest
         assertNotNull(buffer);
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), equalTo("hello cruel world"));
+    }
+
+    @Test
+    public void testAsRetainableByteBufferWithCompletableFuture() throws Exception
+    {
+        TestContentSource source = new TestContentSource();
+
+        CompletableFuture<RetainableByteBuffer> completableFuture = Content.Source.asRetainableByteBuffer(source, null, false, -1);
+
+        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter(3);
+
+        Runnable todo = source.takeDemand();
+        assertNotNull(todo);
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, counter));
+        todo.run();
+        assertFalse(completableFuture.isDone());
+
+        todo = source.takeDemand();
+        assertNotNull(todo);
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" cruel"), false, counter));
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" world"), true, counter));
+        todo.run();
+
+        todo = source.takeDemand();
+        assertNull(todo);
+        assertTrue(completableFuture.isDone());
+
+        RetainableByteBuffer buffer = completableFuture.get();
+        assertNotNull(buffer);
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), equalTo("hello cruel world"));
+    }
+
+    @Test
+    public void testAsByteArrayAsync() throws Exception
+    {
+        TestContentSource source = new TestContentSource();
+
+        CompletableFuture<byte[]> completableFuture = Content.Source.asByteArrayAsync(source, -1);
+
+        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter(3);
+
+        Runnable todo = source.takeDemand();
+        assertNotNull(todo);
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, counter));
+        todo.run();
+        assertFalse(completableFuture.isDone());
+
+        todo = source.takeDemand();
+        assertNotNull(todo);
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" cruel"), false, counter));
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" world"), true, counter));
+        todo.run();
+
+        todo = source.takeDemand();
+        assertNull(todo);
+        assertTrue(completableFuture.isDone());
+
+        byte[] buffer = completableFuture.get();
+        assertNotNull(buffer);
+
+        assertThat(new String(buffer, UTF_8), equalTo("hello cruel world"));
+
     }
 }

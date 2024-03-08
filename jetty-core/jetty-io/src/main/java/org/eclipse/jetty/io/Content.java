@@ -163,19 +163,6 @@ public class Content
         }
 
         /**
-         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
-         *
-         * @param source the source to read
-         * @param promise the promise to notify when the whole content has been read into a RetainableByteBuffer.
-         *                The consumer of the promise must {@link RetainableByteBuffer#retain() retain} the buffer
-         *                if it is to be held beyond the call to {@link Promise#succeeded(Object)}.
-         */
-        static void asRetainableByteBuffer(Source source, Promise<RetainableByteBuffer> promise)
-        {
-            new ContentSourceRetainableByteBuffer(source, promise).run();
-        }
-
-        /**
          * <p>Reads, blocking if necessary, the whole content source into a {@link ByteBuffer}.</p>
          *
          * @param source the source to read
@@ -206,7 +193,7 @@ public class Content
          */
         static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
         {
-            return new ChunkAccumulator().readAll(source, maxSize);
+            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb -> rbb.getByteBuffer().array());
         }
 
         /**
@@ -244,7 +231,31 @@ public class Content
          */
         static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
         {
-            return new ChunkAccumulator().readAll(source, pool, direct, maxSize);
+            Promise.Completable<RetainableByteBuffer> promise = new Promise.Completable<>()
+            {
+                @Override
+                public void succeeded(RetainableByteBuffer result)
+                {
+                    result.retain();
+                    super.succeeded(result);
+                }
+            };
+            asRetainableByteBuffer(source, pool, direct, maxSize, promise);
+            return promise;
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
+         * @param direct True if the buffer should be direct.
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @param promise the promise to notify when the whole content has been read into a RetainableByteBuffer.
+         */
+        static void asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<RetainableByteBuffer> promise)
+        {
+            new ContentSourceRetainableByteBuffer(source, pool, direct, maxSize, promise).run();
         }
 
         /**

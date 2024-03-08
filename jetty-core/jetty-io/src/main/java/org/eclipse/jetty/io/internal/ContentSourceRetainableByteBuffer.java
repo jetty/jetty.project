@@ -13,19 +13,21 @@
 
 package org.eclipse.jetty.io.internal;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Promise;
 
 public class ContentSourceRetainableByteBuffer implements Runnable
 {
-    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator(null, false, -1);
+    private final RetainableByteBuffer.Accumulator accumulator;
     private final Content.Source source;
     private final Promise<RetainableByteBuffer> promise;
 
-    public ContentSourceRetainableByteBuffer(Content.Source source, Promise<RetainableByteBuffer> promise)
+    public ContentSourceRetainableByteBuffer(Content.Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<RetainableByteBuffer> promise)
     {
         this.source = source;
+        this.accumulator = new RetainableByteBuffer.Accumulator(pool, direct, maxSize);
         this.promise = promise;
     }
 
