@@ -972,19 +972,16 @@ public interface HttpURI
             _uri = null;
             _path = null;
             _canonicalPath = null;
-            // eliminate current _param if provided here
-            if (_param != null && path.indexOf(';') >= 0)
-                _param = null;
+            String param = _param;
+            _param = null;
             parse(State.PATH, path);
 
             // If the passed path does not have a parameter, then keep the current parameter
             // else delete the current parameter
-            if (_param != null)
+            if (param != null && path.indexOf(';') < 0)
             {
-                if (path.indexOf(';') >= 0)
-                    _param = null;
-                else
-                    _path = _path + ';' + _param;
+                _param = param;
+                _path = _path + ';' + _param;
             }
 
             return this;
