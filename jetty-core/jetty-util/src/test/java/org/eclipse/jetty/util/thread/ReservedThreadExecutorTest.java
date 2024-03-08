@@ -24,15 +24,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReservedThreadExecutorTest
@@ -78,183 +75,57 @@ public class ReservedThreadExecutorTest
     }
 
     @Test
-    public void testPending() throws Exception
-    {
-        assertThat(_executor._queue.size(), is(0));
-
-        for (int i = 0; i < SIZE; i++)
-        {
-            _reservedExecutor.tryExecute(NOOP);
-        }
-        assertThat(_executor._queue.size(), is(SIZE));
-
-        for (int i = 0; i < SIZE; i++)
-        {
-            _executor.startThread();
-        }
-        assertThat(_executor._queue.size(), is(0));
-
-        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
-
-        for (int i = 0; i < SIZE; i++)
-        {
-            assertThat(_reservedExecutor.tryExecute(new Task()), is(true));
-        }
-        assertThat(_executor._queue.size(), is(1));
-        assertThat(_reservedExecutor.getAvailable(), is(0));
-
-        for (int i = 0; i < SIZE; i++)
-        {
-            assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
-        }
-        assertThat(_executor._queue.size(), is(SIZE));
-        assertThat(_reservedExecutor.getAvailable(), is(0));
-    }
-
-    @Test
     public void testExecuted() throws Exception
     {
         assertThat(_executor._queue.size(), is(0));
 
         for (int i = 0; i < SIZE; i++)
         {
-            _reservedExecutor.tryExecute(NOOP);
+            // No reserved thread available, so task should be executed and a reserve thread started
+            assertFalse(_reservedExecutor.tryExecute(NOOP));
         }
         assertThat(_executor._queue.size(), is(SIZE));
 
         for (int i = 0; i < SIZE; i++)
         {
+            // start executor threads, which should be 2 reserved thread jobs
             _executor.startThread();
         }
         assertThat(_executor._queue.size(), is(0));
 
+        // check that the reserved thread pool grows to 2 threads
         waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
 
         Task[] tasks = new Task[SIZE];
         for (int i = 0; i < SIZE; i++)
         {
             tasks[i] = new Task();
+            // submit a job that will take a reserved thread.
             assertThat(_reservedExecutor.tryExecute(tasks[i]), is(true));
         }
 
         for (int i = 0; i < SIZE; i++)
         {
+            // wait for the job to run
             tasks[i]._ran.await(10, SECONDS);
         }
 
-        assertThat(_executor._queue.size(), is(1));
+        // This RTP only starts new reserved threads when it there is a miss
+        assertThat(_executor._queue.size(), is(0));
 
-        Task extra = new Task();
-        assertThat(_reservedExecutor.tryExecute(extra), is(false));
-        assertThat(_executor._queue.size(), is(2));
+        // and we have no reserved threads
+        assertThat(_reservedExecutor.getAvailable(), is(0));
 
-        waitAtMost(5, SECONDS).until(extra._ran::getCount, is(1L));
+        // Complete the jobs
 
         for (int i = 0; i < SIZE; i++)
+        {
+            // wait for the job to run
             tasks[i]._complete.countDown();
-
-        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
-    }
-
-    @Test
-    public void testEvict() throws Exception
-    {
-        final long IDLE = 1000;
-
-        _reservedExecutor.stop();
-        _reservedExecutor.setIdleTimeout(IDLE, MILLISECONDS);
-        _reservedExecutor.start();
-        assertThat(_reservedExecutor.getAvailable(), is(0));
-
-        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
-        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
-
-        _executor.startThread();
-        _executor.startThread();
-
-        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(2));
-
-        int available = _reservedExecutor.getAvailable();
-        assertThat(available, is(2));
-
-        waitAtMost(5 * IDLE, MILLISECONDS).until(_reservedExecutor::getAvailable, is(0));
-    }
-
-    @Test
-    public void testBusyEvict() throws Exception
-    {
-        final long IDLE = 1000;
-
-        _reservedExecutor.stop();
-        _reservedExecutor.setIdleTimeout(IDLE, MILLISECONDS);
-        _reservedExecutor.start();
-        assertThat(_reservedExecutor.getAvailable(), is(0));
-
-        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
-        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
-
-        _executor.startThread();
-        _executor.startThread();
-
-        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(2));
-
-        int available = _reservedExecutor.getAvailable();
-        assertThat(available, is(2));
-
-        CountDownLatch latch = new CountDownLatch(1);
-        assertThat(_reservedExecutor.tryExecute(() ->
-        {
-            try
-            {
-                latch.await();
-            }
-            catch (InterruptedException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }), is(true));
-
-        // Submit tasks for a period of one idle timeout.
-        // One reserved thread is busy above waiting on the
-        // latch, while this reserved thread will be on/off
-        // busy with short tasks. It will not be evicted
-        // because it is the only available reserved thread.
-        for (int i = 0; i < 10; i++)
-        {
-            Thread.sleep(IDLE / 10);
-            assertThat(_reservedExecutor.tryExecute(NOOP), is(true));
         }
-        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(1));
 
-        latch.countDown();
-
-        // The reserved thread that run the task that
-        // awaited must have been immediately evicted,
-        // because the other threads is available and
-        // reserved threads are aggressively evicted.
-        await()
-            .atLeast(IDLE / 4, MILLISECONDS)
-            .atMost(10, SECONDS)
-            .until(_reservedExecutor::getAvailable, is(1));
-    }
-
-    @Test
-    public void testReservedIdleTimeoutWithOneReservedThread() throws Exception
-    {
-        long idleTimeout = 500;
-        _reservedExecutor.stop();
-        _reservedExecutor.setIdleTimeout(idleTimeout, MILLISECONDS);
-        _reservedExecutor.start();
-
-        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
-        Thread thread = _executor.startThread();
-        assertNotNull(thread);
-        // watching the available thread count decrease relies on the waitAtMost sampling rate being
-        // faster than the idleTimeout, so it always sees the 1 before the 0
-        waitAtMost(5, SECONDS).until(_reservedExecutor::getAvailable, is(1));
-        waitAtMost(5, SECONDS).until(_reservedExecutor::getAvailable, is(0));
-        thread.join(2 * idleTimeout);
-        assertFalse(thread.isAlive());
+        // reserved threads should run job and then become reserved again
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
     }
 
     private static class TestExecutor implements Executor

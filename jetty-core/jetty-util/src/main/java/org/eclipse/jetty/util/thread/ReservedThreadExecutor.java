@@ -139,7 +139,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     {
         if (isRunning())
             throw new IllegalStateException();
-        _idleTimeoutMs = idleTimeUnit.toMillis(idleTime);
+        _idleTimeoutMs = idleTime <= 0 ? 0 : idleTimeUnit.toMillis(idleTime);
     }
 
     @Override

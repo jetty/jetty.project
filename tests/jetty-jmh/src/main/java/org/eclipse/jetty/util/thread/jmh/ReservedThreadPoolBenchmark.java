@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.util.thread.jmh;
 
-import java.io.File;
-import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -22,7 +20,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.TryExecutor;
-import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -34,11 +31,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.profile.ExternalProfiler;
-import org.openjdk.jmh.results.BenchmarkResult;
-import org.openjdk.jmh.results.Result;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -140,11 +133,11 @@ public class ReservedThreadPoolBenchmark
             Blackhole.consumeCPU(1);
             Thread.yield();
             Blackhole.consumeCPU(1);
-            complete.increment();
+            hit.increment();
         };
         if (pool.tryExecute(task))
         {
-            hit.increment();
+            miss.increment();
         }
         else
         {
@@ -169,71 +162,5 @@ public class ReservedThreadPoolBenchmark
             .build();
 
         new Runner(opt).run();
-    }
-
-
-    // TODO WIP below
-
-    @State(Scope.Thread)
-    @AuxCounters(AuxCounters.Type.EVENTS)
-    public static class HitMissCounters
-    {
-        public final LongAdder hits = new LongAdder();
-        public final LongAdder misses = new LongAdder();
-
-        public void recordHit()
-        {
-            hits.increment();
-        }
-
-        public void recordMiss()
-        {
-            misses.increment();
-        }
-    }
-
-    public static class HitMissProfiler implements ExternalProfiler
-    {
-        @Override
-        public Collection<String> addJVMInvokeOptions(BenchmarkParams benchmarkParams)
-        {
-            return null;
-        }
-
-        @Override
-        public Collection<String> addJVMOptions(BenchmarkParams benchmarkParams)
-        {
-            return null;
-        }
-
-        @Override
-        public void beforeTrial(BenchmarkParams benchmarkParams)
-        {
-
-        }
-
-        @Override
-        public Collection<? extends Result> afterTrial(BenchmarkResult benchmarkResult, long l, File file, File file1)
-        {
-            return null;
-        }
-
-        @Override
-        public boolean allowPrintOut()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean allowPrintErr()
-        {
-            return false;
-        }
-
-        @Override
-        public String getDescription()
-        {
-            return null;
-        }
     }
 }
