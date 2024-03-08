@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExecutor, Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutor3.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutor.class);
 
     private final Executor _executor;
     private final AtomicReferenceArray<ReservedThread> _slots;
