@@ -50,7 +50,7 @@ public class ReservedThreadPoolBenchmark
         RTP, RTP2, RTP2_NO_SPIN, RTP3, RTP4
     }
 
-    @Param({"RTP", "RTP2"})
+    @Param({"RTP", "RTP3" /*, "RTP2", "RTP2_NO_SPIN", "RTP3", "RTP4"*/})
     Type type;
 
     @Param({"16"})
@@ -60,6 +60,8 @@ public class ReservedThreadPoolBenchmark
     TryExecutor pool;
     LongAdder jobs = new LongAdder();
     LongAdder complete = new LongAdder();
+    LongAdder hit = new LongAdder();
+    LongAdder miss = new LongAdder();
 
     @Setup // (Level.Iteration)
     public void buildPool()
@@ -110,12 +112,17 @@ public class ReservedThreadPoolBenchmark
     @TearDown // (Level.Iteration)
     public void shutdownPool()
     {
+        System.err.println("\nShutdown ...");
         while (complete.sum() < jobs.sum())
             Thread.onSpinWait();
+        System.err.println("Stopping ...");
         LifeCycle.stop(pool);
         LifeCycle.stop(qtp);
         pool = null;
         qtp = null;
+        System.err.println("Stopped");
+        long hits = hit.sum();
+        System.err.printf("hit:miss = %.1f%% (%d:%d)", 100.0D * hits / (hits + miss.sum()), hits, miss.sum());
     }
 
     @Benchmark
@@ -152,8 +159,15 @@ public class ReservedThreadPoolBenchmark
             Blackhole.consumeCPU(1);
             complete.increment();
         };
-        if (!pool.tryExecute(task))
+        if (pool.tryExecute(task))
+        {
+            hit.increment();
+        }
+        else
+        {
+            miss.increment();
             qtp.execute(task);
+        }
     }
 
     public static void main(String[] args) throws RunnerException

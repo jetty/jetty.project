@@ -340,6 +340,7 @@ public class ReservedThreadExecutor3 extends AbstractLifeCycle implements TryExe
             }
             catch (Throwable e)
             {
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
