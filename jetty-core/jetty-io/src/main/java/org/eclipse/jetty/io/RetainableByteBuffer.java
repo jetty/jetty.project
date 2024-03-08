@@ -207,12 +207,24 @@ public interface RetainableByteBuffer extends Retainable
         BufferUtil.clear(getByteBuffer());
     }
 
+    /**
+     * Copies the contents of the given byte buffer at the end of this buffer.
+     * @param bytes the byte buffer to copy from.
+     * @return true if all bytes of the given buffer were copied, false otherwise.
+     * @see BufferUtil#append(ByteBuffer, ByteBuffer)
+     */
     default boolean append(ByteBuffer bytes)
     {
         BufferUtil.append(getByteBuffer(), bytes);
         return !bytes.hasRemaining();
     }
 
+    /**
+     * Copies the contents of the given retainable byte buffer at the end of this buffer.
+     * @param bytes the retainable byte buffer to copy from.
+     * @return true if all bytes of the given buffer were copied, false otherwise.
+     * @see BufferUtil#append(ByteBuffer, ByteBuffer)
+     */
     default boolean append(RetainableByteBuffer bytes)
     {
         return bytes.remaining() == 0 || append(bytes.getByteBuffer());

@@ -58,6 +58,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -655,6 +656,8 @@ public class ContentSourceTest
         @Override
         public void fail(Throwable failure)
         {
+            _chunks.clear();
+            _chunks.add(Content.Chunk.from(failure, true));
         }
     }
 
@@ -755,6 +758,41 @@ public class ContentSourceTest
         assertNotNull(buffer);
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), equalTo("hello cruel world"));
+    }
+
+    @Test
+    public void testAsRetainableByteBufferWithPromiseExceedsMaxSize() throws Exception
+    {
+        TestContentSource source = new TestContentSource();
+
+        FuturePromise<RetainableByteBuffer> promise = new FuturePromise<>()
+        {
+            @Override
+            public void succeeded(RetainableByteBuffer result)
+            {
+                result.retain();
+                super.succeeded(result);
+            }
+        };
+        Content.Source.asRetainableByteBuffer(source, null, false, 3, promise);
+
+        Runnable todo = source.takeDemand();
+        assertNotNull(todo);
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, new Retainable.ReferenceCounter(1)));
+        todo.run();
+        assertTrue(promise.isDone());
+
+        try
+        {
+            promise.get();
+            fail("expected ExecutionException");
+        }
+        catch (ExecutionException e)
+        {
+            assertInstanceOf(IllegalStateException.class, e.getCause());
+        }
+
+        assertInstanceOf(IllegalStateException.class, source.read().getFailure());
     }
 
     @Test

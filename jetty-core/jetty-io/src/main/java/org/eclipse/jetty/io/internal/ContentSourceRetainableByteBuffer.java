@@ -52,8 +52,17 @@ public class ContentSourceRetainableByteBuffer implements Runnable
                 return;
             }
 
-            accumulator.append(chunk);
+            boolean appended = accumulator.append(chunk);
             chunk.release();
+
+            if (!appended)
+            {
+                IllegalStateException ise = new IllegalStateException("Max size (" + accumulator.capacity() + ") exceeded");
+                promise.failed(ise);
+                accumulator.release();
+                source.fail(ise);
+                return;
+            }
 
             if (chunk.isLast())
             {
