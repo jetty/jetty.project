@@ -17,8 +17,10 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -91,7 +93,10 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 // Do not complete twice the callback if the invocation fails.
                 callback = Callback.NOOP;
-                byte[] buf = BufferUtil.toArray(accumulator.getByteBuffer());
+
+                ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(accumulator.remaining());
+                accumulator.writeTo(Content.Sink.from(bout), true, Callback.NOOP);
+                byte[] buf = bout.getBuf();
                 accumulator.release();
                 getMethodHandle().invoke(buf, 0, buf.length);
                 autoDemand();
