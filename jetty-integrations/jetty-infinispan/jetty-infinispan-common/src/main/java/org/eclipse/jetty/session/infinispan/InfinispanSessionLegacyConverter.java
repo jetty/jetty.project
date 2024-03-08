@@ -21,7 +21,7 @@ import org.eclipse.jetty.session.SessionData;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 
@@ -55,11 +55,12 @@ public class InfinispanSessionLegacyConverter
 
         Properties properties = new Properties();
         ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
-        clientBuilder.withProperties(properties).addServer().host(host).marshaller(new ProtoStreamMarshaller());
+        ProtoStreamMarshaller protoStreamMarshaller = new ProtoStreamMarshaller();
+        clientBuilder.withProperties(properties).addServer().host(host).marshaller(protoStreamMarshaller);
         _protoManager = new RemoteCacheManager(clientBuilder.build());
         FileDescriptorSource fds = new FileDescriptorSource();
         fds.addProtoFiles("/session.proto");
-        SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(_protoManager);
+        SerializationContext serCtx = protoStreamMarshaller.getSerializationContext();
         serCtx.registerProtoFiles(fds);
         serCtx.registerMarshaller(new SessionDataMarshaller());
         _protoCache = _protoManager.getCache(cacheName);

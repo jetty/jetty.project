@@ -109,13 +109,14 @@ public class InfinispanTestSupport
             ConfigurationChildBuilder b = _builder
                 .indexing()
                 .addIndexedEntity(SessionData.class)
-                .withProperties(properties)
+                // FIXME
+                //.withProperties(properties)
                 .memory()
                 .whenFull(EvictionStrategy.NONE)
                 .persistence()
-                .addSingleFileStore()
+                .addSoftIndexFileStore()
                 .segmented(false)
-                .location(tmpdir.toFile().getAbsolutePath());
+                .indexLocation(tmpdir.toFile().getAbsolutePath());
             if (_serializeSessionData)
             {
                 b = b.memory().storage(StorageType.HEAP)
@@ -127,7 +128,8 @@ public class InfinispanTestSupport
         else
         {
             ConfigurationChildBuilder b = _builder.indexing()
-                .withProperties(properties)
+                    // FIXME
+                    //.withProperties(properties)
                 .addIndexedEntity(SessionData.class);
         
             if (_serializeSessionData)
