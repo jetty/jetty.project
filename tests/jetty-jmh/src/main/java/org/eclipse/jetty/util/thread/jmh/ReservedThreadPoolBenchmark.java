@@ -19,9 +19,6 @@ import java.util.concurrent.atomic.LongAdder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor2;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor3;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor4;
 import org.eclipse.jetty.util.thread.TryExecutor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -41,16 +38,16 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 10, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 10, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class ReservedThreadPoolBenchmark
 {
     public enum Type
     {
-        RTP, RTP2, RTP2_NO_SPIN, RTP3, RTP4
+        RTE, RTEOLD
     }
 
-    @Param({"RTP", "RTP3" /*, "RTP2", "RTP2_NO_SPIN", "RTP3", "RTP4"*/})
+    @Param({"RTE", "RTEOLD"})
     Type type;
 
     @Param({"16"})
@@ -69,37 +66,16 @@ public class ReservedThreadPoolBenchmark
         qtp = new QueuedThreadPool();
         switch (type)
         {
-            case RTP:
+            case RTE:
             {
                 ReservedThreadExecutor pool = new ReservedThreadExecutor(qtp, size);
                 pool.setIdleTimeout(5, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
             }
-            case RTP2:
+            case RTEOLD:
             {
-                ReservedThreadExecutor2 pool = new ReservedThreadExecutor2(qtp, size);
-                pool.setIdleTimeout(5, TimeUnit.SECONDS);
-                this.pool = pool;
-                break;
-            }
-            case RTP2_NO_SPIN:
-            {
-                ReservedThreadExecutor2 pool = new ReservedThreadExecutor2(qtp, size, 0);
-                pool.setIdleTimeout(5, TimeUnit.SECONDS);
-                this.pool = pool;
-                break;
-            }
-            case RTP3:
-            {
-                ReservedThreadExecutor3 pool = new ReservedThreadExecutor3(qtp, size);
-                pool.setIdleTimeout(5, TimeUnit.SECONDS);
-                this.pool = pool;
-                break;
-            }
-            case RTP4:
-            {
-                ReservedThreadExecutor4 pool = new ReservedThreadExecutor4(qtp, size);
+                ReservedThreadExecutorOLD pool = new ReservedThreadExecutorOLD(qtp, size);
                 pool.setIdleTimeout(5, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
