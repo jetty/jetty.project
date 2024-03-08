@@ -41,8 +41,8 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 5, time = 3000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 3000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 10, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 10, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class ReservedThreadPoolBenchmark
 {
     public enum Type
@@ -149,7 +149,7 @@ public class ReservedThreadPoolBenchmark
         doJob();
     }
 
-    void doJob() throws Exception
+    void doJob()
     {
         jobs.increment();
         Runnable task = () ->
@@ -168,6 +168,7 @@ public class ReservedThreadPoolBenchmark
             miss.increment();
             qtp.execute(task);
         }
+        // We don't wait for the job to complete here, as we want to measure the speed of dispatch, not execution latency
     }
 
     public static void main(String[] args) throws RunnerException

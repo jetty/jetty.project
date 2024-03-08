@@ -124,7 +124,7 @@ public class ReservedThreadExecutor3 extends AbstractLifeCycle implements TryExe
     {
         int available = 0;
         for (int i = _slots.length(); i-- > 0;)
-            if (_slots.get(i) instanceof ReservedThread)
+            if (_slots.get(i) != null)
                 available++;
         return available;
     }
@@ -209,10 +209,7 @@ public class ReservedThreadExecutor3 extends AbstractLifeCycle implements TryExe
         {
             ReservedThread reserved = _slots.getAndSet(index, null);
             if (reserved != null)
-            {
-                reserved.wakeup(task);
-                return true;
-            }
+                return reserved.wakeup(task);
             if (++index == capacity)
                 index = 0;
         }
@@ -258,7 +255,7 @@ public class ReservedThreadExecutor3 extends AbstractLifeCycle implements TryExe
 
     private class ReservedThread implements Runnable
     {
-        private Exchanger<Runnable> _exchanger = new Exchanger<>();
+        private final Exchanger<Runnable> _exchanger = new Exchanger<>();
         private volatile Thread _thread;
 
         @Override
@@ -290,15 +287,27 @@ public class ReservedThreadExecutor3 extends AbstractLifeCycle implements TryExe
 
                     Runnable task = waitForTask();
 
-                    if (task == STOP || task == null)
-                        return;
-                    try
+                    if (task == null)
                     {
-                        task.run();
+                        // shrink if there are other reserved threads
+                        for (int i = capacity; i-- > 0; )
+                            if (_slots.get(i) != null)
+                                return;
                     }
-                    catch (Throwable t)
+                    else if (task == STOP)
                     {
-                        LOG.warn("reserved error", t);
+                        return;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            task.run();
+                        }
+                        catch (Throwable t)
+                        {
+                            LOG.warn("reserved error", t);
+                        }
                     }
                 }
             }
@@ -321,28 +330,29 @@ public class ReservedThreadExecutor3 extends AbstractLifeCycle implements TryExe
                 _thread);
         }
 
-        public void wakeup(Runnable task)
+        public boolean wakeup(Runnable task)
         {
             try
             {
                 if (task == STOP)
                 {
+                    // If we are stopping, the reserved thread may already have stopped.  So just interrupt rather than
+                    // expect an exchange rendezvous.
                     Thread thread = _thread;
                     if (thread != null)
                         thread.interrupt();
-                    return;
                 }
-
-                if (_idleTimeoutMs <= 0)
+                else if (_idleTimeoutMs <= 0)
                     _exchanger.exchange(task);
                 else
                     _exchanger.exchange(task, _idleTimeoutMs, TimeUnit.MILLISECONDS);
+                return true;
             }
             catch (Throwable e)
             {
-                e.printStackTrace();
-                throw new RuntimeException(e);
+                LOG.warn("exchange failed", e);
             }
+            return false;
         }
 
         private Runnable waitForTask()
