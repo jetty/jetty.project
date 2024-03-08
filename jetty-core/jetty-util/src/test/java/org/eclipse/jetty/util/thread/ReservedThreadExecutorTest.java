@@ -24,11 +24,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -126,6 +128,30 @@ public class ReservedThreadExecutorTest
 
         // reserved threads should run job and then become reserved again
         waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
+    }
+
+    @Test
+    public void testEvict() throws Exception
+    {
+        final long IDLE = 1000;
+
+        _reservedExecutor.stop();
+        _reservedExecutor.setIdleTimeout(IDLE, MILLISECONDS);
+        _reservedExecutor.start();
+        assertThat(_reservedExecutor.getAvailable(), is(0));
+
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+
+        _executor.startThread();
+        _executor.startThread();
+
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(2));
+
+        int available = _reservedExecutor.getAvailable();
+        assertThat(available, is(2));
+
+        waitAtMost(5 * IDLE, MILLISECONDS).until(_reservedExecutor::getAvailable, lessThanOrEqualTo(1));
     }
 
     private static class TestExecutor implements Executor

@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.thread.jmh;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
@@ -38,8 +39,8 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 10, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 10, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class ReservedThreadPoolBenchmark
 {
     public enum Type
@@ -89,8 +90,16 @@ public class ReservedThreadPoolBenchmark
     public void shutdownPool()
     {
         System.err.println("\nShutdown ...");
-        while (complete.sum() < jobs.sum())
+        long startSpin = System.nanoTime();
+        while (complete.longValue() < jobs.longValue())
+        {
+            if (NanoTime.secondsSince(startSpin) > 5)
+            {
+                System.err.printf("FAILED %d < %d\n".formatted(complete.longValue(), jobs.longValue()));
+                break;
+            }
             Thread.onSpinWait();
+        }
         System.err.println("Stopping ...");
         LifeCycle.stop(pool);
         LifeCycle.stop(qtp);
@@ -133,11 +142,11 @@ public class ReservedThreadPoolBenchmark
             Blackhole.consumeCPU(1);
             Thread.yield();
             Blackhole.consumeCPU(1);
-            hit.increment();
+            complete.increment();
         };
         if (pool.tryExecute(task))
         {
-            miss.increment();
+            hit.increment();
         }
         else
         {

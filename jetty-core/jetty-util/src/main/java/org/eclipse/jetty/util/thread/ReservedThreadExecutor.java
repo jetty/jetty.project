@@ -84,7 +84,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
-            return Math.max(1, Math.min(cpus, threads / 10));
+            return Math.max(1, Math.min(cpus, threads / 8));
         }
         return cpus;
     }
@@ -190,25 +190,28 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @Override
     public boolean tryExecute(Runnable task)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} tryExecute {}", this, task);
         if (task == null)
             return false;
 
         int capacity = getCapacity();
         int index = (int)(Thread.currentThread().getId() % capacity);
-
         for (int i = capacity; i-- > 0;)
         {
             ReservedThread reserved = _slots.getAndSet(index, null);
             if (reserved != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} tryExecute wakeup {} for {}", this, reserved, task);
                 return reserved.wakeup(task);
+            }
             if (++index == capacity)
                 index = 0;
         }
 
         startReservedThread();
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} tryExecute failed for {}", this, task);
         return false;
     }
 
@@ -278,25 +281,41 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         return;
 
                     Runnable task = waitForTask();
+                    while (task == null)
+                    {
+                        if (!isRunning())
+                            return;
 
-                    if (task == null)
-                    {
-                        // shrink if there are other reserved threads
+                        // shrink if we are already removed or there are other reserved threads.
+                        // There is a small chance multiple threads
+                        // will iterate at the same time and we will hit 0, but that is not a huge problem.
                         for (int i = capacity; i-- > 0; )
-                            if (_slots.get(i) != null)
-                                return;
+                        {
+                            ReservedThread r = _slots.get(i);
+                            if (r != null && r != this)
+                            {
+                                if (_slots.compareAndSet(slot, this, null))
+                                {
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("{} reservedThread shrank {}", ReservedThreadExecutor.this, this);
+                                    return;
+                                }
+                            }
+                        }
+                        task = waitForTask();
                     }
-                    else
+
+                    try
                     {
-                        try
-                        {
-                            task.run();
-                        }
-                        catch (Throwable t)
-                        {
-                            LOG.warn("reserved error", t);
-                        }
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} reservedThread run {} on {}", ReservedThreadExecutor.this, task, this);
+                        task.run();
                     }
+                    catch (Throwable t)
+                    {
+                        LOG.warn("reserved error", t);
+                    }
+
                 }
             }
             catch (Throwable t)
