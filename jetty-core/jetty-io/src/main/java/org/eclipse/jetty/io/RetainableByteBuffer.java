@@ -440,34 +440,35 @@ public interface RetainableByteBuffer extends Retainable
                 case 1 -> _buffers.get(0).getByteBuffer();
                 default ->
                 {
-                    int length = remaining();
-                    RetainableByteBuffer combinedBuffer = _pool.acquire(length, _direct);
-                    ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
-                    BufferUtil.flipToFill(byteBuffer);
-                    for (RetainableByteBuffer buffer : _buffers)
-                    {
-                        buffer.putTo(byteBuffer);
-                        buffer.clear();
-                        buffer.release();
-                    }
-                    BufferUtil.flipToFlush(byteBuffer, 0);
-                    _buffers.clear();
-                    _buffers.add(combinedBuffer);
+                    RetainableByteBuffer combined = copy(true);
+                    _buffers.add(combined);
                     _canAggregate = true;
-                    yield combinedBuffer.getByteBuffer();
+                    yield combined.getByteBuffer();
                 }
             };
         }
 
+        @Override
         public RetainableByteBuffer copy()
+        {
+            return copy(false);
+        }
+
+        private RetainableByteBuffer copy(boolean take)
         {
             int length = remaining();
             RetainableByteBuffer combinedBuffer = _pool.acquire(length, _direct);
             ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
             BufferUtil.flipToFill(byteBuffer);
             for (RetainableByteBuffer buffer : _buffers)
+            {
                 buffer.putTo(byteBuffer);
+                if (take)
+                    buffer.release();
+            }
             BufferUtil.flipToFlush(byteBuffer, 0);
+            if (take)
+                _buffers.clear();
             return combinedBuffer;
         }
 
