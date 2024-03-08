@@ -17,7 +17,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -32,7 +31,7 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
  */
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
-    private ByteBufferAccumulator accumulator;
+    private RetainableByteBuffer accumulator;
 
     /**
      * Creates a new {@link ByteBufferMessageSink}.
@@ -63,7 +62,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     {
         try
         {
-            int size = Math.addExact(accumulator == null ? 0 : Math.toIntExact(accumulator.getLength()), frame.getPayloadLength());
+            int size = Math.addExact(accumulator == null ? 0 : Math.toIntExact(accumulator.remaining()), frame.getPayloadLength());
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
             {
@@ -73,7 +72,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
 
             // If the frame is fin and no accumulator has been
             // created or used, then we don't need to aggregate.
-            if (frame.isFin() && (accumulator == null || accumulator.getLength() == 0))
+            if (frame.isFin() && (accumulator == null || accumulator.remaining() == 0))
             {
                 invoke(getMethodHandle(), frame.getPayload(), callback);
                 autoDemand();
@@ -88,12 +87,12 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             }
 
             if (accumulator == null)
-                accumulator = new ByteBufferAccumulator();
-            accumulator.addBuffer(frame.getPayload(), callback);
+                accumulator = new RetainableByteBuffer.Accumulator(getCoreSession().getByteBufferPool(), false, maxSize);
+            accumulator.append(RetainableByteBuffer.wrap(frame.getPayload(), callback::succeeded));
 
             if (frame.isFin())
             {
-                RetainableByteBuffer buffer = accumulator.toRetainableByteBuffer();
+                RetainableByteBuffer buffer = accumulator;
                 callback = Callback.from(buffer::release);
                 invoke(getMethodHandle(), buffer.getByteBuffer(), callback);
                 autoDemand();
@@ -115,7 +114,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     public void fail(Throwable failure)
     {
         if (accumulator != null)
-            accumulator.fail(failure);
+            accumulator.clear();
     }
 
     protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, Callback callback) throws Throwable
