@@ -428,7 +428,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
             _direct = direct;
-            _maxLength = maxLength < 0 ? Integer.MAX_VALUE : maxLength;
+            _maxLength = maxLength < 0 ? Long.MAX_VALUE : maxLength;
         }
 
         @Override
@@ -497,6 +497,8 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public int capacity()
         {
+            if (capacityLong() > Integer.MAX_VALUE)
+                return -1;
             return Math.toIntExact(capacityLong());
         }
 
@@ -568,6 +570,9 @@ public interface RetainableByteBuffer extends Retainable
         public boolean append(RetainableByteBuffer bytes)
         {
             int remaining = bytes.remaining();
+            if (remaining == 0)
+                return true;
+
             int length = ensureMaxLength(remaining);
 
             // If we cannot retain, then try aggregation into the last buffer
@@ -582,7 +587,6 @@ public interface RetainableByteBuffer extends Retainable
             // if the length was restricted by maxLength, or we can't retain, then copy into new buffer
             if (length < remaining || !bytes.canRetain())
             {
-
                 RetainableByteBuffer buffer = _pool.acquire(length, _direct);
                 buffer.append(bytes);
                 bytes.clear();

@@ -81,7 +81,8 @@ public class Jetty
     {
         try
         {
-            long epochMillis = Long.parseLong(timestamp);
+            long epochMillis = (StringUtil.isBlank(timestamp) || timestamp.startsWith("$"))
+                ? System.currentTimeMillis() : Long.parseLong(timestamp);
             return Instant.ofEpochMilli(epochMillis).toString();
         }
         catch (NumberFormatException e)
