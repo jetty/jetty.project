@@ -190,10 +190,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @Override
     public boolean tryExecute(Runnable task)
     {
-        if (task == null)
+        int capacity = getCapacity();
+        if (task == null || capacity == 0)
             return false;
 
-        int capacity = getCapacity();
         int index = (int)(Thread.currentThread().getId() % capacity);
         for (int i = capacity; i-- > 0;)
         {
