@@ -112,6 +112,7 @@ public class DefaultServletTest
     private Server server;
     private LocalConnector connector;
     private ServletContextHandler context;
+    HttpConfiguration httpConfiguration;
 
     @BeforeEach
     public void init() throws Exception
@@ -122,7 +123,8 @@ public class DefaultServletTest
         server = new Server();
 
         connector = new LocalConnector(server);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        httpConfiguration = connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration();
+        httpConfiguration.setSendServerVersion(false);
         Path extraJarResources = MavenPaths.findTestResourceFile(ODD_JAR);
         URL[] urls = new URL[]{extraJarResources.toUri().toURL()};
 
@@ -3039,6 +3041,7 @@ public class DefaultServletTest
     @Test
     public void testControlCharacter() throws Exception
     {
+        httpConfiguration.setUriCompliance(UriCompliance.UNSAFE);
         FS.ensureDirExists(docRoot);
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
