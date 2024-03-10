@@ -125,7 +125,7 @@ public class VirtualThreads
      * @param namePrefix the prefix to use for the name of the virtual threads
      * @return a virtual threads {@code Executor} that will name the virtual threads according to the provided name prefix.
      */
-    public static Executor getNamedVirtualThreadsExecutor(String namePrefix)
+    public static ThreadFactoryExecutor getNamedVirtualThreadsExecutor(String namePrefix)
     {
         try
         {
@@ -133,7 +133,21 @@ public class VirtualThreads
             Object threadBuilder = Thread.class.getMethod("ofVirtual").invoke(null);
             threadBuilder = builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, namePrefix, 0L);
             ThreadFactory factory = (ThreadFactory)builderClass.getMethod("factory").invoke(threadBuilder);
-            return (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
+            Executor executor =  (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
+            return new ThreadFactoryExecutor()
+            {
+                @Override
+                public void execute(Runnable command)
+                {
+                    executor.execute(command);
+                }
+
+                @Override
+                public Thread newThread(Runnable r)
+                {
+                    return factory.newThread(r);
+                }
+            };
         }
         catch (Throwable x)
         {
@@ -233,4 +247,7 @@ public class VirtualThreads
     private VirtualThreads()
     {
     }
+
+    public interface ThreadFactoryExecutor extends ThreadFactory, Executor
+    {}
 }

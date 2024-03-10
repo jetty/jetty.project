@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @ManagedObject("A thread pool")
-public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
+public class QueuedThreadPool extends ContainerLifeCycle implements ThreadPool, ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QueuedThreadPool.class);
     private static final Runnable NOOP = () ->
@@ -441,7 +441,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * @return the name of the this thread pool
+     * @return the name of this thread pool
      */
     @ManagedAttribute("name of the thread pool")
     public String getName()
@@ -452,7 +452,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     /**
      * <p>Sets the name of this thread pool, used as a prefix for the thread names.</p>
      *
-     * @param name the name of the this thread pool
+     * @param name the name of this thread pool
      */
     public void setName(String name)
     {
@@ -827,7 +827,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
         while (isStopping())
         {
-            Thread.sleep(1);
+            Thread.onSpinWait();
         }
     }
 
