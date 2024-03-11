@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -31,14 +30,13 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.commons.configuration.XMLStringConfiguration;
+import org.infinispan.commons.configuration.StringConfiguration;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 /**
@@ -129,7 +127,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
             "</cache-container>" +
             "</infinispan>", "sessions");
 
-        XMLStringConfiguration xmlConfig = new XMLStringConfiguration(xml);
+        StringConfiguration xmlConfig = new StringConfiguration(xml);
         remoteCacheManager.administration().getOrCreateCache("sessions", xmlConfig);
     }
 
