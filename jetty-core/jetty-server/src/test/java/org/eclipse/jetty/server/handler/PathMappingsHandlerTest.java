@@ -185,13 +185,14 @@ public class PathMappingsHandlerTest
     public static Stream<Arguments> pathInContextInput()
     {
         return Stream.of(
-            Arguments.of("/", "null", "null", ServletPathSpec.class.getSimpleName(), "/"),
+            Arguments.of("/", "/", "null", ServletPathSpec.class.getSimpleName(), "/"),
             Arguments.of("/foo/test", "/foo", "/test", ServletPathSpec.class.getSimpleName(), "/foo/*"),
             Arguments.of("/index.html", "/index.html", "null", ServletPathSpec.class.getSimpleName(), "/index.html"),
-            Arguments.of("/does-not-exist", "null", "null", ServletPathSpec.class.getSimpleName(), "/"),
-            Arguments.of("/deep/path/foo.php", "null", "null", ServletPathSpec.class.getSimpleName(), "*.php"),
-            Arguments.of("/re/1234/baz", "null", "null", ServletPathSpec.class.getSimpleName(), "/"),
-            Arguments.of("/re/ABC/baz", "null", "null", RegexPathSpec.class.getSimpleName(), "/re/[A-Z]*/.*"),
+            Arguments.of("/does-not-exist", "/does-not-exist", "null", ServletPathSpec.class.getSimpleName(), "/"),
+            Arguments.of("/deep/path/foo.php", "/deep/path/foo.php", "null", ServletPathSpec.class.getSimpleName(), "*.php"),
+            Arguments.of("/re/1234/baz", "/re/1234/baz", "null", ServletPathSpec.class.getSimpleName(), "/"),
+            Arguments.of("/re/ABC/baz", "/re/ABC/baz", "null", RegexPathSpec.class.getSimpleName(), "/re/[A-Z]*/.*"),
+            Arguments.of("/rest/api/users/ver-1/groupfoo/baruser", "api/users", "groupfoo/baruser", RegexPathSpec.class.getSimpleName(), "^/rest/(?<name>.*)/ver-[0-9]+/(?<info>.*)$"),
             Arguments.of("/zed/test.txt", "/zed", "/test.txt", null, null)
         );
     }
@@ -210,6 +211,7 @@ public class PathMappingsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("/foo/*"), new ContextDumpHandler());
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new ContextDumpHandler());
         pathMappingsHandler.addMapping(new RegexPathSpec("/re/[A-Z]*/.*"), new ContextDumpHandler());
+        pathMappingsHandler.addMapping(new RegexPathSpec("^/rest/(?<name>.*)/ver-[0-9]+/(?<info>.*)$"), new ContextDumpHandler());
         ContextHandler zedContext = new ContextHandler("/zed");
         zedContext.setHandler(new ContextDumpHandler());
         pathMappingsHandler.addMapping(new ServletPathSpec("/zed/*"), zedContext);

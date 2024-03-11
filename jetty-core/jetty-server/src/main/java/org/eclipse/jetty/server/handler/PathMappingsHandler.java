@@ -128,24 +128,25 @@ public class PathMappingsHandler extends Handler.AbstractContainer
     {
         private final PathSpec pathSpec;
         private final Context context;
+        private final MatchedPath matchedPath;
 
         public PathSpecRequest(Request request, PathSpec pathSpec)
         {
             super(request);
             this.pathSpec = pathSpec;
+            matchedPath = pathSpec.matched(request.getHttpURI().getCanonicalPath());
             setAttribute(PathSpec.class.getName(), this.pathSpec);
             this.context = new Context.Wrapper(request.getContext())
             {
                 @Override
                 public String getContextPath()
                 {
-                    return pathSpec.getPrefix();
+                    return matchedPath.getPathMatch();
                 }
 
                 @Override
                 public String getPathInContext(String canonicallyEncodedPath)
                 {
-                    MatchedPath matchedPath = pathSpec.matched(canonicallyEncodedPath);
                     return matchedPath.getPathInfo();
                 }
             };
