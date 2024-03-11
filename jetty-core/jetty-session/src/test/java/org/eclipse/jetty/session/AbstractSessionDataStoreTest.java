@@ -199,7 +199,8 @@ public abstract class AbstractSessionDataStoreTest
         //before serialization
         final SessionData finalData = data;
 
-        Runnable r = () -> {
+        Runnable r = () ->
+        {
             try
             {
                 store.store("aaa1", finalData);
@@ -298,7 +299,8 @@ public abstract class AbstractSessionDataStoreTest
         //before serialization
         final SessionData finalData = data;
 
-        Runnable r = () -> {
+        Runnable r = () ->
+        {
             try
             {
                 store.store("aaa3", finalData);
