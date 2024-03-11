@@ -245,6 +245,16 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables combine.children="append">
+            <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
+            <infinispan.docker.image.name>${infinispan.docker.image.name}</infinispan.docker.image.name>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

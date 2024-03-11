@@ -10,8 +10,6 @@
   <name>EE10 :: Tests :: Sessions :: Infinispan</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
-    <!-- from 10.xx it has changed to jboss/infinispan -->
-    <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
   </properties>
   <dependencies>
     <dependency>

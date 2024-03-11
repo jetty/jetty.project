@@ -57,7 +57,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     @Override
     public void startExternalSessionStorage() throws Exception
     {
-        String infinispanVersion = System.getProperty("infinispan.docker.image.version", "14.0.25.Final");
+        String infinispanVersion = System.getProperty("infinispan.docker.image.version", "15.0.0.CR1-1");
         infinispan =
                 new GenericContainer<>(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
                         ":" + infinispanVersion)
