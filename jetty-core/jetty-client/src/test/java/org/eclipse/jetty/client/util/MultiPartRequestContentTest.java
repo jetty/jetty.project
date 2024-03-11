@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
@@ -49,6 +48,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -420,7 +420,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
     private byte[] randomBytes(int length)
     {
         byte[] bytes = new byte[length];
-        ThreadLocalRandom.current().nextBytes(bytes);
+        ThreadIdCache.Random.instance().nextBytes(bytes);
         // Make sure the last 2 bytes are not \r\n,
         // otherwise the multipart parser gets confused.
         bytes[length - 2] = 0;

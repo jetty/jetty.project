@@ -14,9 +14,10 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.random.RandomGenerator;
 
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -32,7 +33,7 @@ public class SlowServerEndpoint
     @OnWebSocketMessage
     public void onMessage(Session session, String msg)
     {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+        RandomGenerator random = ThreadIdCache.Random.instance();
 
         if (msg.startsWith("send-slow|"))
         {

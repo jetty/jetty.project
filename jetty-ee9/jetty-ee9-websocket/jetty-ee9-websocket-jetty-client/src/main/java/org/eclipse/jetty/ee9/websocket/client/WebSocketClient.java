@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -45,6 +44,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -57,7 +57,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketClient.class);
     private final WebSocketCoreClient coreClient;
-    private final int id = ThreadLocalRandom.current().nextInt();
+    private final int id = ThreadIdCache.Random.instance().nextInt();
     private final JettyWebSocketFrameHandlerFactory frameHandlerFactory;
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();

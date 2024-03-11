@@ -19,8 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 
 /**
  * Fast String Utilities.
@@ -1171,7 +1172,7 @@ public class StringUtil
     {
         String source = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         return IntStream.range(0, digits)
-            .map(i -> ThreadLocalRandom.current().nextInt(source.length()))
+            .map(i -> ThreadIdCache.Random.instance().nextInt(source.length()))
             .map(source::charAt)
             .collect(StringBuilder::new, (b, c) -> b.append((char)c), StringBuilder::append)
             .toString();

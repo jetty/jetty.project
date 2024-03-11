@@ -18,11 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.random.RandomGenerator;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.BytesRequestContent;
@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -151,7 +152,7 @@ public class HttpClientLoadTest extends AbstractTest
 
     private void test(Transport transport, CountDownLatch latch, List<String> failures)
     {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+        RandomGenerator random = ThreadIdCache.Random.instance();
         // Choose a random destination
         String host;
         if (transport == Transport.H3)

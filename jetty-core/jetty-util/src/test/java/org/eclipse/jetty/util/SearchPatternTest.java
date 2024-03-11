@@ -15,8 +15,8 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ThreadLocalRandom;
 
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,7 +74,7 @@ public class SearchPatternTest
     public void testSearchInBinary()
     {
         byte[] random = new byte[8192];
-        ThreadLocalRandom.current().nextBytes(random);
+        ThreadIdCache.Random.instance().nextBytes(random);
         // Arrays.fill(random,(byte)-67);
         String preamble = "Blah blah blah";
         String epilogue = "The End! Blah Blah Blah";
@@ -93,9 +93,9 @@ public class SearchPatternTest
     public void testSearchBinaryKey()
     {
         byte[] random = new byte[8192];
-        ThreadLocalRandom.current().nextBytes(random);
+        ThreadIdCache.Random.instance().nextBytes(random);
         byte[] key = new byte[64];
-        ThreadLocalRandom.current().nextBytes(key);
+        ThreadIdCache.Random.instance().nextBytes(key);
 
         ByteBuffer data = BufferUtil.allocate(random.length + key.length);
         BufferUtil.append(data, ByteBuffer.wrap(random));

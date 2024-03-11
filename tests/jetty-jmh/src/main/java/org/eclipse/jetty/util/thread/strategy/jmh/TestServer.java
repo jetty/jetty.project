@@ -19,9 +19,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.eclipse.jetty.util.thread.TryExecutor;
 
 public class TestServer implements Executor, TryExecutor
@@ -57,7 +57,7 @@ public class TestServer implements Executor, TryExecutor
 
     public int getRandom(int max)
     {
-        return ThreadLocalRandom.current().nextInt(max);
+        return ThreadIdCache.Random.instance().nextInt(max);
     }
 
     @Override

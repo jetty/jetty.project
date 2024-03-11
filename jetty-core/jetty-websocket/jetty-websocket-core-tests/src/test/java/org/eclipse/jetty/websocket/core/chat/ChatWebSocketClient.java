@@ -17,12 +17,12 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
@@ -36,7 +36,7 @@ public class ChatWebSocketClient
     private final URI baseWebsocketUri;
     private final WebSocketCoreClient client;
     private final MessageHandler handler;
-    private String name = String.format("unknown@%x", ThreadLocalRandom.current().nextInt());
+    private String name = String.format("unknown@%x", ThreadIdCache.Random.instance().nextInt());
 
     public ChatWebSocketClient(String hostname, int port) throws Exception
     {

@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http3;
 
-import java.util.concurrent.ThreadLocalRandom;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 
 /**
  * <p>A class to support GREASE (<a href="https://www.rfc-editor.org/rfc/rfc8701.txt">RFC 8701</a>) in HTTP/3.</p>
@@ -38,7 +38,7 @@ public class Grease
     public static long generateGreaseValue()
     {
         // This constant avoids to overflow VarLenInt.
-        long n = ThreadLocalRandom.current().nextLong(0x210842108421084L);
+        long n = ThreadIdCache.Random.instance().nextLong(0x210842108421084L);
         return 0x1F * n + 0x21;
     }
 

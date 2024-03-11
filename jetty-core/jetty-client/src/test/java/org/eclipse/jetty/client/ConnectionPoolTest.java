@@ -20,9 +20,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.random.RandomGenerator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -228,7 +229,7 @@ public class ConnectionPoolTest
 
     private void test(List<Throwable> failures)
     {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+        RandomGenerator random = ThreadIdCache.Random.instance();
         // Choose a random method.
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
 

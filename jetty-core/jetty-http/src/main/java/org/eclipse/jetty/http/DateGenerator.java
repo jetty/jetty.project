@@ -50,7 +50,7 @@ public class DateGenerator
      */
     public static String formatDate(long date)
     {
-        return __dateGenerator.with(DateGenerator::new, DateGenerator::doFormatDate, date);
+        return __dateGenerator.useWith(DateGenerator::new, DateGenerator::doFormatDate, date);
     }
 
     /**

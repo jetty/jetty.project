@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -295,7 +295,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         RetainedBucket[] buckets = direct ? _direct : _indirect;
         int length = buckets.length;
-        int index = ThreadLocalRandom.current().nextInt(length);
+        int index = ThreadIdCache.Random.instance().nextInt(length);
         for (int c = 0; c < length; ++c)
         {
             RetainedBucket bucket = buckets[index++];

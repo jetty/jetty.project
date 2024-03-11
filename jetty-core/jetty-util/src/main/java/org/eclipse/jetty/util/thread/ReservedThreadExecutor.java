@@ -242,7 +242,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         // shrink if we are already removed or there are other reserved threads.
                         // There is a small chance multiple threads
                         // will iterate at the same time and we will hit 0, but that is not a huge problem.
-                        if (getAvailable() >= 2 && _threads.remove(this, slot))
+                        if (getAvailable() >= 2 && _threads.take(this, slot))
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("{} reservedThread shrank {}", ReservedThreadExecutor.this, this);

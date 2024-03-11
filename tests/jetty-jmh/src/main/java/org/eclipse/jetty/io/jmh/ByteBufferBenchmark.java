@@ -14,9 +14,9 @@
 package org.eclipse.jetty.io.jmh;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -41,9 +41,9 @@ public class ByteBufferBenchmark
         buffer.clear();
         while (buffer.hasRemaining())
         {
-            int size = ThreadLocalRandom.current().nextInt(1024);
+            int size = ThreadIdCache.Random.instance().nextInt(1024);
             byte[] bytes = new byte[size];
-            ThreadLocalRandom.current().nextBytes(bytes);
+            ThreadIdCache.Random.instance().nextBytes(bytes);
             buffer.put(bytes, 0, Math.min(bytes.length, buffer.remaining()));
         }
 
@@ -66,9 +66,9 @@ public class ByteBufferBenchmark
         int end = offset + buffer.remaining();
         while (offset < end)
         {
-            int size = ThreadLocalRandom.current().nextInt(1024);
+            int size = ThreadIdCache.Random.instance().nextInt(1024);
             byte[] bytes = new byte[size];
-            ThreadLocalRandom.current().nextBytes(bytes);
+            ThreadIdCache.Random.instance().nextBytes(bytes);
             System.arraycopy(bytes, 0, array, offset, Math.min(bytes.length, end - offset));
             offset += bytes.length;
         }

@@ -49,7 +49,7 @@ public class DateParser
 
     public static long parseDate(String date)
     {
-        return DATE_PARSER.with(DateParser::new, DateParser::parse, date);
+        return DATE_PARSER.useWith(DateParser::new, DateParser::parse, date);
     }
 
     private static final ThreadIdCache<DateParser> DATE_PARSER = new ThreadIdCache<>();

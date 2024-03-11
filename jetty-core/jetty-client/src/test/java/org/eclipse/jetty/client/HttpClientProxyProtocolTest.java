@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpHeader;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -108,7 +108,7 @@ public class HttpClientProxyProtocolTest
 
         int serverPort = connector.getLocalPort();
 
-        int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
+        int clientPort = ThreadIdCache.Random.instance().nextInt(1024, 65536);
         V1.Tag tag = new V1.Tag("127.0.0.1", clientPort);
 
         ContentResponse response = client.newRequest("localhost", serverPort)
@@ -147,7 +147,7 @@ public class HttpClientProxyProtocolTest
 
         int serverPort = connector.getLocalPort();
 
-        int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
+        int clientPort = ThreadIdCache.Random.instance().nextInt(1024, 65536);
         V2.Tag tag = new V2.Tag("127.0.0.1", clientPort);
 
         ContentResponse response = client.newRequest("localhost", serverPort)
@@ -197,7 +197,7 @@ public class HttpClientProxyProtocolTest
 
         int serverPort = connector.getLocalPort();
 
-        int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
+        int clientPort = ThreadIdCache.Random.instance().nextInt(1024, 65536);
         byte[] dataTLS = new byte[1 + 4 + (1 + 2 + tlsVersionBytes.length)];
         dataTLS[0] = 0x01; // CLIENT_SSL
         dataTLS[5] = 0x21; // SUBTYPE_SSL_VERSION
@@ -250,7 +250,7 @@ public class HttpClientProxyProtocolTest
         // The server is configured with the PROXY protocol to know the socket address of clients.
 
         // The proxy receives a request from the client, and it extracts the client address.
-        int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
+        int clientPort = ThreadIdCache.Random.instance().nextInt(1024, 65536);
         V1.Tag tag = new V1.Tag("127.0.0.1", clientPort);
 
         // The proxy maps the client address, then sends the request.

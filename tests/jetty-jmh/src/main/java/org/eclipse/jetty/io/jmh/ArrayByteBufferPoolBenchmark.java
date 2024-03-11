@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.io.jmh;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -88,7 +87,7 @@ public class ArrayByteBufferPoolBenchmark
         RetainableByteBuffer input = pool.acquire(61440, true);
 
         // Simulate a write of random size from the application.
-        int capacity = ThreadLocalRandom.current().nextInt(minCapacity, maxCapacity);
+        int capacity = ThreadIdCache.Random.instance().nextInt(minCapacity, maxCapacity);
         RetainableByteBuffer output = pool.acquire(capacity, true);
 
         output.release();
@@ -116,9 +115,9 @@ public class ArrayByteBufferPoolBenchmark
         // Simulate a change in buffer sizes after half of the iterations.
         int capacity;
         if (iterations <= 15)
-            capacity = ThreadLocalRandom.current().nextInt(minCapacity, maxCapacity / 2);
+            capacity = ThreadIdCache.Random.instance().nextInt(minCapacity, maxCapacity / 2);
         else
-            capacity = ThreadLocalRandom.current().nextInt(maxCapacity / 2, maxCapacity);
+            capacity = ThreadIdCache.Random.instance().nextInt(maxCapacity / 2, maxCapacity);
         RetainableByteBuffer output = pool.acquire(capacity, true);
 
         output.release();
