@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,7 +177,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
-    private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
+    private static final ThreadIdCache<CharsetEncoder> _encoder = new ThreadIdCache<>();
 
     private final HttpChannel _channel;
     private final HttpChannelState _channelState;
@@ -1069,13 +1070,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         s = String.valueOf(s);
 
         String charset = _channel.getResponse().getCharacterEncoding();
-        CharsetEncoder encoder = _encoder.get();
+        CharsetEncoder encoder = _encoder.take();
         if (encoder == null || !encoder.charset().name().equalsIgnoreCase(charset))
         {
             encoder = Charset.forName(charset).newEncoder();
             encoder.onMalformedInput(CodingErrorAction.REPLACE);
             encoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
-            _encoder.set(encoder);
         }
         else
         {
@@ -1136,6 +1136,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         finally
         {
             out.release();
+            encoder.reset();
+            _encoder.give(encoder);
         }
     }
 

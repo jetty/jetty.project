@@ -19,6 +19,7 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.ThreadIdCache;
 
 /**
  * ThreadLocal Date formatters for HTTP style dates.
@@ -37,14 +38,7 @@ public class DateGenerator
     static final String[] MONTHS =
         {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"};
 
-    private static final ThreadLocal<DateGenerator> __dateGenerator = new ThreadLocal<DateGenerator>()
-    {
-        @Override
-        protected DateGenerator initialValue()
-        {
-            return new DateGenerator();
-        }
-    };
+    private static final ThreadIdCache<DateGenerator> __dateGenerator = new ThreadIdCache<>();
 
     public static final String __01Jan1970 = DateGenerator.formatDate(0);
 
@@ -56,7 +50,7 @@ public class DateGenerator
      */
     public static String formatDate(long date)
     {
-        return __dateGenerator.get().doFormatDate(date);
+        return __dateGenerator.with(DateGenerator::new, DateGenerator::doFormatDate, date);
     }
 
     /**
