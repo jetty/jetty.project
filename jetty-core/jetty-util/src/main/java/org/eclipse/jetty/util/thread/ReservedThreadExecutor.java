@@ -173,7 +173,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         if (task == null || capacity == 0)
             return false;
 
-        ReservedThread reserved = _threads.get();;
+        ReservedThread reserved = _threads.take();;
         if (reserved != null)
             return reserved.wakeup(task);
 
