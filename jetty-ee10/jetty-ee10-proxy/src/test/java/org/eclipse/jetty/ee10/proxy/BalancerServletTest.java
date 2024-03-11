@@ -177,11 +177,11 @@ public class BalancerServletTest
         rewrite.addRule(new VirtualHostRuleContainer());
         balancer.start();
 
-        ContentResponse response = getBalancedResponse("/test/%0A");
+        ContentResponse response = getBalancedResponse("/test/%22foo%22");
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getContentAsString(), containsString("requestURI='/context/mapping/test/%0A'"));
+        assertThat(response.getContentAsString(), containsString("requestURI='/context/mapping/test/%22foo%22'"));
         assertThat(response.getContentAsString(), containsString("servletPath='/mapping'"));
-        assertThat(response.getContentAsString(), containsString("pathInfo='/test/\n'"));
+        assertThat(response.getContentAsString(), containsString("pathInfo='/test/\"foo\"'"));
     }
 
     private String readFirstLine(byte[] responseBytes) throws IOException
