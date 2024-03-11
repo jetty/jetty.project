@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -66,7 +67,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndIdleTimeoutListener")
-    @Disabled("Flaky")
+    @Tag("Flaky")
     public void testIdleTimeout(Transport transport, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
@@ -96,6 +97,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndIdleTimeoutListener")
+    @Tag("Flaky")
     public void testIdleTimeoutWithDemand(Transport transport, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
