@@ -16,12 +16,10 @@ package org.eclipse.jetty.http;
 import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.http.UriCompliance.Violation;
@@ -555,7 +553,7 @@ public interface HttpURI
          * Encoded character sequences that violate the Servlet 6.0 spec
          * https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization
          */
-        private static final Index<Boolean> __suspiciousPathSequences;
+        private static final boolean[] __suspiciousPathCharacters;
 
         /**
          * Unencoded US-ASCII character sequences not allowed by HTTP or URI specs in path segments.
@@ -615,21 +613,14 @@ public interface HttpURI
             __illegalPathCharacters = illegalChars;
             // anything else in the US-ASCII space is not allowed
 
-            // suspicious path sequences
-            Index.Builder<Boolean> suspiciousSequencesBuilder = new Index.Builder<Boolean>();
-            suspiciousSequencesBuilder.caseSensitive(false);
-            List<Byte> suspiciousChars = new ArrayList<>();
-            suspiciousChars.add((byte)'\\'); // backslash
-            suspiciousChars.add((byte)0x7F); // DEL
+            // suspicious path characters
+            boolean[] suspicious = new boolean[128];
+            Arrays.fill(suspicious, false);
+            suspicious['\\'] = true;
+            suspicious[0x7F] = true;
             for (int i = 0; i <= 0x1F; i++)
-                suspiciousChars.add((byte)i);
-            suspiciousChars.forEach(b ->
-            {
-                suspiciousSequencesBuilder.with(Character.toString(b), Boolean.TRUE);
-                suspiciousSequencesBuilder.with(String.format("%%%02x", b), Boolean.TRUE);
-                suspiciousSequencesBuilder.with(String.format("%%u00%02x", b), Boolean.TRUE);
-            });
-            __suspiciousPathSequences = suspiciousSequencesBuilder.build();
+                suspicious[i] = true;
+            __suspiciousPathCharacters = suspicious;
         }
 
         private String _scheme;
@@ -981,19 +972,16 @@ public interface HttpURI
             _uri = null;
             _path = null;
             _canonicalPath = null;
-            // eliminate current _param if provided here
-            if (path.indexOf(';') >= 0)
-                _param = null;
+            String param = _param;
+            _param = null;
             parse(State.PATH, path);
 
             // If the passed path does not have a parameter, then keep the current parameter
             // else delete the current parameter
-            if (_param != null)
+            if (param != null && path.indexOf(';') < 0)
             {
-                if (path.indexOf(';') >= 0)
-                    _param = null;
-                else
-                    _path = _path + ';' + _param;
+                _param = param;
+                _path = _path + ';' + _param;
             }
 
             return this;
@@ -1107,7 +1095,6 @@ public interface HttpURI
         {
             int mark = 0; // the start of the current section being parsed
             int pathMark = 0; // the start of the path section
-            int paramMark = -1; // the start of the path parameters
             int segment = 0; // the start of the current segment within the path
             boolean encodedPath = false; // set to true if the path contains % encoded characters
             boolean encodedUtf16 = false; // Is the current encoding for UTF16?
@@ -1131,21 +1118,20 @@ public interface HttpURI
                                 state = State.HOST_OR_PATH;
                                 break;
                             case ';':
-                                checkSegment(uri, segment, i, true);
-                                paramMark = i;
+                                checkSegment(uri, false, segment, i, true);
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
                                 // assume empty path (if seen at start)
-                                checkSegment(uri, segment, i, false);
+                                checkSegment(uri, false, segment, i, false);
                                 _path = "";
                                 mark = i + 1;
                                 state = State.QUERY;
                                 break;
                             case '#':
                                 // assume empty path (if seen at start)
-                                checkSegment(uri, segment, i, false);
+                                checkSegment(uri, false, segment, i, false);
                                 _path = "";
                                 mark = i + 1;
                                 state = State.FRAGMENT;
@@ -1197,12 +1183,12 @@ public interface HttpURI
                                 break;
                             case ';':
                                 // must have been in a path
-                                paramMark = i;
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
                                 // must have been in a path
+                                checkSegment(uri, false, segment, i, false);
                                 _path = uri.substring(mark, i);
                                 mark = i + 1;
                                 state = State.QUERY;
@@ -1357,6 +1343,8 @@ public interface HttpURI
                                         addViolation(Violation.AMBIGUOUS_PATH_ENCODING);
                                         break;
                                     default:
+                                        if (encodedValue < __suspiciousPathCharacters.length && __suspiciousPathCharacters[encodedValue])
+                                            addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
                                         break;
                                 }
                             }
@@ -1366,19 +1354,18 @@ public interface HttpURI
                             switch (c)
                             {
                                 case ';':
-                                    checkSegment(uri, segment, i, true);
-                                    paramMark = i;
+                                    checkSegment(uri, dot || encodedPath, segment, i, true);
                                     mark = i + 1;
                                     state = State.PARAM;
                                     break;
                                 case '?':
-                                    checkSegment(uri, segment, i, false);
+                                    checkSegment(uri, dot || encodedPath, segment, i, false);
                                     _path = uri.substring(pathMark, i);
                                     mark = i + 1;
                                     state = State.QUERY;
                                     break;
                                 case '#':
-                                    checkSegment(uri, segment, i, false);
+                                    checkSegment(uri, dot || encodedPath, segment, i, false);
                                     _path = uri.substring(pathMark, i);
                                     mark = i + 1;
                                     state = State.FRAGMENT;
@@ -1386,7 +1373,7 @@ public interface HttpURI
                                 case '/':
                                     // There is no leading segment when parsing only a path that starts with slash.
                                     if (i != 0)
-                                        checkSegment(uri, segment, i, false);
+                                        checkSegment(uri, dot || encodedPath, segment, i, false);
                                     segment = i + 1;
                                     break;
                                 case '.':
@@ -1399,6 +1386,11 @@ public interface HttpURI
                                     encodedValue = 0;
                                     break;
                                 default:
+                                    // The RFC does not allow unencoded path characters that are outside the ABNF
+                                    if (c > __illegalPathCharacters.length || __illegalPathCharacters[c])
+                                        addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
+                                    if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
+                                       addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
                                     break;
                             }
                         }
@@ -1464,7 +1456,7 @@ public interface HttpURI
             {
                 case START:
                     _path = "";
-                    checkSegment(uri, segment, end, false);
+                    checkSegment(uri, false, segment, end, false);
                     break;
                 case ASTERISK:
                     break;
@@ -1486,7 +1478,7 @@ public interface HttpURI
                     _param = uri.substring(mark, end);
                     break;
                 case PATH:
-                    checkSegment(uri, segment, end, false);
+                    checkSegment(uri, dot || encodedPath, segment, end, false);
                     _path = uri.substring(pathMark, end);
                     break;
                 case QUERY:
@@ -1501,10 +1493,10 @@ public interface HttpURI
 
             if (!encodedPath && !dot)
             {
-                if (_param == null || paramMark < 0)
+                if (_param == null)
                     _canonicalPath = _path;
                 else
-                    _canonicalPath = _path.substring(0, paramMark - pathMark);
+                    _canonicalPath = _path.substring(0, _path.length() - _param.length() - 1);
             }
             else if (_path != null)
             {
@@ -1530,10 +1522,11 @@ public interface HttpURI
          * due to possible ambiguity.  Examples include segments like '..;', '%2e', '%2e%2e' etc.
          *
          * @param uri The URI string
+         * @param dotOrEncoded true if the URI might contain dot segments
          * @param segment The inclusive starting index of the segment (excluding any '/')
          * @param end The exclusive end index of the segment
          */
-        private void checkSegment(String uri, int segment, int end, boolean param)
+        private void checkSegment(String uri, boolean dotOrEncoded, int segment, int end, boolean param)
         {
             // This method is called once for every segment parsed.
             // A URI like "/foo/" has two segments: "foo" and an empty segment.
@@ -1556,7 +1549,7 @@ public interface HttpURI
                     return;
                 }
 
-                // Otherwise remember we have seen an empty segment, which is check if we see a subsequent segment.
+                // Otherwise remember we have seen an empty segment, which is checked if we see a subsequent segment.
                 if (!_emptySegment)
                 {
                     _emptySegment = true;
@@ -1565,7 +1558,7 @@ public interface HttpURI
             }
 
             // Look for segment in the ambiguous segment index.
-            Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
+            Boolean ambiguous = dotOrEncoded ? __ambiguousSegments.get(uri, segment, end - segment) : null;
             if (ambiguous != null)
             {
                 // The segment is always ambiguous.
@@ -1574,22 +1567,6 @@ public interface HttpURI
                 // The segment is ambiguous only when followed by a parameter.
                 if (param)
                     addViolation(Violation.AMBIGUOUS_PATH_PARAMETER);
-            }
-
-            for (int i = segment; i < end; i++)
-            {
-                char c = uri.charAt(i);
-                // The RFC does not allow unencoded path characters that are outside the ABNF
-                if (c > __illegalPathCharacters.length || __illegalPathCharacters[c])
-                    addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
-                // Look for suspicious sequences
-                Boolean suspicious = __suspiciousPathSequences.getBest(uri, i, end - i);
-                if (suspicious != null)
-                {
-                    // The segment is suspicious.
-                    if (Boolean.TRUE.equals(suspicious))
-                        addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
-                }
             }
         }
 
