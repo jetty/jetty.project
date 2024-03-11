@@ -26,15 +26,12 @@ import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitia
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.eclipse.jetty.util.IO;
-import org.hibernate.search.cfg.Environment;
-import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.commons.configuration.StringConfiguration;
-import org.infinispan.commons.configuration.XMLStringConfiguration;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,15 +75,7 @@ public class RemoteInfinispanTestSupport
 
         // setup instance
         {
-
-            SearchMapping mapping = new SearchMapping();
-            mapping.entity(InfinispanSessionData.class).indexed().providedId()
-                    .property("expiry", ElementType.METHOD).field();
-
-            Properties properties = new Properties();
-            properties.put(Environment.MODEL_MAPPING, mapping);
-
-            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
+            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
                     .addServer()
                     .host(infinispan.getHost())
                     .port(infinispan.getMappedPort(11222))
