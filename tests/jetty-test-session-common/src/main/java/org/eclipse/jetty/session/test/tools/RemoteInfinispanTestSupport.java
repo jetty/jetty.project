@@ -33,6 +33,7 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
+import org.infinispan.commons.configuration.StringConfiguration;
 import org.infinispan.commons.configuration.XMLStringConfiguration;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.slf4j.Logger;
@@ -139,7 +140,7 @@ public class RemoteInfinispanTestSupport
                 "</cache-container>" +
                 "</infinispan>", _name);
 
-        XMLStringConfiguration xmlConfig = new XMLStringConfiguration(xml);
+        StringConfiguration xmlConfig = new StringConfiguration(xml);
         _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 
