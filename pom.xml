@@ -189,6 +189,7 @@
     <h2spec.maven.plugin.version>1.0.11</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hazelcast.version>5.3.6</hazelcast.version>
+    <hibernate.search.version>7.1.0.Final</hibernate.search.version>
     <infinispan.docker.image.version>15.0.0.CR1-1</infinispan.docker.image.version>
     <infinispan.protostream.version>5.0.0.CR2</infinispan.protostream.version>
     <infinispan.version>15.0.0.CR1</infinispan.version>
@@ -234,6 +235,7 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.23.0</log4j2.version>
     <logback.version>1.5.1</logback.version>
+    <lucene.version>9.9.2</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.3.3</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
@@ -316,6 +318,13 @@
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.hibernate.search</groupId>
+        <artifactId>hibernate-search-bom</artifactId>
+        <version>${hibernate.search.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
