@@ -28,6 +28,7 @@ import org.infinispan.configuration.cache.ConfigurationChildBuilder;
 import org.infinispan.configuration.cache.IndexStorage;
 import org.infinispan.configuration.cache.StorageType;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
+import org.infinispan.eviction.EvictionStrategy;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 
@@ -104,16 +105,16 @@ public class InfinispanTestSupport
                 .enable()
                 .addIndexedEntity(InfinispanSessionData.class)
                 .storage(IndexStorage.FILESYSTEM)
-                .path(tmpdir.toFile().getAbsolutePath());
-                //.memory()
-                //.whenFull(EvictionStrategy.NONE)
-                //.persistence();
-//            if (_serializeSessionData)
-//            {
-//                b = b.memory().storage(StorageType.HEAP)
-//                    .encoding()
-//                    .mediaType("application/x-protostream");
-//            }
+                .path(tmpdir.toFile().getAbsolutePath())
+                .memory()
+                .whenFull(EvictionStrategy.NONE)
+                .persistence();
+            if (_serializeSessionData)
+            {
+                b = b.memory().storage(StorageType.HEAP)
+                    .encoding()
+                    .mediaType("application/x-protostream");
+            }
             _manager.defineConfiguration(_name, b.build());
         }
         else
