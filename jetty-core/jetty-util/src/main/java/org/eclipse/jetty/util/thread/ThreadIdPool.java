@@ -76,7 +76,7 @@ public class ThreadIdPool<E> implements Dumpable
     public int size()
     {
         int available = 0;
-        for (int i = _items.length(); i-- > 0; )
+        for (int i = 0; i < _items.length(); i++)
             if (_items.getPlain(i) != null)
                 available++;
         return available;
@@ -94,7 +94,7 @@ public class ThreadIdPool<E> implements Dumpable
         if (capacity > 0)
         {
             int index = (int)(Thread.currentThread().getId() % capacity);
-            for (int i = capacity; i-- > 0; )
+            for (int i = 0; i < capacity; i++)
             {
                 if (_items.compareAndSet(index, null, e))
                     return index;
@@ -115,7 +115,7 @@ public class ThreadIdPool<E> implements Dumpable
         if (capacity == 0)
             return null;
         int index = (int)(Thread.currentThread().getId() % capacity);
-        for (int i = capacity; i-- > 0;)
+        for (int i = 0; i < capacity; i++)
         {
             E e = _items.getAndSet(index, null);
             if (e != null)
@@ -143,8 +143,9 @@ public class ThreadIdPool<E> implements Dumpable
      */
     public List<E> removeAll()
     {
-        List<E> all = new ArrayList<>(capacity());
-        for (int i = capacity(); i-- > 0;)
+        int capacity = capacity();
+        List<E> all = new ArrayList<>(capacity);
+        for (int i = 0; i < capacity; i++)
         {
             E e = _items.getAndSet(i, null);
             if (e != null)
