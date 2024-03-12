@@ -43,16 +43,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.eclipse.jetty.util.AtomicBiInteger.getHi;
 import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
 
-/**
- * <p>A TryExecutor using pre-allocated/reserved threads from an external Executor.</p>
- * <p>Calls to {@link #tryExecute(Runnable)} on ReservedThreadExecutor will either
- * succeed with a reserved thread immediately being assigned the task, or fail if
- * no reserved thread is available.</p>
- * <p>Threads are reserved lazily, with new reserved threads being allocated from the external
- * {@link Executor} passed to the constructor. Whenever 1 or more reserved threads have been
- * idle for more than {@link #getIdleTimeoutMs()} then one reserved thread will return to
- * the external Executor.</p>
- */
+@Deprecated(forRemoval = true)
 @ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutorOLD extends AbstractLifeCycle implements TryExecutor, Dumpable
 {
