@@ -15,10 +15,10 @@ package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.random.RandomGenerator;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -129,7 +128,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
 
     private boolean test(Session session, CountDownLatch latch) throws Exception
     {
-        RandomGenerator random = ThreadIdCache.Random.instance();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         // Choose a random method
         boolean download = random.nextBoolean();
         HttpMethod method = download ? HttpMethod.GET : HttpMethod.POST;

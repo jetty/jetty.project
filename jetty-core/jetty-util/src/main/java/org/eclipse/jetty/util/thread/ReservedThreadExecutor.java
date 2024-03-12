@@ -44,7 +44,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutor.class);
 
     private final Executor _executor;
-    private final ThreadIdCache<ReservedThread> _threads;
+    private final ThreadIdPool<ReservedThread> _threads;
     private ThreadPoolBudget.Lease _lease;
     private long _idleTimeoutMs;
 
@@ -57,7 +57,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public ReservedThreadExecutor(Executor executor, int capacity)
     {
         _executor = executor;
-        _threads = new ThreadIdCache<>(reservedThreads(executor, capacity));
+        _threads = new ThreadIdPool<>(reservedThreads(executor, capacity));
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
     }
@@ -149,9 +149,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
         super.doStop();
 
-        _threads.takeAll().forEach(ReservedThread::stop);
+        _threads.removeAll().forEach(ReservedThread::stop);
         Thread.yield();
-        _threads.takeAll().forEach(ReservedThread::stop);
+        _threads.removeAll().forEach(ReservedThread::stop);
     }
 
     @Override
@@ -169,11 +169,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @Override
     public boolean tryExecute(Runnable task)
     {
-        int capacity = getCapacity();
-        if (task == null || capacity == 0)
+        if (task == null)
             return false;
 
-        ReservedThread reserved = _threads.take();;
+        ReservedThread reserved = _threads.take();
         if (reserved != null)
             return reserved.wakeup(task);
 
@@ -227,7 +226,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 while (isRunning())
                 {
-                    int slot = _threads.give(this);
+                    int slot = _threads.offer(this);
 
                     if (slot < 0)
                         // no slot available
@@ -242,7 +241,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                         // shrink if we are already removed or there are other reserved threads.
                         // There is a small chance multiple threads
                         // will iterate at the same time and we will hit 0, but that is not a huge problem.
-                        if (getAvailable() >= 2 && _threads.take(this, slot))
+                        if (getAvailable() >= 2 && _threads.remove(this, slot))
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("{} reservedThread shrank {}", ReservedThreadExecutor.this, this);

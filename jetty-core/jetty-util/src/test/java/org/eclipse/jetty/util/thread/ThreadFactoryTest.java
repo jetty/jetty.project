@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -43,7 +44,7 @@ public class ThreadFactoryTest
             {
                 qtp.execute(() -> multiException.callAndCatch(() ->
                 {
-                    TimeUnit.MILLISECONDS.sleep(ThreadIdCache.Random.instance().nextInt(20, 500));
+                    TimeUnit.MILLISECONDS.sleep(ThreadLocalRandom.current().nextInt(20, 500));
                     Thread thread = Thread.currentThread();
 
                     if (!thread.getName().startsWith("My-"))

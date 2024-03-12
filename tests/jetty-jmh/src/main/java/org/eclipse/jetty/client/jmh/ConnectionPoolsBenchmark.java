@@ -87,7 +87,7 @@ public class ConnectionPoolsBenchmark
         Connection connection = pool.acquire(true);
         if (connection == null && !POOL_TYPE.equals("round-robin"))
             throw new AssertionError("from thread " + Thread.currentThread().getName());
-        Blackhole.consumeCPU(ThreadIdCache.Random.instance().nextInt(10, 20));
+        Blackhole.consumeCPU(ThreadLocalRandom.current().nextInt(10, 20));
         if (connection != null)
             pool.release(connection);
     }

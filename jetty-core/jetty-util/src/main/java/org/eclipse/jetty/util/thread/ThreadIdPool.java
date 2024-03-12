@@ -16,39 +16,39 @@ package org.eclipse.jetty.util.thread;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.random.RandomGenerator;
 
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A fixed sized cache of items that uses ThreadId to avoid contention.
- * This class can be used, instead of a {@link ThreadLocal}, when caching items
+ * A fixed sized pool of items that uses ThreadId to avoid contention.
+ * This class can be used, instead of a {@link ThreadLocal}, when pooling items
  * that are expensive to create, but only used briefly in the scope of a single thread.
- * It is safe to use with {@link org.eclipse.jetty.util.VirtualThreads}, as unlike a {@link ThreadLocal} cache,
+ * It is safe to use with {@link org.eclipse.jetty.util.VirtualThreads}, as unlike a {@link ThreadLocal} pool,
  * the number of items is limited.
+ * <p>This is a light-weight version of {@link org.eclipse.jetty.util.ConcurrentPool} that is best used
+ * when items do not reserve an index in the pool even when acquired.
+ * @see org.eclipse.jetty.util.ConcurrentPool
  */
-public class ThreadIdCache<E> implements Dumpable
+public class ThreadIdPool<E> implements Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ThreadIdCache.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ThreadIdPool.class);
 
     private final AtomicReferenceArray<E> _items;
 
-    public ThreadIdCache()
+    public ThreadIdPool()
     {
         this(-1);
     }
 
-    public ThreadIdCache(int capacity)
+    public ThreadIdPool(int capacity)
     {
         _items = new AtomicReferenceArray<>(calcCapacity(capacity));
         if (LOG.isDebugEnabled())
@@ -77,38 +77,43 @@ public class ThreadIdCache<E> implements Dumpable
     {
         int available = 0;
         for (int i = _items.length(); i-- > 0; )
-            if (_items.get(i) != null)
+            if (_items.getPlain(i) != null)
                 available++;
         return available;
     }
 
     /**
-     * Give an item to the cache.
-     * @param e The item to give
+     * Offer an item to the pool.
+     * @param e The item to offer
      * @return The index the item was added at or -1, if it was not added
-     * @see #take(Object, int) 
+     * @see #remove(Object, int) 
      */
-    public int give(E e)
+    public int offer(E e)
     {
         int capacity = capacity();
-        int index = (int)(Thread.currentThread().getId() % capacity);
-        for (int i = capacity; i-- > 0; )
+        if (capacity > 0)
         {
-            if (_items.compareAndSet(index, null, e))
-                return index;
-            if (++index == capacity)
-                index = 0;
+            int index = (int)(Thread.currentThread().getId() % capacity);
+            for (int i = capacity; i-- > 0; )
+            {
+                if (_items.compareAndSet(index, null, e))
+                    return index;
+                if (++index == capacity)
+                    index = 0;
+            }
         }
         return -1;
     }
 
     /**
-     * Take an item from the cache.
+     * Take an item from the pool.
      * @return The taken item or null if none available.
      */
     public E take()
     {
         int capacity = capacity();
+        if (capacity == 0)
+            return null;
         int index = (int)(Thread.currentThread().getId() % capacity);
         for (int i = capacity; i-- > 0;)
         {
@@ -122,21 +127,21 @@ public class ThreadIdCache<E> implements Dumpable
     }
 
     /**
-     * Take a specific item from the cache 
+     * Remove a specific item from the pool from a specific index 
      * @param e The item to take
-     * @param index The index the item was given to, as returned by {@link #give(Object)}
-     * @return {@code True} if the item was in the cache and was able to be removed.
+     * @param index The index the item was given to, as returned by {@link #offer(Object)}
+     * @return {@code True} if the item was in the pool and was able to be removed.
      */
-    public boolean take(E e, int index)
+    public boolean remove(E e, int index)
     {
         return _items.compareAndSet(index, e, null);
     }
 
     /**
-     * Take all items from the cache.
+     * Take all items from the pool.
      * @return A list of all taken items
      */
-    public List<E> takeAll()
+    public List<E> removeAll()
     {
         List<E> all = new ArrayList<>(capacity());
         for (int i = capacity(); i-- > 0;)
@@ -149,41 +154,41 @@ public class ThreadIdCache<E> implements Dumpable
     }
 
     /**
-     * Get an item, either by {@link #take() taking} it from the cache or from the passed supplier (which may
+     * Take an item with a {@link #take()} operation, else if that returns null then use the {@code supplier} (which may
      * construct a new instance).
-     * @param supplier The supplier for an item to be used if an item cannot be taken from the cache.
+     * @param supplier The supplier for an item to be used if an item cannot be taken from the pool.
      * @return An item, never null.
      */
-    public E get(Supplier<E> supplier)
+    public E takeOrElse(Supplier<E> supplier)
     {
         E e = take();
         return e == null ? supplier.get() : e;
     }
 
     /**
-     * Use an item, either from the cache or supplier, with a function, then give it back to the cache.
-     * @param supplier The supplier for an item to be used if an item cannot be taken from the cache.
+     * Apply an item, either from the pool or supplier, to a function, then give it back to the pool.
+     * @param supplier The supplier for an item to be used if an item cannot be taken from the pool.
      * @param function A function producing a result from an item.  This may be
      *                 a method reference to a method on the item taking no arguments and producing a result.
      * @param <R> The type of the function return
      * @return Te result of the function applied to the item and the argument
      */
-    public <R> R useWith(Supplier<E> supplier, Function<E, R> function)
+    public <R> R apply(Supplier<E> supplier, Function<E, R> function)
     {
-        E e = get(supplier);
+        E e = takeOrElse(supplier);
         try
         {
             return function.apply(e);
         }
         finally
         {
-            give(e);
+            offer(e);
         }
     }
 
     /**
-     * Use an item, either from the cache or supplier, with a function, then give it back to the cache.
-     * @param supplier The supplier for an item to be used if an item cannot be taken from the cache.
+     * Apply an item, either from the pool or supplier, to a function, then give it back to the pool.
+     * @param supplier The supplier for an item to be used if an item cannot be taken from the pool.
      * @param function A function producing a result from an item and an argument.  This may be
      *                 a method reference to a method on the item taking an argument and producing a result.
      * @param argument The argument to pass to the function.
@@ -191,16 +196,16 @@ public class ThreadIdCache<E> implements Dumpable
      * @param <R> The type of the function return
      * @return Te result of the function applied to the item and the argument
      */
-    public <A, R> R useWith(Supplier<E> supplier, BiFunction<E, A, R> function, A argument)
+    public <A, R> R apply(Supplier<E> supplier, BiFunction<E, A, R> function, A argument)
     {
-        E e = get(supplier);
+        E e = takeOrElse(supplier);
         try
         {
             return function.apply(e, argument);
         }
         finally
         {
-            give(e);
+            offer(e);
         }
     }
 
@@ -221,40 +226,5 @@ public class ThreadIdCache<E> implements Dumpable
             getClass().getSimpleName(),
             hashCode(),
             capacity());
-    }
-
-    /**
-     * A replacement for {@link java.util.concurrent.ThreadLocalRandom} based on an internal
-     * {@link ThreadIdCache}, so it is safe to use with unlimited {@link org.eclipse.jetty.util.VirtualThreads}.
-     * Calls like {@code ThreadIdCache.Random.instance().nextInt()} can be replaced with
-     * {@code ThreadIdCache.Random.instance().nextInt()}.
-     */
-    public static class Random implements RandomGenerator
-    {
-        private static final Random INSTANCE = new Random();
-
-        public static RandomGenerator instance()
-        {
-            return INSTANCE;
-        }
-
-        public static RandomGenerator threadLocalOrInstance()
-        {
-            if (!VirtualThreads.isVirtualThread())
-                return ThreadLocalRandom.current();
-            return INSTANCE;
-        }
-
-        private final ThreadIdCache<java.util.Random> _cache = new ThreadIdCache<>();
-
-        private Random()
-        {
-        }
-
-        @Override
-        public long nextLong()
-        {
-            return _cache.useWith(java.util.Random::new, java.util.Random::nextLong);
-        }
     }
 }

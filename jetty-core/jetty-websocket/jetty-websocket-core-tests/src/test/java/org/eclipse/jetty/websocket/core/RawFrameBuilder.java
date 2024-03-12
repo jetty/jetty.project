@@ -122,7 +122,7 @@ public class RawFrameBuilder
         if (masked)
         {
             byte[] mask = new byte[4];
-            // ThreadIdCache.Random.instance().nextBytes(mask);
+            // ThreadLocalRandom.current().nextBytes(mask);
             buffer.put(mask);
             mask(bytes, mask);
         }
@@ -147,7 +147,7 @@ public class RawFrameBuilder
         if (masked)
         {
             byte[] mask = new byte[4];
-            // ThreadIdCache.Random.instance().nextBytes(mask);
+            // ThreadLocalRandom.current().nextBytes(mask);
             buffer.put(mask);
             mask(bytes, mask);
         }

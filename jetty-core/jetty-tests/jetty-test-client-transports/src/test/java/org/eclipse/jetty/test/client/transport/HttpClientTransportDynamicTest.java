@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -57,7 +58,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -408,7 +408,7 @@ public class HttpClientTransportDynamicTest
         // Simulate a proxy request to the server.
         var proxyRequest1 = client.newRequest("localhost", connector.getLocalPort());
         // Map the proxy request to client IP:port.
-        int clientPort1 = ThreadIdCache.Random.instance().nextInt(1024, 65536);
+        int clientPort1 = ThreadLocalRandom.current().nextInt(1024, 65536);
         proxyRequest1.tag(new V1.Tag("localhost", clientPort1));
         ContentResponse proxyResponse1 = proxyRequest1
             .timeout(5, TimeUnit.SECONDS)
@@ -417,7 +417,7 @@ public class HttpClientTransportDynamicTest
 
         // Simulate another request to the server, from a different client port.
         var proxyRequest2 = client.newRequest("localhost", connector.getLocalPort());
-        int clientPort2 = ThreadIdCache.Random.instance().nextInt(1024, 65536);
+        int clientPort2 = ThreadLocalRandom.current().nextInt(1024, 65536);
         proxyRequest2.tag(new V1.Tag("localhost", clientPort2));
         ContentResponse proxyResponse2 = proxyRequest2
             .timeout(5, TimeUnit.SECONDS)

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
@@ -46,7 +47,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +115,7 @@ public class MultiPart
         int length = builder.length();
         while (builder.length() < length + randomLength)
         {
-            long rnd = ThreadIdCache.Random.instance().nextLong();
+            long rnd = ThreadLocalRandom.current().nextLong();
             builder.append(Long.toString(rnd < 0 ? -rnd : rnd, 36));
         }
         builder.setLength(Math.min(length + randomLength, MAX_BOUNDARY_LENGTH));

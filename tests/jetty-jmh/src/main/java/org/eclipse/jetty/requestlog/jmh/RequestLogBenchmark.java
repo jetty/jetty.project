@@ -16,10 +16,10 @@ package org.eclipse.jetty.requestlog.jmh;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -170,7 +170,7 @@ public class RequestLogBenchmark
     @BenchmarkMode({Mode.Throughput})
     public String testFixed()
     {
-        return logFixed(Long.toString(ThreadIdCache.Random.instance().nextLong()));
+        return logFixed(Long.toString(ThreadLocalRandom.current().nextLong()));
     }
 
     ;
@@ -179,7 +179,7 @@ public class RequestLogBenchmark
     @BenchmarkMode({Mode.Throughput})
     public String testIterate()
     {
-        return logIterate(Long.toString(ThreadIdCache.Random.instance().nextLong()));
+        return logIterate(Long.toString(ThreadLocalRandom.current().nextLong()));
     }
 
     ;
@@ -188,7 +188,7 @@ public class RequestLogBenchmark
     @BenchmarkMode({Mode.Throughput})
     public String testHandle()
     {
-        return logMethodHandle(Long.toString(ThreadIdCache.Random.instance().nextLong()));
+        return logMethodHandle(Long.toString(ThreadLocalRandom.current().nextLong()));
     }
 
     public static void main(String[] args) throws RunnerException

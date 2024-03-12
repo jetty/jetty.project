@@ -18,10 +18,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -662,7 +662,7 @@ public class MultiPartTest
     private static byte[] randomBytes(int length)
     {
         byte[] random = new byte[length];
-        ThreadIdCache.Random.instance().nextBytes(random);
+        ThreadLocalRandom.current().nextBytes(random);
         // Make sure the last 2 bytes are not \r\n,
         // otherwise the multipart parser gets confused.
         random[length - 2] = 0;

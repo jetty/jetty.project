@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
+import org.eclipse.jetty.util.thread.ThreadIdPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,7 +124,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
     
     private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
-    private static final ThreadIdCache<CharsetEncoder> _encoder = new ThreadIdCache<>();
+    private static final ThreadIdPool<CharsetEncoder> _encoder = new ThreadIdPool<>();
 
     private final ServletChannel _servletChannel;
     private final ServletChannelState _channelState;
@@ -1070,7 +1070,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             out.release();
             encoder.reset();
-            _encoder.give(encoder);
+            _encoder.offer(encoder);
         }
     }
 

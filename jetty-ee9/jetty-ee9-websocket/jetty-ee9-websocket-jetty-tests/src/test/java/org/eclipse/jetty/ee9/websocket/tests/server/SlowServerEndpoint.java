@@ -15,13 +15,12 @@ package org.eclipse.jetty.ee9.websocket.tests.server;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.random.RandomGenerator;
 
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +32,7 @@ public class SlowServerEndpoint
     @OnWebSocketMessage
     public void onMessage(Session session, String msg)
     {
-        RandomGenerator random = ThreadIdCache.Random.instance();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
 
         if (msg.startsWith("send-slow|"))
         {

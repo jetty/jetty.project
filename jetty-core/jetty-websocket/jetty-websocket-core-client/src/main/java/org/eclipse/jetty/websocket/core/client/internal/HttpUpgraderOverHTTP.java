@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.core.client.internal;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -27,7 +28,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
@@ -69,7 +69,7 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     private String generateRandomKey()
     {
         byte[] bytes = new byte[16];
-        ThreadIdCache.Random.instance().nextBytes(bytes);
+        ThreadLocalRandom.current().nextBytes(bytes);
         return new String(Base64.getEncoder().encode(bytes), StandardCharsets.US_ASCII);
     }
 

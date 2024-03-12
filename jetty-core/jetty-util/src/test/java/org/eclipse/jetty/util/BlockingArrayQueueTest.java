@@ -19,11 +19,11 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -236,13 +236,13 @@ public class BlockingArrayQueueTest
                     {
                         while (consumersRunning.get())
                         {
-                            int r = 1 + ThreadIdCache.Random.instance().nextInt(10);
+                            int r = 1 + ThreadLocalRandom.current().nextInt(10);
                             if (r % 2 == 0)
                             {
                                 Integer msg = queue.poll();
                                 if (msg == null)
                                 {
-                                    Thread.sleep(ThreadIdCache.Random.instance().nextInt(2));
+                                    Thread.sleep(ThreadLocalRandom.current().nextInt(2));
                                     continue;
                                 }
                                 consumed.add(msg);
@@ -288,11 +288,11 @@ public class BlockingArrayQueueTest
                     {
                         for (int j = 0; j < LOOPS; j++)
                         {
-                            Integer msg = ThreadIdCache.Random.instance().nextInt();
+                            Integer msg = ThreadLocalRandom.current().nextInt();
                             produced.add(msg);
                             if (!queue.offer(msg))
                                 throw new Exception(id + " FULL! " + queue.size());
-                            Thread.sleep(ThreadIdCache.Random.instance().nextInt(2));
+                            Thread.sleep(ThreadLocalRandom.current().nextInt(2));
                         }
                     }
                     catch (Exception e)

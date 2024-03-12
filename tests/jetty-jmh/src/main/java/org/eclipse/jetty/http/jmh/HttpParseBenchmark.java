@@ -14,12 +14,12 @@
 package org.eclipse.jetty.http.jmh;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -119,7 +119,7 @@ public class HttpParseBenchmark
     @BenchmarkMode({Mode.Throughput})
     public RequestLine testParse()
     {
-        ByteBuffer request = (ThreadIdCache.Random.instance().nextInt(100) < hits) ? GET : POST;
+        ByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
         return parse(request.slice());
     }
 
@@ -127,7 +127,7 @@ public class HttpParseBenchmark
     @BenchmarkMode({Mode.Throughput})
     public RequestLine testLookAhead()
     {
-        ByteBuffer request = (ThreadIdCache.Random.instance().nextInt(100) < hits) ? GET : POST;
+        ByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
         return lookAhead(request.slice());
     }
 

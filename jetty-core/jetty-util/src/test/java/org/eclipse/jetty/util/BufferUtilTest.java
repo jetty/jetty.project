@@ -19,12 +19,12 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -343,7 +343,7 @@ public class BufferUtilTest
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         byte[] bytes = new byte[capacity];
-        ThreadIdCache.Random.instance().nextBytes(bytes);
+        ThreadLocalRandom.current().nextBytes(bytes);
         ByteBuffer buffer = BufferUtil.allocate(capacity);
         BufferUtil.append(buffer, bytes, 0, capacity);
         BufferUtil.writeTo(buffer.asReadOnlyBuffer(), out);

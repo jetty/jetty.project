@@ -37,10 +37,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.random.RandomGenerator;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
@@ -80,7 +80,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -1544,10 +1543,9 @@ public class AsyncMiddleManServletTest
     public void testDownstreamTransformationZipped() throws Exception
     {
         byte[] content1 = new byte[1024 * 1024];
-        RandomGenerator random = ThreadIdCache.Random.instance();
-        random.nextBytes(content1);
+        ThreadLocalRandom.current().nextBytes(content1);
         byte[] content2 = new byte[512 * 1024];
-        random.nextBytes(content2);
+        ThreadLocalRandom.current().nextBytes(content2);
 
         startServer(new HttpServlet()
         {

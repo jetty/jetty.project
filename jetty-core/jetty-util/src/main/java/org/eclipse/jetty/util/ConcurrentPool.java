@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Predicate;
@@ -30,7 +31,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.ThreadIdCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -263,7 +263,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         return switch (strategyType)
         {
             case FIRST -> 0;
-            case RANDOM -> ThreadIdCache.Random.instance().nextInt(size);
+            case RANDOM -> ThreadLocalRandom.current().nextInt(size);
             case ROUND_ROBIN -> nextIndex.getAndUpdate(c -> Math.max(0, c + 1)) % size;
             case THREAD_ID -> (int)((Thread.currentThread().getId() * 31) % size);
         };
