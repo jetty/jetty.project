@@ -243,7 +243,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, _threads);
+        Dumpable.dumpObjects(out, indent, this);
     }
 
     @Override

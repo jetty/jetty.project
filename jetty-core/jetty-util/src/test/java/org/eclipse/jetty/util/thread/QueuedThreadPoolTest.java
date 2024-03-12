@@ -808,7 +808,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         waitForIdle(pool, 3);
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
-        assertThat(count(dump, " - STARTED"), is(2));
+        assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=3,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
 
@@ -830,7 +830,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         started.await();
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
-        assertThat(count(dump, " - STARTED"), is(2));
+        assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, "> ReservedThread@"), is(1));
@@ -839,7 +839,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         pool.setDetailedDump(true);
         dump = pool.dump();
-        assertThat(count(dump, " - STARTED"), is(2));
+        assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
@@ -858,7 +858,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         }));
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
-        assertThat(count(dump, " - STARTED"), is(2));
+        assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
         assertThat(count(dump, "> ReservedThread@"), is(0));
