@@ -167,6 +167,8 @@ public class ThreadIdPool<E> implements Dumpable
 
     /**
      * Apply an item, either from the pool or supplier, to a function, then give it back to the pool.
+     * This is equivalent of {@link #takeOrElse(Supplier)}; then {@link Function#apply(Object)};
+     * followed by {@link #offer(Object)}.
      * @param supplier The supplier for an item to be used if an item cannot be taken from the pool.
      * @param function A function producing a result from an item.  This may be
      *                 a method reference to a method on the item taking no arguments and producing a result.
@@ -188,6 +190,8 @@ public class ThreadIdPool<E> implements Dumpable
 
     /**
      * Apply an item, either from the pool or supplier, to a function, then give it back to the pool.
+     * This is equivalent of {@link #takeOrElse(Supplier)}; then {@link BiFunction#apply(Object, Object)};
+     * followed by {@link #offer(Object)}.
      * @param supplier The supplier for an item to be used if an item cannot be taken from the pool.
      * @param function A function producing a result from an item and an argument.  This may be
      *                 a method reference to a method on the item taking an argument and producing a result.

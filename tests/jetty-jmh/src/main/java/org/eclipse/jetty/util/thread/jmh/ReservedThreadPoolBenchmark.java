@@ -120,8 +120,8 @@ public class ReservedThreadPoolBenchmark
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    @Threads(8)
-    public void test008Threads() throws Exception
+    @Threads(32)
+    public void test032Threads() throws Exception
     {
         doJob();
     }
