@@ -128,7 +128,7 @@ public class ThreadIdPool<E> implements Dumpable
 
     /**
      * Remove a specific item from the pool from a specific index 
-     * @param e The item to take
+     * @param e The item to remove
      * @param index The index the item was given to, as returned by {@link #offer(Object)}
      * @return {@code True} if the item was in the pool and was able to be removed.
      */
@@ -138,8 +138,8 @@ public class ThreadIdPool<E> implements Dumpable
     }
 
     /**
-     * Take all items from the pool.
-     * @return A list of all taken items
+     * Removes all items from the pool.
+     * @return A list of all removed items
      */
     public List<E> removeAll()
     {
