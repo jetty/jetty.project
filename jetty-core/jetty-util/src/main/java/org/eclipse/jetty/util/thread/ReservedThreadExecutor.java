@@ -18,6 +18,7 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.VirtualThreads;
@@ -45,15 +46,17 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
     private final Executor _executor;
     private final ThreadIdPool<ReservedThread> _threads;
+    private final AtomicInteger _pending = new AtomicInteger();
     private final int _minSize;
+    private final int _maxPending;
     private ThreadPoolBudget.Lease _lease;
     private long _idleTimeoutMs;
 
     /**
      * @param executor The executor to use to obtain threads
-     * @param capacity The number of threads to preallocate. If less than 0 then capacity
-     * is calculated based on a heuristic from the number of available processors and
-     * thread pool size.
+     * @param capacity The number of threads that can be reserved. If less than 0 then capacity
+     *                 is calculated based on a heuristic from the number of available processors and
+     *                 thread pool type.
      */
     public ReservedThreadExecutor(Executor executor, int capacity)
     {
@@ -62,16 +65,34 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
     /**
      * @param executor The executor to use to obtain threads
-     * @param capacity The number of threads to preallocate. If less than 0 then capacity
+     * @param capacity The number of threads that can be reserved. If less than 0 then capacity
+     *                 is calculated based on a heuristic from the number of available processors and
+     *                 thread pool type.
      * @param minSize The minimum number of reserve Threads that the algorithm tries to maintain, or -1 for a heuristic value.
-     * is calculated based on a heuristic from the number of available processors and
-     * thread pool size.
      */
     public ReservedThreadExecutor(Executor executor, int capacity, int minSize)
+    {
+        this(executor, capacity, minSize, -1);
+    }
+
+    /**
+     * @param executor The executor to use to obtain threads
+     * @param capacity The number of threads that can be reserved. If less than 0 then capacity
+     *                 is calculated based on a heuristic from the number of available processors and
+     *                 thread pool type.
+     * @param minSize The minimum number of reserve Threads that the algorithm tries to maintain, or -1 for a heuristic value.
+     * @param maxPending The maximum number of reserved Threads to start, or -1 for no limit.
+     */
+    public ReservedThreadExecutor(Executor executor, int capacity, int minSize, int maxPending)
     {
         _executor = executor;
         _threads = new ThreadIdPool<>(reservedThreads(executor, capacity));
         _minSize = minSize < 0 ? 1 : minSize;
+        if (_minSize > _threads.capacity())
+            throw new IllegalArgumentException("minSize larger than capacity");
+        _maxPending = maxPending;
+        if (_maxPending == 0)
+            throw new IllegalArgumentException("maxPending cannot be 0");
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
         addBean(_executor); // TODO change to installBean
@@ -201,6 +222,12 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
     private void startReservedThread()
     {
+        if (_maxPending > 0 && _pending.incrementAndGet() >= _maxPending)
+        {
+            _pending.decrementAndGet();
+            return;
+        }
+
         try
         {
             ReservedThread thread = new ReservedThread();
@@ -237,12 +264,18 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         public void run()
         {
             _thread = Thread.currentThread();
-
+            boolean pending = true;
             try
             {
                 while (isRunning())
                 {
                     int slot = _threads.offer(this);
+
+                    if (pending)
+                    {
+                        pending = false;
+                        _pending.decrementAndGet();
+                    }
 
                     if (slot < 0)
                         // no slot available
