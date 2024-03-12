@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +39,13 @@ import org.slf4j.LoggerFactory;
  * the external Executor.</p>
  */
 @ManagedObject("A pool for reserved threads")
-public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExecutor, Dumpable
+public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExecutor, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutor.class);
 
     private final Executor _executor;
     private final ThreadIdPool<ReservedThread> _threads;
+    private final int _minSize;
     private ThreadPoolBudget.Lease _lease;
     private long _idleTimeoutMs;
 
@@ -56,10 +57,25 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
      */
     public ReservedThreadExecutor(Executor executor, int capacity)
     {
+        this(executor, capacity, -1);
+    }
+
+    /**
+     * @param executor The executor to use to obtain threads
+     * @param capacity The number of threads to preallocate. If less than 0 then capacity
+     * @param minSize The minimum number of reserve Threads that the algorithm tries to maintain, or -1 for a heuristic value.
+     * is calculated based on a heuristic from the number of available processors and
+     * thread pool size.
+     */
+    public ReservedThreadExecutor(Executor executor, int capacity, int minSize)
+    {
         _executor = executor;
         _threads = new ThreadIdPool<>(reservedThreads(executor, capacity));
+        _minSize = minSize < 0 ? 1 : minSize;
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
+        addBean(_executor); // TODO change to installBean
+        addBean(_threads); // TODO change to installBean
     }
 
     /**
@@ -239,9 +255,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                             return;
 
                         // shrink if we are already removed or there are other reserved threads.
-                        // There is a small chance multiple threads
-                        // will iterate at the same time and we will hit 0, but that is not a huge problem.
-                        if (getAvailable() >= 2 && _threads.remove(this, slot))
+                        // There is a small chance multiple threads will shrink below minSize
+                        if (getAvailable() > _minSize && _threads.remove(this, slot))
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("{} reservedThread shrank {}", ReservedThreadExecutor.this, this);
@@ -258,18 +273,22 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     }
                     catch (Throwable t)
                     {
-                        LOG.warn("reserved error", t);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("reserved error", t);
                     }
-
                 }
             }
             catch (Throwable t)
             {
-                LOG.warn("reserved threw", t);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("reserved threw", t);
             }
             finally
             {
                 _thread = null;
+                // Clear any interrupted status.
+                if (Thread.interrupted() && LOG.isDebugEnabled())
+                    LOG.debug("interrupted {}", this);
             }
         }
 
@@ -285,7 +304,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             }
             catch (Throwable e)
             {
-                LOG.warn("exchange failed", e);
+                if (LOG.isDebugEnabled())
+                   LOG.debug("exchange failed", e);
             }
             return false;
         }
