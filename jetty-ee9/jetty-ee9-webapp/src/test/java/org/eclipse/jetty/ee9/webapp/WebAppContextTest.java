@@ -74,6 +74,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -803,5 +804,27 @@ public class WebAppContextTest
         Path extLibs = MavenPaths.findTestResourceDir("ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
+    }
+
+    @Test
+    public void testAddServerClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee9.webapp.test.";
+
+        WebAppContext.addServerClasses(testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        Path warPath = MavenPaths.findTestResourceFile("wars/dump.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> serverClasses = List.of(context.getServerClasses());
+
+        assertThat(serverClasses, hasItem(testPattern));
     }
 }

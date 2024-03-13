@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -72,6 +73,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -801,5 +803,27 @@ public class WebAppContextTest
         server.setHandler(new Handler.Sequence(context, handler));
 
         assertThat(handler.getServer(), sameInstance(server));
+    }
+
+    @Test
+    public void testAddServerClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
+
+        WebAppContext.addServerClasses(server, testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        Path warPath = MavenPaths.findTestResourceFile("wars/dump.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> serverClasses = List.of(context.getServerClasses());
+
+        assertThat(serverClasses, hasItem(testPattern));
     }
 }
