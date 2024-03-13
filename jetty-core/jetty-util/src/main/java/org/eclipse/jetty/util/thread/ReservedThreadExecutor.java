@@ -307,14 +307,14 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                     catch (Throwable t)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("reserved error", t);
+                            LOG.debug("{} task {} failure", ReservedThreadExecutor.this, task, t);
                     }
                 }
             }
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("reserved threw", t);
+                    LOG.debug("{} reservedThread {} failure", ReservedThreadExecutor.this, this, t);
             }
             finally
             {
