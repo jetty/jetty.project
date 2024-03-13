@@ -58,7 +58,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         super(quicSession);
         this.configuration = configuration;
         session = new HTTP3SessionClient(this, listener, promise);
-        addBean(session);
+        installBean(session);
         session.setStreamIdleTimeout(configuration.getStreamIdleTimeout());
 
         if (LOG.isDebugEnabled())
@@ -69,7 +69,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
         encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher));
         encoder.setMaxHeadersSize(configuration.getMaxRequestHeadersSize());
-        addBean(encoder);
+        installBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
 
@@ -77,19 +77,19 @@ public class ClientHTTP3Session extends ClientProtocolSession
         QuicStreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
         InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
         decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher));
-        addBean(decoder);
+        installBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
 
         long controlStreamId = newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = openControlEndPoint(controlStreamId);
         controlFlusher = new ControlFlusher(quicSession, controlEndPoint, true);
-        addBean(controlFlusher);
+        installBean(controlFlusher);
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
         messageFlusher = new MessageFlusher(quicSession.getByteBufferPool(), encoder, configuration.isUseOutputDirectByteBuffers());
-        addBean(messageFlusher);
+        installBean(messageFlusher);
     }
 
     public QpackDecoder getQpackDecoder()

@@ -35,7 +35,7 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
 
     public ClientConnectionFactoryOverHTTP3(HTTP3Client http3Client)
     {
-        addBean(http3Client);
+        installBean(http3Client);
     }
 
     @Override
