@@ -1386,14 +1386,14 @@ public class HTTPServerDocs
             }
 
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 // Retrieve the before handling nanoTime.
                 long beforeHandlingNanoTime = (long)request.getAttribute("beforeHandlingNanoTime");
 
-                // Record the request processing time.
+                // Record the request processing time and the status that was sent back to the client.
                 long processingTime = NanoTime.millisSince(beforeHandlingNanoTime);
-                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms", request, processingTime);
+                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms and ended with status code %d", request, processingTime, status);
             }
         }
 
