@@ -824,7 +824,35 @@ public class WebAppContextTest
         server.start();
 
         List<String> serverClasses = List.of(context.getServerClasses());
+        assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
+        assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
+        for (String defaultServerClass: WebAppContext.__dftServerClasses)
+            assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
+    }
 
-        assertThat(serverClasses, hasItem(testPattern));
+    @Test
+    public void testAddSystemClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee9.webapp.test.";
+
+        WebAppContext.addSystemClasses(testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        Path warPath = MavenPaths.findTestResourceFile("wars/dump.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> systemClasses = List.of(context.getSystemClasses());
+        assertThat("Should have environment specific test pattern", systemClasses, hasItem(testPattern));
+        assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
+        for (String defaultSystemClass : WebAppContext.__dftSystemClasses)
+        {
+            assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
+        }
     }
 }

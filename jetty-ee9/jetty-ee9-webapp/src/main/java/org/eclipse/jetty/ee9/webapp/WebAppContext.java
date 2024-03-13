@@ -781,19 +781,19 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             if (__dftSystemClasses.equals(_systemClasses))
             {
                 Object systemClasses = ServletContextHandler.ENVIRONMENT.getAttribute(SERVER_SYS_CLASSES);
-                if (systemClasses instanceof String[])
-                    systemClasses = new ClassMatcher((String[])systemClasses);
-                if (systemClasses instanceof ClassMatcher)
-                    _systemClasses.add(((ClassMatcher)systemClasses).getPatterns());
+                if (systemClasses instanceof String[] patterns)
+                    _systemClasses.add(patterns);
+                if (systemClasses instanceof ClassMatcher classMatcher)
+                    _systemClasses.add(classMatcher.getPatterns());
             }
 
             if (__dftServerClasses.equals(_serverClasses))
             {
                 Object serverClasses = ServletContextHandler.ENVIRONMENT.getAttribute(SERVER_SRV_CLASSES);
-                if (serverClasses instanceof String[])
-                    serverClasses = new ClassMatcher((String[])serverClasses);
-                if (serverClasses instanceof ClassMatcher)
-                    _serverClasses.add(((ClassMatcher)serverClasses).getPatterns());
+                if (serverClasses instanceof String[] patterns)
+                    _serverClasses.add(patterns);
+                if (serverClasses instanceof ClassMatcher classMatcher)
+                    _serverClasses.add(classMatcher.getPatterns());
             }
         }
     }
@@ -1480,6 +1480,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public static void addServerClasses(String... patterns)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding {} ServerClasses: {}", ServletContextHandler.ENVIRONMENT, String.join(", ", patterns));
         addClasses(__dftServerClasses, SERVER_SRV_CLASSES, patterns);
     }
 
@@ -1502,6 +1504,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public static void addSystemClasses(String... patterns)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding {} SystemClasses: {}", ServletContextHandler.ENVIRONMENT, String.join(", ", patterns));
+
         addClasses(__dftSystemClasses, SERVER_SYS_CLASSES, patterns);
     }
 
