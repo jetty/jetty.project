@@ -179,7 +179,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void notifyOnComplete(Request request, EventsResponse response, Throwable failure)
+    private void notifyOnComplete(Request request, Response response, Throwable failure)
     {
         try
         {
@@ -308,7 +308,7 @@ public abstract class EventsHandler extends Handler.Wrapper
      * has been completed).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
-     * @param failure if there was a failure to complete
+     * @param failure if there was a failure to complete.
      * @deprecated Override {@link #onComplete(Request, int, HttpFields, Throwable)} instead.
      */
     @Deprecated
@@ -326,7 +326,7 @@ public abstract class EventsHandler extends Handler.Wrapper
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param status the response status.
      * @param headers the immutable fields of the response object.
-     * @param failure if there was a failure to complete
+     * @param failure if there was a failure to complete.
      */
     protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
     {
