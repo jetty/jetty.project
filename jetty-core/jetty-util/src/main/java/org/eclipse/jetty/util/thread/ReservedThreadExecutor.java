@@ -95,8 +95,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             throw new IllegalArgumentException("maxPending cannot be 0");
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
-        addBean(_executor); // TODO change to installBean
-        addBean(_threads); // TODO change to installBean
+        installBean(_executor);
+        installBean(_threads);
     }
 
     /**
@@ -187,8 +187,6 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         super.doStop();
 
         _threads.removeAll().forEach(ReservedThread::stop);
-        Thread.yield();
-        _threads.removeAll().forEach(ReservedThread::stop);
     }
 
     @Override
@@ -267,9 +265,12 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             boolean pending = true;
             try
             {
-                while (isRunning())
+                while (true)
                 {
                     int slot = _threads.offer(this);
+
+                    if (!isRunning() && _threads.remove(this, slot))
+                        break;
 
                     if (pending)
                     {

@@ -77,8 +77,10 @@ public class ThreadIdPool<E> implements Dumpable
     {
         int available = 0;
         for (int i = 0; i < _items.length(); i++)
+        {
             if (_items.getPlain(i) != null)
                 available++;
+        }
         return available;
     }
 
