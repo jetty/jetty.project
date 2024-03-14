@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -127,10 +128,6 @@ public class ContextScopeListenerTest
 
     private void assertHistory(String... values)
     {
-        assertThat(_history.toString(), _history.size(), equalTo(values.length));
-        for (int i = 0; i < values.length; i++)
-        {
-            assertThat(_history.toString(), _history.get(i), equalTo(values[i]));
-        }
+        assertThat(_history, equalTo(Arrays.asList(values)));
     }
 }
