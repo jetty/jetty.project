@@ -247,10 +247,11 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     @Override
     public String toString()
     {
-        return String.format("%s@%x{capacity=%d}",
+        return String.format("%s@%x{capacity=%d,threads=%s}",
             getClass().getSimpleName(),
             hashCode(),
-            getCapacity());
+            getCapacity(),
+            _threads);
     }
 
     private class ReservedThread implements Runnable
