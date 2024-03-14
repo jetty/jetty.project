@@ -139,9 +139,7 @@ public class ReservedThreadPoolBenchmark
         jobs.increment();
         Runnable task = () ->
         {
-            Blackhole.consumeCPU(1);
-            Thread.yield();
-            Blackhole.consumeCPU(1);
+            Blackhole.consumeCPU(2);
             complete.increment();
         };
         if (pool.tryExecute(task))
