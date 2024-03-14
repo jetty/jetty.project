@@ -70,7 +70,8 @@ public class ContextScopeListenerTest
     @Test
     public void testAsyncServlet() throws Exception
     {
-        _contextHandler.addServlet(new ServletHolder(new HttpServlet() {
+        _contextHandler.addServlet(new ServletHolder(new HttpServlet()
+        {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             {
@@ -90,7 +91,8 @@ public class ContextScopeListenerTest
             }
         }), "/");
 
-        _contextHandler.addEventListener(new ContextHandler.ContextScopeListener() {
+        _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
+        {
             @Override
             public void enterScope(Context context, Request request)
             {
