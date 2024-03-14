@@ -41,6 +41,9 @@ public class ThreadIdPool<E> implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadIdPool.class);
 
+    // How far the entries in the AtomicReferenceArray are spread apart to avoid false sharing.
+    private static final int SPREADING_FACTOR = 16;
+
     private final AtomicReferenceArray<E> _items;
 
     public ThreadIdPool()
@@ -50,7 +53,7 @@ public class ThreadIdPool<E> implements Dumpable
 
     public ThreadIdPool(int capacity)
     {
-        _items = new AtomicReferenceArray<>(calcCapacity(capacity));
+        _items = new AtomicReferenceArray<>(calcCapacity(capacity) * SPREADING_FACTOR);
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
     }
@@ -67,7 +70,7 @@ public class ThreadIdPool<E> implements Dumpable
      */
     public int capacity()
     {
-        return _items.length();
+        return _items.length() / SPREADING_FACTOR;
     }
 
     /**
@@ -76,9 +79,9 @@ public class ThreadIdPool<E> implements Dumpable
     public int size()
     {
         int available = 0;
-        for (int i = 0; i < _items.length(); i++)
+        for (int i = 0; i < capacity(); i++)
         {
-            if (_items.getPlain(i) != null)
+            if (_items.getPlain(i * SPREADING_FACTOR) != null)
                 available++;
         }
         return available;
@@ -98,7 +101,7 @@ public class ThreadIdPool<E> implements Dumpable
             int index = (int)(Thread.currentThread().getId() % capacity);
             for (int i = 0; i < capacity; i++)
             {
-                if (_items.compareAndSet(index, null, e))
+                if (_items.compareAndSet(index * SPREADING_FACTOR, null, e))
                     return index;
                 if (++index == capacity)
                     index = 0;
@@ -119,7 +122,7 @@ public class ThreadIdPool<E> implements Dumpable
         int index = (int)(Thread.currentThread().getId() % capacity);
         for (int i = 0; i < capacity; i++)
         {
-            E e = _items.getAndSet(index, null);
+            E e = _items.getAndSet(index * SPREADING_FACTOR, null);
             if (e != null)
                 return e;
             if (++index == capacity)
@@ -149,7 +152,7 @@ public class ThreadIdPool<E> implements Dumpable
         List<E> all = new ArrayList<>(capacity);
         for (int i = 0; i < capacity; i++)
         {
-            E e = _items.getAndSet(i, null);
+            E e = _items.getAndSet(i * SPREADING_FACTOR, null);
             if (e != null)
                 all.add(e);
         }
@@ -222,7 +225,7 @@ public class ThreadIdPool<E> implements Dumpable
         int capacity = capacity();
         List<Object> slots = new ArrayList<>(capacity);
         for (int i = 0; i < capacity; i++)
-            slots.add(_items.get(i));
+            slots.add(_items.get(i * SPREADING_FACTOR));
         Dumpable.dumpObjects(out, indent, this, new DumpableCollection("items", slots));
     }
 
