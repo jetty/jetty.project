@@ -141,7 +141,7 @@ public class AsyncContextState implements AsyncContext
             {
                 task.run();
             }
-        });
+        }, _state.getServletChannel().getRequest());
     }
 
     public void reset()
