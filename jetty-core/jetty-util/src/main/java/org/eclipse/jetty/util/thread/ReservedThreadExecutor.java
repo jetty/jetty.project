@@ -100,6 +100,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     }
 
     /**
+     * Get the heuristic number of reserved threads.
+     *
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate, If less than 0 then capacity
      * is calculated based on a heuristic from the number of available processors and
@@ -107,7 +109,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
      * @return the number of reserved threads that would be used by a ReservedThreadExecutor
      * constructed with these arguments.
      */
-    private static int reservedThreads(Executor executor, int capacity)
+    public static int reservedThreads(Executor executor, int capacity)
     {
         if (capacity >= 0)
             return capacity;
