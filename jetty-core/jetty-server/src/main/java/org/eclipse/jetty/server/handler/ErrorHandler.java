@@ -127,7 +127,7 @@ public class ErrorHandler implements Request.Handler
                 callback.succeeded();
                 return;
             }
-            acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
+            acceptable = Collections.singletonList(defaultResponseMimeType().asString());
         }
         List<Charset> charsets = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET).stream()
             .map(s ->
@@ -161,6 +161,10 @@ public class ErrorHandler implements Request.Handler
                 return;
         }
         callback.succeeded();
+    }
+
+    protected Type defaultResponseMimeType() {
+        return Type.TEXT_HTML;
     }
 
     protected boolean generateAcceptableResponse(Request request, Response response, Callback callback, String contentType, List<Charset> charsets, int code, String message, Throwable cause) throws IOException
