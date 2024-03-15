@@ -87,7 +87,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     {
         _executor = executor;
         _threads = new ThreadIdPool<>(reservedThreads(executor, capacity));
-        _minSize = minSize < 0 ? 1 : minSize;
+        _minSize = minSize < 0 ? Math.min(1, _threads.capacity()) : minSize;
         if (_minSize > _threads.capacity())
             throw new IllegalArgumentException("minSize larger than capacity");
         _maxPending = maxPending;
