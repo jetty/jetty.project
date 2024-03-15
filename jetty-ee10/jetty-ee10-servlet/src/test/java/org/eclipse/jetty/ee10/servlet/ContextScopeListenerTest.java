@@ -17,6 +17,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -94,9 +95,13 @@ public class ContextScopeListenerTest
 
         _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
+            // Use a lock to prevent the async thread running the listener concurrently.
+            private final ReentrantLock _lock = new ReentrantLock();
+
             @Override
             public void enterScope(Context context, Request request)
             {
+                _lock.lock();
                 String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
                 _history.add("enterScope " + pathInContext);
             }
@@ -106,6 +111,7 @@ public class ContextScopeListenerTest
             {
                 String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
                 _history.add("exitScope " + pathInContext);
+                _lock.unlock();
             }
         });
 
