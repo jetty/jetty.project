@@ -494,7 +494,7 @@ public interface RetainableByteBuffer extends Retainable
 
         /**
          * {@inheritDoc}
-         * @throws {@link Integer#MAX_VALUE} if the length of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}
+         * @return {@link Integer#MAX_VALUE} if the length of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}
          */
         @Override
         public int remaining()
@@ -513,7 +513,7 @@ public interface RetainableByteBuffer extends Retainable
 
         /**
          * {@inheritDoc}
-         * @throws {@link Integer#MAX_VALUE} if the maxLength of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}.
+         * @return {@link Integer#MAX_VALUE} if the maxLength of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}.
          */
         @Override
         public int capacity()
