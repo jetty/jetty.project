@@ -415,7 +415,6 @@ public interface RetainableByteBuffer extends Retainable
         private final boolean _direct;
         private final long _maxLength;
         private final List<RetainableByteBuffer> _buffers = new ArrayList<>();
-        private boolean _canAggregate;
 
         /**
          * Construct an accumulating {@link RetainableByteBuffer} that may internally accumulate multiple other
@@ -442,7 +441,6 @@ public interface RetainableByteBuffer extends Retainable
                 {
                     RetainableByteBuffer combined = copy(true);
                     _buffers.add(combined);
-                    _canAggregate = true;
                     yield combined.getByteBuffer();
                 }
             };
@@ -541,7 +539,6 @@ public interface RetainableByteBuffer extends Retainable
         {
             for (RetainableByteBuffer buffer : _buffers)
                 buffer.release();
-            _canAggregate = false;
             _buffers.clear();
         }
 
@@ -549,56 +546,55 @@ public interface RetainableByteBuffer extends Retainable
         public boolean append(ByteBuffer bytes)
         {
             int remaining = bytes.remaining();
-            int length = ensureMaxLength(remaining);
-            // if the length was restricted by maxLength, slice the bytes smaller
-            ByteBuffer out = bytes;
-            if (length < remaining)
+            if (remaining == 0)
+                return true;
+
+            long currentlyRemaining = _maxLength - remainingLong();
+            if (currentlyRemaining >= remaining)
+            {
+                RetainableByteBuffer rbb = RetainableByteBuffer.wrap(bytes.slice());
+                bytes.position(bytes.limit());
+                _buffers.add(rbb);
+                return true;
+            }
+            else
             {
                 ByteBuffer slice = bytes.slice();
-                slice.limit(slice.position() + length);
-                bytes.position(bytes.position() + length);
-                out = slice;
+                slice.limit((int)(slice.position() + currentlyRemaining));
+                RetainableByteBuffer rbb = RetainableByteBuffer.wrap(slice);
+                bytes.position((int)(bytes.position() + currentlyRemaining));
+                _buffers.add(rbb);
+                return false;
             }
-            RetainableByteBuffer buffer = _pool.acquire(length, _direct);
-            buffer.append(out);
-            _buffers.add(buffer);
-            _canAggregate = true;
-            return !bytes.hasRemaining();
         }
 
         @Override
-        public boolean append(RetainableByteBuffer bytes)
+        public boolean append(RetainableByteBuffer retainableBytes)
         {
+            ByteBuffer bytes = retainableBytes.getByteBuffer();
             int remaining = bytes.remaining();
             if (remaining == 0)
                 return true;
 
-            int length = ensureMaxLength(remaining);
-
-            // If we cannot retain, then try aggregation into the last buffer
-            if (!bytes.canRetain() && _canAggregate)
+            long currentlyRemaining = _maxLength - remainingLong();
+            if (currentlyRemaining >= remaining)
             {
-                if (_buffers.get(_buffers.size() - 1).append(bytes))
-                    return true;
-                length -= remaining - bytes.remaining();
-                remaining = bytes.remaining();
+                retainableBytes.retain();
+                RetainableByteBuffer rbb = RetainableByteBuffer.wrap(bytes.slice(), retainableBytes);
+                bytes.position(bytes.limit());
+                _buffers.add(rbb);
+                return true;
             }
-
-            // if the length was restricted by maxLength, or we can't retain, then copy into new buffer
-            if (length < remaining || !bytes.canRetain())
+            else
             {
-                RetainableByteBuffer buffer = _pool.acquire(length, _direct);
-                buffer.append(bytes);
-                bytes.clear();
-                _buffers.add(buffer);
-                _canAggregate = true;
+                retainableBytes.retain();
+                ByteBuffer slice = bytes.slice();
+                slice.limit((int)(slice.position() + currentlyRemaining));
+                RetainableByteBuffer rbb = RetainableByteBuffer.wrap(slice, retainableBytes);
+                bytes.position((int)(bytes.position() + currentlyRemaining));
+                _buffers.add(rbb);
                 return false;
             }
-
-            bytes.retain();
-            _buffers.add(bytes);
-            _canAggregate = false;
-            return true;
         }
 
         @Override
@@ -631,19 +627,6 @@ public interface RetainableByteBuffer extends Retainable
                     }
                 }.iterate();
             }
-        }
-
-        private int ensureMaxLength(int increment)
-        {
-            long length = 0;
-            for (RetainableByteBuffer buffer : _buffers)
-                length += buffer.remaining();
-
-            long newLength = Math.addExact(length, increment);
-            if (newLength <= _maxLength)
-                return increment;
-
-            return Math.toIntExact(_maxLength - length);
         }
     }
 
