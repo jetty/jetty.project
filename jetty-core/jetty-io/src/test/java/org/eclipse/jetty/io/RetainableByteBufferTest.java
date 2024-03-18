@@ -93,6 +93,19 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
+    public void testAppendOneByteRetainable(RetainableByteBuffer buffer)
+    {
+        RetainableByteBuffer toAppend = _pool.acquire(1, true);
+        BufferUtil.append(toAppend.getByteBuffer(), (byte)'X');
+        assertThat(buffer.append(toAppend), is(true));
+        assertFalse(toAppend.hasRemaining());
+        toAppend.release();
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X"));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
     public void testAppendMoreBytesThanCapacity(RetainableByteBuffer buffer)
     {
         byte[] bytes = new byte[MAX_CAPACITY * 2];
@@ -109,6 +122,34 @@ public class RetainableByteBufferTest
             assertFalse(BufferUtil.isEmpty(b));
             assertThat(b.remaining(), is(MAX_CAPACITY * 2 - buffer.capacity()));
         }
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        assertTrue(buffer.isFull());
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testAppendMoreBytesThanCapacityRetainable(RetainableByteBuffer buffer)
+    {
+        RetainableByteBuffer toAppend = _pool.acquire(MAX_CAPACITY * 2, true);
+        int pos = BufferUtil.flipToFill(toAppend.getByteBuffer());
+        byte[] bytes = new byte[MAX_CAPACITY * 2];
+        Arrays.fill(bytes, (byte)'X');
+        toAppend.getByteBuffer().put(bytes);
+        BufferUtil.flipToFlush(toAppend.getByteBuffer(), pos);
+
+        if (buffer.append(toAppend))
+        {
+            assertTrue(BufferUtil.isEmpty(toAppend.getByteBuffer()));
+            assertThat(buffer.capacity(), greaterThanOrEqualTo(MAX_CAPACITY * 2));
+        }
+        else
+        {
+            assertFalse(BufferUtil.isEmpty(toAppend.getByteBuffer()));
+            assertThat(toAppend.remaining(), is(MAX_CAPACITY * 2 - buffer.capacity()));
+        }
+        toAppend.release();
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
         assertTrue(buffer.isFull());
