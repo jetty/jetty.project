@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -220,5 +221,35 @@ public class RetainableByteBufferTest
 
         buffer.release();
         assertTrue(released.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testCopy(RetainableByteBuffer original)
+    {
+        original.append(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
+        RetainableByteBuffer copy = original.copy();
+
+        assertEquals(0, copy.space());
+        assertEquals("hello", StandardCharsets.UTF_8.decode(original.getByteBuffer()).toString());
+        assertEquals("hello", StandardCharsets.UTF_8.decode(copy.getByteBuffer()).toString());
+
+        copy.release();
+        original.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testCopyThenModifyOriginal(RetainableByteBuffer original)
+    {
+        original.append(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
+        RetainableByteBuffer copy = original.copy();
+        original.append(ByteBuffer.wrap(" world".getBytes(StandardCharsets.UTF_8)));
+
+        assertEquals("hello world", StandardCharsets.UTF_8.decode(original.getByteBuffer()).toString());
+        assertEquals("hello", StandardCharsets.UTF_8.decode(copy.getByteBuffer()).toString());
+
+        copy.release();
+        original.release();
     }
 }

@@ -460,7 +460,7 @@ public interface RetainableByteBuffer extends Retainable
             BufferUtil.flipToFill(byteBuffer);
             for (RetainableByteBuffer buffer : _buffers)
             {
-                buffer.putTo(byteBuffer);
+                byteBuffer.put(buffer.getByteBuffer().slice());
                 if (take)
                     buffer.release();
             }
