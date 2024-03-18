@@ -231,6 +231,8 @@ public class RetainableByteBufferTest
         RetainableByteBuffer copy = original.copy();
 
         assertEquals(0, copy.space());
+        assertEquals(5, copy.remaining());
+        assertEquals(5, original.remaining());
         assertEquals("hello", StandardCharsets.UTF_8.decode(original.getByteBuffer()).toString());
         assertEquals("hello", StandardCharsets.UTF_8.decode(copy.getByteBuffer()).toString());
 
@@ -246,6 +248,9 @@ public class RetainableByteBufferTest
         RetainableByteBuffer copy = original.copy();
         original.append(ByteBuffer.wrap(" world".getBytes(StandardCharsets.UTF_8)));
 
+        assertEquals(0, copy.space());
+        assertEquals(5, copy.remaining());
+        assertEquals(11, original.remaining());
         assertEquals("hello world", StandardCharsets.UTF_8.decode(original.getByteBuffer()).toString());
         assertEquals("hello", StandardCharsets.UTF_8.decode(copy.getByteBuffer()).toString());
 
