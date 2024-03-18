@@ -145,7 +145,10 @@ public interface RetainableByteBuffer extends Retainable
     ByteBuffer getByteBuffer();
 
     /**
-     * @return A copy of this RetainableByteBuffer that is entirely independent
+     * Creates a copy of this RetainableByteBuffer that is entirely independent, but
+     * backed by the same memory space, i.e.: modifying the ByteBuffer of the original
+     * also modifies the ByteBuffer of the copy and vice-versa.
+     * @return A copy of this RetainableByteBuffer
      */
     default RetainableByteBuffer copy()
     {
@@ -189,17 +192,24 @@ public interface RetainableByteBuffer extends Retainable
         return getByteBuffer().capacity();
     }
 
+    /**
+     * @return the number of bytes left for appending in the {@code ByteBuffer}
+     */
     default int space()
     {
         return capacity() - remaining();
     }
 
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes left for appending
+     */
     default boolean isFull()
     {
-        return remaining() == capacity();
+        return space() == 0;
     }
 
     /**
+     * Clears the contained byte buffer to be empty in flush mode.
      * @see BufferUtil#clear(ByteBuffer)
      */
     default void clear()
@@ -230,11 +240,23 @@ public interface RetainableByteBuffer extends Retainable
         return bytes.remaining() == 0 || append(bytes.getByteBuffer());
     }
 
+    /**
+     * Copies the contents of this retainable byte buffer at the end of the given byte buffer.
+     * @param toInfillMode the destination buffer.
+     * @see ByteBuffer#put(ByteBuffer)
+     */
     default void putTo(ByteBuffer toInfillMode)
     {
         toInfillMode.put(getByteBuffer());
     }
 
+    /**
+     * Asynchronously copies the contents of this retainable byte buffer into given sink.
+     * @param sink the destination sink.
+     * @param last true if this is the last write.
+     * @param callback the callback to call upon the write completion.
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     */
     default void writeTo(Content.Sink sink, boolean last, Callback callback)
     {
         sink.write(last, getByteBuffer(), callback);
@@ -472,12 +494,13 @@ public interface RetainableByteBuffer extends Retainable
 
         /**
          * {@inheritDoc}
-         * @throws ArithmeticException if the length of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}
+         * @throws {@link Integer#MAX_VALUE} if the length of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}
          */
         @Override
         public int remaining()
         {
-            return Math.toIntExact(remainingLong());
+            long remainingLong = remainingLong();
+            return remainingLong > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.toIntExact(remainingLong);
         }
 
         public long remainingLong()
@@ -490,14 +513,13 @@ public interface RetainableByteBuffer extends Retainable
 
         /**
          * {@inheritDoc}
-         * @throws ArithmeticException if the maxLength of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}.
+         * @throws {@link Integer#MAX_VALUE} if the maxLength of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}.
          */
         @Override
         public int capacity()
         {
-            if (capacityLong() > Integer.MAX_VALUE)
-                return -1;
-            return Math.toIntExact(capacityLong());
+            long capacityLong = capacityLong();
+            return capacityLong > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.toIntExact(capacityLong);
         }
 
         public long capacityLong()
