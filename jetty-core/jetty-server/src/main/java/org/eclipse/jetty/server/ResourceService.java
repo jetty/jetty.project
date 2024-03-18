@@ -681,8 +681,7 @@ public class ResourceService
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
 
             // TODO use a buffer pool
-            Content.Source source = IOResources.asContentSource(content.getResource(), null, 0, false, range.first(), range.getLength());
-            Content.copy(source, response, callback);
+            IOResources.copy(content.getResource(), response, null, 0, false, range.first(), range.getLength(), callback);
             return;
         }
 
@@ -712,10 +711,9 @@ public class ResourceService
             {
                 IOResources.copy(
                     content.getResource(),
-                    request.getComponents().getByteBufferPool(),
+                    response, request.getComponents().getByteBufferPool(),
                     request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize(),
                     request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers(),
-                    response,
                     callback);
             }
         }

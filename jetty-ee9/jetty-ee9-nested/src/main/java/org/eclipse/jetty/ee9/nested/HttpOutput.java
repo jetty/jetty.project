@@ -1228,8 +1228,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public void sendContent(Resource resource, Callback callback) throws IOException
     {
         IOResources.copy(resource,
-            _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
-            (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb),
+            (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb), _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
             callback);
     }
 
@@ -1360,8 +1359,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
                 IOResources.copy(httpContent.getResource(),
-                    _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
-                    (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb),
+                    (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb), _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
                     callback);
         }
         catch (Throwable x)

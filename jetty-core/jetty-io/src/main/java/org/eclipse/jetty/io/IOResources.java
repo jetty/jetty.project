@@ -17,17 +17,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Predicate;
 
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Common IO operations for {@link Resource} content.
@@ -152,116 +155,165 @@ public class IOResources
      * Performs an asynchronous copy of the contents of a resource to a sink, using the given buffer pool and buffer characteristics.
      *
      * @param resource the resource to copy from.
+     * @param sink the sink to copy to.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
      * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
-     * @param sink the sink to copy to.
      * @param callback the callback to notify when the copy is done.
      */
-    public static void copy(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct, Content.Sink sink, Callback callback)
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback)
     {
-        copy(asContentSource(resource, bufferPool, bufferSize, direct), sink, callback);
-    }
-
-    /**
-     * Performs an asynchronous copy of the contents of a source to a sink.
-     * Transient errors are ignored.
-     *
-     * @param source the source to copy from.
-     * @param sink the sink to copy to.
-     * @param callback the callback to notify when the copy is done.
-     */
-    public static void copy(Content.Source source, Content.Sink sink, Callback callback)
-    {
-        copy(source, sink, x -> false, callback);
-    }
-
-    /**
-     * Performs an asynchronous copy of the contents of a source to a sink, with a specific transient error handler.
-     *
-     * @param source the source to copy from.
-     * @param sink the sink to copy to.
-     * @param onTransientError a {@link Predicate} that is called when a transient error is reported by the source;
-     *  when the predicate returns false, the error is considered handled and the copy process goes on while when the
-     *  predicate returns true the error is considered permanent and the copy is aborted.
-     * @param callback the callback to notify when the copy is done.
-     */
-    public static void copy(Content.Source source, Content.Sink sink, Predicate<Throwable> onTransientError, Callback callback)
-    {
-        new ContentCopierIteratingCallback(source, sink, onTransientError, callback).iterate();
-    }
-
-    /**
-     * {@link IteratingCallback} implementation that performs a copy from a {@link Content.Source} to a {@link Content.Sink}.
-     */
-    private static class ContentCopierIteratingCallback extends IteratingCallback
-    {
-        private final Content.Source source;
-        private final Content.Sink sink;
-        private final Predicate<Throwable> onTransientError;
-        private final Callback callback;
-        private boolean lastWritten;
-
-        public ContentCopierIteratingCallback(Content.Source source, Content.Sink target, Predicate<Throwable> onTransientError, Callback callback)
+        // Save a Content.Source allocation for resources with a Path.
+        Path path = resource.getPath();
+        if (path != null)
         {
-            this.source = source;
-            this.sink = target;
-            this.onTransientError = onTransientError;
-            this.callback = callback;
+            try
+            {
+                new PathToSinkCopier(path, sink, bufferPool, bufferSize, direct, callback).iterate();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+            return;
+        }
+
+        // Directly write the byte array if the resource is a MemoryResource.
+        if (resource instanceof MemoryResource memoryResource)
+        {
+            byte[] bytes = memoryResource.getBytes();
+            sink.write(true, ByteBuffer.wrap(bytes), callback);
+            return;
+        }
+
+        // Fallback to Content.Source.
+        Content.Source source = asContentSource(resource, bufferPool, bufferSize, direct);
+        Content.copy(source, sink, callback);
+    }
+
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback)
+    {
+        // Save a Content.Source allocation for resources with a Path.
+        Path path = resource.getPath();
+        if (path != null)
+        {
+            try
+            {
+                new PathToSinkCopier(path, sink, bufferPool, bufferSize, direct, first, length, callback).iterate();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+            return;
+        }
+
+        // Directly write the byte array if the resource is a MemoryResource.
+        if (resource instanceof MemoryResource memoryResource)
+        {
+            byte[] bytes = memoryResource.getBytes();
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            if (first >= 0)
+                byteBuffer.position((int)first);
+            if (length >= 0)
+                byteBuffer.limit((int)(byteBuffer.position() + length));
+            sink.write(true, byteBuffer, callback);
+            return;
+        }
+
+        // Fallback to Content.Source.
+        Content.Source source = asContentSource(resource, bufferPool, bufferSize, direct, first, length);
+        Content.copy(source, sink, callback);
+    }
+
+    private static class PathToSinkCopier extends IteratingNestedCallback
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(PathToSinkCopier.class);
+
+        private final SeekableByteChannel channel;
+        private final Content.Sink sink;
+        private final ByteBufferPool pool;
+        private final int bufferSize;
+        private final boolean direct;
+        private long remainingLength;
+        private RetainableByteBuffer retainableByteBuffer;
+        private boolean terminated;
+
+        public PathToSinkCopier(Path path, Content.Sink sink, ByteBufferPool pool, int bufferSize, boolean direct, Callback callback) throws IOException
+        {
+            this(path, sink, pool, bufferSize, direct, -1L, -1L, callback);
+        }
+
+        public PathToSinkCopier(Path path, Content.Sink sink, ByteBufferPool pool, int bufferSize, boolean direct, long first, long length, Callback callback) throws IOException
+        {
+            super(callback);
+            this.channel = Files.newByteChannel(path);
+            channel.position(first);
+            this.sink = sink;
+            this.pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
+            this.bufferSize = bufferSize <= 0 ? 4096 : bufferSize;
+            this.direct = direct;
+            this.remainingLength = length;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
 
         @Override
         protected Action process() throws Throwable
         {
-            if (lastWritten)
+            if (terminated)
                 return Action.SUCCEEDED;
 
-            Content.Chunk chunk = source.read();
-            if (chunk == null)
-            {
-                source.demand(this::succeeded);
-                return Action.SCHEDULED;
-            }
-            if (Content.Chunk.isFailure(chunk, false))
-            {
-                Throwable failure = chunk.getFailure();
-                if (onTransientError.test(failure))
-                    throw new IOException(failure);
-            }
-            if (Content.Chunk.isFailure(chunk, true))
-                throw new IOException(chunk.getFailure());
+            if (retainableByteBuffer == null)
+                retainableByteBuffer = pool.acquire(bufferSize, direct);
 
-            if (chunk.hasRemaining())
-            {
-                ByteBuffer byteBuffer = chunk.getByteBuffer();
-                sink.write(chunk.isLast(), byteBuffer, Callback.from(chunk::release, this));
-                lastWritten = chunk.isLast();
-                return Action.SCHEDULED;
-            }
-            else if (chunk.isLast())
-            {
-                sink.write(true, BufferUtil.EMPTY_BUFFER, Callback.from(chunk::release, this));
-                lastWritten = true;
-                return Action.SCHEDULED;
-            }
-            else
-            {
-                chunk.release();
-                return Action.SCHEDULED;
-            }
+            ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
+            BufferUtil.clearToFill(byteBuffer);
+            if (remainingLength >= 0 && remainingLength < Integer.MAX_VALUE)
+                byteBuffer.limit((int)Math.min(byteBuffer.capacity(), remainingLength));
+            int read = channel.read(byteBuffer);
+            BufferUtil.flipToFlush(byteBuffer, 0);
+            remainingLength -= byteBuffer.remaining();
+            terminated = read == -1 || remainingLength == 0;
+            sink.write(terminated, byteBuffer, this);
+            return Action.SCHEDULED;
         }
 
         @Override
         protected void onCompleteSuccess()
         {
-            callback.succeeded();
+            if (retainableByteBuffer != null)
+                retainableByteBuffer.release();
+            try
+            {
+                channel.close();
+            }
+            catch (IOException e)
+            {
+                if (LOG.isTraceEnabled())
+                    LOG.trace("", e);
+            }
+            super.onCompleteSuccess();
         }
 
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            source.fail(x);
-            callback.failed(x);
+            if (retainableByteBuffer != null)
+                retainableByteBuffer.release();
+            try
+            {
+                channel.close();
+            }
+            catch (IOException e)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(x, e);
+            }
+            super.onCompleteFailure(x);
         }
     }
 
