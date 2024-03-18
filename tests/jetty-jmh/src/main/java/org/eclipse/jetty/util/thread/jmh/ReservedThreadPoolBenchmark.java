@@ -45,10 +45,10 @@ public class ReservedThreadPoolBenchmark
 {
     public enum Type
     {
-        RTE, RTEOLD
+        RTE_EXCH, RTE_SEMA, RTE_Q
     }
 
-    @Param({"RTE", "RTEOLD"})
+    @Param({"RTE_EXCH", "RTE_SEMA", "RTE_Q"})
     Type type;
 
     @Param({"16"})
@@ -67,16 +67,23 @@ public class ReservedThreadPoolBenchmark
         qtp = new QueuedThreadPool();
         switch (type)
         {
-            case RTE:
+            case RTE_EXCH:
             {
                 ReservedThreadExecutor pool = new ReservedThreadExecutor(qtp, size);
                 pool.setIdleTimeout(5, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
             }
-            case RTEOLD:
+            case RTE_Q:
             {
                 ReservedThreadExecutorOLD pool = new ReservedThreadExecutorOLD(qtp, size);
+                pool.setIdleTimeout(5, TimeUnit.SECONDS);
+                this.pool = pool;
+                break;
+            }
+            case RTE_SEMA:
+            {
+                ReservedThreadExecutorSemaphore pool = new ReservedThreadExecutorSemaphore(qtp, size);
                 pool.setIdleTimeout(5, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
