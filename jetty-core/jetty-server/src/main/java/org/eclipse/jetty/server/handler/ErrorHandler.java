@@ -74,7 +74,7 @@ public class ErrorHandler implements Request.Handler
 
     boolean _showStacks = true;
     boolean _showMessageInTitle = true;
-    Type _defaultResponseMimeType = Type.TEXT_HTML;
+    String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     public ErrorHandler()
@@ -128,7 +128,7 @@ public class ErrorHandler implements Request.Handler
                 callback.succeeded();
                 return;
             }
-            acceptable = Collections.singletonList(_defaultResponseMimeType.asString());
+            acceptable = Collections.singletonList(_defaultResponseMimeType);
         }
         List<Charset> charsets = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET).stream()
             .map(s ->
@@ -482,7 +482,7 @@ public class ErrorHandler implements Request.Handler
      * @return The mime type to be used when a client does not specify an Accept header, or the request did not fully parse
      */
     @ManagedAttribute("Mime type to be used when a client does not specify an Accept header, or the request did not fully parse")
-    public Type getDefaultResponseMimeType()
+    public String getDefaultResponseMimeType()
     {
         return _defaultResponseMimeType;
     }
@@ -490,9 +490,9 @@ public class ErrorHandler implements Request.Handler
     /**
      * @param defaultResponseMimeType The mime type to be used when a client does not specify an Accept header, or the request did not fully parse
      */
-    public void setDefaultResponseMimeType(Type defaultResponseMimeType)
+    public void setDefaultResponseMimeType(String defaultResponseMimeType)
     {
-        _defaultResponseMimeType = defaultResponseMimeType;
+        _defaultResponseMimeType = Objects.requireNonNull(defaultResponseMimeType);;
     }
 
     protected void write(Writer writer, String string) throws IOException

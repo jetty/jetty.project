@@ -164,7 +164,7 @@ public class ErrorHandlerTest
     public void test404NoAcceptButSpecifiedDefaultResponseMimeType() throws Exception
     {
         ErrorHandler errorHandler = new ErrorHandler();
-        errorHandler.setDefaultResponseMimeType(MimeTypes.Type.APPLICATION_JSON);
+        errorHandler.setDefaultResponseMimeType(MimeTypes.Type.APPLICATION_JSON.asString());
         server.setErrorHandler(errorHandler);
 
         String rawResponse = connector.getResponse(
