@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.LongAdder;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.TryExecutor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -69,14 +68,14 @@ public class ReservedThreadPoolBenchmark
         {
             case RTE_EXCH:
             {
-                ReservedThreadExecutor pool = new ReservedThreadExecutor(qtp, size);
+                ReservedThreadExecutorExchanger pool = new ReservedThreadExecutorExchanger(qtp, size);
                 pool.setIdleTimeout(5, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
             }
             case RTE_Q:
             {
-                ReservedThreadExecutorOLD pool = new ReservedThreadExecutorOLD(qtp, size);
+                ReservedThreadExecutorSyncQueue pool = new ReservedThreadExecutorSyncQueue(qtp, size);
                 pool.setIdleTimeout(5, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;

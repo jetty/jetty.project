@@ -141,6 +141,8 @@ public class ThreadIdPool<E> implements Dumpable
      */
     public boolean remove(E e, int index)
     {
+        if (index < 0)
+            throw new IndexOutOfBoundsException();
         return _items.compareAndSet((index + 1) * SPREAD_FACTOR, e, null);
     }
 

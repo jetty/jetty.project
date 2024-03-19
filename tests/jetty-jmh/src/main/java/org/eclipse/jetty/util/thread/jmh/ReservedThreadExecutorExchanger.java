@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.thread;
+package org.eclipse.jetty.util.thread.jmh;
 
 import java.io.IOException;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,6 +26,10 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.ThreadIdPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
+import org.eclipse.jetty.util.thread.TryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +44,9 @@ import org.slf4j.LoggerFactory;
  * the external Executor.</p>
  */
 @ManagedObject("A pool for reserved threads")
-public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExecutor, Dumpable
+public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implements TryExecutor, Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutorExchanger.class);
 
     private final Executor _executor;
     private final ThreadIdPool<ReservedThread> _threads;
@@ -58,7 +62,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
      *                 is calculated based on a heuristic from the number of available processors and
      *                 thread pool type.
      */
-    public ReservedThreadExecutor(Executor executor, int capacity)
+    public ReservedThreadExecutorExchanger(Executor executor, int capacity)
     {
         this(executor, capacity, -1);
     }
@@ -70,7 +74,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
      *                 thread pool type.
      * @param minSize The minimum number of reserve Threads that the algorithm tries to maintain, or -1 for a heuristic value.
      */
-    public ReservedThreadExecutor(Executor executor, int capacity, int minSize)
+    public ReservedThreadExecutorExchanger(Executor executor, int capacity, int minSize)
     {
         this(executor, capacity, minSize, -1);
     }
@@ -83,7 +87,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
      * @param minSize The minimum number of reserve Threads that the algorithm tries to maintain, or -1 for a heuristic value.
      * @param maxPending The maximum number of reserved Threads to start, or -1 for no limit.
      */
-    public ReservedThreadExecutor(Executor executor, int capacity, int minSize, int maxPending)
+    public ReservedThreadExecutorExchanger(Executor executor, int capacity, int minSize, int maxPending)
     {
         _executor = executor;
         _threads = new ThreadIdPool<>(reservedThreads(executor, capacity));
@@ -211,10 +215,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
         ReservedThread reserved = _threads.take();
         if (reserved != null)
-        {
-            reserved.wakeup(task);
-            return true;
-        }
+            return reserved.wakeup(task);
 
         startReservedThread();
 
@@ -261,27 +262,31 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
     private class ReservedThread implements Runnable
     {
-        private final Semaphore _semaphore = new Semaphore(0);
-        private volatile Runnable _task;
+        private final Exchanger<Runnable> _exchanger = new Exchanger<>();
         private volatile Thread _thread;
 
         @Override
         public void run()
         {
             _thread = Thread.currentThread();
+            boolean pending = true;
             try
             {
-                _pending.decrementAndGet();
-
                 while (true)
                 {
                     int slot = _threads.offer(this);
 
+                    if (!isRunning() && _threads.remove(this, slot))
+                        break;
+
+                    if (pending)
+                    {
+                        pending = false;
+                        _pending.decrementAndGet();
+                    }
+
                     if (slot < 0)
                         // no slot available
-                        return;
-
-                    if (!isRunning() && _threads.remove(this, slot))
                         return;
 
                     Runnable task = waitForTask();
@@ -290,12 +295,12 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                         if (!isRunning())
                             return;
 
-                        // Shrink if we are already removed or there are other reserved threads;
-                        // there is a small chance multiple threads will shrink below minSize.
+                        // shrink if we are already removed or there are other reserved threads.
+                        // There is a small chance multiple threads will shrink below minSize
                         if (getAvailable() > _minSize && _threads.remove(this, slot))
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("{} reservedThread shrank {}", ReservedThreadExecutor.this, this);
+                                LOG.debug("{} reservedThread shrank {}", ReservedThreadExecutorExchanger.this, this);
                             return;
                         }
                         task = waitForTask();
@@ -304,20 +309,20 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} reservedThread run {} on {}", ReservedThreadExecutor.this, task, this);
+                            LOG.debug("{} reservedThread run {} on {}", ReservedThreadExecutorExchanger.this, task, this);
                         task.run();
                     }
                     catch (Throwable t)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} task {} failure", ReservedThreadExecutor.this, task, t);
+                            LOG.debug("{} task {} failure", ReservedThreadExecutorExchanger.this, task, t);
                     }
                 }
             }
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} reservedThread {} failure", ReservedThreadExecutor.this, this, t);
+                    LOG.debug("{} reservedThread {} failure", ReservedThreadExecutorExchanger.this, this, t);
             }
             finally
             {
@@ -328,10 +333,22 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             }
         }
 
-        private void wakeup(Runnable task)
+        private boolean wakeup(Runnable task)
         {
-            _task = task;
-            _semaphore.release();
+            try
+            {
+                if (_idleTimeoutMs <= 0)
+                    _exchanger.exchange(task);
+                else
+                    _exchanger.exchange(task, _idleTimeoutMs, TimeUnit.MILLISECONDS);
+                return true;
+            }
+            catch (Throwable e)
+            {
+                if (LOG.isDebugEnabled())
+                   LOG.debug("exchange failed", e);
+            }
+            return false;
         }
 
         private Runnable waitForTask()
@@ -339,12 +356,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             try
             {
                 if (_idleTimeoutMs <= 0)
-                    _semaphore.acquire();
-                else if (!_semaphore.tryAcquire(_idleTimeoutMs, TimeUnit.MILLISECONDS))
-                    return null;
-                Runnable task = _task;
-                _task = null;
-                return task;
+                    return _exchanger.exchange(null);
+                return _exchanger.exchange(null, _idleTimeoutMs, TimeUnit.MILLISECONDS);
             }
             catch (Throwable e)
             {
@@ -356,9 +369,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
 
         private void stop()
         {
-            // If we are stopping, the reserved thread may already have stopped. So just interrupt rather than
+            // If we are stopping, the reserved thread may already have stopped.  So just interrupt rather than
             // expect an exchange rendezvous.
-            _semaphore.release();
             Thread thread = _thread;
             if (thread != null)
                 thread.interrupt();

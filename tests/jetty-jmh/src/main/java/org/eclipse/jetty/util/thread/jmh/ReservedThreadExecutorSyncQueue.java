@@ -43,11 +43,10 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.eclipse.jetty.util.AtomicBiInteger.getHi;
 import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
 
-@Deprecated(forRemoval = true)
 @ManagedObject("A pool for reserved threads")
-public class ReservedThreadExecutorOLD extends AbstractLifeCycle implements TryExecutor, Dumpable
+public class ReservedThreadExecutorSyncQueue extends AbstractLifeCycle implements TryExecutor, Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutorOLD.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutorSyncQueue.class);
     private static final long DEFAULT_IDLE_TIMEOUT = TimeUnit.MINUTES.toNanos(1);
     private static final Runnable STOP = new Runnable()
     {
@@ -78,7 +77,7 @@ public class ReservedThreadExecutorOLD extends AbstractLifeCycle implements TryE
      * is calculated based on a heuristic from the number of available processors and
      * thread pool size.
      */
-    public ReservedThreadExecutorOLD(Executor executor, int capacity)
+    public ReservedThreadExecutorSyncQueue(Executor executor, int capacity)
     {
         _executor = executor;
         _capacity = reservedThreads(executor, capacity);
@@ -307,7 +306,7 @@ public class ReservedThreadExecutorOLD extends AbstractLifeCycle implements TryE
         private Runnable reservedWait()
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} waiting {}", this, ReservedThreadExecutorOLD.this);
+                LOG.debug("{} waiting {}", this, ReservedThreadExecutorSyncQueue.this);
 
             // Keep waiting until stopped, tasked or idle
             while (_count.getLo() >= 0)
@@ -317,7 +316,7 @@ public class ReservedThreadExecutorOLD extends AbstractLifeCycle implements TryE
                     // Always poll at some period as safety to ensure we don't poll forever.
                     Runnable task = _queue.poll(_idleTimeNanos, NANOSECONDS);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} task={} {}", this, task, ReservedThreadExecutorOLD.this);
+                        LOG.debug("{} task={} {}", this, task, ReservedThreadExecutorSyncQueue.this);
                     if (task != null)
                         return task;
 
@@ -417,7 +416,7 @@ public class ReservedThreadExecutorOLD extends AbstractLifeCycle implements TryE
             finally
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} exited {}", this, ReservedThreadExecutorOLD.this);
+                    LOG.debug("{} exited {}", this, ReservedThreadExecutorSyncQueue.this);
                 _threads.remove(this);
                 _thread = null;
             }
