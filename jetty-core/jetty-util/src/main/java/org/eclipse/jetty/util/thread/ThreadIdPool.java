@@ -21,6 +21,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.util.MemoryUtils;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -41,8 +42,9 @@ public class ThreadIdPool<E> implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadIdPool.class);
 
-    // How far the entries in the AtomicReferenceArray are spread apart to avoid false sharing.
-    private static final int SPREADING_FACTOR = 16;
+    // How far the entries in the AtomicReferenceArray are spread apart to avoid false sharing;
+    // use getIntegersPerCacheLine() instead of getLongsPerCacheLine() b/c references could be compressed.
+    private static final int SPREAD_FACTOR = MemoryUtils.getIntegersPerCacheLine();
 
     private final AtomicReferenceArray<E> _items;
 
@@ -53,7 +55,7 @@ public class ThreadIdPool<E> implements Dumpable
 
     public ThreadIdPool(int capacity)
     {
-        _items = new AtomicReferenceArray<>(calcCapacity(capacity) * SPREADING_FACTOR);
+        _items = new AtomicReferenceArray<>((calcCapacity(capacity) + 1) * SPREAD_FACTOR);
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
     }
@@ -70,7 +72,7 @@ public class ThreadIdPool<E> implements Dumpable
      */
     public int capacity()
     {
-        return _items.length() / SPREADING_FACTOR;
+        return (_items.length() - 1) / SPREAD_FACTOR;
     }
 
     /**
@@ -81,7 +83,7 @@ public class ThreadIdPool<E> implements Dumpable
         int available = 0;
         for (int i = 0; i < capacity(); i++)
         {
-            if (_items.getPlain(i * SPREADING_FACTOR) != null)
+            if (_items.getPlain((i + 1) * SPREAD_FACTOR) != null)
                 available++;
         }
         return available;
@@ -101,7 +103,7 @@ public class ThreadIdPool<E> implements Dumpable
             int index = (int)(Thread.currentThread().getId() % capacity);
             for (int i = 0; i < capacity; i++)
             {
-                if (_items.compareAndSet(index * SPREADING_FACTOR, null, e))
+                if (_items.compareAndSet((index + 1) * SPREAD_FACTOR, null, e))
                     return index;
                 if (++index == capacity)
                     index = 0;
@@ -122,7 +124,7 @@ public class ThreadIdPool<E> implements Dumpable
         int index = (int)(Thread.currentThread().getId() % capacity);
         for (int i = 0; i < capacity; i++)
         {
-            E e = _items.getAndSet(index * SPREADING_FACTOR, null);
+            E e = _items.getAndSet((index + 1) * SPREAD_FACTOR, null);
             if (e != null)
                 return e;
             if (++index == capacity)
@@ -139,7 +141,7 @@ public class ThreadIdPool<E> implements Dumpable
      */
     public boolean remove(E e, int index)
     {
-        return _items.compareAndSet(index, e, null);
+        return _items.compareAndSet((index + 1) * SPREAD_FACTOR, e, null);
     }
 
     /**
@@ -152,7 +154,7 @@ public class ThreadIdPool<E> implements Dumpable
         List<E> all = new ArrayList<>(capacity);
         for (int i = 0; i < capacity; i++)
         {
-            E e = _items.getAndSet(i * SPREADING_FACTOR, null);
+            E e = _items.getAndSet((i + 1) * SPREAD_FACTOR, null);
             if (e != null)
                 all.add(e);
         }
@@ -225,7 +227,7 @@ public class ThreadIdPool<E> implements Dumpable
         int capacity = capacity();
         List<Object> slots = new ArrayList<>(capacity);
         for (int i = 0; i < capacity; i++)
-            slots.add(_items.get(i * SPREADING_FACTOR));
+            slots.add(_items.get((i + 1) * SPREAD_FACTOR));
         Dumpable.dumpObjects(out, indent, this, new DumpableCollection("items", slots));
     }
 
