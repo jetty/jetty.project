@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
  */
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
-    private RetainableByteBuffer accumulator;
+    private RetainableByteBuffer.Accumulator accumulator;
 
     /**
      * Creates a new {@link ByteBufferMessageSink}.
@@ -88,13 +88,14 @@ public class ByteBufferMessageSink extends AbstractMessageSink
 
             if (accumulator == null)
                 accumulator = new RetainableByteBuffer.Accumulator(getCoreSession().getByteBufferPool(), false, maxSize);
-            accumulator.append(RetainableByteBuffer.wrap(frame.getPayload(), callback::succeeded));
+            RetainableByteBuffer wrappedPayload = RetainableByteBuffer.wrap(frame.getPayload(), callback::succeeded);
+            accumulator.append(wrappedPayload);
+            wrappedPayload.release();
 
             if (frame.isFin())
             {
-                RetainableByteBuffer buffer = accumulator;
-                callback = Callback.from(buffer::release);
-                invoke(getMethodHandle(), buffer.getByteBuffer(), callback);
+                callback = Callback.from(accumulator::release);
+                invoke(getMethodHandle(), accumulator.getByteBuffer(), callback);
                 autoDemand();
             }
             else
