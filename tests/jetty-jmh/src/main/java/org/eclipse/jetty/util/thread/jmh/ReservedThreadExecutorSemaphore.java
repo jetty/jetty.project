@@ -123,7 +123,7 @@ public class ReservedThreadExecutorSemaphore extends ContainerLifeCycle implemen
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
-            return Math.max(1, Math.min(cpus, threads / 2));
+            return Math.max(1, Math.min(cpus, threads / 8));
         }
         return cpus;
     }
