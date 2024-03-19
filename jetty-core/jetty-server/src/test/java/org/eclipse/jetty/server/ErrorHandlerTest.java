@@ -167,10 +167,11 @@ public class ErrorHandlerTest
         errorHandler.setDefaultResponseMimeType(MimeTypes.Type.APPLICATION_JSON.asString());
         server.setErrorHandler(errorHandler);
 
-        String rawResponse = connector.getResponse(
-                "GET / HTTP/1.1\r\n" +
-                        "Host: Localhost\r\n" +
-                        "\r\n");
+        String rawResponse = connector.getResponse("""
+                        GET / HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
