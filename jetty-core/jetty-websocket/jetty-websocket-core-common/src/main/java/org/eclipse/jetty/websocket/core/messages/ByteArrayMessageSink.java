@@ -87,7 +87,9 @@ public class ByteArrayMessageSink extends AbstractMessageSink
 
             if (accumulator == null)
                 accumulator = new RetainableByteBuffer.Accumulator(getCoreSession().getByteBufferPool(), false, maxSize);
-            accumulator.append(RetainableByteBuffer.wrap(payload, callback::succeeded));
+            RetainableByteBuffer wrappedPayload = RetainableByteBuffer.wrap(payload, callback::succeeded);
+            accumulator.append(wrappedPayload);
+            wrappedPayload.release();
 
             if (frame.isFin())
             {

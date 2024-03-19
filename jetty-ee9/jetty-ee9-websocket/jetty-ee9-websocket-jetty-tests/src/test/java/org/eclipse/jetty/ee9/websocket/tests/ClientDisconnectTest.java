@@ -29,12 +29,13 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,6 +45,7 @@ public class ClientDisconnectTest
     private final Duration _serverIdleTimeout = Duration.ofSeconds(5);
     private final int _messageSize = 5 * 1024 * 1024;
     private Server _server;
+    private ArrayByteBufferPool.Tracking _bufferPool;
     private ServerConnector _connector;
     private WebSocketClient _client;
 
@@ -62,7 +64,8 @@ public class ClientDisconnectTest
     public void before() throws Exception
     {
         _client = new WebSocketClient();
-        _server = new Server();
+        _bufferPool = new ArrayByteBufferPool.Tracking();
+        _server = new Server(null, null, _bufferPool);
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
@@ -82,8 +85,15 @@ public class ClientDisconnectTest
     @AfterEach
     public void after() throws Exception
     {
-        _client.stop();
-        _server.stop();
+        try
+        {
+            assertThat("Detected leaks: " + _bufferPool.dumpLeaks(), _bufferPool.getLeaks().size(), is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(_client);
+            LifeCycle.stop(_server);
+        }
     }
 
     @Test
@@ -105,10 +115,5 @@ public class ClientDisconnectTest
 
         // Wait for the server to close its session.
         assertTrue(serverSocket.closeLatch.await(_serverIdleTimeout.toSeconds() + 1, TimeUnit.SECONDS));
-
-        // We should have no buffers still used in the pool.
-        ArrayByteBufferPool bufferPool = _server.getBean(ArrayByteBufferPool.class);
-        assertThat(bufferPool.getDirectByteBufferCount() - bufferPool.getAvailableDirectByteBufferCount(), equalTo(0L));
-        assertThat(bufferPool.getHeapByteBufferCount() - bufferPool.getAvailableHeapByteBufferCount(), equalTo(0L));
     }
 }
