@@ -30,6 +30,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
@@ -306,7 +307,7 @@ public class ServletRequestLogTest
         server.setHandler(new EventsHandler(contexts)
         {
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 assertRequestLog(expectedLogEntry, captureLog);
             }
@@ -380,7 +381,7 @@ public class ServletRequestLogTest
         server.setHandler(new EventsHandler(contexts)
         {
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 assertRequestLog(expectedLogEntry, captureLog);
             }
@@ -451,7 +452,7 @@ public class ServletRequestLogTest
         server.setHandler(new EventsHandler(contexts)
         {
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 assertRequestLog(expectedLogEntry, captureLog);
             }
@@ -529,7 +530,7 @@ public class ServletRequestLogTest
         server.setHandler(new EventsHandler(contexts)
         {
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 assertRequestLog(expectedLogEntry, captureLog);
             }
