@@ -67,6 +67,11 @@ public class ThreadIdPool<E> implements Dumpable
         return 2 * ProcessorUtils.availableProcessors();
     }
 
+    private static int toSlot(int index)
+    {
+        return (index + 1) * SPREAD_FACTOR;
+    }
+    
     /**
      * @return the maximum number of items
      */
@@ -83,7 +88,7 @@ public class ThreadIdPool<E> implements Dumpable
         int available = 0;
         for (int i = 0; i < capacity(); i++)
         {
-            if (_items.getPlain((i + 1) * SPREAD_FACTOR) != null)
+            if (_items.getPlain(toSlot(i)) != null)
                 available++;
         }
         return available;
@@ -103,7 +108,7 @@ public class ThreadIdPool<E> implements Dumpable
             int index = (int)(Thread.currentThread().getId() % capacity);
             for (int i = 0; i < capacity; i++)
             {
-                if (_items.compareAndSet((index + 1) * SPREAD_FACTOR, null, e))
+                if (_items.compareAndSet(toSlot(index), null, e))
                     return index;
                 if (++index == capacity)
                     index = 0;
@@ -124,7 +129,7 @@ public class ThreadIdPool<E> implements Dumpable
         int index = (int)(Thread.currentThread().getId() % capacity);
         for (int i = 0; i < capacity; i++)
         {
-            E e = _items.getAndSet((index + 1) * SPREAD_FACTOR, null);
+            E e = _items.getAndSet(toSlot(index), null);
             if (e != null)
                 return e;
             if (++index == capacity)
@@ -143,7 +148,7 @@ public class ThreadIdPool<E> implements Dumpable
     {
         if (index < 0)
             throw new IndexOutOfBoundsException();
-        return _items.compareAndSet((index + 1) * SPREAD_FACTOR, e, null);
+        return _items.compareAndSet(toSlot(index), e, null);
     }
 
     /**
@@ -156,7 +161,7 @@ public class ThreadIdPool<E> implements Dumpable
         List<E> all = new ArrayList<>(capacity);
         for (int i = 0; i < capacity; i++)
         {
-            E e = _items.getAndSet((i + 1) * SPREAD_FACTOR, null);
+            E e = _items.getAndSet(toSlot(i), null);
             if (e != null)
                 all.add(e);
         }
@@ -229,7 +234,7 @@ public class ThreadIdPool<E> implements Dumpable
         int capacity = capacity();
         List<Object> slots = new ArrayList<>(capacity);
         for (int i = 0; i < capacity; i++)
-            slots.add(_items.get((i + 1) * SPREAD_FACTOR));
+            slots.add(_items.get(toSlot(i)));
         Dumpable.dumpObjects(out, indent, this, new DumpableCollection("items", slots));
     }
 
