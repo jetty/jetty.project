@@ -211,7 +211,7 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         super(server, executor, scheduler, bufferPool, acceptors, factories);
         _manager = newSelectorManager(getExecutor(), getScheduler(), selectors);
-        addBean(_manager, true);
+        installBean(_manager, true);
         setAcceptorPriorityDelta(-2);
     }
 

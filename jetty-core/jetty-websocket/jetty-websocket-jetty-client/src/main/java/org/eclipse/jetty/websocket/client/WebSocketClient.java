@@ -81,7 +81,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
         addManaged(coreClient);
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, coreClient.getWebSocketComponents());
         sessionListeners.add(sessionTracker);
-        addBean(sessionTracker);
+        installBean(sessionTracker);
     }
 
     public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException

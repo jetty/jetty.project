@@ -146,7 +146,7 @@ public class HTTP3Client extends ContainerLifeCycle
     {
         this.quicConfiguration = quicConfiguration;
         this.connector = connector;
-        addBean(connector);
+        installBean(connector);
         connector.setSslContextFactory(quicConfiguration.getSslContextFactory());
         // Allow the mandatory unidirectional streams, plus pushed streams.
         quicConfiguration.setMaxUnidirectionalRemoteStreams(48);
