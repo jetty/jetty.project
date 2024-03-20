@@ -312,7 +312,7 @@ public class ResourceTest
     {
         Resource resource = data.getResource();
         Assumptions.assumeTrue(resource != null);
-        Assumptions.assumeTrue(!resource.isDirectory());
+        Assumptions.assumeFalse(resource.isDirectory());
 
         String filename = resource.getFileName();
         Path targetDir = workDir.getEmptyPathDir();
