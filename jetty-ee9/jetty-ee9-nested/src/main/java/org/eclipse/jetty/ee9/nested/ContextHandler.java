@@ -1939,7 +1939,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             if (path == null)
                 return null;
             Resource resource = ContextHandler.this.getResource(path);
-            if (Resources.missing(resource))
+            if (Resources.exists(resource))
                 return resource.getURI().toURL();
             return null;
         }
