@@ -56,8 +56,8 @@ public class ThreadIdPool<E> implements Dumpable
 
     public ThreadIdPool(int capacity)
     {
-        _capacity = TypeUtil.ceilToNextPowerOfTwo(capacity);
-        _items = new AtomicReferenceArray<>((calcCapacity(_capacity) + 1) * SPREAD_FACTOR);
+        _capacity = calcCapacity(capacity);
+        _items = new AtomicReferenceArray<>((_capacity + 1) * SPREAD_FACTOR);
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
     }
@@ -66,7 +66,7 @@ public class ThreadIdPool<E> implements Dumpable
     {
         if (capacity >= 0)
             return capacity;
-        return 2 * ProcessorUtils.availableProcessors();
+        return 2 * TypeUtil.ceilToNextPowerOfTwo(ProcessorUtils.availableProcessors());
     }
 
     private static int toSlot(int index)
