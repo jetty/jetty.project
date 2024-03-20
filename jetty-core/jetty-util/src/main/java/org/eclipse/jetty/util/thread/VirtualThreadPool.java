@@ -13,7 +13,10 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -34,7 +37,9 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
     private static final Logger LOG = LoggerFactory.getLogger(VirtualThreadPool.class);
 
     private String _name = null;
+    private Set<Thread> _threads;
     private VirtualThreads.ThreadFactoryExecutor _virtualExecutor;
+    private Thread _main;
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
 
     public VirtualThreadPool()
@@ -66,12 +71,46 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
         _name = name;
     }
 
+    public void setTracking(boolean tracking)
+    {
+        if (isRunning())
+            throw new IllegalStateException(getState());
+        _threads = tracking ? Collections.newSetFromMap(new WeakHashMap<>()) : null;
+    }
+
+    public boolean isTracking()
+    {
+        return _threads != null;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
+        _main = new Thread("virtual main")
+        {
+            @Override
+            public void run()
+            {
+                try (AutoLock.WithCondition l = _joinLock.lock())
+                {
+                    while (isRunning())
+                    {
+                        l.await();
+                    }
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+        _main.start();
+
         _virtualExecutor = Objects.requireNonNull(StringUtil.isBlank(_name)
             ? VirtualThreads.getDefaultVirtualThreadFactoryExecutor()
             : VirtualThreads.getNamedVirtualThreadFactoryExecutor(_name));
+        if (_threads != null)
+            _virtualExecutor = new TrackingVirtualExecutor(_virtualExecutor);
         super.doStart();
     }
 
@@ -80,6 +119,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
     {
         super.doStop();
         _virtualExecutor = null;
+        _main = null;
 
         try (AutoLock.WithCondition l = _joinLock.lock())
         {
@@ -159,5 +199,50 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
     public void execute(Runnable task)
     {
         _virtualExecutor.execute(task);
+    }
+
+    private class TrackingVirtualExecutor implements VirtualThreads.ThreadFactoryExecutor
+    {
+        private final VirtualThreads.ThreadFactoryExecutor _threadFactoryExecutor;
+
+        private TrackingVirtualExecutor(VirtualThreads.ThreadFactoryExecutor threadFactoryExecutor)
+        {
+            _threadFactoryExecutor = threadFactoryExecutor;
+        }
+
+        @Override
+        public void execute(Runnable task)
+        {
+            _threadFactoryExecutor.execute(() ->
+            {
+                try
+                {
+                    _threads.add(Thread.currentThread());
+                    task.run();
+                }
+                finally
+                {
+                    _threads.remove(Thread.currentThread());
+                }
+            });
+        }
+
+        @Override
+        public Thread newThread(Runnable task)
+        {
+            Thread thread = _threadFactoryExecutor.newThread(() ->
+            {
+                try
+                {
+                    task.run();
+                }
+                finally
+                {
+                    _threads.remove(Thread.currentThread());
+                }
+            });
+            _threads.add(thread);
+            return thread;
+        }
     }
 }
