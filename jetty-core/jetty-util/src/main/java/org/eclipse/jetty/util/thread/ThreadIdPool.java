@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.MemoryUtils;
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
@@ -46,6 +47,7 @@ public class ThreadIdPool<E> implements Dumpable
     // use getIntegersPerCacheLine() instead of getLongsPerCacheLine() b/c references could be compressed.
     private static final int SPREAD_FACTOR = MemoryUtils.getIntegersPerCacheLine();
 
+    private final int _capacity;
     private final AtomicReferenceArray<E> _items;
 
     public ThreadIdPool()
@@ -55,7 +57,8 @@ public class ThreadIdPool<E> implements Dumpable
 
     public ThreadIdPool(int capacity)
     {
-        _items = new AtomicReferenceArray<>((calcCapacity(capacity) + 1) * SPREAD_FACTOR);
+        _capacity = TypeUtil.ceilToNextPowerOfTwo(capacity);
+        _items = new AtomicReferenceArray<>((calcCapacity(_capacity) + 1) * SPREAD_FACTOR);
         if (LOG.isDebugEnabled())
             LOG.debug("{}", this);
     }
@@ -77,7 +80,7 @@ public class ThreadIdPool<E> implements Dumpable
      */
     public int capacity()
     {
-        return (_items.length() - 1) / SPREAD_FACTOR;
+        return _capacity;
     }
 
     /**
