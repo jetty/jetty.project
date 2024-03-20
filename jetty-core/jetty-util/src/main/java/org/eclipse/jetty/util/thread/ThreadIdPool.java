@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import org.eclipse.jetty.util.MemoryUtils;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.TypeUtil;
@@ -28,6 +20,14 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A fixed sized pool of items that uses ThreadId to avoid contention.
@@ -43,9 +43,8 @@ public class ThreadIdPool<E> implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadIdPool.class);
 
-    // How far the entries in the AtomicReferenceArray are spread apart to avoid false sharing;
-    // use getIntegersPerCacheLine() instead of getLongsPerCacheLine() b/c references could be compressed.
-    private static final int SPREAD_FACTOR = MemoryUtils.getIntegersPerCacheLine();
+    // How far the entries in the AtomicReferenceArray are spread apart to avoid false sharing.
+    private static final int SPREAD_FACTOR = MemoryUtils.getReferencesPerCacheLine();
 
     private final int _capacity;
     private final AtomicReferenceArray<E> _items;
