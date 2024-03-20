@@ -308,6 +308,9 @@ public abstract class Resource implements Iterable<Resource>
         {
             if (!isDirectory())
             {
+                if (Files.isDirectory(destination))
+                    destination = destination.resolve(getFileName());
+
                 // use old school stream based copy
                 try (InputStream in = newInputStream(); OutputStream out = Files.newOutputStream(destination))
                 {
