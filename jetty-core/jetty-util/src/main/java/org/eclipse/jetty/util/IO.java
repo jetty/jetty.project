@@ -27,7 +27,6 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
@@ -36,11 +35,13 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -224,10 +225,46 @@ public class IO
     }
 
     /**
-     * Copy the contents of a directory from one directory to another.
+     * Copy the contents of a source directory to destination directory.
      *
      * @param srcDir the source directory
      * @param destDir the destination directory
+     * @throws IOException if unable to copy the file
+     */
+    public static void copyDir(Path srcDir, Path destDir) throws IOException
+    {
+        if (!Files.isDirectory(Objects.requireNonNull(srcDir)))
+            throw new IllegalArgumentException("Source is not a directory: " + srcDir);
+        if (!Files.isDirectory(Objects.requireNonNull(destDir)))
+            throw new IllegalArgumentException("Dest is not a directory: " + destDir);
+
+        BiFunction<Path, Path, Path> resolver = srcDir.getFileSystem().equals(destDir.getFileSystem())
+            ? Path::resolve
+            : IO::resolveDifferentFileSystem;
+
+        try (Stream<Path> sourceStream = Files.walk(srcDir))
+        {
+            Iterator<Path> iterFiles = sourceStream
+                .filter(Files::isRegularFile)
+                .iterator();
+            while (iterFiles.hasNext())
+            {
+                Path sourceFile = iterFiles.next();
+                Path relative = srcDir.relativize(sourceFile);
+                Path destFile = resolver.apply(destDir, relative);
+                if (!Files.exists(destFile.getParent()))
+                    Files.createDirectories(destFile.getParent());
+                copyFile(sourceFile, destFile);
+            }
+        }
+    }
+
+    /**
+     * Copy the contents of a source directory to destination directory.
+     *
+     * @param srcDir the source directory
+     * @param destDir the destination directory
+     * @param copyOptions the options to use on the {@link Files#copy(Path, Path, CopyOption...)} commands.
      * @throws IOException if unable to copy the file
      */
     public static void copyDir(Path srcDir, Path destDir, CopyOption... copyOptions) throws IOException
@@ -237,7 +274,11 @@ public class IO
         if (!Files.isDirectory(Objects.requireNonNull(destDir)))
             throw new IllegalArgumentException("Dest is not a directory: " + destDir);
 
-        try (Stream<Path> sourceStream = Files.walk(srcDir, 20))
+        BiFunction<Path, Path, Path> resolver = srcDir.getFileSystem().equals(destDir.getFileSystem())
+            ? Path::resolve
+            : IO::resolveDifferentFileSystem;
+
+        try (Stream<Path> sourceStream = Files.walk(srcDir))
         {
             Iterator<Path> iterFiles = sourceStream
                 .filter(Files::isRegularFile)
@@ -245,11 +286,38 @@ public class IO
             while (iterFiles.hasNext())
             {
                 Path sourceFile = iterFiles.next();
-                URI relativeSrc = srcDir.toUri().relativize(sourceFile.toUri());
-                Path destFile = destDir.resolve(relativeSrc.toASCIIString());
+                Path relative = srcDir.relativize(sourceFile);
+                Path destFile = resolver.apply(destDir, relative);
                 if (!Files.exists(destFile.getParent()))
                     Files.createDirectories(destFile.getParent());
                 Files.copy(sourceFile, destFile, copyOptions);
+            }
+        }
+    }
+
+    static Path resolveDifferentFileSystem(Path path, Path relative)
+    {
+        for (Path segment : relative)
+            path = path.resolve(segment.toString());
+        return path;
+    }
+
+    public static void copyFile(Path srcFile, Path destFile) throws IOException
+    {
+        if (!Files.isRegularFile(Objects.requireNonNull(srcFile)))
+            throw new IllegalArgumentException("Source is not a file: " + srcFile);
+        Objects.requireNonNull(destFile);
+
+        if (!Files.exists(destFile) && srcFile.getFileSystem().equals(destFile.getFileSystem()))
+        {
+            Files.copy(srcFile, destFile, StandardCopyOption.COPY_ATTRIBUTES);
+        }
+        else
+        {
+            try (InputStream in = Files.newInputStream(srcFile);
+                 OutputStream out = Files.newOutputStream(destFile))
+            {
+                IO.copy(in, out);
             }
         }
     }

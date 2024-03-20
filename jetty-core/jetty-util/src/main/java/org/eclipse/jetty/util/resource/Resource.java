@@ -21,7 +21,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -29,8 +28,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -329,16 +326,12 @@ public abstract class Resource implements Iterable<Resource>
             {
                 // to a directory, preserve the filename
                 Path destPath = destination.resolve(src.getFileName().toString());
-                Files.copy(src, destPath,
-                    StandardCopyOption.COPY_ATTRIBUTES,
-                    StandardCopyOption.REPLACE_EXISTING);
+                IO.copyFile(src, destPath);
             }
             else
             {
                 // to a file, use destination as-is
-                Files.copy(src, destination,
-                    StandardCopyOption.COPY_ATTRIBUTES,
-                    StandardCopyOption.REPLACE_EXISTING);
+                IO.copyFile(src, destination);
             }
             return;
         }
@@ -346,41 +339,7 @@ public abstract class Resource implements Iterable<Resource>
         // At this point this PathResource is a directory.
         assert isDirectory();
 
-        BiFunction<Path, Path, Path> resolver = src.getFileSystem().equals(destination.getFileSystem())
-            ? Path::resolve
-            : Resource::resolveDifferentFileSystem;
-
-        try (Stream<Path> entriesStream = Files.walk(src))
-        {
-            for (Iterator<Path> pathIterator = entriesStream.iterator(); pathIterator.hasNext();)
-            {
-                Path path = pathIterator.next();
-                if (src.equals(path))
-                    continue;
-
-                Path relative = src.relativize(path);
-                Path destPath = resolver.apply(destination, relative);
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("CopyTo: {} > {}", path, destPath);
-                if (Files.isDirectory(path))
-                {
-                    ensureDirExists(destPath);
-                }
-                else
-                {
-                    ensureDirExists(destPath.getParent());
-                    Files.copy(path, destPath, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        }
-    }
-
-    static Path resolveDifferentFileSystem(Path path, Path relative)
-    {
-        for (Path segment : relative)
-            path = path.resolve(segment.toString());
-        return path;
+        IO.copyDir(src, destination);
     }
 
     void ensureDirExists(Path dir) throws IOException
