@@ -254,4 +254,16 @@ public class TypeUtilTest
         assertThat(TypeUtil.toShortName(clazz), is(shortName));
     }
 
+    @Test
+    public void testCeilNextPowerOfTwo()
+    {
+        assertThat(TypeUtil.ceilToNextPowerOfTwo(-1), is(1));
+        assertThat(TypeUtil.ceilToNextPowerOfTwo(0), is(1));
+        assertThat(TypeUtil.ceilToNextPowerOfTwo(1), is(1));
+        assertThat(TypeUtil.ceilToNextPowerOfTwo(2), is(2));
+        assertThat(TypeUtil.ceilToNextPowerOfTwo(3), is(4));
+        assertThat(TypeUtil.ceilToNextPowerOfTwo(4), is(4));
+        assertThat(TypeUtil.ceilToNextPowerOfTwo(5), is(8));
+        assertThat(TypeUtil.ceilToNextPowerOfTwo(Integer.MAX_VALUE - 1), is(Integer.MAX_VALUE));
+    }
 }

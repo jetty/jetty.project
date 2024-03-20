@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -119,7 +120,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
-            return Math.max(1, Math.min(cpus, threads / 8));
+            return Math.max(1, TypeUtil.ceilToNextPowerOfTwo(Math.min(cpus, threads / 8)));
         }
         return cpus;
     }
