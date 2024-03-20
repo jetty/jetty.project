@@ -38,6 +38,7 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
@@ -129,7 +130,7 @@ public class WebSocketOverHTTP2Test
         server.setHandler(new EventsHandler(server.getHandler())
         {
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 if (onComplete != null)
                     onComplete.run();
