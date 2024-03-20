@@ -41,7 +41,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -238,10 +237,6 @@ public class IO
         if (!Files.isDirectory(Objects.requireNonNull(destDir)))
             throw new IllegalArgumentException("Dest is not a directory: " + destDir);
 
-        BiFunction<Path, Path, Path> resolver = srcDir.getFileSystem().equals(destDir.getFileSystem())
-            ? Path::resolve
-            : IO::resolveDifferentFileSystem;
-
         try (Stream<Path> sourceStream = Files.walk(srcDir))
         {
             Iterator<Path> iterFiles = sourceStream
@@ -251,7 +246,7 @@ public class IO
             {
                 Path sourceFile = iterFiles.next();
                 Path relative = srcDir.relativize(sourceFile);
-                Path destFile = resolver.apply(destDir, relative);
+                Path destFile = resolvePath(destDir, relative);
                 if (!Files.exists(destFile.getParent()))
                     Files.createDirectories(destFile.getParent());
                 copyFile(sourceFile, destFile);
@@ -274,10 +269,6 @@ public class IO
         if (!Files.isDirectory(Objects.requireNonNull(destDir)))
             throw new IllegalArgumentException("Dest is not a directory: " + destDir);
 
-        BiFunction<Path, Path, Path> resolver = srcDir.getFileSystem().equals(destDir.getFileSystem())
-            ? Path::resolve
-            : IO::resolveDifferentFileSystem;
-
         try (Stream<Path> sourceStream = Files.walk(srcDir))
         {
             Iterator<Path> iterFiles = sourceStream
@@ -287,7 +278,7 @@ public class IO
             {
                 Path sourceFile = iterFiles.next();
                 Path relative = srcDir.relativize(sourceFile);
-                Path destFile = resolver.apply(destDir, relative);
+                Path destFile = resolvePath(destDir, relative);
                 if (!Files.exists(destFile.getParent()))
                     Files.createDirectories(destFile.getParent());
                 Files.copy(sourceFile, destFile, copyOptions);
@@ -295,11 +286,26 @@ public class IO
         }
     }
 
-    static Path resolveDifferentFileSystem(Path path, Path relative)
+    /**
+     * Perform a resolve of a path against a relative path in a
+     * way that is smart about {@link java.nio.file.FileSystem} differences.
+     *
+     * @param basePath the base Path
+     * @param relative the Path to resolve against base Path
+     * @return the new Path object relative to the base Path
+     */
+    public static Path resolvePath(Path basePath, Path relative)
     {
-        for (Path segment : relative)
-            path = path.resolve(segment.toString());
-        return path;
+        if (basePath.getFileSystem().equals(relative.getFileSystem()))
+        {
+            return basePath.resolve(relative);
+        }
+        else
+        {
+            for (Path segment : relative)
+                basePath = basePath.resolve(segment.toString());
+            return basePath;
+        }
     }
 
     public static void copyFile(Path srcFile, Path destFile) throws IOException

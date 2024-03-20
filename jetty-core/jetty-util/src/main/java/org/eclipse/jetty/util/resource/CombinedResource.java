@@ -14,12 +14,8 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -290,9 +286,7 @@ public class CombinedResource extends Resource
         for (Resource r : all)
         {
             Path relative = getPathTo(r);
-            Path pathTo = Objects.equals(relative.getFileSystem(), destination.getFileSystem())
-                ? destination.resolve(relative)
-                : resolveDifferentFileSystem(destination, relative);
+            Path pathTo = IO.resolvePath(destination, relative);
 
             if (r.isDirectory())
             {
@@ -301,19 +295,7 @@ public class CombinedResource extends Resource
             else
             {
                 ensureDirExists(pathTo.getParent());
-                Path pathFrom = r.getPath();
-                if (pathFrom != null)
-                {
-                    Files.copy(pathFrom, pathTo, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
-                }
-                else
-                {
-                    // use old school stream based copy
-                    try (InputStream in = r.newInputStream(); OutputStream out = Files.newOutputStream(pathTo))
-                    {
-                        IO.copy(in, out);
-                    }
-                }
+                r.copyTo(pathTo);
             }
         }
     }
