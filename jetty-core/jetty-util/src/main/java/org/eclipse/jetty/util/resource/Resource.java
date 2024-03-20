@@ -13,30 +13,22 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.*;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -304,6 +296,9 @@ public abstract class Resource implements Iterable<Resource>
     public void copyTo(Path destination)
         throws IOException
     {
+        if (!exists())
+            throw new IOException("Resource does not exist: " + getFileName());
+
         Path src = getPath();
         if (src == null)
         {

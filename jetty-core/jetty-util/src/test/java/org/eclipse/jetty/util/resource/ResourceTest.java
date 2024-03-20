@@ -13,19 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -42,16 +29,23 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -319,6 +313,31 @@ public class ResourceTest
         resource.copyTo(targetFile);
 
         assertResourceSameAsPath(resource, targetFile);
+    }
+
+    @Test
+    public void testNonExistentResource()
+    {
+        Path nonExistentFile = workDir.getPathFile("does-not-exists");
+        Resource resource = resourceFactory.newResource(nonExistentFile);
+        assertFalse(resource.exists());
+        assertThrows(IOException.class, () -> resource.copyTo(workDir.getEmptyPathDir()));
+        assertTrue(resource.list().isEmpty());
+        assertFalse(resource.contains(resourceFactory.newResource(workDir.getPath())));
+        assertEquals("does-not-exists", resource.getFileName());
+        assertFalse(resource.isReadable());
+        assertEquals(nonExistentFile, resource.getPath());
+        assertEquals(Instant.EPOCH, resource.lastModified());
+        assertEquals(0L, resource.length());
+        assertThrows(IOException.class, resource::newInputStream);
+        assertThrows(IOException.class, resource::newReadableByteChannel);
+        assertEquals(nonExistentFile.toUri(), resource.getURI());
+        assertFalse(resource.isAlias());
+        assertNull(resource.getRealURI());
+        assertNotNull(resource.getName());
+        Resource subResource = resource.resolve("does-not-exist-too");
+        assertFalse(subResource.exists());
+        assertEquals(nonExistentFile.resolve("does-not-exist-too"), subResource.getPath());
     }
 
     @Test
