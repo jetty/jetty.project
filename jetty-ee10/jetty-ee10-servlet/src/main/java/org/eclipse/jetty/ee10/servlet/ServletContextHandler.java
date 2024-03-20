@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -2809,7 +2810,7 @@ public class ServletContextHandler extends ContextHandler
             // If a WAR file is mounted, or is extracted to a temp directory,
             // then the first entry of the resource base must be the WAR file.
             Resource resource = ServletContextHandler.this.getResource(path);
-            if (resource == null)
+            if (Resources.missing(resource))
                 return null;
 
             for (Resource r: resource)
@@ -2831,15 +2832,15 @@ public class ServletContextHandler extends ContextHandler
                 URL url = getResource(path);
                 if (url == null)
                     return null;
-                Resource r = ResourceFactory.of(ServletContextHandler.this).newResource(url);
-                // Cannot serve directories as an InputStream
-                if (r.isDirectory())
-                    return null;
-                return r.newInputStream();
+                // Per servlet rules, we have to use URLConnection to return this stream.
+                URLConnection urlConnection = url.openConnection();
+                urlConnection.setUseCaches(false);
+                return urlConnection.getInputStream();
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to getResourceAsStream: {}", path, e);
                 return null;
             }
         }

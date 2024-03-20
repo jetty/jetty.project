@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -1938,7 +1939,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             if (path == null)
                 return null;
             Resource resource = ContextHandler.this.getResource(path);
-            if (resource != null && resource.exists())
+            if (Resources.missing(resource))
                 return resource.getURI().toURL();
             return null;
         }
@@ -1951,15 +1952,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 URL url = getResource(path);
                 if (url == null)
                     return null;
-                Resource r = ResourceFactory.of(ContextHandler.this).newResource(url);
-                // Cannot serve directories as an InputStream
-                if (r.isDirectory())
-                    return null;
-                return r.newInputStream();
+                // Per servlet rules, we have to use URLConnection to return this stream.
+                URLConnection urlConnection = url.openConnection();
+                urlConnection.setUseCaches(false);
+                return urlConnection.getInputStream();
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to getResourceAsStream: {}", path, e);
                 return null;
             }
         }
