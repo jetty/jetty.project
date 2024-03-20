@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @ManagedObject("A thread pool")
-public class QueuedThreadPool extends ContainerLifeCycle implements ThreadPool, ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
+public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QueuedThreadPool.class);
     private static final Runnable NOOP = () ->

@@ -34,7 +34,6 @@ public class VirtualThreadPoolTest
     public void testNamed() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();
-        assertThat(vtp.getName(), startsWith("vtp"));
         vtp.setName("namedV");
         vtp.start();
 
@@ -50,7 +49,6 @@ public class VirtualThreadPoolTest
     public void testJoin() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();
-        assertThat(vtp.getName(), startsWith("vtp"));
         vtp.start();
 
         CountDownLatch running = new CountDownLatch(1);
@@ -80,7 +78,6 @@ public class VirtualThreadPoolTest
     public void testExecute() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();
-        assertThat(vtp.getName(), startsWith("vtp"));
         vtp.start();
 
         CountDownLatch ran = new CountDownLatch(1);
@@ -93,7 +90,6 @@ public class VirtualThreadPoolTest
     public void testTry() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();
-        assertThat(vtp.getName(), startsWith("vtp"));
         vtp.start();
 
         CountDownLatch ran = new CountDownLatch(1);
@@ -106,7 +102,7 @@ public class VirtualThreadPoolTest
     public void testThread() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();
-        assertThat(vtp.getName(), startsWith("vtp"));
+        vtp.setName("vtp");
         vtp.start();
 
         CountDownLatch ran = new CountDownLatch(1);

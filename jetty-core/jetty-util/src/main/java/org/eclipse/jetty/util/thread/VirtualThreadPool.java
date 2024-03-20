@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -32,13 +33,13 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
 {
     private static final Logger LOG = LoggerFactory.getLogger(VirtualThreadPool.class);
 
-    private String _name = "vtp-%x".formatted(hashCode());
+    private String _name = null;
     private VirtualThreads.ThreadFactoryExecutor _virtualExecutor;
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
 
     public VirtualThreadPool()
     {
-        if (VirtualThreads.getDefaultVirtualThreadsExecutor() == null)
+        if (!VirtualThreads.areSupported())
             throw new IllegalStateException("Virtual Threads not supported");
     }
 
@@ -60,7 +61,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
     {
         if (isRunning())
             throw new IllegalStateException(getState());
-        if (StringUtil.isBlank(name))
+        if (StringUtil.isBlank(name) && name != null)
             throw new IllegalArgumentException("Blank name");
         _name = name;
     }
@@ -68,9 +69,9 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
     @Override
     protected void doStart() throws Exception
     {
-        _virtualExecutor = VirtualThreads.getNamedVirtualThreadsExecutor(_name);
-        if (_virtualExecutor == null)
-            throw new IllegalStateException("Virtual Threads not supported: " + _name);
+        _virtualExecutor = Objects.requireNonNull(StringUtil.isBlank(_name)
+            ? VirtualThreads.getDefaultVirtualThreadFactoryExecutor()
+            : VirtualThreads.getNamedVirtualThreadFactoryExecutor(_name));
         super.doStart();
     }
 
