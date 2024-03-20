@@ -205,7 +205,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         private final HttpChannel _channel;
         private final Queue<ByteBuffer> _buffers = new ArrayDeque<>();
         private Boolean _aggregating;
-        private ByteBuffer _aggregate;
+        private ByteBuffer _aggregate; // TODO use RetainableByteBuffer.Aggregator
 
         public ArrayBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
         {

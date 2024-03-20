@@ -376,7 +376,7 @@ public class Parser
             if (available < expecting)
             {
                 // not enough data to complete this frame, just copy it
-                BufferUtil.append(aggregate.getByteBuffer(), buffer);
+                aggregate.append(buffer);
                 return null;
             }
 

@@ -333,7 +333,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public void onUpgradeTo(ByteBuffer buffer)
     {
-        BufferUtil.append(getRequestBuffer(), buffer);
+        getRetainableRequestBuffer().append(buffer);
     }
 
     @Override
@@ -356,11 +356,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
     }
 
-    private ByteBuffer getRequestBuffer()
+    private RetainableByteBuffer getRetainableRequestBuffer()
     {
         if (_retainableByteBuffer == null)
             _retainableByteBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-        return _retainableByteBuffer.getByteBuffer();
+        return _retainableByteBuffer;
+    }
+
+    private ByteBuffer getRequestBuffer()
+    {
+        return getRetainableRequestBuffer().getByteBuffer();
     }
 
     public boolean isRequestBufferEmpty()
