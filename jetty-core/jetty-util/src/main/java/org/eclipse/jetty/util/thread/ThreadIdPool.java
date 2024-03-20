@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import org.eclipse.jetty.util.MemoryUtils;
-import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +20,14 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import org.eclipse.jetty.util.MemoryUtils;
+import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A fixed sized pool of items that uses ThreadId to avoid contention.
