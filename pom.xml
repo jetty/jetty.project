@@ -1416,7 +1416,7 @@
             <detectOfflineLinks>false</detectOfflineLinks>
             <show>protected</show>
             <attach>true</attach>
-            <isOffline>true</isOffline>
+            <offline>true</offline>
             <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
           </configuration>
         </plugin>
@@ -2313,7 +2313,6 @@
                   <skip>${spotbugs.skip}</skip>
                   <failOnError>${spotbugs.failOnError}</failOnError>
                   <xmlOutput>true</xmlOutput>
-                  <spotbugsXmlOutput>false</spotbugsXmlOutput>
                   <effort>${spotbugs.effort}</effort>
                   <threshold>${spotbugs.threshold}</threshold>
                 </configuration>
