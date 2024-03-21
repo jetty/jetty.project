@@ -277,6 +277,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                 while (true)
                 {
                     int slot = _threads.offer(this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("offered to slot " + slot);
 
                     if (slot < 0)
                         // no slot available
@@ -316,7 +318,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                     finally
                     {
                         // clear interrupted status between reserved thread iterations
-                        if (_thread.isInterrupted() && LOG.isDebugEnabled())
+                        if (Thread.interrupted() && LOG.isDebugEnabled())
                             LOG.debug("{} was interrupted", _thread);
                     }
                 }
@@ -342,6 +344,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         {
             try
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("waiting for task");
                 if (_idleTimeoutMs <= 0)
                     _semaphore.acquire();
                 else if (!_semaphore.tryAcquire(_idleTimeoutMs, TimeUnit.MILLISECONDS))
@@ -365,7 +369,11 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             _semaphore.release();
             Thread thread = _thread;
             if (thread != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("interrupting thread {} for stop", thread);
                 thread.interrupt();
+            }
         }
 
         @Override

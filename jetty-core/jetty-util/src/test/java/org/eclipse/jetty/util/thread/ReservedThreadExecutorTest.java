@@ -15,6 +15,8 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,6 +76,44 @@ public class ReservedThreadExecutorTest
     {
         // Reserved threads are lazily started.
         assertThat(_executor._queue.size(), is(0));
+    }
+
+    @Test
+    public void testInterruptedFlagCleared()
+    {
+        // Prime the reserved executor.
+        for (int i = 0; i < SIZE; i++)
+        {
+            assertFalse(_reservedExecutor.tryExecute(NOOP));
+        }
+        for (int i = 0; i < SIZE; i++)
+        {
+            _executor.startThread();
+        }
+        assertThat(_executor._queue.size(), is(0));
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
+
+        // Execute tasks that leave the interrupted flag to true.
+        for (int i = 0; i < SIZE; i++)
+        {
+            assertTrue(_reservedExecutor.tryExecute(() -> Thread.currentThread().interrupt()));
+        }
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
+
+        // Check that the interrupted flag was cleared.
+        List<Boolean> interruptedFlags = new CopyOnWriteArrayList<>();
+        for (int i = 0; i < SIZE; i++)
+        {
+            assertTrue(_reservedExecutor.tryExecute(() ->
+            {
+                boolean interrupted = Thread.interrupted();
+                interruptedFlags.add(interrupted);
+            }));
+        }
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
+
+        assertThat(interruptedFlags.size(), is(SIZE));
+        assertThat(interruptedFlags.stream().allMatch(interrupted -> interrupted == false), is(true));
     }
 
     @Test
