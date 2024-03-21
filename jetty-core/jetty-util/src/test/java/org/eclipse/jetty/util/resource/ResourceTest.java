@@ -300,10 +300,16 @@ public class ResourceTest
         Assumptions.assumeTrue(resource != null);
 
         Path targetDir = workDir.getEmptyPathDir();
-        resource.copyTo(targetDir);
-
-        Path targetToTest = resource.isDirectory() ? targetDir : targetDir.resolve(resource.getFileName());
-        assertResourceSameAsPath(resource, targetToTest);
+        if (Resources.exists(resource))
+        {
+            resource.copyTo(targetDir);
+            Path targetToTest = resource.isDirectory() ? targetDir : targetDir.resolve(resource.getFileName());
+            assertResourceSameAsPath(resource, targetToTest);
+        }
+        else
+        {
+            assertThrows(IOException.class, () -> resource.copyTo(targetDir));
+        }
     }
 
     @ParameterizedTest
@@ -318,9 +324,15 @@ public class ResourceTest
         String filename = resource.getFileName();
         Path targetDir = workDir.getEmptyPathDir();
         Path targetFile = targetDir.resolve(filename);
-        resource.copyTo(targetFile);
-
-        assertResourceSameAsPath(resource, targetFile);
+        if (Resources.exists(resource))
+        {
+            resource.copyTo(targetFile);
+            assertResourceSameAsPath(resource, targetFile);
+        }
+        else
+        {
+            assertThrows(IOException.class, () -> resource.copyTo(targetFile));
+        }
     }
 
     @Test
