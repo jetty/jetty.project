@@ -313,6 +313,12 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                         if (LOG.isDebugEnabled())
                             LOG.debug("{} task {} failure", ReservedThreadExecutor.this, task, t);
                     }
+                    finally
+                    {
+                        // clear interrupted status between reserved thread iterations
+                        if (_thread.isInterrupted() && LOG.isDebugEnabled())
+                            LOG.debug("{} was interrupted", _thread);
+                    }
                 }
             }
             catch (Throwable t)
