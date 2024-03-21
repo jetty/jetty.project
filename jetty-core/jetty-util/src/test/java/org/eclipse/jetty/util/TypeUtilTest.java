@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -257,7 +258,7 @@ public class TypeUtilTest
     @Test
     public void testCeilNextPowerOfTwo()
     {
-        assertThat(TypeUtil.ceilToNextPowerOfTwo(-1), is(1));
+        assertThrows(IllegalArgumentException.class, () -> TypeUtil.ceilToNextPowerOfTwo(-1));
         assertThat(TypeUtil.ceilToNextPowerOfTwo(0), is(1));
         assertThat(TypeUtil.ceilToNextPowerOfTwo(1), is(1));
         assertThat(TypeUtil.ceilToNextPowerOfTwo(2), is(2));

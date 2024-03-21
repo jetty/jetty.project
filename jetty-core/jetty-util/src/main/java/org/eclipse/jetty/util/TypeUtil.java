@@ -811,6 +811,8 @@ public class TypeUtil
      */
     public static int ceilToNextPowerOfTwo(int value)
     {
+        if (value < 0)
+            throw new IllegalArgumentException("value must not be negative");
         int result = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(value - 1));
         return result > 0 ? result : Integer.MAX_VALUE;
     }
