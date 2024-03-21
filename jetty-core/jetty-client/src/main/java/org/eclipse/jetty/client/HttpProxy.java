@@ -42,8 +42,8 @@ import org.slf4j.LoggerFactory;
  * <p>Client-side proxy configuration for HTTP proxying, as specified by
  * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.</p>
  * <p>By default the communication between client and proxy happens using
- * the HTTP/1.1 protocol, but it may be configured otherwise and use
- * also other HTTP protocol versions such as HTTP/2.</p>
+ * the HTTP/1.1 protocol, but it may be configured to use
+ * also other HTTP protocol versions, such as HTTP/2.</p>
  */
 public class HttpProxy extends ProxyConfiguration.Proxy
 {
@@ -88,9 +88,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     /**
      * <p>Creates a new instance with the given HTTP proxy address and TLS configuration.</p>
-     * <p>The {@link SslContextFactory} has a possibly different configuration from the
-     * one configured in {@link HttpClient} and it is used to communicate with the HTTP
-     * proxy only (not to servers).</p>
+     * <p>The {@link SslContextFactory} could have a different configuration from the
+     * one configured in {@link HttpClient}, and it is used to communicate with the HTTP
+     * proxy only (not to communicate with the servers).</p>
      *
      * @param address the HTTP proxy address (host and port)
      * @param sslContextFactory the {@link SslContextFactory.Client} to use to communicate with the HTTP proxy
@@ -102,9 +102,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     /**
      * <p>Creates a new instance with the given HTTP proxy address, TLS configuration and protocol.</p>
-     * <p>The {@link SslContextFactory} has a possibly different configuration from the
+     * <p>The {@link SslContextFactory} could have a different configuration from the
      * one configured in {@link HttpClient} and it is used to communicate with the HTTP
-     * proxy only (not to servers).</p>
+     * proxy only (not to communicate with the servers).</p>
      *
      * @param address the HTTP proxy address (host and port)
      * @param sslContextFactory the {@link SslContextFactory.Client} to use to communicate with the HTTP proxy
@@ -117,9 +117,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     /**
      * <p>Creates a new instance with the given HTTP proxy {@link Origin} and TLS configuration.</p>
-     * <p>The {@link SslContextFactory} has a possibly different configuration from the
+     * <p>The {@link SslContextFactory} could have a different configuration from the
      * one configured in {@link HttpClient} and it is used to communicate with the HTTP
-     * proxy only (not to servers).</p>
+     * proxy only (not to communicate with the servers).</p>
      *
      * @param origin the HTTP proxy {@link Origin} information
      * @param sslContextFactory the {@link SslContextFactory.Client} to use to communicate with the HTTP proxy
