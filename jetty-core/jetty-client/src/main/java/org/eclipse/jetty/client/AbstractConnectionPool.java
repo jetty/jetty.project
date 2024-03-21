@@ -434,30 +434,69 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (removed)
         {
             released(connection);
-            removed(connection);
+            onRemoved(connection);
         }
         return removed;
     }
 
+    /**
+     * <p>Callback method invoked when a new {@link Connection} has been created.</p>
+     *
+     * @param connection the {@link Connection} that has been created
+     * @see #onRemoved(Connection)
+     */
     protected void onCreated(Connection connection)
     {
     }
 
+    /**
+     * @param connection the {@link Connection} that become idle
+     * @param close whether this pool is closing
+     * @return {@code true} to indicate that the connection is idle, {@code false} otherwise
+     * @deprecated do not override because its usage is racy
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     protected boolean idle(Connection connection, boolean close)
     {
         return !close;
     }
 
+    /**
+     * @param connection the {@link Connection} that was acquired
+     * @deprecated do not override because its usage is racy
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     protected void acquired(Connection connection)
     {
     }
 
+    /**
+     * @param connection the {@link Connection} that was released
+     * @deprecated do not override because its usage is racy
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     protected void released(Connection connection)
     {
     }
 
+    /**
+     * @param connection the {@link Connection} that was removed
+     * @deprecated replaced by {@link #onRemoved(Connection)}
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     protected void removed(Connection connection)
     {
+    }
+
+    /**
+     * <p>Callback method invoked when a {@link Connection} has been removed from this pool.</p>
+     *
+     * @param connection the {@link Connection} that was removed
+     * @see #onCreated(Connection)
+     */
+    protected void onRemoved(Connection connection)
+    {
+        removed(connection);
     }
 
     Collection<Connection> getIdleConnections()
@@ -493,7 +532,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Removed terminated entry {}", entry);
-                removed(connection);
+                onRemoved(connection);
                 IO.close(connection);
             }
             if (!entry.isInUse())
@@ -572,12 +611,11 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 pending.decrementAndGet();
                 reserved.enable(connection, false);
                 idle(connection, false);
-                complete(null);
+                super.succeeded(connection);
                 proceed();
             }
             else
             {
-                // reduce pending on failure and if not multiplexing also reduce demand
                 failed(new IllegalArgumentException("Invalid connection object: " + connection));
             }
         }
@@ -587,10 +625,9 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Connection creation failed {}", reserved, x);
-            // reduce pending on failure and if not multiplexing also reduce demand
             pending.decrementAndGet();
             reserved.remove();
-            completeExceptionally(x);
+            super.failed(x);
             destination.failed(x);
         }
     }
