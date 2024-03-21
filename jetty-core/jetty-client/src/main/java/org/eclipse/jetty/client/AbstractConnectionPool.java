@@ -453,7 +453,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
      * @param connection the {@link Connection} that become idle
      * @param close whether this pool is closing
      * @return {@code true} to indicate that the connection is idle, {@code false} otherwise
-     * @deprecated do not override because its usage is racy
+     * @deprecated Racy API. Do not use. There is no replacement.
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
     protected boolean idle(Connection connection, boolean close)
@@ -463,7 +463,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     /**
      * @param connection the {@link Connection} that was acquired
-     * @deprecated do not override because its usage is racy
+     * @deprecated Racy API. Do not use. There is no replacement.
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
     protected void acquired(Connection connection)
@@ -472,7 +472,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     /**
      * @param connection the {@link Connection} that was released
-     * @deprecated do not override because its usage is racy
+     * @deprecated Racy API. Do not use. There is no replacement.
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
     protected void released(Connection connection)
