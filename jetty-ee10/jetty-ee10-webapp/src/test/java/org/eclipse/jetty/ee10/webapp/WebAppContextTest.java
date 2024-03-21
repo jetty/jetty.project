@@ -14,14 +14,20 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,13 +49,16 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -789,6 +798,95 @@ public class WebAppContextTest
         Path extLibs = MavenTestingUtils.getTestResourcePathDir("ext");
         extLibs = extLibs.toAbsolutePath();
         assertThat("URL[0]", urls[0].toURI(), is(extLibs.toUri()));
+    }
+
+    @Test
+    public void testRestartWebApp(WorkDir workDir) throws Exception
+    {
+        Server server = newServer();
+
+        // Create war
+        Path tempDir = workDir.getEmptyPathDir();
+        Path testWebappDir = MavenPaths.projectBase().resolve("src/test/webapp");
+        assertTrue(Files.exists(testWebappDir));
+        Path warFile = tempDir.resolve("demo.war");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(testWebappDir, root);
+        }
+
+        // Create WebAppContext
+        WebAppContext context = new WebAppContext();
+        ResourceFactory resourceFactory = context.getResourceFactory();
+        Resource warResource = resourceFactory.newResource(warFile);
+        context.setContextPath("/");
+        context.setWarResource(warResource);
+        context.setExtractWAR(true);
+
+        server.setHandler(context);
+        server.start();
+
+        // Should not have failed the start of the WebAppContext
+        assertTrue(context.isAvailable(), "WebAppContext should be available");
+
+        // Test WebAppClassLoader contents for expected directory reference
+        List<String> actualRefs = getWebAppClassLoaderUrlRefs(context);
+        String[] expectedRefs = new String[]{
+            "/webapp/WEB-INF/classes/",
+            "/webapp/WEB-INF/lib/acme.jar!/",
+            "/webapp/WEB-INF/lib/alpha.jar!/",
+            "/webapp/WEB-INF/lib/omega.jar!/"
+        };
+
+        assertThat("URLs (sub) refs", actualRefs, containsInAnyOrder(expectedRefs));
+
+        // Simulate a reload
+        context.stop();
+        Thread.sleep(1000);
+        touch(warFile);
+        context.start();
+
+        actualRefs = getWebAppClassLoaderUrlRefs(context);
+        expectedRefs = new String[]{
+            "/webapp/WEB-INF/classes/",
+            "/webapp/WEB-INF/lib/acme.jar!/",
+            "/webapp/WEB-INF/lib/alpha.jar!/",
+            "/webapp/WEB-INF/lib/omega.jar!/"
+        };
+        assertThat("URLs (sub) refs", actualRefs, containsInAnyOrder(expectedRefs));
+    }
+
+    private void touch(Path path) throws IOException
+    {
+        FileTime now = FileTime.fromMillis(System.currentTimeMillis());
+        Files.setLastModifiedTime(path, now);
+    }
+
+    private List<String> getWebAppClassLoaderUrlRefs(WebAppContext context)
+    {
+        ClassLoader contextClassLoader = context.getClassLoader();
+        assertThat(contextClassLoader, instanceOf(WebAppClassLoader.class));
+        WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
+        String webappTempDir = context.getTempDirectory().toString();
+        List<String> actualRefs = new ArrayList<>();
+        URL[] urls = webAppClassLoader.getURLs();
+        for (URL url: urls)
+        {
+            String ref = url.toExternalForm();
+            int idx = ref.indexOf(webappTempDir);
+            // strip temp directory from URL (to make test easier to write)
+            if (idx >= 0)
+                ref = ref.substring(idx + webappTempDir.length());
+            actualRefs.add(ref);
+        }
+        return actualRefs;
     }
 
     @Test
