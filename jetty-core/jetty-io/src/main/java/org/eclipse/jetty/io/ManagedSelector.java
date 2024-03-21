@@ -982,18 +982,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class CloseConnections implements SelectorUpdate
     {
-        private final Set<Closeable> _closed;
         private final CountDownLatch _complete = new CountDownLatch(1);
-
-        private CloseConnections()
-        {
-            this(null);
-        }
-
-        private CloseConnections(Set<Closeable> closed)
-        {
-            _closed = closed;
-        }
 
         @Override
         public void update(Selector selector)
@@ -1006,27 +995,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     if (key != null && key.isValid())
                     {
-                        Closeable closeable = null;
+                        Closeable closeable = key.channel();
                         Object attachment = key.attachment();
-                        if (attachment instanceof EndPoint)
+                        if (attachment instanceof EndPoint endPoint)
                         {
-                            EndPoint endPoint = (EndPoint)attachment;
                             Connection connection = endPoint.getConnection();
                             closeable = Objects.requireNonNullElse(connection, endPoint);
                         }
-
-                        if (closeable != null)
-                        {
-                            if (_closed == null)
-                            {
-                                IO.close(closeable);
-                            }
-                            else if (!_closed.contains(closeable))
-                            {
-                                _closed.add(closeable);
-                                IO.close(closeable);
-                            }
-                        }
+                        IO.close(closeable);
                     }
                 }
             }

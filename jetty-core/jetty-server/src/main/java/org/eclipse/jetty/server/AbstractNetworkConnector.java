@@ -85,11 +85,55 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     @Override
     public void open() throws IOException
     {
+        notifyOpen();
+    }
+
+    private void notifyOpen()
+    {
+        getEventListeners().stream()
+            .filter(l -> l instanceof NetworkConnector.Listener)
+            .map(NetworkConnector.Listener.class::cast)
+            .forEach(this::notifyOpen);
+    }
+
+    private void notifyOpen(NetworkConnector.Listener listener)
+    {
+        try
+        {
+            listener.onOpen(this);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener " + listener, x);
+        }
     }
 
     @Override
     public void close()
     {
+        notifyClose();
+    }
+
+    private void notifyClose()
+    {
+        getEventListeners().stream()
+            .filter(l -> l instanceof NetworkConnector.Listener)
+            .map(NetworkConnector.Listener.class::cast)
+            .forEach(this::notifyClose);
+    }
+
+    private void notifyClose(NetworkConnector.Listener listener)
+    {
+        try
+        {
+            listener.onClose(this);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener " + listener, x);
+        }
     }
 
     @Override
