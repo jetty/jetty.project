@@ -120,8 +120,15 @@ public class FileSystemPool implements Dumpable
             catch (FileSystemAlreadyExistsException fsaee)
             {
                 fileSystem = Paths.get(jarURIRoot).getFileSystem();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Using existing FS {}", jarURIRoot);
+                if (!fileSystem.isOpen())
+                {
+                    LOG.warn("FS already exists but is not open: {}", fileSystem);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Using existing FS {}", jarURIRoot);
+                }
             }
             catch (ProviderNotFoundException pnfe)
             {
@@ -164,7 +171,23 @@ public class FileSystemPool implements Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Ref counter reached 0, closing pooled FS {}", bucket);
-                IO.close(bucket.fileSystem);
+                try
+                {
+                    // If the filesystem's backing file was deleted, re-create it temporarily before closing the filesystem.
+                    boolean recreated = false;
+                    if (!Files.exists(bucket.path))
+                    {
+                        Files.createFile(bucket.path);
+                        recreated = true;
+                    }
+                    bucket.fileSystem.close();
+                    if (recreated)
+                        Files.delete(bucket.path);
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
                 pool.remove(fsUri);
                 if (listener != null)
                     listener.onClose(fsUri);
