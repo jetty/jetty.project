@@ -1364,7 +1364,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             // If a WAR file is mounted, or is extracted to a temp directory,
             // then the first entry of the resource base must be the WAR file.
             Resource resource = WebAppContext.this.getResource(path);
-            if (resource == null)
+            if (Resources.missing(resource))
                 return null;
 
             for (Resource r: resource)

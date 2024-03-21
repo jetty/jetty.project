@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LifeCycleListenerTest
@@ -220,6 +221,60 @@ public class LifeCycleListenerTest
             {
                 e.printStackTrace();
             }
+        }
+    }
+
+    @Test
+    public void testInstallBeanNotAListener()
+    {
+        Container.Listener listener = new TestContainerListener();
+
+        assertThrows(IllegalArgumentException.class, () -> new ContainerLifeCycle()
+        {
+            {
+                installBean(listener);
+            }
+        });
+    }
+
+    @Test
+    public void testInstallBeanNoListeners()
+    {
+        Container.Listener listener = new TestContainerListener();
+
+        assertThrows(IllegalArgumentException.class, () -> new ContainerLifeCycle()
+        {
+            {
+                addEventListener(listener);
+                installBean("test");
+            }
+        });
+    }
+
+    @Test
+    public void testInstallBean()
+    {
+        assertEquals("test",
+            new ContainerLifeCycle()
+            {
+                {
+                    installBean("test");
+                }
+            }.getBean(String.class));
+    }
+
+    private static class TestContainerListener implements Container.Listener
+    {
+        @Override
+        public void beanAdded(Container parent, Object child)
+        {
+
+        }
+
+        @Override
+        public void beanRemoved(Container parent, Object child)
+        {
+
         }
     }
 }

@@ -372,7 +372,7 @@ public class EventsHandlerTest extends AbstractTest
         }
 
         @Override
-        protected void onComplete(Request request, Throwable failure)
+        protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
         {
             addEvent("onComplete");
         }
@@ -441,7 +441,7 @@ public class EventsHandlerTest extends AbstractTest
         }
 
         @Override
-        protected void onComplete(Request request, Throwable failure)
+        protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
         {
 //            System.out.println("onComplete");
             useForbiddenMethods(request, exceptions);

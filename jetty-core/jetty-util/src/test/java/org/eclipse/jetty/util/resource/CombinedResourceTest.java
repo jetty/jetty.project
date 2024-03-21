@@ -49,7 +49,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class CombinedResourceTest
@@ -118,7 +117,7 @@ public class CombinedResourceTest
         assertThat(relative, containsInAnyOrder(expected));
 
         Resource unk = rc.resolve("unknown");
-        assertNull(unk);
+        assertFalse(unk.exists());
 
         assertEquals(getContent(rc, "1.txt"), "1 - one");
         assertEquals(getContent(rc, "2.txt"), "2 - two");

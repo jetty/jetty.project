@@ -96,7 +96,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         SelectorProducer producer = new SelectorProducer();
         Executor executor = selectorManager.getExecutor();
         _strategy = new AdaptiveExecutionStrategy(producer, executor);
-        addBean(_strategy, true);
+        installBean(_strategy, true);
     }
 
     public Selector getSelector()

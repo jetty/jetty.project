@@ -153,20 +153,23 @@ public class CombinedResource extends Resource
 
         // Attempt a simple (single) Resource lookup that exists
         Resource resolved = null;
+        Resource notFound = null;
         for (Resource res : _resources)
         {
             resolved = res.resolve(subUriPath);
-            if (Resources.missing(resolved))
-                continue; // skip, doesn't exist
-            if (!resolved.isDirectory())
+            if (!Resources.missing(resolved) && !resolved.isDirectory())
                 return resolved; // Return simple (non-directory) Resource
+
+            if (Resources.missing(resolved) && notFound == null)
+                notFound = resolved;
+
             if (resources == null)
                 resources = new ArrayList<>();
             resources.add(resolved);
         }
 
         if (resources == null)
-            return resolved; // This will not exist
+            return notFound; // This will not exist
 
         if (resources.size() == 1)
             return resources.get(0);
@@ -177,13 +180,28 @@ public class CombinedResource extends Resource
     @Override
     public boolean exists()
     {
-        return _resources.stream().anyMatch(Resource::exists);
+        for (Resource r : _resources)
+            if (r.exists())
+                return true;
+        return false;
     }
 
     @Override
     public Path getPath()
     {
-        return null;
+        int exists = 0;
+        Path path = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                path = r.getPath();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getPath();
+            case 1 -> path;
+            default -> null;
+        };
     }
 
     @Override
@@ -213,7 +231,19 @@ public class CombinedResource extends Resource
     @Override
     public URI getURI()
     {
-        return null;
+        int exists = 0;
+        URI uri = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                uri = r.getURI();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getURI();
+            case 1 -> uri;
+            default -> null;
+        };
     }
 
     @Override
@@ -289,6 +319,8 @@ public class CombinedResource extends Resource
         Collection<Resource> all = getAllResources();
         for (Resource r : all)
         {
+            if (!r.exists())
+                continue;
             Path relative = getPathTo(r);
             Path pathTo = Objects.equals(relative.getFileSystem(), destination.getFileSystem())
                 ? destination.resolve(relative)
@@ -336,6 +368,37 @@ public class CombinedResource extends Resource
         return Objects.hash(_resources);
     }
 
+    @Override
+    public boolean isAlias()
+    {
+        for (Resource r : _resources)
+        {
+            if (r.isAlias())
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public URI getRealURI()
+    {
+        if (!isAlias())
+            return getURI();
+        int exists = 0;
+        URI uri = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                uri = r.getRealURI();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getRealURI();
+            case 1 -> uri;
+            default -> null;
+        };
+    }
+
     /**
      * @return the list of resources
      */
@@ -376,6 +439,8 @@ public class CombinedResource extends Resource
             // return true it's relative location to the first matching resource.
             for (Resource r : _resources)
             {
+                if (!r.exists())
+                    continue;
                 Path path = r.getPath();
                 if (otherPath.startsWith(path))
                     return path.relativize(otherPath);
@@ -388,8 +453,14 @@ public class CombinedResource extends Resource
         Path relative = null;
         loop : for (Resource o : other)
         {
+            if (!o.exists())
+                continue;
+
             for (Resource r : _resources)
             {
+                if (!r.exists())
+                    continue;
+
                 if (o.getPath().startsWith(r.getPath()))
                 {
                     Path rel = r.getPath().relativize(o.getPath());

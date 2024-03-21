@@ -48,7 +48,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     {
         this.session = session;
         this.strategy = new AdaptiveExecutionStrategy(producer, session.getExecutor());
-        addBean(strategy);
+        installBean(strategy);
     }
 
     public QuicSession getQuicSession()
