@@ -2249,6 +2249,14 @@
         <!-- Defines a SpotBugs effort. Use "Max" to maximize the scan depth -->
         <spotbugs.effort>Default</spotbugs.effort>
         <spotbugs.failOnError>false</spotbugs.failOnError>
+        <!--
+          The MS_EXPOSE_REP, EI_EXPOSE_REP, EI_EXPOSE_REP2, EI_EXPOSE_STATIC_REP2, MS_EXPOSE_BUF,
+          EI_EXPOSE_BUF, EI_EXPOSE_STATIC_BUF2, and EI_EXPOSE_BUF2 bug patterns are noisy and create
+          little value; therefore, we suppress them globally.
+
+          The CT_CONSTRUCTOR_THROW bug pattern is related to libraries used with SecurityManage.
+        -->
+        <spotbugs.omitVisitors>FindReturnRef,ConstructorThrow</spotbugs.omitVisitors>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
         <spotbugs.skip>false</spotbugs.skip>
         <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
