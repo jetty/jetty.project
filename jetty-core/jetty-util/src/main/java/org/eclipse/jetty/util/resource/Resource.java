@@ -13,12 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,6 +31,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
