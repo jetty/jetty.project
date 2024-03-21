@@ -1366,19 +1366,19 @@
             <dependency>
               <groupId>org.apache.groovy</groupId>
               <artifactId>groovy</artifactId>
-              <version>5.0.0-alpha-7</version>
+              <version>4.0.20</version>
               <scope>runtime</scope>
             </dependency>
             <dependency>
               <groupId>org.apache.groovy</groupId>
               <artifactId>groovy-json</artifactId>
-              <version>5.0.0-alpha-7</version>
+              <version>4.0.20</version>
               <scope>runtime</scope>
             </dependency>
             <dependency>
               <groupId>org.apache.groovy</groupId>
               <artifactId>groovy-xml</artifactId>
-              <version>5.0.0-alpha-7</version>
+              <version>4.0.20</version>
               <scope>runtime</scope>
             </dependency>
           </dependencies>
