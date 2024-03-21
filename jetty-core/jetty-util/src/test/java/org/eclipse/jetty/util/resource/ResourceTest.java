@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -266,7 +267,7 @@ public class ResourceTest
         if (data.exists)
             assertThat("Exists: " + res.getName(), res.exists(), equalTo(data.exists));
         else
-            assertNull(res);
+            assertFalse(res.exists());
     }
 
     @ParameterizedTest
@@ -299,10 +300,16 @@ public class ResourceTest
         Assumptions.assumeTrue(resource != null);
 
         Path targetDir = workDir.getEmptyPathDir();
-        resource.copyTo(targetDir);
-
-        Path targetToTest = resource.isDirectory() ? targetDir : targetDir.resolve(resource.getFileName());
-        assertResourceSameAsPath(resource, targetToTest);
+        if (Resources.exists(resource))
+        {
+            resource.copyTo(targetDir);
+            Path targetToTest = resource.isDirectory() ? targetDir : targetDir.resolve(resource.getFileName());
+            assertResourceSameAsPath(resource, targetToTest);
+        }
+        else
+        {
+            assertThrows(IOException.class, () -> resource.copyTo(targetDir));
+        }
     }
 
     @ParameterizedTest
@@ -317,9 +324,40 @@ public class ResourceTest
         String filename = resource.getFileName();
         Path targetDir = workDir.getEmptyPathDir();
         Path targetFile = targetDir.resolve(filename);
-        resource.copyTo(targetFile);
+        if (Resources.exists(resource))
+        {
+            resource.copyTo(targetFile);
+            assertResourceSameAsPath(resource, targetFile);
+        }
+        else
+        {
+            assertThrows(IOException.class, () -> resource.copyTo(targetFile));
+        }
+    }
 
-        assertResourceSameAsPath(resource, targetFile);
+    @Test
+    public void testNonExistentResource()
+    {
+        Path nonExistentFile = workDir.getPathFile("does-not-exists");
+        Resource resource = resourceFactory.newResource(nonExistentFile);
+        assertFalse(resource.exists());
+        assertThrows(IOException.class, () -> resource.copyTo(workDir.getEmptyPathDir()));
+        assertTrue(resource.list().isEmpty());
+        assertFalse(resource.contains(resourceFactory.newResource(workDir.getPath())));
+        assertEquals("does-not-exists", resource.getFileName());
+        assertFalse(resource.isReadable());
+        assertEquals(nonExistentFile, resource.getPath());
+        assertEquals(Instant.EPOCH, resource.lastModified());
+        assertEquals(0L, resource.length());
+        assertThrows(IOException.class, resource::newInputStream);
+        assertThrows(IOException.class, resource::newReadableByteChannel);
+        assertEquals(nonExistentFile.toUri(), resource.getURI());
+        assertFalse(resource.isAlias());
+        assertNull(resource.getRealURI());
+        assertNotNull(resource.getName());
+        Resource subResource = resource.resolve("does-not-exist-too");
+        assertFalse(subResource.exists());
+        assertEquals(nonExistentFile.resolve("does-not-exist-too"), subResource.getPath());
     }
 
     @Test
@@ -430,7 +468,7 @@ public class ResourceTest
         Path dir = workDir.getEmptyPathDir().resolve("foo/bar");
         // at this point we have a directory reference that does not exist
         Resource resource = resourceFactory.newResource(dir);
-        assertNull(resource);
+        assertFalse(resource.exists());
     }
 
     @Test
@@ -442,7 +480,7 @@ public class ResourceTest
         // at this point we have a file reference that does not exist
         assertFalse(Files.exists(file));
         Resource resource = resourceFactory.newResource(file);
-        assertNull(resource);
+        assertFalse(resource.exists());
     }
 
     @Test

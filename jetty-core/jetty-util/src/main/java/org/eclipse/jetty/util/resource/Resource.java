@@ -268,7 +268,8 @@ public abstract class Resource implements Iterable<Resource>
      * Resolve an existing Resource.
      *
      * @param subUriPath the encoded subUriPath
-     * @return an existing Resource representing the requested subUriPath, or null if resource does not exist.
+     * @return a Resource representing the requested subUriPath, which may not {@link #exists() exist},
+     * or null if the resource cannot exist.
      * @throws IllegalArgumentException if subUriPath is invalid
      */
     public abstract Resource resolve(String subUriPath);
@@ -303,6 +304,9 @@ public abstract class Resource implements Iterable<Resource>
     public void copyTo(Path destination)
         throws IOException
     {
+        if (!exists())
+            throw new IOException("Resource does not exist: " + getFileName());
+
         Path src = getPath();
         if (src == null)
         {
