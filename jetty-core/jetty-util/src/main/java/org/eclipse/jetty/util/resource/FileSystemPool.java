@@ -122,7 +122,7 @@ public class FileSystemPool implements Dumpable
                 fileSystem = Paths.get(jarURIRoot).getFileSystem();
                 if (!fileSystem.isOpen())
                 {
-                    LOG.warn("FS already exists but is not open: {}", fileSystem);
+                    LOG.warn("FileSystem {} of URI {} already exists but is not open (bug JDK-8291712)", fileSystem, uri);
                 }
                 else
                 {
