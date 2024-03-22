@@ -18,6 +18,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.eclipse.jetty.util.thread.ThreadIdPool;
+
 /**
  * ThreadLocal data parsers for HTTP style dates
  */
@@ -47,17 +49,10 @@ public class DateParser
 
     public static long parseDate(String date)
     {
-        return DATE_PARSER.get().parse(date);
+        return DATE_PARSER.apply(DateParser::new, DateParser::parse, date);
     }
 
-    private static final ThreadLocal<DateParser> DATE_PARSER = new ThreadLocal<DateParser>()
-    {
-        @Override
-        protected DateParser initialValue()
-        {
-            return new DateParser();
-        }
-    };
+    private static final ThreadIdPool<DateParser> DATE_PARSER = new ThreadIdPool<>();
 
     final SimpleDateFormat[] _dateReceive = new SimpleDateFormat[DATE_RECEIVE_FMT.length];
 

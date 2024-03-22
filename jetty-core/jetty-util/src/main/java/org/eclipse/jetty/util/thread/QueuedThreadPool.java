@@ -213,9 +213,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         else
         {
-            ReservedThreadExecutor reserved = new ReservedThreadExecutor(this, _reservedThreads);
-            reserved.setIdleTimeout(_idleTimeout, TimeUnit.MILLISECONDS);
-            _tryExecutor = reserved;
+            int reserved = ReservedThreadExecutor.reservedThreads(this, _reservedThreads);
+            if (reserved == 0)
+            {
+                _tryExecutor = NO_TRY;
+            }
+            else
+            {
+                ReservedThreadExecutor rte = new ReservedThreadExecutor(this, _reservedThreads);
+                rte.setIdleTimeout(_idleTimeout, TimeUnit.MILLISECONDS);
+                _tryExecutor = rte;
+            }
         }
         addBean(_tryExecutor);
 

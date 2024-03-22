@@ -803,4 +803,17 @@ public class TypeUtil
     {
         // prevents instantiation
     }
+
+    /**
+     * Get the next highest power of two
+     * @param value An integer
+     * @return a power of two that is greater than or equal to {@code value}
+     */
+    public static int ceilToNextPowerOfTwo(int value)
+    {
+        if (value < 0)
+            throw new IllegalArgumentException("value must not be negative");
+        int result = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(value - 1));
+        return result > 0 ? result : Integer.MAX_VALUE;
+    }
 }
