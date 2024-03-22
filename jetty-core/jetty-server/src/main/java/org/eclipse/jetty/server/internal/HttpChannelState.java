@@ -719,7 +719,9 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
-                getComplianceViolationListener().onRequestEnd(_request);
+                ComplianceViolation.Listener listener = getComplianceViolationListener();
+                if (listener != null)
+                    listener.onRequestEnd(_request);
 
                 // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
