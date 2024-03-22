@@ -371,6 +371,9 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         super.close();
 
+        // When acceptors == 0, we want the ServerSocketChannel
+        // to be closed by the SelectorManager when the
+        // SelectorManager is stopped (as a bean) in doStop().
         if (getAcceptors() > 0)
             IO.close(_acceptChannel);
 

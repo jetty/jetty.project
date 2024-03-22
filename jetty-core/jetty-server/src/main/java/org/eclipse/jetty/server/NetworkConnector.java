@@ -35,8 +35,9 @@ public interface NetworkConnector extends Connector, Closeable
     /**
      * <p>Performs the activities needed to close the network communication
      * (for example, to stop accepting network connections).</p>
-     * Once a connector has been closed, it cannot be opened again without first
-     * calling {@link #stop()} and it will not be active again until a subsequent call to {@link #start()}
+     * <p>Once a connector has been closed, it cannot be opened again without first
+     * calling {@link #stop()} and it will not be active again until a subsequent call to {@link #start()}.</p>
+     * <p>Implementation must be idempotent.</p>
      */
     @Override
     void close();
