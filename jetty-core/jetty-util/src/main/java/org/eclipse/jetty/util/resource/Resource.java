@@ -295,41 +295,36 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * Copy the Resource to the new destination file or directory.
      *
-     * <p>
-     *     If this Resource is a File:
-     *     <ul>
-     *         <li>And the {@code destination} does not exist then {@link IO#copyFile(Path, Path)} is used.</li>
-     *         <li>And the {@code destination} is a File then {@link IO#copyFile(Path, Path)} is used.</li>
-     *         <li>And the {@code destination} is a Directory then
-     *             a new {@link Path} reference is created in the destination with the same
-     *             filename as this Resource, which is used via {@link IO#copyFile(Path, Path)}.</li>
-     *     </ul>
-     * </p>
-     * <p>
-     *     If this Resource is a Directory:
-     *     <ul>
-     *         <li>And the {@code destination} does not exist then
-     *             the destination is created as a directory via {@link Files#createDirectories(Path, FileAttribute[])}
-     *             before the {@link IO#copyDir(Path, Path)} method is used.</li>
-     *         <li>And the {@code destination} is a File then results in .</li>
-     *         <li>And the {@code destination} is a Directory then
-     *             a new {@link Path} reference is created in the destination with the same
-     *             filename as this Resource, which is used via {@link IO#copyFile(Path, Path)}.</li>
-     *     </ul>
-     * </p>
+     * <p>If this Resource is a File:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist then {@link IO#copyFile(Path, Path)} is used.</li>
+     *     <li>And the {@code destination} is a File then {@link IO#copyFile(Path, Path)} is used.</li>
+     *     <li>And the {@code destination} is a Directory then
+     *         a new {@link Path} reference is created in the destination with the same
+     *         filename as this Resource, which is used via {@link IO#copyFile(Path, Path)}.</li>
+     * </ul>
      *
-     * <p>
-     *     If this Resource is not backed by a {@link Path}, use {@link #newInputStream()}:
-     *     <ul>
-     *         <li>And the {@code destination} does not exist, copy {@link InputStream}
-     *             to the {@code destination} as a new file.</li>
-     *         <li>And the {@code destination} is a File, copy {@link InputStream}
-     *             to the existing {@code destination} file.</li>
-     *         <li>And the {@code destination} is a Directory, copy {@link InputStream}
-     *             to a new {@code destination} file in the destination directory
-     *             based on this the result of {@link #getFileName()} as the filename.</li>
-     *     </ul>
-     * </p>
+     * <p>If this Resource is a Directory:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist then
+     *         the destination is created as a directory via {@link Files#createDirectories(Path, FileAttribute[])}
+     *         before the {@link IO#copyDir(Path, Path)} method is used.</li>
+     *     <li>And the {@code destination} is a File then results in .</li>
+     *     <li>And the {@code destination} is a Directory then
+     *         a new {@link Path} reference is created in the destination with the same
+     *         filename as this Resource, which is used via {@link IO#copyFile(Path, Path)}.</li>
+     * </ul>
+     *
+     * <p>If this Resource is not backed by a {@link Path}, use {@link #newInputStream()}:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist, copy {@link InputStream}
+     *         to the {@code destination} as a new file.</li>
+     *     <li>And the {@code destination} is a File, copy {@link InputStream}
+     *         to the existing {@code destination} file.</li>
+     *     <li>And the {@code destination} is a Directory, copy {@link InputStream}
+     *         to a new {@code destination} file in the destination directory
+     *         based on this the result of {@link #getFileName()} as the filename.</li>
+     * </ul>
      *
      * @param destination the destination file or directory to use (created if it does not exist).
      * @throws IOException if unable to copy the resource
