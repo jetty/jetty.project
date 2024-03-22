@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.util.thread.jmh;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.TryExecutor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -38,23 +38,27 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 10, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 10, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class ReservedThreadPoolBenchmark
 {
     public enum Type
     {
-        RTP
+        RTE_EXCH, RTE_SEMA, RTE_Q
     }
 
-    @Param({"RTP"})
+    @Param({"RTE_EXCH", "RTE_SEMA", "RTE_Q"})
     Type type;
 
-    @Param({"0", "8", "32"})
+    @Param({"16"})
     int size;
 
     QueuedThreadPool qtp;
     TryExecutor pool;
+    LongAdder jobs = new LongAdder();
+    LongAdder complete = new LongAdder();
+    LongAdder hit = new LongAdder();
+    LongAdder miss = new LongAdder();
 
     @Setup // (Level.Iteration)
     public void buildPool()
@@ -62,10 +66,24 @@ public class ReservedThreadPoolBenchmark
         qtp = new QueuedThreadPool();
         switch (type)
         {
-            case RTP:
+            case RTE_EXCH:
             {
-                ReservedThreadExecutor pool = new ReservedThreadExecutor(qtp, size);
-                pool.setIdleTimeout(1, TimeUnit.SECONDS);
+                ReservedThreadExecutorExchanger pool = new ReservedThreadExecutorExchanger(qtp, size);
+                pool.setIdleTimeout(5, TimeUnit.SECONDS);
+                this.pool = pool;
+                break;
+            }
+            case RTE_Q:
+            {
+                ReservedThreadExecutorSyncQueue pool = new ReservedThreadExecutorSyncQueue(qtp, size);
+                pool.setIdleTimeout(5, TimeUnit.SECONDS);
+                this.pool = pool;
+                break;
+            }
+            case RTE_SEMA:
+            {
+                ReservedThreadExecutorSemaphore pool = new ReservedThreadExecutorSemaphore(qtp, size);
+                pool.setIdleTimeout(5, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
             }
@@ -77,24 +95,39 @@ public class ReservedThreadPoolBenchmark
     @TearDown // (Level.Iteration)
     public void shutdownPool()
     {
+        System.err.println("\nShutdown ...");
+        long startSpin = System.nanoTime();
+        while (complete.longValue() < jobs.longValue())
+        {
+            if (NanoTime.secondsSince(startSpin) > 5)
+            {
+                System.err.printf("FAILED %d < %d\n".formatted(complete.longValue(), jobs.longValue()));
+                break;
+            }
+            Thread.onSpinWait();
+        }
+        System.err.println("Stopping ...");
         LifeCycle.stop(pool);
         LifeCycle.stop(qtp);
         pool = null;
         qtp = null;
+        System.err.println("Stopped");
+        long hits = hit.sum();
+        System.err.printf("hit:miss = %.1f%% (%d:%d)", 100.0D * hits / (hits + miss.sum()), hits, miss.sum());
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @Threads(1)
-    public void testFew() throws Exception
+    public void test001Threads() throws Exception
     {
         doJob();
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    @Threads(8)
-    public void testSome() throws Exception
+    @Threads(32)
+    public void test032Threads() throws Exception
     {
         doJob();
     }
@@ -102,25 +135,29 @@ public class ReservedThreadPoolBenchmark
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @Threads(200)
-    public void testMany() throws Exception
+    public void test200Threads() throws Exception
     {
         doJob();
     }
 
-    void doJob() throws Exception
+    void doJob()
     {
-        CountDownLatch latch = new CountDownLatch(1);
+        jobs.increment();
         Runnable task = () ->
         {
-            Blackhole.consumeCPU(1);
-            Thread.yield();
-            Blackhole.consumeCPU(1);
-            latch.countDown();
-            Blackhole.consumeCPU(1);
+            Blackhole.consumeCPU(2);
+            complete.increment();
         };
-        if (!pool.tryExecute(task))
+        if (pool.tryExecute(task))
+        {
+            hit.increment();
+        }
+        else
+        {
+            miss.increment();
             qtp.execute(task);
-        latch.await();
+        }
+        // We don't wait for the job to complete here, as we want to measure the speed of dispatch, not execution latency
     }
 
     public static void main(String[] args) throws RunnerException

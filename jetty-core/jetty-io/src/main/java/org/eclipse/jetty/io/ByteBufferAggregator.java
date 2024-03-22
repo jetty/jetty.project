@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +106,7 @@ public class ByteBufferAggregator
         if (remaining <= capacityLeft)
             return;
         int need = remaining - capacityLeft;
-        _currentSize = Math.min(_maxSize, ceilToNextPowerOfTwo(_currentSize + need));
+        _currentSize = Math.min(_maxSize, TypeUtil.ceilToNextPowerOfTwo(_currentSize + need));
 
         if (_retainableByteBuffer != null)
         {
@@ -116,12 +117,6 @@ public class ByteBufferAggregator
             _retainableByteBuffer.release();
             _retainableByteBuffer = newBuffer;
         }
-    }
-
-    private static int ceilToNextPowerOfTwo(int val)
-    {
-        int result = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(val - 1));
-        return result > 0 ? result : Integer.MAX_VALUE;
     }
 
     /**
