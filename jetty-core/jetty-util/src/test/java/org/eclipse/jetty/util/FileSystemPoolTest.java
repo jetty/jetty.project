@@ -56,6 +56,8 @@ public class FileSystemPoolTest
         Files.createDirectories(jarPath.getParent());
         Files.copy(srcPath, jarPath, StandardCopyOption.REPLACE_EXISTING);
         ResourceFactory.Closeable rf2 = ResourceFactory.closeable();
+        // Calling ResourceFactory.newResource() again on the same jar would throw
+        // java.nio.file.ClosedFileSystemException without the workaround for JDK-8291712.
         Resource resource2 = rf2.newResource(URIUtil.toJarFileUri(jarPath.toUri()));
         assertThat(resource2.exists(), is(true));
         rf2.close();
