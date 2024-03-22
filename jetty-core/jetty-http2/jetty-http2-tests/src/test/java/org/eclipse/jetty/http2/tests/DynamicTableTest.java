@@ -129,4 +129,57 @@ public class DynamicTableTest extends AbstractTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
+
+    @ParameterizedTest
+    @CsvSource({"0,-1", "-1,0", "0,0"})
+    public void testMaxTableCapacityZero(int clientMaxCapacity, int serverMaxCapacity) throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        if (clientMaxCapacity >= 0)
+        {
+            http2Client.setMaxDecoderTableCapacity(clientMaxCapacity);
+            http2Client.setMaxEncoderTableCapacity(clientMaxCapacity);
+        }
+        if (serverMaxCapacity >= 0)
+        {
+            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxEncoderTableCapacity(serverMaxCapacity);
+            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxDecoderTableCapacity(serverMaxCapacity);
+        }
+
+        CountDownLatch serverPreface = new CountDownLatch(1);
+        Session session = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                serverPreface.countDown();
+            }
+        });
+        assertTrue(serverPreface.await(5, TimeUnit.SECONDS));
+
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
+        CountDownLatch latch = new CountDownLatch(1);
+        session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(200, response.getStatus());
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
 }

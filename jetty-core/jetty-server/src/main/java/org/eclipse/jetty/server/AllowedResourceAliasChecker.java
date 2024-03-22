@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,6 +159,11 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
 
     protected boolean check(String pathInContext, Resource resource)
     {
+        // If there is a single Path available, check it
+        Path path = resource.getPath();
+        if (path != null && Files.exists(path))
+            return check(pathInContext, path);
+
         // Allow any aliases (symlinks, 8.3, casing, etc.) so long as
         // the resulting real file is allowed.
         for (Resource r : resource)
@@ -186,7 +192,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
                 for (String protectedTarget : _protected)
                 {
                     Resource p = _baseResource.resolve(protectedTarget);
-                    if (p == null)
+                    if (Resources.missing(p))
                         continue;
                     for (Resource r : p)
                     {

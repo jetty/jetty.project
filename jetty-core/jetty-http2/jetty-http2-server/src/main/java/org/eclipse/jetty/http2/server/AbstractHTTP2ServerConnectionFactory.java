@@ -92,9 +92,9 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
             if (!isProtocolSupported(p))
                 throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: " + p);
         }
-        addBean(sessionContainer);
+        installBean(sessionContainer);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
-        addBean(httpConfiguration);
+        installBean(httpConfiguration);
         setInputBufferSize(Frame.DEFAULT_MAX_SIZE + Frame.HEADER_LENGTH);
         setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
         setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());

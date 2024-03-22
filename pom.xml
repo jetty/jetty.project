@@ -155,9 +155,9 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctor.maven.plugin.version>2.2.4</asciidoctor.maven.plugin.version>
+    <asciidoctor.maven.plugin.version>2.2.6</asciidoctor.maven.plugin.version>
     <asciidoctor.skip>false</asciidoctor.skip>
-    <asciidoctorj-diagram.version>2.2.14</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.3.0</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.11</asciidoctorj.version>
     <asm.version>9.6</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
@@ -165,10 +165,10 @@
     <build-helper.maven.plugin.version>3.5.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.13.0</checkstyle.version>
-    <commons-codec.version>1.16.0</commons-codec.version>
+    <checkstyle.version>10.14.0</checkstyle.version>
+    <commons-codec.version>1.16.1</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
-    <commons.compress.version>1.25.0</commons.compress.version>
+    <commons.compress.version>1.26.0</commons.compress.version>
     <commons.io.version>2.15.1</commons.io.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
@@ -179,10 +179,10 @@
     <eclipse.jdt.ecj.version>3.33.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <flatten.maven.plugin.version>1.5.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.24.1</google.errorprone.version>
+    <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
+    <google.errorprone.version>2.25.0</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
-    <grpc.version>1.60.1</grpc.version>
+    <grpc.version>1.62.2</grpc.version>
     <gson.version>2.10.1</gson.version>
     <guava.version>33.0.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
@@ -204,7 +204,7 @@
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.3.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.20.0</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.20.1</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -216,6 +216,7 @@
     <jetty.xhtml.schemas-version>1.4</jetty.xhtml.schemas-version>
     <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
     <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
+    <jffi.version>1.3.13</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <jna.version>5.14.0</jna.version>
@@ -227,17 +228,17 @@
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
-    <junit.version>5.10.0</junit.version>
+    <junit.version>5.10.2</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <license.maven.plugin.version>4.3</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.22.1</log4j2.version>
-    <logback.version>1.4.14</logback.version>
+    <log4j2.version>2.23.0</log4j2.version>
+    <logback.version>1.5.1</logback.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.3.2</mariadb.version>
+    <mariadb.version>3.3.3</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.1.0</maven-build-cache.version>
-    <maven-plugin.plugin.version>3.10.2</maven-plugin.plugin.version>
+    <maven-plugin.plugin.version>3.11.0</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
@@ -249,7 +250,7 @@
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
     <maven.deps.version>3.9.4</maven.deps.version>
     <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.1.1</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.2.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
@@ -260,7 +261,7 @@
     <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.18</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.5.1</maven.shade.plugin.version>
+    <maven.shade.plugin.version>3.5.2</maven.shade.plugin.version>
     <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
     <!-- do not upgrade as jpms issue with ee10 annotations -->
     <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
@@ -297,15 +298,15 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <slf4j.version>2.0.9</slf4j.version>
     <spifly.version>1.3.6</spifly.version>
-    <spotbugs.maven.plugin.version>4.8.2.0</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.8.3.1</spotbugs.maven.plugin.version>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <swissbox.version>1.8.3</swissbox.version>
-    <testcontainers.version>1.19.3</testcontainers.version>
+    <testcontainers.version>1.19.6</testcontainers.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <versions.maven.plugin.version>2.16.2</versions.maven.plugin.version>
     <wildfly.common.version>1.7.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.2.2.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.3.1.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.8</xmemcached.version>
   </properties>
 
@@ -355,6 +356,11 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-core</artifactId>
         <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jffi</artifactId>
+        <version>${jffi.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
