@@ -73,6 +73,7 @@ public class ErrorHandler implements Request.Handler
     public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     boolean _showStacks = true;
+    boolean _showCauses = true;
     boolean _showMessageInTitle = true;
     String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
@@ -323,7 +324,7 @@ public class ErrorHandler implements Request.Handler
         htmlRow(writer, "URI", uri);
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
-        while (cause != null)
+        while (_showCauses && cause != null)
         {
             htmlRow(writer, "CAUSED BY", cause);
             cause = cause.getCause();
@@ -356,7 +357,7 @@ public class ErrorHandler implements Request.Handler
         writer.printf("URI: %s%n", request.getHttpURI());
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
-        while (cause != null)
+        while (_showCauses && cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
             if (showStacks)
@@ -373,7 +374,7 @@ public class ErrorHandler implements Request.Handler
         json.put("status", Integer.toString(code));
         json.put("message", message);
         int c = 0;
-        while (cause != null)
+        while (_showCauses && cause != null)
         {
             json.put("cause" + c++, cause.toString());
             cause = cause.getCause();
@@ -461,6 +462,23 @@ public class ErrorHandler implements Request.Handler
     public void setShowStacks(boolean showStacks)
     {
         _showStacks = showStacks;
+    }
+
+    /**
+     * @return True if exception causes are shown in the error pages
+     */
+    @ManagedAttribute("Whether the error page shows the exception causes")
+    public boolean isShowCauses()
+    {
+        return _showCauses;
+    }
+
+    /**
+     * @param showCauses True if exception causes are shown in the error pages
+     */
+    public void setShowCauses(boolean showCauses)
+    {
+        _showCauses = showCauses;
     }
 
     @ManagedAttribute("Whether the error message is shown in the error page title")

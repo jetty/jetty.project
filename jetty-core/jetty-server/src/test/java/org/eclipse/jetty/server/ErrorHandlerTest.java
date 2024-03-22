@@ -482,6 +482,90 @@ public class ErrorHandlerTest
     }
 
     @Test
+    public void testContainsStacks() throws Exception
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowStacks(true);
+        server.setErrorHandler(errorHandler);
+
+        String rawResponse = connector.getResponse("""
+                        GET /badmessage/444 HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("<h3>Caused by:</h3>"));
+        assertThat(response.getContent(), containsString("org.eclipse.jetty.server.ErrorHandlerTest$1.handle"));
+    }
+
+    @Test
+    public void testContainsNoStacks() throws Exception
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowStacks(false);
+        server.setErrorHandler(errorHandler);
+
+        String rawResponse = connector.getResponse("""
+                        GET /badmessage/444 HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), not(containsString("<h3>Caused by:</h3>")));
+        assertThat(response.getContent(), not(containsString("org.eclipse.jetty.server.ErrorHandlerTest$1.handle")));
+    }
+
+    @Test
+    public void testContainsCauses() throws Exception
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowCauses(true);
+        server.setErrorHandler(errorHandler);
+
+        String rawResponse = connector.getResponse("""
+                        GET /badmessage/444 HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("<th>CAUSED BY:</th>"));
+        assertThat(response.getContent(), containsString("<td>org.eclipse.jetty.http.BadMessageException: 444: null</td>"));
+    }
+
+    @Test
+    public void testContainsNoCauses() throws Exception
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowCauses(false);
+        server.setErrorHandler(errorHandler);
+
+        String rawResponse = connector.getResponse("""
+                        GET /badmessage/444 HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), not(containsString("<th>CAUSED BY:</th>")));
+        assertThat(response.getContent(), not(containsString("<td>org.eclipse.jetty.http.BadMessageException: 444: null</td>")));
+    }
+
+    @Test
     public void testNoBodyErrorHandler() throws Exception
     {
         server.setErrorHandler((request, response, callback) ->
