@@ -995,13 +995,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     if (key != null && key.isValid())
                     {
-                        Closeable closeable = key.channel();
-                        Object attachment = key.attachment();
-                        if (attachment instanceof EndPoint endPoint)
-                        {
-                            Connection connection = endPoint.getConnection();
-                            closeable = Objects.requireNonNullElse(connection, endPoint);
-                        }
+                        Closeable closeable = (key.attachment() instanceof EndPoint endPoint)
+                            ? Objects.requireNonNullElse(endPoint.getConnection(), endPoint)
+                            : key.channel();
                         IO.close(closeable);
                     }
                 }
