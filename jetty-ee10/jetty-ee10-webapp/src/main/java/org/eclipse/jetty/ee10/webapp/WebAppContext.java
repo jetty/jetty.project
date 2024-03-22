@@ -1220,7 +1220,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             //resolve the metadata
             _metadata.resolve(this);
-            super.startContext();
+            startWebapp();
         }
     }
 
@@ -1250,6 +1250,24 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             _unavailableException = null;
         }
+        stopWebapp();
+    }
+
+    /**
+     * Continue the {@link #startContext()} before calling {@code super.startContext()}.
+     * @throws Exception If there was a problem starting
+     */
+    protected void startWebapp() throws Exception
+    {
+        super.startContext();
+    }
+
+    /**
+     * Continue the {@link #stopContext()} before calling {@code super.stopContext()}.
+     * @throws Exception If there was a problem stopping
+     */
+    protected void stopWebapp() throws Exception
+    {
         super.stopContext();
     }
 
