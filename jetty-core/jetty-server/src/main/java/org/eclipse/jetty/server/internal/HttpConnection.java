@@ -1012,8 +1012,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
 
-            getHttpChannel().getComplianceViolationListener().onRequestEnd(getHttpChannel().getRequest());
-
             _failure = (Throwable)failure;
             _generator.setPersistent(false);
 
@@ -1023,14 +1021,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 stream = newHttpStream("GET", "/badMessage", HttpVersion.HTTP_1_0);
                 _stream.set(stream);
                 _httpChannel.setHttpStream(stream);
-            }
-
-            if (_httpChannel.getRequest() == null)
-            {
-                HttpURI uri = stream._uri;
-                if (uri.hasViolations())
-                    uri = HttpURI.from("/badURI");
-                _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
             Runnable task = _httpChannel.onFailure(_failure);
