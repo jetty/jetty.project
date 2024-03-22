@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.Resource;
@@ -37,7 +38,7 @@ public class FileSystemPoolTest
     @ValueSource(strings = {"example.jar", "a/b/c/d/example.jar"})
     public void testCloseResourceFactoryAfterDeletingFileSystemBackingFile(String jarPathString) throws Exception
     {
-        Path srcPath = Path.of("src/test/resources/example.jar");
+        Path srcPath = MavenTestingUtils.getTestResourcePath("example.jar");
         Path rootPath = workDir.getEmptyPathDir();
         Path jarPath = rootPath.resolve(jarPathString);
         Files.createDirectories(jarPath.getParent());
