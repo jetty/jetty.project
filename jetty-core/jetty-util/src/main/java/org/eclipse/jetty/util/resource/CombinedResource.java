@@ -276,12 +276,6 @@ public class CombinedResource extends Resource
     @Override
     public void copyTo(Path destination) throws IOException
     {
-        // This method could be implemented with the simple:
-        //     List<Resource> entries = getResources();
-        //     for (int r = entries.size(); r-- > 0; )
-        //       entries.get(r).copyTo(destination);
-        // However, that may copy large overlayed resources. The implementation below avoids that:
-
         Collection<Resource> all = getAllResources();
         for (Resource r : all)
         {
@@ -290,11 +284,11 @@ public class CombinedResource extends Resource
 
             if (r.isDirectory())
             {
-                ensureDirExists(pathTo);
+                IO.ensureDirExists(pathTo);
             }
             else
             {
-                ensureDirExists(pathTo.getParent());
+                IO.ensureDirExists(pathTo.getParent());
                 r.copyTo(pathTo);
             }
         }

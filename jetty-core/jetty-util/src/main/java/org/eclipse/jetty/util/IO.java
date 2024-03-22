@@ -33,10 +33,12 @@ import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
@@ -226,8 +228,16 @@ public class IO
     /**
      * Copy the contents of a source directory to destination directory.
      *
+     * <p>
+     *     This version does not use the standard {@link Files#copy(Path, Path, CopyOption...)}
+     *     technique to copy files, as that technique might incur a "foreign target" behavior
+     *     when the {@link java.nio.file.FileSystem} types of the srcDir and destDir are
+     *     different.
+     *     Instead, this implementation uses the {@link #copyFile(Path, Path)} method instead.
+     * </p>
+     *
      * @param srcDir the source directory
-     * @param destDir the destination directory
+     * @param destDir the destination directory (must exist)
      * @throws IOException if unable to copy the file
      */
     public static void copyDir(Path srcDir, Path destDir) throws IOException
@@ -257,8 +267,14 @@ public class IO
     /**
      * Copy the contents of a source directory to destination directory.
      *
+     * <p>
+     *     Copy the contents of srcDir to the destDir using
+     *     {@link Files#copy(Path, Path, CopyOption...)} to
+     *     copy individual files.
+     * </p>
+     *
      * @param srcDir the source directory
-     * @param destDir the destination directory
+     * @param destDir the destination directory (must exist)
      * @param copyOptions the options to use on the {@link Files#copy(Path, Path, CopyOption...)} commands.
      * @throws IOException if unable to copy the file
      */
@@ -287,8 +303,18 @@ public class IO
     }
 
     /**
-     * Perform a resolve of a path against a relative path in a
-     * way that is smart about {@link java.nio.file.FileSystem} differences.
+     * Perform a resolve of a {@code basePath} {@link Path} against
+     * a {@code relative} {@link Path} in a way that ignores
+     * {@link java.nio.file.FileSystem} differences between
+     * the two {@link Path} parameters.
+     *
+     * <p>
+     *     This implementation is intended to be a replacement for
+     *     {@link Path#resolve(Path)} in cases where the the
+     *     {@link java.nio.file.FileSystem} might be different,
+     *     avoiding a {@link java.nio.file.ProviderMismatchException}
+     *     from occurring.
+     * </p>
      *
      * @param basePath the base Path
      * @param relative the Path to resolve against base Path
@@ -308,26 +334,81 @@ public class IO
         }
     }
 
+    /**
+     * Ensure that the given path exists, and is a directory.
+     *
+     * <p>
+     *     Uses {@link Files#createDirectories(Path, FileAttribute[])} when
+     *     the provided path needs to be created as directories.
+     * </p>
+     *
+     * @param dir the directory to check and/or create.
+     * @throws IOException if the {@code dir} exists, but isn't a directory, or if unable to create the directory.
+     */
+    public static void ensureDirExists(Path dir) throws IOException
+    {
+        if (Files.exists(dir))
+        {
+            if (!Files.isDirectory(dir))
+            {
+                throw new IOException("Conflict, unable to create directory where file exists: " + dir);
+            }
+            return;
+        }
+        Files.createDirectories(dir);
+    }
+
+    /**
+     * Copy the contents of a source file to destination file.
+     *
+     * <p>
+     *     Copy the contents of {@code srcFile} to the {@code destFile} using
+     *     {@link Files#copy(Path, OutputStream)}.
+     *     The {@code destFile} is opened with the {@link OpenOption} of
+     *     {@link StandardOpenOption#CREATE},{@link StandardOpenOption#WRITE},{@link StandardOpenOption#TRUNCATE_EXISTING}.
+     * </p>
+     *
+     * <p>
+     *     Unlike {@link Files#copy(Path, Path, CopyOption...)}, this implementation will
+     *     not perform a "foreign target" behavior (a special mode that kicks in
+     *     when the {@code srcFile} and {@code destFile} are on different {@link java.nio.file.FileSystem}s)
+     *     which will attempt to delete the destination file before creating a new
+     *     file and then copying the contents over.
+     * </p>
+     * <p>
+     *     In this implementation if the file exists, it will just be opened
+     *     and written to from the start of the file.
+     * </p>
+     *
+     * @param srcFile the source file (must exist)
+     * @param destFile the destination file
+     * @throws IOException if unable to copy the file
+     */
     public static void copyFile(Path srcFile, Path destFile) throws IOException
     {
         if (!Files.isRegularFile(Objects.requireNonNull(srcFile)))
             throw new IllegalArgumentException("Source is not a file: " + srcFile);
         Objects.requireNonNull(destFile);
 
-        if (!Files.exists(destFile) && srcFile.getFileSystem().equals(destFile.getFileSystem()))
+        try (OutputStream out = Files.newOutputStream(destFile,
+            StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))
         {
-            Files.copy(srcFile, destFile, StandardCopyOption.COPY_ATTRIBUTES);
-        }
-        else
-        {
-            try (InputStream in = Files.newInputStream(srcFile);
-                 OutputStream out = Files.newOutputStream(destFile))
-            {
-                IO.copy(in, out);
-            }
+            Files.copy(srcFile, out);
         }
     }
 
+    /**
+     * Copy the contents of a source file to destination file.
+     *
+     * <p>
+     *     Copy the contents of {@code from} {@link File} to the {@code to} {@link File} using
+     *     standard {@link InputStream} / {@link OutputStream} behaviors.
+     * </p>
+     *
+     * @param from the source file (must exist)
+     * @param to the destination file
+     * @throws IOException if unable to copy the file
+     */
     public static void copyFile(File from, File to) throws IOException
     {
         try (InputStream in = new FileInputStream(from);
