@@ -195,7 +195,7 @@ public class FileSystemPool implements Dumpable
                 }
                 catch (IOException e)
                 {
-                    LOG.warn("Unable to close ZIP filesystem '{}' (bug JDK-8291712)", bucket.path, e);
+                    LOG.warn("Unable to close FileSystem {} of URI {} (bug JDK-8291712)", bucket.fileSystem, fsUri, e);
                 }
             }
             else
