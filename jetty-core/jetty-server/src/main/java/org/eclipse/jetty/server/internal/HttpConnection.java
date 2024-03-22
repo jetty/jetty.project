@@ -1023,6 +1023,17 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _httpChannel.setHttpStream(stream);
             }
 
+            // If there is no request, build one temporarily to handle the error.
+            // This is also done by HttpChannel.onFailure(), but here we can build
+            // a request with more information, such as the method, the URI, etc.
+            if (_httpChannel.getRequest() == null)
+            {
+                HttpURI uri = stream._uri;
+                if (uri.hasViolations())
+                    uri = HttpURI.from("/badURI");
+                _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
+            }
+
             Runnable task = _httpChannel.onFailure(_failure);
             if (task != null)
                 getServer().getThreadPool().execute(task);
