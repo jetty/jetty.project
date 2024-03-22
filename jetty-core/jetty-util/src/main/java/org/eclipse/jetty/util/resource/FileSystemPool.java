@@ -173,20 +173,36 @@ public class FileSystemPool implements Dumpable
                     LOG.debug("Ref counter reached 0, closing pooled FS {}", bucket);
                 try
                 {
-                    // If the filesystem's backing file was deleted, re-create it temporarily before closing the filesystem.
+                    // If the filesystem's backing file was deleted, re-create it temporarily before closing the filesystem
+                    // to try to work around JDK-8291712.
                     boolean recreated = false;
                     if (!Files.exists(bucket.path))
                     {
+                        try
+                        {
+                            Files.createDirectories(bucket.path.getParent());
+                        }
+                        catch (IOException e)
+                        {
+                            if (LOG.isTraceEnabled())
+                                LOG.trace("ignored", e);
+                        }
                         Files.createFile(bucket.path);
                         recreated = true;
                     }
-                    bucket.fileSystem.close();
-                    if (recreated)
-                        Files.delete(bucket.path);
+                    try
+                    {
+                        bucket.fileSystem.close();
+                    }
+                    finally
+                    {
+                        if (recreated)
+                            Files.delete(bucket.path);
+                    }
                 }
                 catch (IOException e)
                 {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("Unable to close ZIP filesystem '" + bucket.path + "'. This is bug JDK-8291712, only a JVM restart can clear this problem", e);
                 }
                 pool.remove(fsUri);
                 if (listener != null)
