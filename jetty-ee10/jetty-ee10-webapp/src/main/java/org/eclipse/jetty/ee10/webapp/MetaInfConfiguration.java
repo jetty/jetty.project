@@ -354,32 +354,30 @@ public class MetaInfConfiguration extends AbstractConfiguration
         //Scan jars for META-INF information
         if (jars != null)
         {
-            try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
+            ResourceFactory resourceFactory = ResourceFactory.of(context);
+            for (Resource dir : jars)
             {
-                for (Resource dir : jars)
+                try
                 {
-                    try
-                    {
-                        //If not already a directory, convert by mounting as jar file
-                        if (!dir.isDirectory())
-                            dir = scanResourceFactory.newJarFileResource(dir.getURI());
-                    }
-                    catch (Exception e)
-                    {
-                        //not an appropriate uri, skip it
-                        continue;
-                    }
-
-                    if (isEmptyResource(dir))
-                        continue;
-
-                    if (scanTypes.contains(METAINF_RESOURCES))
-                        scanForResources(context, dir, metaInfResourceCache);
-                    if (scanTypes.contains(METAINF_FRAGMENTS))
-                        scanForFragment(context, dir, metaInfFragmentCache);
-                    if (scanTypes.contains(METAINF_TLDS))
-                        scanForTlds(context, dir, metaInfTldCache);
+                    //If not already a directory, convert by mounting as jar file
+                    if (!dir.isDirectory())
+                        dir = resourceFactory.newJarFileResource(dir.getURI());
                 }
+                catch (Exception e)
+                {
+                    //not an appropriate uri, skip it
+                    continue;
+                }
+
+                if (isEmptyResource(dir))
+                    continue;
+
+                if (scanTypes.contains(METAINF_RESOURCES))
+                    scanForResources(context, dir, metaInfResourceCache);
+                if (scanTypes.contains(METAINF_FRAGMENTS))
+                    scanForFragment(context, dir, metaInfFragmentCache);
+                if (scanTypes.contains(METAINF_TLDS))
+                    scanForTlds(context, dir, metaInfTldCache);
             }
         }
     }

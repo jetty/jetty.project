@@ -848,9 +848,13 @@ public class WebAppContextTest
         assertThat("URLs (sub) refs", actualRefs, containsInAnyOrder(expectedRefs));
 
         // Simulate a reload
+        LOG.info("Stopping Initial Context");
         context.stop();
-        Thread.sleep(1000);
+        LOG.info("Stopped Initial Context - waiting 2 seconds");
+        Thread.sleep(2000);
+        LOG.info("Touch War File: {}", warFile);
         touch(warFile);
+        LOG.info("ReStarting Context");
         context.start();
 
         actualRefs = getWebAppClassLoaderUrlRefs(context);

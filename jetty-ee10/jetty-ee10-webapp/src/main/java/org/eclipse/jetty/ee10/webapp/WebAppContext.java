@@ -1227,7 +1227,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     protected void stopContext() throws Exception
     {
-        super.stopContext();
         try
         {
             for (int i = _configurations.size(); i-- > 0; )
@@ -1251,6 +1250,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             _unavailableException = null;
         }
+        super.stopContext();
     }
 
     @Override
