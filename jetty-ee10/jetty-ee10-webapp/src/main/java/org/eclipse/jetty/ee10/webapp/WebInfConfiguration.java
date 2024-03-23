@@ -91,7 +91,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     {
         //if it wasn't explicitly configured by the user, then unset it
         Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
-        if (tmpdirConfigured != null && !tmpdirConfigured)
+        if (tmpdirConfigured == null || !tmpdirConfigured)
             context.setTempDirectory(null);
 
         //reset the base resource back to what it was before we did any unpacking of resources
