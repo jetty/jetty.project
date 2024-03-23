@@ -60,7 +60,11 @@ xref:pg-websocket-endpoints-listener[Listener endpoints] are notified of events 
 xref:pg-websocket-endpoints-annotated[Annotated endpoints] are notified of events by invoking the correspondent method annotated with the correspondent annotation from the `+org.eclipse.jetty.websocket.api.annotations.*+` package.
 
 Jetty uses ``MethodHandle``s to instantiate WebSocket endpoints and invoke WebSocket event methods, so WebSocket endpoint classes and WebSocket event methods must be `public`.
-This guarantees that WebSocket endpoints can be accessed by the Jetty implementation without additional configuration also when your application uses the Java Module System (JPMS).
+
+When using JPMS, your classes must be `public` and must be exported using the `exports` directive in your `module-info.java`.
+It is not recommended to use the `opens` directive in your `module-info.java` for your classes, as it would expose your classes to deep reflection, which is unnecessary, as the `exports` directive is sufficient.
+
+This guarantees that WebSocket endpoints can be accessed by the Jetty implementation without additional configuration, no matter whether you are using only the class-path, or the module-path.
 
 For both types of WebSocket endpoints, only one thread at a time will be delivering frame or message events to the corresponding methods; the next frame or message event will not be delivered until the previous call to the corresponding method has exited, and if there is xref:pg-websocket-endpoints-demand[demand] for it.
 Endpoints will always be notified of message events in the same order they were received over the network.
