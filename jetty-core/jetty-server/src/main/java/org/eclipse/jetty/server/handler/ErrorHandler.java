@@ -46,7 +46,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -63,7 +62,6 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public class ErrorHandler implements Request.Handler
 {
-    // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_STATUS = "org.eclipse.jetty.server.error_status";
     public static final String ERROR_MESSAGE = "org.eclipse.jetty.server.error_message";
@@ -72,7 +70,7 @@ public class ErrorHandler implements Request.Handler
     public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD");
     public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
-    boolean _showStacks = true;
+    boolean _showStacks = false;
     boolean _showMessageInTitle = true;
     String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
@@ -230,7 +228,7 @@ public class ErrorHandler implements Request.Handler
                     if (showStacks)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Disable stacks for " + e.toString());
+                            LOG.debug("Disable stacks for " + e);
 
                         showStacks = false;
                         continue;
@@ -414,15 +412,12 @@ public class ErrorHandler implements Request.Handler
      * @param reason The reason for the error code (may be null)
      * @param fields The header fields that will be sent with the response.
      * @return The content as a ByteBuffer, or null for no body.
+     * @deprecated Do not override. No longer invoked by Jetty.
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)
     {
-        if (reason == null)
-            reason = HttpStatus.getMessage(status);
-        if (HttpStatus.hasNoBody(status))
-            return BufferUtil.EMPTY_BUFFER;
-        fields.put(HttpHeader.CONTENT_TYPE, Type.TEXT_HTML_8859_1.asString());
-        return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
+        return null;
     }
 
     /**
@@ -492,7 +487,7 @@ public class ErrorHandler implements Request.Handler
      */
     public void setDefaultResponseMimeType(String defaultResponseMimeType)
     {
-        _defaultResponseMimeType = Objects.requireNonNull(defaultResponseMimeType);;
+        _defaultResponseMimeType = Objects.requireNonNull(defaultResponseMimeType);
     }
 
     protected void write(Writer writer, String string) throws IOException
