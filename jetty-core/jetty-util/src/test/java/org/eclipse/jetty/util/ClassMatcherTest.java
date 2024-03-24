@@ -11,17 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.webapp;
+package org.eclipse.jetty.util;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.ee10.webapp.ClassMatcher.ByLocationOrModule;
-import org.eclipse.jetty.ee10.webapp.ClassMatcher.ByPackageOrName;
-import org.eclipse.jetty.ee10.webapp.ClassMatcher.Entry;
-import org.eclipse.jetty.util.IncludeExcludeSet;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.ClassMatcher.ByLocationOrModule;
+import org.eclipse.jetty.util.ClassMatcher.ByPackageOrName;
+import org.eclipse.jetty.util.ClassMatcher.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
