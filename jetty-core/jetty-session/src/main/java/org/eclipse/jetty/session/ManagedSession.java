@@ -355,6 +355,19 @@ public class ManagedSession implements Session
         return _manager.encodeURI(request, uri, cookiesInUse);
     }
 
+    /**
+     * @return 
+     */
+    @Override
+    public Accessor getAccessor()
+    {
+        if (!isValid())
+            throw new IllegalStateException("Invalid session");
+
+
+        return _manager.getAccessor(getExtendedId());
+    }
+
     @Override
     public String getExtendedId()
     {

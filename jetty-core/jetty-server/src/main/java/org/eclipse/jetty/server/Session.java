@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.util.Attributes;
 
 /**
@@ -111,6 +113,15 @@ public interface Session extends Attributes
     boolean isNew() throws IllegalStateException;
 
     String encodeURI(Request request, String uri, boolean cookiesInUse);
+
+    Accessor getAccessor();
+
+    interface Accessor
+    {
+        default void access(Consumer<API> sessionConsumer) throws IllegalStateException
+        {
+        }
+    }
 
     /**
      * Listener interface that if implemented by a value of an attribute of an enclosing {@link Context} at start, will be
