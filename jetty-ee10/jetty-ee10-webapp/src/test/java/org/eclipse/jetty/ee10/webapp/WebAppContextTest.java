@@ -30,6 +30,7 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee.WebappProtectedClasses;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -812,7 +813,7 @@ public class WebAppContextTest
 
         String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
 
-        WebAppContext.addServerClasses(testPattern);
+        WebAppContext.addServerClasses(server, testPattern);
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
@@ -825,7 +826,7 @@ public class WebAppContextTest
         List<String> serverClasses = List.of(context.getServerClasses());
         assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
         assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
-        for (String defaultServerClass: WebAppContext.__dftServerClasses)
+        for (String defaultServerClass: WebappProtectedClasses.DEFAULT_SERVER_CLASSES)
             assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
     }
 
@@ -836,7 +837,7 @@ public class WebAppContextTest
 
         String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
 
-        WebAppContext.addSystemClasses(testPattern);
+        WebAppContext.addSystemClasses(server, testPattern);
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
@@ -849,7 +850,7 @@ public class WebAppContextTest
         List<String> systemClasses = List.of(context.getSystemClasses());
         assertThat("Should have environment specific test pattern", systemClasses, hasItem(testPattern));
         assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
-        for (String defaultSystemClass: WebAppContext.__dftSystemClasses)
+        for (String defaultSystemClass: WebappProtectedClasses.DEFAULT_SYSTEM_CLASSES)
             assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
     }
 }

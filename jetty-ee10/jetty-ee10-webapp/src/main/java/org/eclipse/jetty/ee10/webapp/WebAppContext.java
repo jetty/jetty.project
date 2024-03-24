@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.WebappProtectedClasses;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -83,32 +84,25 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault-ee10.xml";
-    public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
-    public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
+    public static final String SERVER_SYS_CLASSES = WebappProtectedClasses.SYSTEM_CLASSES_ATTRIBUTE;
+    public static final String SERVER_SRV_CLASSES = WebappProtectedClasses.SERVER_CLASSES_ATTRIBUTE;
 
-    private static String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
+    private static final String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
-    // System classes are classes that cannot be replaced by
-    // the web application, and they are *always* loaded via
-    // system classloader.
-    public static final ClassMatcher __dftSystemClasses = new ClassMatcher(
-        "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "jakarta.",                         // Jakarta classes (per servlet spec v5.0 / Section 15.2.1)
-        "org.xml.",                         // javax.xml
-        "org.w3c."                          // javax.xml
-    );
+    /**
+     * @deprecated use {@link WebappProtectedClasses#DEFAULT_SYSTEM_CLASSES}
+     */
+    @Deprecated
+    public static final ClassMatcher __dftSystemClasses = WebappProtectedClasses.DEFAULT_SYSTEM_CLASSES;
 
-    // Server classes are classes that are hidden from being
-    // loaded by the web application using system classloader,
-    // so if web application needs to load any of such classes,
-    // it has to include them in its distribution.
-    public static final ClassMatcher __dftServerClasses = new ClassMatcher(
-        "org.eclipse.jetty."                // hide jetty classes
-    );
+    /**
+     * @deprecated use {@link WebappProtectedClasses#DEFAULT_SERVER_CLASSES}
+     */
+    @Deprecated
+    public static final ClassMatcher __dftServerClasses = WebappProtectedClasses.DEFAULT_SERVER_CLASSES;
 
-    private final ClassMatcher _systemClasses = new ClassMatcher(__dftSystemClasses);
-    private final ClassMatcher _serverClasses = new ClassMatcher(__dftServerClasses);
+    private final ClassMatcher _systemClasses = new ClassMatcher(WebappProtectedClasses.getSystemClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _serverClasses = new ClassMatcher(WebappProtectedClasses.getServerClasses(ServletContextHandler.ENVIRONMENT));
 
     private Configurations _configurations;
     private String _defaultsDescriptor = WEB_DEFAULTS_XML;
@@ -727,23 +721,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super.setServer(server);
         if (server != null)
         {
-            if (__dftSystemClasses.equals(_systemClasses))
-            {
-                Object systemClasses = ServletContextHandler.ENVIRONMENT.getAttribute(SERVER_SYS_CLASSES);
-                if (systemClasses instanceof String[] patterns)
-                    _systemClasses.add(patterns);
-                if (systemClasses instanceof ClassMatcher classMatcher)
-                    _systemClasses.add(classMatcher.getPatterns());
-            }
-
-            if (__dftServerClasses.equals(_serverClasses))
-            {
-                Object serverClasses = ServletContextHandler.ENVIRONMENT.getAttribute(SERVER_SRV_CLASSES);
-                if (serverClasses instanceof String[] patterns)
-                    _serverClasses.add(patterns);
-                if (serverClasses instanceof ClassMatcher classMatcher)
-                    _serverClasses.add(classMatcher.getPatterns());
-            }
+            _systemClasses.add(WebappProtectedClasses.getSystemClasses(server).getPatterns());
+            _serverClasses.add(WebappProtectedClasses.getServerClasses(server).getPatterns());
         }
     }
 
@@ -1403,75 +1382,30 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @param server ignored.
-     * @param patterns the patterns to add
-     * @deprecated use {@link #addServerClasses(String...)} instead, will be removed in Jetty 12.1.0
+     * Add a Server Class pattern to use for all ee9 WebAppContexts.
+     * @param server The {@link Server} instance to add classes to
+     * @param patterns the patterns to use
+     * @see #getServerClassMatcher()
+     * @see #getServerClasses()
+     * @deprecated use {@link WebappProtectedClasses#addSystemClasses(Server, String...)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
     public static void addServerClasses(Server server, String... patterns)
     {
-        addServerClasses(patterns);
+        WebappProtectedClasses.addServerClasses(server, patterns);
     }
 
     /**
-     * Add a Server Class pattern to use for all ee10 WebAppContexts.
+     * Add a System Class pattern to use for all ee9 WebAppContexts.
+     * @param server The {@link Server} instance to add classes to
      * @param patterns the patterns to use
-     * @see #getServerClassMatcher()
-     * @see #getServerClasses()
-     */
-    public static void addServerClasses(String... patterns)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Adding {} ServerClasses: {}", ServletContextHandler.ENVIRONMENT, String.join(", ", patterns));
-        addClasses(__dftServerClasses, SERVER_SRV_CLASSES, patterns);
-    }
-
-    /**
-     * @param server ignored.
-     * @param patterns the patterns to add
-     * @deprecated use {@link #addSystemClasses(String...)} instead, will be removed in Jetty 12.1.0
+     * @see #getSystemClassMatcher()
+     * @see #getSystemClasses()
+     * @deprecated use {@link WebappProtectedClasses#addServerClasses(Server, String...)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
     public static void addSystemClasses(Server server, String... patterns)
     {
-        addSystemClasses(patterns);
-    }
-
-    /**
-     * Add a System Class pattern to use for all ee10 WebAppContexts.
-     * @param patterns the patterns to use
-     * @see #getSystemClassMatcher()
-     * @see #getSystemClasses()
-     */
-    public static void addSystemClasses(String... patterns)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Adding {} SystemClasses: {}", ServletContextHandler.ENVIRONMENT, String.join(", ", patterns));
-        addClasses(__dftSystemClasses, SERVER_SYS_CLASSES, patterns);
-    }
-
-    private static void addClasses(ClassMatcher matcher, String attributeKey, String... pattern)
-    {
-        if (pattern == null || pattern.length == 0)
-            return;
-
-        // look for a ClassMatcher attribute with the list of Server / System classes
-        // to apply to every ee10 web application. If not present, use our defaults.
-        Object o = ServletContextHandler.ENVIRONMENT.getAttribute(attributeKey);
-        if (o instanceof ClassMatcher)
-        {
-            ((ClassMatcher)o).add(pattern);
-            return;
-        }
-
-        String[] classes;
-        if (o instanceof String[])
-            classes = (String[])o;
-        else
-            classes = matcher.getPatterns();
-        int l = classes.length;
-        classes = Arrays.copyOf(classes, l + pattern.length);
-        System.arraycopy(pattern, 0, classes, l, pattern.length);
-        ServletContextHandler.ENVIRONMENT.setAttribute(attributeKey, classes);
+        WebappProtectedClasses.addSystemClasses(server, patterns);
     }
 }

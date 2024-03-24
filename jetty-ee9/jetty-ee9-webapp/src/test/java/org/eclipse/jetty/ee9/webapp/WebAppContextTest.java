@@ -813,7 +813,7 @@ public class WebAppContextTest
 
         String testPattern = "org.eclipse.jetty.ee9.webapp.test.";
 
-        WebAppContext.addServerClasses(testPattern);
+        WebAppContext.addServerClasses(server, testPattern);
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
@@ -837,7 +837,7 @@ public class WebAppContextTest
 
         String testPattern = "org.eclipse.jetty.ee9.webapp.test.";
 
-        WebAppContext.addSystemClasses(testPattern);
+        WebAppContext.addSystemClasses(server, testPattern);
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
