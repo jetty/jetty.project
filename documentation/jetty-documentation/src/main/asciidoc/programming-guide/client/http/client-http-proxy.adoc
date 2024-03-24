@@ -31,7 +31,7 @@ The following is a typical configuration:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=proxy]
 ----
 
-You specify the proxy host and proxy port, and optionally also the addresses that you do not want to be proxied, and then add the proxy configuration on the `ProxyConfiguration` instance.
+You specify the proxy host and proxy port, and optionally also the addresses that you do not want to be proxied (with wildcard '*' supported at the start and end), and then add the proxy configuration on the `ProxyConfiguration` instance.
 
 Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain-text HTTP requests) or establishes a tunnel via HTTP `CONNECT` (for encrypted HTTPS requests).
 

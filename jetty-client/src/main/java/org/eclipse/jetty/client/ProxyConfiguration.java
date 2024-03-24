@@ -14,10 +14,13 @@
 package org.eclipse.jetty.client;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -95,6 +98,8 @@ public class ProxyConfiguration
         // TODO use InetAddressSet? Or IncludeExcludeSet?
         private final Set<String> included = new HashSet<>();
         private final Set<String> excluded = new HashSet<>();
+        private final Map<String, Pattern> _exludedPatterns = new HashMap<>();
+        private final Map<String, HostPort> _hostPorts = new HashMap<>();
         private final Origin origin;
         private final SslContextFactory.Client sslContextFactory;
 
@@ -198,7 +203,7 @@ public class ProxyConfiguration
             }
             for (String excluded : this.excluded)
             {
-                if (matches(address, excluded))
+                if (matchesWithWildcards(address, excluded))
                 {
                     result = false;
                     break;
@@ -210,10 +215,45 @@ public class ProxyConfiguration
         private boolean matches(Origin.Address address, String pattern)
         {
             // TODO: add support for CIDR notation like 192.168.0.0/24, see DoSFilter
-            HostPort hostPort = new HostPort(pattern);
+            HostPort hostPort = _hostPorts.computeIfAbsent(pattern, HostPort::new);
             String host = hostPort.getHost();
             int port = hostPort.getPort();
             return host.equals(address.getHost()) && (port <= 0 || port == address.getPort());
+        }
+
+        private boolean matchesWithWildcards(Origin.Address address, String pattern)
+        {
+            HostPort hostPort = _hostPorts.computeIfAbsent(pattern, HostPort::new);
+            String host = hostPort.getHost();
+            int port = hostPort.getPort();
+            Pattern hostPattern = _exludedPatterns.computeIfAbsent(host, this::compileHostRegex);
+            return hostPattern.matcher(address.getHost()).matches() && (port <= 0 || port == address.getPort());
+        }
+
+        private Pattern compileHostRegex(String host)
+        {
+            return Pattern.compile(extractHostRegex(host));
+        }
+
+        private String extractHostRegex(String host)
+        {
+            if (host.equals("*"))
+            {
+                return ".*";
+            }
+            if (host.startsWith("*") && host.endsWith("*"))
+            {
+                return ".*" + Pattern.quote(host.substring(1, host.length() - 1)) + ".*";
+            }
+            if (host.startsWith("*"))
+            {
+                return ".*" + Pattern.quote(host.substring(1));
+            }
+            if (host.endsWith("*"))
+            {
+                return Pattern.quote(host.substring(0, host.length() - 1)) + ".*";
+            }
+            return Pattern.quote(host);
         }
 
         /**
