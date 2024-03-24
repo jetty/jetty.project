@@ -289,7 +289,7 @@ public class ServletContextHandler extends ContextHandler
         setErrorHandler(errorHandler);
 
         _objFactory = new DecoratedObjectFactory();
-        addBean(_objFactory, true);
+        installBean(_objFactory, true);
 
         // Link the handlers
         relinkHandlers();

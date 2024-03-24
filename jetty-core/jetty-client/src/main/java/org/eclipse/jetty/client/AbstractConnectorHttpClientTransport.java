@@ -33,7 +33,7 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
     protected AbstractConnectorHttpClientTransport(ClientConnector connector)
     {
         this.connector = Objects.requireNonNull(connector);
-        addBean(connector);
+        installBean(connector);
     }
 
     public ClientConnector getClientConnector()
