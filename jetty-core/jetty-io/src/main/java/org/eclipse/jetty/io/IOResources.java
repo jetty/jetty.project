@@ -109,7 +109,6 @@ public class IOResources
         }
     }
 
-
     /**
      * <p>Gets a {@link Content.Source} with the contents of a resource.</p>
      * <p>The resource must not be a directory, must exists and there must be
