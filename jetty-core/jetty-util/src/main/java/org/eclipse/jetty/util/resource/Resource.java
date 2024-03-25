@@ -390,7 +390,6 @@ public abstract class Resource implements Iterable<Resource>
         // wanting to copy to a destination directory (that might not exist yet)
         assert isDirectory();
 
-        IO.ensureDirExists(destination);
         IO.copyDir(src, destination);
     }
 
