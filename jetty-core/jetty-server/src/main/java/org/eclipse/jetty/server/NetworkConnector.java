@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.EventListener;
 
 /**
  * <p>A {@link Connector} for TCP/IP network connectors</p>
@@ -24,6 +25,7 @@ public interface NetworkConnector extends Connector, Closeable
     /**
      * <p>Performs the activities needed to open the network communication
      * (for example, to start accepting incoming network connections).</p>
+     * <p>Implementation must be idempotent.</p>
      *
      * @throws IOException if this connector cannot be opened
      * @see #close()
@@ -33,8 +35,9 @@ public interface NetworkConnector extends Connector, Closeable
     /**
      * <p>Performs the activities needed to close the network communication
      * (for example, to stop accepting network connections).</p>
-     * Once a connector has been closed, it cannot be opened again without first
-     * calling {@link #stop()} and it will not be active again until a subsequent call to {@link #start()}
+     * <p>Once a connector has been closed, it cannot be opened again without first
+     * calling {@link #stop()} and it will not be active again until a subsequent call to {@link #start()}.</p>
+     * <p>Implementation must be idempotent.</p>
      */
     @Override
     void close();
@@ -64,4 +67,29 @@ public interface NetworkConnector extends Connector, Closeable
      * -1 if it has not been opened, or -2 if it has been closed.
      */
     int getLocalPort();
+
+    /**
+     * <p>Receives notifications of the {@link NetworkConnector#open()}
+     * and {@link NetworkConnector#close()} events.</p>
+     */
+    interface Listener extends EventListener
+    {
+        /**
+         * <p>Invoked when the given {@link NetworkConnector} has been opened.</p>
+         *
+         * @param connector the {@link NetworkConnector} that has been opened
+         */
+        default void onOpen(NetworkConnector connector)
+        {
+        }
+
+        /**
+         * <p>Invoked when the given {@link NetworkConnector} has been closed.</p>
+         *
+         * @param connector the {@link NetworkConnector} that has been closed
+         */
+        default void onClose(NetworkConnector connector)
+        {
+        }
+    }
 }
