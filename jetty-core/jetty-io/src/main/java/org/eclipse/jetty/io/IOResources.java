@@ -38,14 +38,19 @@ import org.slf4j.LoggerFactory;
 public class IOResources
 {
     /**
-     * Reads the contents of a Resource into a RetainableByteBuffer.
+     * <p>Reads the contents of a Resource into a RetainableByteBuffer.</p>
+     * <p>The resource must not be a directory, must exists and there must be
+     * a way to access its contents.</p>
+     * <p>Multiple optimized methods are used to access the resource's contents but if they all fail,
+     * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource to be read.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @return a {@link RetainableByteBuffer} containing the resource's contents.
+     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool bufferPool, boolean direct)
+    public static RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool bufferPool, boolean direct) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -106,17 +111,20 @@ public class IOResources
 
 
     /**
-     * Gets a {@link Content.Source} with the contents of a resource, if possible.
-     * Non-existent and directory resources have no content, so calling this method on such resource
-     * throws {@link IllegalArgumentException}.
+     * <p>Gets a {@link Content.Source} with the contents of a resource.</p>
+     * <p>The resource must not be a directory, must exists and there must be
+     * a way to access its contents.</p>
+     * <p>Multiple optimized methods are used to access the resource's contents but if they all fail,
+     * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource from which to get a {@link Content.Source}.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
      * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @return the {@link Content.Source}.
+     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct)
+    public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -151,9 +159,11 @@ public class IOResources
     }
 
     /**
-     * Gets a {@link Content.Source} with a range of the contents of a resource, if possible.
-     * Non-existent and directory resources have no content, so calling this method on such resource
-     * throws {@link IllegalArgumentException}.
+     * <p>Gets a {@link Content.Source} with a range of the contents of a resource.</p>
+     * <p>The resource must not be a directory, must exists and there must be
+     * a way to access its contents.</p>
+     * <p>Multiple optimized methods are used to access the resource's contents but if they all fail,
+     * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource from which to get a {@link Content.Source}.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
@@ -162,8 +172,9 @@ public class IOResources
      * @param first the first byte from which to read from.
      * @param length the length of the content to read.
      * @return the {@link Content.Source}.
+     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length)
+    public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -206,14 +217,14 @@ public class IOResources
     }
 
     /**
-     * Gets an {@link InputStream} with the contents of a resource, if possible.
-     * Non-existent and directory resources do not have an associated stream, so calling this method on such resource
-     * throws {@link IllegalArgumentException}.
+     * <p>Gets an {@link InputStream} with the contents of a resource.</p>
+     * <p>The resource must not be a directory, must exists and there must return non-null to {@link Resource#newInputStream()}.</p>
      *
      * @param resource the resource from which to get an {@link InputStream}.
      * @return the {@link InputStream}.
+     * @throws IllegalArgumentException if the resource is a directory or does not exist or {@link Resource#newInputStream()} returns null.
      */
-    public static InputStream asInputStream(Resource resource)
+    public static InputStream asInputStream(Resource resource) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -231,7 +242,11 @@ public class IOResources
     }
 
     /**
-     * Performs an asynchronous copy of the contents of a resource to a sink, using the given buffer pool and buffer characteristics.
+     * <p>Performs an asynchronous copy of the contents of a resource to a sink, using the given buffer pool and buffer characteristics.</p>
+     * <p>The resource must not be a directory, must exists and there must be
+     * a way to access its contents.</p>
+     * <p>Multiple optimized methods are used to access the resource's contents but if they all fail,
+     * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
@@ -239,8 +254,9 @@ public class IOResources
      * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
      * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
      * @param callback the callback to notify when the copy is done.
+     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback)
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -273,7 +289,24 @@ public class IOResources
         Content.copy(source, sink, callback);
     }
 
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback)
+    /**
+     * <p>Performs an asynchronous copy of a subset of the contents of a resource to a sink, using the given buffer pool and buffer characteristics.</p>
+     * <p>The resource must not be a directory, must exists and there must be
+     * a way to access its contents.</p>
+     * <p>Multiple optimized methods are used to access the resource's contents but if they all fail,
+     * {@link Resource#newInputStream()} is used as a fallback.</p>
+     *
+     * @param resource the resource to copy from.
+     * @param sink the sink to copy to.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param bufferSize the size of the buffer to be used for the copy. Any value &lt; 1 means use a default value.
+     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
+     * @param first the first byte of the resource to start from.
+     * @param length the length of the resource's contents to copy.
+     * @param callback the callback to notify when the copy is done.
+     * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
+     */
+    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
