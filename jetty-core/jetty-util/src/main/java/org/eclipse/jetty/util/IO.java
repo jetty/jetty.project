@@ -237,15 +237,18 @@ public class IO
      * </p>
      *
      * @param srcDir the source directory
-     * @param destDir the destination directory (must exist)
+     * @param destDir the destination directory
      * @throws IOException if unable to copy the file
      */
     public static void copyDir(Path srcDir, Path destDir) throws IOException
     {
         if (!Files.isDirectory(Objects.requireNonNull(srcDir)))
             throw new IllegalArgumentException("Source is not a directory: " + srcDir);
-        if (!Files.isDirectory(Objects.requireNonNull(destDir)))
-            throw new IllegalArgumentException("Dest is not a directory: " + destDir);
+        Objects.requireNonNull(destDir);
+        if (Files.exists(destDir) && !Files.isDirectory(destDir))
+            throw new IllegalArgumentException("Destination is not a directory: " + destDir);
+        else if (!Files.exists(destDir))
+            Files.createDirectory(destDir); // only attempt top create 1 level of directory (parent must exist)
 
         try (Stream<Path> sourceStream = Files.walk(srcDir))
         {
