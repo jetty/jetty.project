@@ -57,7 +57,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         super(quicSession);
         this.configuration = configuration;
         session = new HTTP3SessionServer(this, listener);
-        addBean(session);
+        installBean(session);
         session.setStreamIdleTimeout(configuration.getStreamIdleTimeout());
 
         if (LOG.isDebugEnabled())

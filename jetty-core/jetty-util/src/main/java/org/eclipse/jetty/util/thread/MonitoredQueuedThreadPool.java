@@ -47,10 +47,10 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
     public MonitoredQueuedThreadPool(int maxThreads, int minThreads, int idleTimeOut, BlockingQueue<Runnable> queue)
     {
         super(maxThreads, minThreads, idleTimeOut, queue);
-        addBean(queueStats);
-        addBean(queueLatencyStats);
-        addBean(taskLatencyStats);
-        addBean(threadStats);
+        installBean(queueStats);
+        installBean(queueLatencyStats);
+        installBean(taskLatencyStats);
+        installBean(threadStats);
     }
 
     @Override

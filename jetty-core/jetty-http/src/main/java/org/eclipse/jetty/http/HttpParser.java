@@ -542,6 +542,7 @@ public class HttpParser
                     buffer.position(position + 2 * Long.BYTES);
                     _methodString = HttpMethod.GET.asString();
                     _version = HttpVersion.HTTP_1_1;
+                    _fieldCache.prepare();
                     setState(State.HEADER);
                     _requestHandler.startRequest(_methodString, "/", _version);
                     return true;
@@ -551,6 +552,7 @@ public class HttpParser
                     buffer.position(position + 2 * Long.BYTES);
                     _methodString = HttpMethod.GET.asString();
                     _version = HttpVersion.HTTP_1_0;
+                    _fieldCache.prepare();
                     setState(State.HEADER);
                     _requestHandler.startRequest(_methodString, "/", _version);
                     return true;
