@@ -38,6 +38,74 @@ import org.slf4j.LoggerFactory;
 public class IOResources
 {
     /**
+     * Reads the contents of a Resource into a RetainableByteBuffer.
+     *
+     * @param resource the resource to be read.
+     * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
+     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
+     * @return a {@link RetainableByteBuffer} containing the resource's contents.
+     */
+    public static RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool bufferPool, boolean direct)
+    {
+        if (resource.isDirectory() || !resource.exists())
+            throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
+        // Optimize for MemoryResource.
+        if (resource instanceof MemoryResource memoryResource)
+            return RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
+
+        long longLength = resource.length();
+        if (longLength > Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Resource length exceeds 2 GiB: " + resource);
+        int length = (int)longLength;
+
+        // Optimize for PathResource.
+        Path path = resource.getPath();
+        if (path != null)
+        {
+            RetainableByteBuffer retainableByteBuffer = bufferPool.acquire(length, direct);
+            try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
+            {
+                int pos = BufferUtil.flipToFill(retainableByteBuffer.getByteBuffer());
+                while (retainableByteBuffer.hasRemaining())
+                {
+                    seekableByteChannel.read(retainableByteBuffer.getByteBuffer());
+                }
+                BufferUtil.flipToFlush(retainableByteBuffer.getByteBuffer(), pos);
+                return retainableByteBuffer;
+            }
+            catch (IOException e)
+            {
+                retainableByteBuffer.release();
+                throw new RuntimeIOException(e);
+            }
+        }
+
+        // Fallback to InputStream.
+        try (InputStream inputStream = resource.newInputStream())
+        {
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+
+            ByteBufferAggregator aggregator = new ByteBufferAggregator(bufferPool, direct, length > -1 ? length : 4096, length > -1 ? length : Integer.MAX_VALUE);
+            byte[] byteArray = new byte[4096];
+            while (true)
+            {
+                int read = inputStream.read(byteArray);
+                if (read == -1)
+                    break;
+                aggregator.aggregate(ByteBuffer.wrap(byteArray, 0, read));
+            }
+            return aggregator.takeRetainableByteBuffer();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+
+    /**
      * Gets a {@link Content.Source} with the contents of a resource, if possible.
      * Non-existent and directory resources have no content, so calling this method on such resource
      * throws {@link IllegalArgumentException}.
@@ -97,6 +165,9 @@ public class IOResources
      */
     public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length)
     {
+        if (resource.isDirectory() || !resource.exists())
+            throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
         // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
         Path path = resource.getPath();
         if (path != null)
@@ -110,12 +181,17 @@ public class IOResources
             return contentSource;
         }
 
-        // TODO MemoryResource could be optimized too
+        // Try an optimization for MemoryResource.
+        if (resource instanceof MemoryResource memoryResource)
+            return new ByteBufferContentSource(ByteBuffer.wrap(memoryResource.getBytes()));
 
         // Fallback to InputStream.
         try
         {
-            RangedInputStreamContentSource contentSource = new RangedInputStreamContentSource(resource.newInputStream(), bufferPool, first, length);
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            RangedInputStreamContentSource contentSource = new RangedInputStreamContentSource(inputStream, bufferPool, first, length);
             if (bufferSize > 0)
             {
                 contentSource.setBufferSize(bufferSize);
@@ -143,7 +219,10 @@ public class IOResources
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
         try
         {
-            return resource.newInputStream();
+            InputStream inputStream = resource.newInputStream();
+            if (inputStream == null)
+                throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
+            return inputStream;
         }
         catch (IOException e)
         {
@@ -163,6 +242,9 @@ public class IOResources
      */
     public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback)
     {
+        if (resource.isDirectory() || !resource.exists())
+            throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
         // Save a Content.Source allocation for resources with a Path.
         Path path = resource.getPath();
         if (path != null)
@@ -193,6 +275,9 @@ public class IOResources
 
     public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback)
     {
+        if (resource.isDirectory() || !resource.exists())
+            throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
+
         // Save a Content.Source allocation for resources with a Path.
         Path path = resource.getPath();
         if (path != null)

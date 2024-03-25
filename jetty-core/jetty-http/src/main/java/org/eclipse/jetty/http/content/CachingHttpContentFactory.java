@@ -30,9 +30,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -295,7 +295,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
     protected class CachedHttpContent extends HttpContent.Wrapper implements CachingHttpContent
     {
-        private final Content.Chunk _chunk;
+        private final RetainableByteBuffer _buffer;
         private final String _cacheKey;
         private final HttpField _etagField;
         private final long _contentLengthValue;
@@ -328,55 +328,30 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             boolean isValid = true;
 
             // Read the content into memory if the HttpContent does not already have a buffer.
-            Content.Chunk chunk;
+            RetainableByteBuffer buffer;
             ByteBuffer byteBuffer = httpContent.getByteBuffer();
             if (byteBuffer == null)
             {
                 try
                 {
                     if (_contentLengthValue <= _maxCachedFileSize)
-                    {
-                        Content.Source contentSource = IOResources.asContentSource(httpContent.getResource(), _bufferPool, (int)_contentLengthValue, _useDirectByteBuffers);
-                        chunk = contentSource.read();
-                        if (chunk == null || Content.Chunk.isFailure(chunk))
-                        {
-                            contentSource.fail(new IOException("invalid chunk: " + chunk));
-                            isValid = false;
-                        }
-                        else if (chunk.remaining() != _contentLengthValue)
-                        {
-                            chunk.release();
-                            contentSource.fail(new IOException("chunk size != " + _contentLengthValue));
-                            chunk = null;
-                            isValid = false;
-                        }
-                        if (chunk != null && !chunk.isLast())
-                        {
-                            Content.Chunk lastChunk = contentSource.read();
-                            if (lastChunk == null || !lastChunk.isLast())
-                                contentSource.fail(new IOException("chunk is not last"));
-                            if (lastChunk != null)
-                                lastChunk.release();
-                        }
-                    }
+                        buffer = IOResources.toRetainableByteBuffer(httpContent.getResource(), _bufferPool, _useDirectByteBuffers);
                     else
-                    {
-                        chunk = null;
-                    }
+                        buffer = null;
                 }
                 catch (Throwable t)
                 {
-                    chunk = null;
+                    buffer = null;
                     isValid = false;
                     LOG.warn("Failed to read Resource: " + httpContent.getResource(), t);
                 }
             }
             else
             {
-                chunk = Content.Chunk.from(byteBuffer, true);
+                buffer = RetainableByteBuffer.wrap(byteBuffer);
             }
 
-            _chunk = chunk;
+            _buffer = buffer;
             _isValid = isValid;
             _bytesOccupied = httpContent.getBytesOccupied();
             _lastModifiedValue = httpContent.getLastModifiedValue();
@@ -398,7 +373,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public ByteBuffer getByteBuffer()
         {
-            return _chunk == null ? null : _chunk.getByteBuffer().asReadOnlyBuffer();
+            return _buffer == null ? null : _buffer.getByteBuffer().asReadOnlyBuffer();
         }
 
         @Override
@@ -436,8 +411,8 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         {
             if (_referenceCount.release())
             {
-                if (_chunk != null)
-                    _chunk.release();
+                if (_buffer != null)
+                    _buffer.release();
                 super.release();
             }
         }
