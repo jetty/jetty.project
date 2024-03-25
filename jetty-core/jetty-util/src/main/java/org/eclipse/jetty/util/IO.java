@@ -319,11 +319,14 @@ public class IO
      * </p>
      *
      * @param basePath the base Path
-     * @param relative the Path to resolve against base Path
+     * @param relative the relative Path to resolve against base Path
      * @return the new Path object relative to the base Path
      */
     public static Path resolvePath(Path basePath, Path relative)
     {
+        if (relative.isAbsolute())
+            throw new IllegalArgumentException("Relative path cannot be absolute");
+
         if (basePath.getFileSystem().equals(relative.getFileSystem()))
         {
             return basePath.resolve(relative);
