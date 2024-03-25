@@ -50,6 +50,7 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -1252,7 +1253,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             _unavailableException = null;
 
-            super.deleteTempDirectory();
+            super.cleanupAfterStop();
         }
     }
 
@@ -1276,10 +1277,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * Prevent the temp directory from being deleted during the normal stop sequence, and require that
-     * super.deleteTempDirectory() is explicitly called at the right time, after the webapp classloader is closed
+     * {@link ContextHandler#cleanupAfterStop()} is explicitly called after the webapp classloader is closed
      */
     @Override
-    protected void deleteTempDirectory() throws Exception
+    protected void cleanupAfterStop() throws Exception
     {
         //intentionally left blank
     }

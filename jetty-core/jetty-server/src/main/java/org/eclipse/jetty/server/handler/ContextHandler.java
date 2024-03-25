@@ -686,11 +686,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     protected void doStop() throws Exception
     {
         _context.call(super::doStop, null);
-        deleteTempDirectory();
+        cleanupAfterStop();
         _tempDirectoryCreated = false;
     }
 
-    protected void deleteTempDirectory() throws Exception
+    protected void cleanupAfterStop() throws Exception
     {
         File tempDirectory = getTempDirectory();
 
