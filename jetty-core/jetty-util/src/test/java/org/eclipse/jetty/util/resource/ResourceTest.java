@@ -336,7 +336,7 @@ public class ResourceTest
     }
 
     @Test
-    public void testNonExistentResource()
+    public void testNonExistentResource() throws IOException
     {
         Path nonExistentFile = workDir.getPathFile("does-not-exists");
         Resource resource = resourceFactory.newResource(nonExistentFile);
@@ -348,9 +348,9 @@ public class ResourceTest
         assertFalse(resource.isReadable());
         assertEquals(nonExistentFile, resource.getPath());
         assertEquals(Instant.EPOCH, resource.lastModified());
-        assertEquals(0L, resource.length());
+        assertEquals(-1L, resource.length());
         assertThrows(IOException.class, resource::newInputStream);
-        assertThrows(IOException.class, resource::newReadableByteChannel);
+        assertNull(resource.newReadableByteChannel());
         assertEquals(nonExistentFile.toUri(), resource.getURI());
         assertFalse(resource.isAlias());
         assertNull(resource.getRealURI());
