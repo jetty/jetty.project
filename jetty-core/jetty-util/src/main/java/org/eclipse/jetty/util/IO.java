@@ -277,7 +277,9 @@ public class IO
      * @param destDir the destination directory (must exist)
      * @param copyOptions the options to use on the {@link Files#copy(Path, Path, CopyOption...)} commands.
      * @throws IOException if unable to copy the file
+     * @deprecated use {@link #copyDir(Path, Path)} instead to avoid foreign target behavior across FileSystems.
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public static void copyDir(Path srcDir, Path destDir, CopyOption... copyOptions) throws IOException
     {
         if (!Files.isDirectory(Objects.requireNonNull(srcDir)))

@@ -309,10 +309,10 @@ public abstract class Resource implements Iterable<Resource>
      *     <li>And the {@code destination} does not exist then
      *         the destination is created as a directory via {@link Files#createDirectories(Path, FileAttribute[])}
      *         before the {@link IO#copyDir(Path, Path)} method is used.</li>
-     *     <li>And the {@code destination} is a File then results in .</li>
-     *     <li>And the {@code destination} is a Directory then
-     *         a new {@link Path} reference is created in the destination with the same
-     *         filename as this Resource, which is used via {@link IO#copyFile(Path, Path)}.</li>
+     *     <li>And the {@code destination} is a File then this results in an {@link IllegalArgumentException}.</li>
+     *     <li>And the {@code destination} is a Directory then all files in this Resource
+     *         directory tree are copied to the {@code destination}, using {@link IO#copyFile(Path, Path)}
+     *         maintaining the same directory structure.</li>
      * </ul>
      *
      * <p>If this Resource is not backed by a {@link Path}, use {@link #newInputStream()}:</p>
@@ -335,7 +335,7 @@ public abstract class Resource implements Iterable<Resource>
         Path src = getPath();
         if (src == null)
         {
-            // this implementation does is not backed by a Path.
+            // this implementation is not backed by a Path.
 
             // is this a Directory?
             if (isDirectory())
