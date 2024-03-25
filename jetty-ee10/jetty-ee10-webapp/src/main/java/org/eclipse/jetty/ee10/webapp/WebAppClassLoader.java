@@ -18,8 +18,6 @@ import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -36,7 +34,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
@@ -293,20 +290,14 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             try (Stream<Path> streamEntries = Files.list(dir))
             {
-                List<URI> entries = streamEntries
+                streamEntries
                     .filter(Files::isRegularFile)
                     .filter(this::isFileSupported)
                     .sorted(Comparator.naturalOrder())
                     .map(Path::toUri)
-                    .filter(new UniqueURIPredicate(getURLs())) // ignore URLs that are already present in classloader
                     .map(URIUtil::toJarFileUri)
-                    .toList();
-
-                for (URI uri: entries)
-                {
-                    Resource res = _resourceFactory.newResource(uri);
-                    addClassPath(res);
-                }
+                    .map(_resourceFactory::newResource)
+                    .forEach(this::addClassPath);
             }
             catch (IOException e)
             {
@@ -645,35 +636,5 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     public boolean isServerClass(Class<?> clazz)
     {
         return _context.isServerClass(clazz);
-    }
-
-    private static class UniqueURIPredicate implements Predicate<URI>
-    {
-        private final List<URI> uris = new ArrayList<>();
-
-        public UniqueURIPredicate(URL[] urls)
-        {
-            for (URL url: urls)
-            {
-                try
-                {
-                    uris.add(URIUtil.toJarFileUri(url.toURI()));
-                }
-                catch (URISyntaxException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Unable to convert URL to URI: {}", url, e);
-                }
-            }
-        }
-
-        @Override
-        public boolean test(URI uri)
-        {
-            boolean result = !uris.contains(uri);
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}.test({}) = {}", this.getClass().getSimpleName(), uri, result);
-            return result;
-        }
     }
 }
