@@ -17,6 +17,7 @@
     <module>jetty-client</module>
     <module>jetty-demos</module>
     <module>jetty-deploy</module>
+    <module>jetty-ee</module>
     <module>jetty-fcgi</module>
     <module>jetty-http</module>
     <module>jetty-http-spi</module>
@@ -44,7 +45,6 @@
     <module>jetty-util-ajax</module>
     <module>jetty-websocket</module>
     <module>jetty-xml</module>
-    <module>jetty-ee</module>
   </modules>
 
   <!-- FIXME: Remove once Servlet API usage is totally removed from jetty-core -->

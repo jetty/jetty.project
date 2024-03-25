@@ -8,6 +8,7 @@ Without this, only Jetty-specific handlers may be deployed.
 ee9
 
 [depend]
+ee-webapp
 ee9-servlet
 ee9-security
 
@@ -18,7 +19,7 @@ etc/jetty-ee9-webapp.xml
 lib/jetty-ee9-webapp-${jetty.version}.jar
 
 [ini-template]
-## Add to the server wide default jars and packages protected or hidden from webapps.
+## Add to the environment wide default jars and packages protected or hidden from webapps.
 ## System classes are protected and cannot be overridden by a webapp.
 ## Server classes are hidden and cannot be seen by a webapp
 ## Lists of patterns are comma separated and may be either:

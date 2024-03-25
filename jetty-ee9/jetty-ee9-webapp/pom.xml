@@ -19,11 +19,11 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-xml</artifactId>
+      <artifactId>jetty-ee</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-ee</artifactId>
+      <artifactId>jetty-xml</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
