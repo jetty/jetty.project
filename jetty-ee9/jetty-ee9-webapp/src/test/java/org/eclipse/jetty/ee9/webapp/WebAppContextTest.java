@@ -121,7 +121,7 @@ public class WebAppContextTest
     private Path createWar(Path tempDir, String name) throws Exception
     {
         // Create war on the fly
-        Path testWebappDir = MavenPaths.projectBase().resolve("src/test/webapp");
+        Path testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
         assertTrue(Files.exists(testWebappDir));
         Path warFile = tempDir.resolve(name);
 
