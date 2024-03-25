@@ -1227,6 +1227,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     protected void stopContext() throws Exception
     {
+        stopWebapp();
+
         try
         {
             for (int i = _configurations.size(); i-- > 0; )
@@ -1249,8 +1251,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
 
             _unavailableException = null;
+
+            super.deleteTempDirectory();
         }
-        stopWebapp();
     }
 
     /**
@@ -1269,6 +1272,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void stopWebapp() throws Exception
     {
         super.stopContext();
+    }
+
+    /**
+     * Prevent the temp directory from being deleted during the normal stop sequence, and require that
+     * super.deleteTempDirectory() is explicitly called at the right time, after the webapp classloader is closed
+     */
+    @Override
+    protected void deleteTempDirectory() throws Exception
+    {
+        //intentionally left blank
     }
 
     @Override
