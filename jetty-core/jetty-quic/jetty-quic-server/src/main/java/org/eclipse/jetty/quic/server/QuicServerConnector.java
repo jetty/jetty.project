@@ -160,6 +160,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         addBean(container);
         addBean(selectorManager);
         addBean(connectionFactory);
+        addBean(datagramChannel);
 
         for (EventListener l : getBeans(SelectorManager.SelectorManagerListener.class))
             selectorManager.addEventListener(l);
@@ -196,7 +197,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
             localPort = datagramChannel.socket().getLocalPort();
             if (localPort <= 0)
                 throw new IOException("DatagramChannel not bound");
-            addBean(datagramChannel);
+            super.open();
         }
     }
 
@@ -226,17 +227,25 @@ public class QuicServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStop() throws Exception
     {
-        // We want the DatagramChannel to be stopped by the SelectorManager.
         super.doStop();
 
         removeBean(datagramChannel);
         datagramChannel = null;
-        localPort = -2;
-
-        removeBean(connectionFactory);
 
         for (EventListener l : getBeans(EventListener.class))
+        {
             selectorManager.removeEventListener(l);
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        super.close();
+        localPort = -2;
+        // Do nothing more here, as we want the DatagramChannel
+        // to be closed by the SelectorManager when the
+        // SelectorManager is stopped (as a bean) in doStop().
     }
 
     @Override

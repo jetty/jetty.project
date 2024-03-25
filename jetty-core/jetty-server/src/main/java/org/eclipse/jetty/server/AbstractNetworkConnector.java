@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.EventListener;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -85,11 +86,41 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     @Override
     public void open() throws IOException
     {
+        for (EventListener l : getEventListeners())
+        {
+            if (l instanceof NetworkConnector.Listener listener)
+            {
+                try
+                {
+                    listener.onOpen(this);
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failure while notifying listener {}", listener, x);
+                }
+            }
+        }
     }
 
     @Override
     public void close()
     {
+        for (EventListener l : getEventListeners())
+        {
+            if (l instanceof NetworkConnector.Listener listener)
+            {
+                try
+                {
+                    listener.onClose(this);
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failure while notifying listener {}", listener, x);
+                }
+            }
+        }
     }
 
     @Override
