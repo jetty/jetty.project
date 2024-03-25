@@ -89,7 +89,10 @@ public interface Quiche
         QUICHE_ERR_OUT_OF_IDENTIFIERS = -18,
 
         // Error in key update.
-        QUICHE_ERR_KEY_UPDATE = -19;
+        QUICHE_ERR_KEY_UPDATE = -19,
+
+        // The peer sent more data in CRYPTO frames than we can buffer.
+        QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED = -20;
 
         static String errToString(long err)
         {
@@ -131,6 +134,8 @@ public interface Quiche
                 return "QUICHE_ERR_OUT_OF_IDENTIFIERS";
             if (err == QUICHE_ERR_KEY_UPDATE)
                 return "QUICHE_ERR_KEY_UPDATE";
+            if (err == QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED)
+                return "QUICHE_ERR_CRYPTO_BUFFER_EXCEEDED";
             return "?? " + err;
         }
     }

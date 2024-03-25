@@ -90,19 +90,6 @@ public class StatisticsHandler extends EventsHandler
     }
 
     @Override
-    protected void onResponseBegin(Request request, int status, HttpFields headers)
-    {
-        switch (status / 100)
-        {
-            case 1 -> _responses1xx.increment();
-            case 2 -> _responses2xx.increment();
-            case 3 -> _responses3xx.increment();
-            case 4 -> _responses4xx.increment();
-            case 5 -> _responses5xx.increment();
-        }
-    }
-
-    @Override
     protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
     {
         int length = BufferUtil.length(content);
@@ -111,12 +98,20 @@ public class StatisticsHandler extends EventsHandler
     }
 
     @Override
-    protected void onComplete(Request request, Throwable failure)
+    protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
     {
         if (failure != null)
             _failures.increment();
         _requestTimeStats.record(NanoTime.since(request.getBeginNanoTime()));
         _requestStats.decrement();
+        switch (status / 100)
+        {
+            case 1 -> _responses1xx.increment();
+            case 2 -> _responses2xx.increment();
+            case 3 -> _responses3xx.increment();
+            case 4 -> _responses4xx.increment();
+            case 5 -> _responses5xx.increment();
+        }
     }
 
     @Override

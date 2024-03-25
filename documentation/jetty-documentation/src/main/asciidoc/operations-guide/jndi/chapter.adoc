@@ -20,17 +20,17 @@ For each specific Jakarta EE _environment_ there is a specific `plus` module tha
 * For Java EE 9, `ee9-plus`
 * For Java {ee-current-caps}, `{ee-current}-plus`
 
-If you have already enabled an xref:og-annotations[`annotations`] module suitable for your environment, an appropriate `plus` module will already have been enabled and you do not need to explicitly enable a `plus` module.
+If you have already enabled an xref:og-annotations[`annotations`] module suitable for your EE environment, an appropriate `plus` module will already have been enabled and you do not need to explicitly enable a `plus` module.
 
 If you have extra jars associated with your JNDI resources, eg database drivers etc, that are not located inside your webapp then you must ensure they are on either the container classpath or a Jakarta EE environment classpath.
 You can enable the `ext` module and place your jars in `${jetty.base}/lib/ext` to make them visible on the container classpath.
-To make them visible on an environment classpath you should create a custom, environment-specific module.
+To make them visible on an EE environment classpath you should create a custom, EE environment-specific module.
 
 You can now declare JNDI resources and reference them within your webapps.
 
 ==== Declaring resources
 
-You must declare the objects you want bound into the environment so that you can then hook them into your webapp via `env-entry`, `resource-ref` and `resource-env-refs` in `web.xml`, `web-fragment.xml` or `override-web.xml`.
+You must declare the objects you want bound so that you can then hook them into your webapp via `env-entry`, `resource-ref` and `resource-env-refs` in `web.xml`, `web-fragment.xml` or `override-web.xml`.
 
 You make these declarations in Jetty XML files that are either _external_  or _internal_ to your webapp.
 A server or context XML file is external to your webapp.
@@ -292,7 +292,7 @@ This ensures that the two are linked together and thus accessible to your webapp
 However, if the names cannot be the same, then it is possible to effectively alias one to another using an `org.eclipse.jetty.plus.jndi.Link`.
 
 Supposing you have a declaration for a Datasource named `jdbc/workforce` in a Jetty context XML file, but your web.xml wants to link to a `<resource-ref>` named `jdbc/employees`, and you cannot edit the web.xml.
-You can create a `WEB-INF/jetty-env.xml` file with an `org.eclipse.jetty.eeN.plus.jndi.Link` that ties together the names `jdbc/workforce` and `jdbc/employees`:
+You can create a `WEB-INF/jetty-env.xml` file with an `org.eclipse.jetty.plus.jndi.Link` that ties together the names `jdbc/workforce` and `jdbc/employees`:
 
 The context XML file declares `jdbc/workforce`:
 

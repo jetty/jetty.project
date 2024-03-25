@@ -75,7 +75,7 @@ public abstract class EventsHandler extends Handler.Wrapper
             {
                 notifyOnResponseBegin(roRequest, wrappedResponse);
                 notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
-                notifyOnComplete(roRequest, x);
+                notifyOnComplete(roRequest, wrappedResponse, x);
             });
 
             boolean handled = super.handle(wrappedRequest, wrappedResponse, callback);
@@ -179,11 +179,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void notifyOnComplete(Request request, Throwable failure)
+    private void notifyOnComplete(Request request, Response response, Throwable failure)
     {
         try
         {
-            onComplete(request, failure);
+            onComplete(request, response.getStatus(), response.getHeaders().asImmutable(), failure);
         }
         catch (Throwable x)
         {
@@ -308,12 +308,31 @@ public abstract class EventsHandler extends Handler.Wrapper
      * has been completed).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
-     * @param failure if there was a failure to complete
+     * @param failure if there was a failure to complete.
+     * @deprecated Override {@link #onComplete(Request, int, HttpFields, Throwable)} instead.
      */
+    @Deprecated
     protected void onComplete(Request request, Throwable failure)
     {
+    }
+
+    /**
+     * Invoked when the request <em>and</em> response processing are complete,
+     * just before the request and response will be recycled (i.e. after the
+     * {@link Runnable} return from {@link org.eclipse.jetty.server.HttpChannel#onRequest(MetaData.Request)}
+     * has returned and the {@link Callback} passed to {@link Handler#handle(Request, Response, Callback)}
+     * has been completed).
+     *
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param status the response status.
+     * @param headers the immutable fields of the response object.
+     * @param failure if there was a failure to complete.
+     */
+    protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("onComplete of {}", request, failure);
+            LOG.debug("onComplete of {} status={} headers={}", request, status, headers);
+        onComplete(request, failure);
     }
 
     private class EventsResponse extends Response.Wrapper

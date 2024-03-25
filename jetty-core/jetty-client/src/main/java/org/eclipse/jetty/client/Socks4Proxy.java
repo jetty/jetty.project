@@ -33,13 +33,35 @@ import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>Client-side proxy configuration for SOCKS4, a de-facto standard.</p>
+ * <p>Consider using SOCK5 instead, a protocol that has been standardized
+ * by IETF.</p>
+ *
+ * @see Socks5Proxy
+ */
 public class Socks4Proxy extends ProxyConfiguration.Proxy
 {
+    /**
+     * <p>Creates a new instance with the given SOCKS4 proxy host and port.</p>
+     *
+     * @param host the SOCKS4 proxy host name
+     * @param port the SOCKS4 proxy port
+     */
     public Socks4Proxy(String host, int port)
     {
         this(new Origin.Address(host, port), false);
     }
 
+    /**
+     * <p>Creates a new instance with the given SOCKS4 proxy address.</p>
+     * <p>When {@code secure=true} the communication between the client and the
+     * proxy will be encrypted (using this proxy {@link #getSslContextFactory()}
+     * which typically defaults to that of {@link HttpClient}.</p>
+     *
+     * @param address the SOCKS4 proxy address (host and port)
+     * @param secure whether the communication between the client and the SOCKS4 proxy should be secure
+     */
     public Socks4Proxy(Origin.Address address, boolean secure)
     {
         super(address, secure, null, null);

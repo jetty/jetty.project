@@ -211,7 +211,7 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         super(server, executor, scheduler, bufferPool, acceptors, factories);
         _manager = newSelectorManager(getExecutor(), getScheduler(), selectors);
-        addBean(_manager, true);
+        installBean(_manager, true);
         setAcceptorPriorityDelta(-2);
     }
 
@@ -223,6 +223,8 @@ public class ServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStart() throws Exception
     {
+        addBean(_acceptChannel);
+
         for (EventListener l : getBeans(SelectorManager.SelectorManagerListener.class))
             _manager.addEventListener(l);
 
@@ -238,7 +240,13 @@ public class ServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStop() throws Exception
     {
+        _acceptor.set(null);
+
         super.doStop();
+
+        removeBean(_acceptChannel);
+        _acceptChannel = null;
+
         for (EventListener l : getBeans(EventListener.class))
         {
             _manager.removeEventListener(l);
@@ -290,8 +298,8 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        updateBean(_acceptChannel, acceptChannel);
         _acceptChannel = acceptChannel;
+        _acceptChannel.configureBlocking(true);
         _localPort = _acceptChannel.socket().getLocalPort();
         if (_localPort <= 0)
             throw new IOException("Server channel not bound");
@@ -302,12 +310,8 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         if (_acceptChannel == null)
         {
-            _acceptChannel = openAcceptChannel();
-            _acceptChannel.configureBlocking(true);
-            _localPort = _acceptChannel.socket().getLocalPort();
-            if (_localPort <= 0)
-                throw new IOException("Server channel not bound");
-            addBean(_acceptChannel);
+            open(openAcceptChannel());
+            super.open();
         }
     }
 
@@ -367,24 +371,12 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         super.close();
 
-        ServerSocketChannel serverChannel = _acceptChannel;
-        _acceptChannel = null;
-        if (serverChannel != null)
-        {
-            removeBean(serverChannel);
+        // When acceptors == 0, we want the ServerSocketChannel
+        // to be closed by the SelectorManager when the
+        // SelectorManager is stopped (as a bean) in doStop().
+        if (getAcceptors() > 0)
+            IO.close(_acceptChannel);
 
-            if (serverChannel.isOpen())
-            {
-                try
-                {
-                    serverChannel.close();
-                }
-                catch (IOException e)
-                {
-                    LOG.warn("Unable to close {}", serverChannel, e);
-                }
-            }
-        }
         _localPort = -2;
     }
 

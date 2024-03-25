@@ -396,8 +396,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     @ManagedAttribute(value = "Virtual hosts accepted by the context", readonly = true)
     public List<String> getVirtualHosts()
     {
-        if (_vhosts == null)
-            return null;
         return _vhosts.stream().map(VHost::getName).collect(Collectors.toList());
     }
 
@@ -1129,7 +1127,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         b.append(",b=").append(getBaseResource());
         b.append(",a=").append(_availability);
 
-        if (vhosts != null && !vhosts.isEmpty())
+        if (!vhosts.isEmpty())
         {
             b.append(",vh=[");
             b.append(String.join(",", vhosts));

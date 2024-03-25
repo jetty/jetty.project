@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-integrations</artifactId>
-    <version>12.0.7-SNAPSHOT</version>
+    <version>12.0.8-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.gcloud</groupId>
   <artifactId>jetty-gcloud</artifactId>
@@ -17,8 +17,8 @@
   </modules>
 
   <properties>
-    <gcloud.version>2.17.6</gcloud.version>
-    <protobuf.version>3.25.1</protobuf.version>
+    <gcloud.version>2.18.4</gcloud.version>
+    <protobuf.version>3.25.2</protobuf.version>
   </properties>
 
 </project>

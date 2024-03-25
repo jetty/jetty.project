@@ -406,7 +406,7 @@ public class PathResourceTest
 
             // Resolve to name, but different case
             testText = archiveResource.resolve("/TEST.TXT");
-            assertNull(testText);
+            assertFalse(testText.exists());
 
             // Resolve using path navigation
             testText = archiveResource.resolve("/foo/../test.txt");
@@ -464,9 +464,9 @@ public class PathResourceTest
 
             // Resolve file to name, but different case
             testText = archiveResource.resolve("/dir/TEST.TXT");
-            assertNull(testText);
+            assertFalse(testText.exists());
             testText = archiveResource.resolve("/DIR/test.txt");
-            assertNull(testText);
+            assertFalse(testText.exists());
 
             // Resolve file using path navigation
             testText = archiveResource.resolve("/foo/../dir/test.txt");
@@ -480,7 +480,7 @@ public class PathResourceTest
 
             // Resolve file using extension-less directory
             testText = archiveResource.resolve("/dir./test.txt");
-            assertNull(testText);
+            assertFalse(testText.exists());
 
             // Resolve directory to name, no slash
             Resource dirResource = archiveResource.resolve("/dir");

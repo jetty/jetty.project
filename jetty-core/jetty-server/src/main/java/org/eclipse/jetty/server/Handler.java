@@ -355,7 +355,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         }
 
         /**
-         * <p>Utility method to perform sanity checks before adding the given {@code Handler} to
+         * <p>Utility method to perform sanity checks before updating the given {@code Handler} to
          * the given {@code Singleton}, typically used in implementations of {@link #setHandler(Handler)}.</p>
          * <p>The sanity checks are:</p>
          * <ul>
@@ -364,15 +364,41 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
          *   <li>Sets the {@code Server} on the {@code Handler}</li>
          *   <li>Update the beans on the {@code Singleton} if it is a {@link ContainerLifeCycle}</li>
          * </ul>
+         * @param singleton the {@code Singleton} to set the {@code Handler}
+         * @param handler the {@code Handler} to set
+         * @see #checkHandler(Singleton, Handler)
+         * @return The {@code Handler} to set
+         */
+        static Handler updateHandler(Singleton singleton, Handler handler)
+        {
+            // check state
+            checkHandler(singleton, handler);
+
+            if (singleton instanceof org.eclipse.jetty.util.component.ContainerLifeCycle container)
+                container.updateBean(singleton.getHandler(), handler);
+
+            return handler;
+        }
+
+        /**
+         * <p>Utility method to perform sanity checks on a {{@link Handler} to be added to
+         * the given {@code Singleton}.</p>
+         * <p>The sanity checks are:</p>
+         * <ul>
+         *   <li>Check for the server start state and whether the invocation type is compatible</li>
+         *   <li>Check for {@code Handler} loops</li>
+         *   <li>Sets the {@code Server} on the {@code Handler}</li>
+         *   <li>Update the beans on the {@code Singleton} if it is a {@link ContainerLifeCycle}</li>
+         * </ul>
          *
-         * @param wrapper the {@code Singleton} to set the {@code Handler}
+         * @param singleton the {@code Singleton} to set the {@code Handler}
          * @param handler the {@code Handler} to set
          * @return The {@code Handler} to set
          */
-        static Handler updateHandler(Singleton wrapper, Handler handler)
+        static Handler checkHandler(Singleton singleton, Handler handler)
         {
             // check state
-            Server server = wrapper.getServer();
+            Server server = singleton.getServer();
 
             // If the collection is changed whilst started, then the risk is that if we switch from NON_BLOCKING to BLOCKING
             // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
@@ -386,15 +412,12 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
             }
 
             // Check for loops.
-            if (handler == wrapper || (handler instanceof Handler.Container container &&
-                container.getDescendants().contains(wrapper)))
+            if (handler == singleton || (handler instanceof Handler.Container container &&
+                container.getDescendants().contains(singleton)))
                 throw new IllegalStateException("Handler loop");
 
             if (handler != null && server != null)
                 handler.setServer(server);
-
-            if (wrapper instanceof org.eclipse.jetty.util.component.ContainerLifeCycle container)
-                container.updateBean(wrapper.getHandler(), handler);
 
             return handler;
         }
@@ -692,7 +715,8 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         public Wrapper(boolean dynamic, Handler handler)
         {
             super(dynamic);
-            _handler = handler == null ? null : Singleton.updateHandler(this, handler);
+            _handler = handler == null ? null : Singleton.checkHandler(this, handler);
+            installBean(_handler);
         }
 
         @Override
