@@ -13,11 +13,17 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
@@ -127,6 +133,82 @@ public class MultiPartByteRanges
             if (part instanceof Part)
                 return super.addPart(part);
             return false;
+        }
+    }
+
+    /**
+     * <p>A specialized {@link org.eclipse.jetty.io.content.InputStreamContentSource}
+     * whose content is sliced by a byte range.</p>
+     * @deprecated Use {@link IOResources#asContentSource(Resource, ByteBufferPool, int, boolean, long, long)} instead.
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    public static class InputStreamContentSource extends org.eclipse.jetty.io.content.InputStreamContentSource
+    {
+        private long toRead;
+
+        public InputStreamContentSource(InputStream inputStream, ByteRange byteRange) throws IOException
+        {
+            super(inputStream);
+            inputStream.skipNBytes(byteRange.first());
+            this.toRead = byteRange.getLength();
+        }
+
+        @Override
+        protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
+        {
+            if (toRead == 0)
+                return -1;
+            int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
+            int len = Math.min(toReadInt, buffer.length);
+            int read = inputStream.read(buffer, 0, len);
+            toRead -= read;
+            return read;
+        }
+    }
+
+    /**
+     * <p>A specialized {@link org.eclipse.jetty.io.content.PathContentSource}
+     * whose content is sliced by a byte range.</p>
+     * @deprecated Use {@link IOResources#asContentSource(Resource, ByteBufferPool, int, boolean, long, long)} instead.
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    public static class PathContentSource extends org.eclipse.jetty.io.content.PathContentSource
+    {
+        private final ByteRange byteRange;
+        private long toRead;
+
+        public PathContentSource(Path path, ByteRange byteRange)
+        {
+            super(path);
+            this.byteRange = byteRange;
+        }
+
+        @Override
+        protected SeekableByteChannel open() throws IOException
+        {
+            SeekableByteChannel channel = super.open();
+            channel.position(byteRange.first());
+            toRead = byteRange.getLength();
+            return channel;
+        }
+
+        @Override
+        protected int read(SeekableByteChannel channel, ByteBuffer byteBuffer) throws IOException
+        {
+            int read = super.read(channel, byteBuffer);
+            if (read <= 0)
+                return read;
+
+            read = (int)Math.min(read, toRead);
+            toRead -= read;
+            byteBuffer.position(read);
+            return read;
+        }
+
+        @Override
+        protected boolean isReadComplete(long read)
+        {
+            return read == byteRange.getLength();
         }
     }
 
