@@ -14,8 +14,8 @@ lib/jetty-ee-webapp-${jetty.version}.jar
 [ini-template]
 # tag::ini-template[]
 ## Add to the server wide default jars and packages protected or hidden from webapps.
-## System classes are protected and cannot be overridden by a webapp.
-## Server classes are hidden and cannot be seen by a webapp
+## Protected (aka System) classes cannot be overridden by a webapp.
+## Hidden (aka Server) classes cannot be seen by a webapp
 ## Lists of patterns are comma separated and may be either:
 ##  + a qualified classname e.g. 'com.acme.Foo' 
 ##  + a package name e.g. 'net.example.'
@@ -25,7 +25,7 @@ lib/jetty-ee-webapp-${jetty.version}.jar
 ##
 ## The +=, operator appends to a CSV list with a comma as needed.
 ##
-#jetty.server.addSystemClasses+=,org.example.
-#jetty.server.addServerClasses+=,org.example.
+#jetty.server.addProtectedClasses+=,org.example.
+#jetty.server.addHiddenClasses+=,org.example.
 # end::ini-template[]
 

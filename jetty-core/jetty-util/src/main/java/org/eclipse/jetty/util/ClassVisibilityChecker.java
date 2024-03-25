@@ -31,7 +31,7 @@ public interface ClassVisibilityChecker
      * @param clazz The fully qualified name of the class.
      * @return True if the class is a system class.
      */
-    boolean isSystemClass(Class<?> clazz);
+    boolean isProtectedClass(Class<?> clazz);
 
     /**
      * Is the class a Server Class.
@@ -43,5 +43,5 @@ public interface ClassVisibilityChecker
      * @param clazz The fully qualified name of the class.
      * @return True if the class is a server class.
      */
-    boolean isServerClass(Class<?> clazz);
+    boolean isHiddenClass(Class<?> clazz);
 }
