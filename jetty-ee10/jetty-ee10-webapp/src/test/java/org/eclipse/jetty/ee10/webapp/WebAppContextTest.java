@@ -54,7 +54,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -251,20 +250,20 @@ public class WebAppContextTest
      *
      * @throws Exception on test failure
      */
-    @Disabled // Reenabled when cross context dispatch is implemented.
     @Test
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
         Handler.Sequence handlers = new Handler.Sequence();
         WebAppContext contextA = new WebAppContext(".", "/A");
-
         contextA.addServlet(ServletA.class, "/s");
+        contextA.setCrossContextDispatchSupported(true);
         handlers.addHandler(contextA);
-        WebAppContext contextB = new WebAppContext(".", "/B");
 
+        WebAppContext contextB = new WebAppContext(".", "/B");
         contextB.addServlet(ServletB.class, "/s");
         contextB.setContextWhiteList("/doesnotexist", "/B/s");
+        contextB.setCrossContextDispatchSupported(true);
         handlers.addHandler(contextB);
 
         server.setHandler(handlers);

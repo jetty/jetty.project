@@ -1349,15 +1349,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
         @Override
-        public jakarta.servlet.ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String path)
         {
-            jakarta.servlet.ServletContext servletContext = super.getContext(uripath);
+            jakarta.servlet.ServletContext servletContext = super.getContext(path);
 
             if (servletContext != null && _contextWhiteList != null)
             {
                 for (String context : _contextWhiteList)
                 {
-                    if (context.equals(uripath))
+                    if (context.equals(path))
                     {
                         return servletContext;
                     }
