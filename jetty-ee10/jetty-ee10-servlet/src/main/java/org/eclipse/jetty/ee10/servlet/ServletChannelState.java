@@ -1174,7 +1174,7 @@ public class ServletChannelState
 
     protected void scheduleDispatch()
     {
-        _servletChannel.execute(_servletChannel::handle);
+        _servletChannel.execute(_servletChannel::handle, _servletChannel.getRequest());
     }
 
     protected void cancelTimeout()

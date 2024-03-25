@@ -1304,7 +1304,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         @Override
         public void execute(Runnable runnable)
         {
-            getServer().getContext().execute(() -> run(runnable));
+            execute(runnable, null);
+        }
+
+        public void execute(Runnable runnable, Request request)
+        {
+            getServer().getContext().execute(() -> run(runnable, request));
         }
 
         protected DecoratedObjectFactory getDecoratedObjectFactory()
