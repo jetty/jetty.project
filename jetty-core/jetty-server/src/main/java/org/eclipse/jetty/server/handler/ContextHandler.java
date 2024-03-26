@@ -752,7 +752,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             else
             {
                 // Delete and recreate it to ensure it is empty
-                if (tempDirectory.exists() && !IO.delete(tempDirectory))
+                if (tempDirectory.exists() && !IO.delete(tempDirectory.toPath()))
                     throw new IllegalArgumentException("Failed to delete temp dir: " + tempDirectory);
                 if (!tempDirectory.mkdirs())
                     throw new IllegalArgumentException("Unable to create temp dir: " + tempDirectory);
@@ -771,14 +771,22 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     protected void doStop() throws Exception
     {
         _context.call(super::doStop, null);
+        cleanupAfterStop();
+        _tempDirectoryCreated = false;
+    }
 
+    protected void cleanupAfterStop()
+    {
         File tempDirectory = getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
-            IO.delete(tempDirectory);
-
-        _tempDirectoryCreated = false;
+        {
+            if (!IO.delete(tempDirectory.toPath()))
+            {
+                throw new RuntimeException("Unable to delete persistent temp directory: " + tempDirectory.toPath());
+            }
+        }
     }
 
     public boolean checkVirtualHost(Request request)

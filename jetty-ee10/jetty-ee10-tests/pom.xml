@@ -24,6 +24,7 @@
     <module>jetty-ee10-test-jersey</module>
     <module>jetty-ee10-test-jmx</module>
     <module>jetty-ee10-test-jndi</module>
+    <module>jetty-ee10-test-log4j2-webapp</module>
     <module>jetty-ee10-test-loginservice</module>
     <module>jetty-ee10-test-openid-webapp</module>
     <module>jetty-ee10-test-owb-cdi-webapp</module>

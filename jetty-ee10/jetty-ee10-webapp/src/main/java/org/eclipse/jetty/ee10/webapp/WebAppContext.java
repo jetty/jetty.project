@@ -1250,7 +1250,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
 
             _unavailableException = null;
+            super.cleanupAfterStop();
         }
+    }
+
+    @Override
+    protected void cleanupAfterStop()
+    {
+        // ignore
     }
 
     /**
