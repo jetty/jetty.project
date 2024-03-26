@@ -468,7 +468,7 @@ public interface ResourceFactory
                     {
 
                         List<Resource> expanded = dir.list();
-                        expanded.sort(Resource.COMPARATOR_BY_NAME);
+                        expanded.sort(ResourceCollators.byName(true));
                         list.addAll(expanded);
                     }
                 }

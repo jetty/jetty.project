@@ -26,7 +26,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -51,15 +50,6 @@ public abstract class Resource implements Iterable<Resource>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-
-    public static final Comparator<Resource> COMPARATOR_BY_NAME = new Comparator<Resource>()
-    {
-        @Override
-        public int compare(Resource r1, Resource r2)
-        {
-            return r1.getName().compareTo(r2.getName());
-        }
-    };
 
     public static String dump(Resource resource)
     {
