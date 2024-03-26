@@ -216,6 +216,23 @@ public class XmlConfiguredJetty
         }
     }
 
+    public ContextHandler getContextHandler(String contextPath)
+    {
+        ContextHandler contextHandler = null;
+        for (Handler handler : _contexts.getHandlers())
+        {
+            if (handler instanceof ContextHandler ch)
+            {
+                if (ch.getContextPath().equals(contextPath))
+                {
+                    contextHandler = ch;
+                    break;
+                }
+            }
+        }
+        return contextHandler;
+    }
+
     private void copyFile(String type, Path srcFile, Path destFile) throws IOException
     {
         assertThat(srcFile, PathMatchers.isRegularFile());
