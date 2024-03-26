@@ -519,4 +519,11 @@ public class ContextProvider extends ScanningAppProvider
         if (isDeployable(path))
             super.pathAdded(path);
     }
+
+    @Override
+    protected void pathChanged(Path path) throws Exception
+    {
+        if (isDeployable(path))
+            super.pathChanged(path);
+    }
 }
