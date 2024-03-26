@@ -58,6 +58,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,9 +190,7 @@ public class DefaultServlet extends HttpServlet
         {
             try
             {
-                baseResource = URIUtil.isRelative(rb)
-                    ? _contextHandler.getBaseResource().resolve(rb)
-                    : _contextHandler.newResource(rb);
+                baseResource = ResourceFactory.resolveElseNew(_contextHandler.getBaseResource(), rb, _contextHandler::newResource);
             }
             catch (Exception e)
             {

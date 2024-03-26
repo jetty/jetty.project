@@ -160,7 +160,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (classPath != null)
         {
             Stream.of(classPath.split(File.pathSeparator))
-                .map(URIUtil::toURI)
+                .map(resourceFactory::newResource)
+                .map(Resource::getURI)
                 .filter(uriPatternPredicate)
                 .forEach(addContainerResource);
         }
@@ -174,7 +175,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
         {
             List<Path> matchingBasePaths =
                 Stream.of(modulePath.split(File.pathSeparator))
-                    .map(URIUtil::toURI)
+                    .map(resourceFactory::newResource)
+                    .map(Resource::getURI)
                     .filter(uriPatternPredicate)
                     .map(Paths::get)
                     .toList();

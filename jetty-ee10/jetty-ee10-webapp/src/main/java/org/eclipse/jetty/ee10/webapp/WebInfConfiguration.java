@@ -238,10 +238,10 @@ public class WebInfConfiguration extends AbstractConfiguration
 
                 if (war != null)
                 {
-                    Path warPath = Path.of(URIUtil.toURI(war));
-                    
+                    Path warPath = context.getResourceFactory().newResource(war).getPath();
+
                     // look for a sibling like "foo/" to a "foo.war"
-                    if (FileID.isWebArchive(warPath) && Files.exists(warPath))
+                    if (warPath != null && FileID.isWebArchive(warPath) && Files.exists(warPath))
                     {
                         Path sibling = warPath.getParent().resolve(FileID.getBasename(warPath));
                         if (Files.exists(sibling) && Files.isDirectory(sibling) && Files.isWritable(sibling))

@@ -257,9 +257,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (classPathList == null)
             return;
 
-        URIUtil.split(classPathList).stream()
-            .map(_resourceFactory::newResource)
-            .forEach(this::addClassPath);
+        _resourceFactory.split(classPathList).forEach(this::addClassPath);
     }
 
     /**

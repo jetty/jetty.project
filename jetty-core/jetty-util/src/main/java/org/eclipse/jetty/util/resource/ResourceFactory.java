@@ -21,9 +21,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
+import java.util.StringTokenizer;
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
@@ -118,7 +121,7 @@ import org.slf4j.LoggerFactory;
  */
 public interface ResourceFactory
 {
-    static final Logger LOG = LoggerFactory.getLogger(ResourceFactory.class);
+    Logger LOG = LoggerFactory.getLogger(ResourceFactory.class);
 
     /**
      * <p>Make a directory Resource containing a collection of other directory {@link Resource}s</p>
@@ -148,11 +151,18 @@ public interface ResourceFactory
         return CombinedResource.combine(List.of(resources));
     }
 
+    static Resource resolveElseNew(Resource base, String pathOrUri, Function<String, Resource> factory)
+    {
+        if (URIUtil.isRelative(pathOrUri))
+            return base.resolve(pathOrUri);
+        return factory.apply(pathOrUri);
+    }
+
     /**
      * Construct a resource from a uri.
      *
      * @param uri A URI.
-     * @return A Resource object, or null if uri points to a location that does not exist.
+     * @return A Resource object.
      */
     Resource newResource(URI uri);
 
@@ -160,7 +170,7 @@ public interface ResourceFactory
      * <p>Construct a Resource from a string reference into classloaders.</p>
      *
      * @param resource Resource as string representation
-     * @return The new Resource, or null if string points to a location that does not exist
+     * @return The new Resource
      * @throws IllegalArgumentException if string is blank
      * @see #newClassLoaderResource(String, boolean)
      * @deprecated use {@link #newClassLoaderResource(String)} or {@link #newClassLoaderResource(String, boolean)} instead, will be removed in Jetty 12.1.0
@@ -194,7 +204,7 @@ public interface ResourceFactory
      *
      * @param resource the resource name to find in a classloader
      * @param searchSystemClassLoader true to search {@link ClassLoader#getSystemResource(String)}, false to skip
-     * @return The new Resource, or null if string points to a location that does not exist
+     * @return The new Resource
      * @throws IllegalArgumentException if resource name or resulting URL from ClassLoader is invalid.
      */
     default Resource newClassLoaderResource(String resource, boolean searchSystemClassLoader)
@@ -204,7 +214,7 @@ public interface ResourceFactory
 
         URL url = null;
 
-        List<Function<String, URL>> loaders = new ArrayList();
+        List<Function<String, URL>> loaders = new ArrayList<>();
         loaders.add(Thread.currentThread().getContextClassLoader()::getResource);
         loaders.add(ResourceFactory.class.getClassLoader()::getResource);
         if (searchSystemClassLoader)
@@ -253,7 +263,7 @@ public interface ResourceFactory
      * </p>
      *
      * @param resource string representation of resource to find in a classloader
-     * @return The new Resource, or null if string points to a location that does not exist
+     * @return The new Resource
      * @throws IllegalArgumentException if string is blank
      * @see #newClassLoaderResource(String, boolean)
      */
@@ -270,7 +280,7 @@ public interface ResourceFactory
      * </p>
      *
      * @param resource the relative name of the resource
-     * @return Resource, or null if string points to a location that does not exist
+     * @return Resource
      * @throws IllegalArgumentException if string is blank
      * @see #newClassLoaderResource(String, boolean)
      * @deprecated use {@link #newClassLoaderResource(String, boolean)} instead, will be removed in Jetty 12.1.0
@@ -427,6 +437,62 @@ public interface ResourceFactory
         if (!uri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + uri);
         return newResource(URIUtil.toJarFileUri(uri));
+    }
+
+    /**
+     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into URIs.
+     * <p>
+     *     Each part of the input string could be path references (unix or windows style), or string URI references.
+     * </p>
+     * <p>
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
+     * </p>
+     *
+     * @param str the input string of references
+     */
+    default List<Resource> split(String str)
+    {
+        List<Resource> list = new ArrayList<>();
+
+        StringTokenizer tokenizer = new StringTokenizer(str, ",;|");
+        while (tokenizer.hasMoreTokens())
+        {
+            String reference = tokenizer.nextToken();
+            try
+            {
+                // Is this a glob reference?
+                if (reference.endsWith("/*") || reference.endsWith("\\*"))
+                {
+                    Resource dir = newResource(reference.substring(0, reference.length() - 2));
+                    if (dir.isDirectory())
+                    {
+
+                        List<Resource> expanded = dir.list();
+                        expanded.sort(Resource.COMPARATOR_BY_NAME);
+                        list.addAll(expanded);
+                    }
+                }
+                else
+                {
+                    // Simple reference
+                    list.add(newResource(reference));
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Invalid Resource Reference: " + reference);
+                throw e;
+            }
+        }
+
+        for (ListIterator<Resource> i = list.listIterator(); i.hasNext(); )
+        {
+            Resource resource = i.next();
+            if (resource.exists() && !resource.isDirectory() && FileID.isLibArchive(resource.getName()))
+                i.set(newResource(URIUtil.toJarFileUri(resource.getURI())));
+        }
+
+        return list;
     }
 
     /**

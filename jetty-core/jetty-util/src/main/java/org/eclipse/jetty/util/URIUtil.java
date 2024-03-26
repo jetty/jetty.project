@@ -1772,7 +1772,9 @@ public final class URIUtil
      *
      * @param str the input string of references
      * @see #toJarFileUri(URI)
+     * @deprecated use {@link ResourceFactory#split(String}
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public static List<URI> split(String str)
     {
         List<URI> uris = new ArrayList<>();
@@ -1898,7 +1900,6 @@ public final class URIUtil
                     // Input is a possible Windows path disguised as a URI "D:/path/to/resource.txt".
                     try
                     {
-                        // TODO remove this method or at least move this aspect of it to a ResourceFactory
                         return toURI(Paths.get(resource).toUri().toASCIIString());
                     }
                     catch (InvalidPathException x)

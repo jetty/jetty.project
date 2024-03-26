@@ -785,11 +785,9 @@ public class ServletContextHandler extends ContextHandler
      *
      * @param uri the URI to convert to a Resource
      * @return the Resource for that URI
-     * @throws IOException if unable to create a Resource from the URL
      */
-    public Resource newResource(URI uri) throws IOException
+    public Resource newResource(URI uri)
     {
-        // TODO wrong factory
         return ResourceFactory.of(this).newResource(uri);
     }
 
@@ -798,11 +796,9 @@ public class ServletContextHandler extends ContextHandler
      *
      * @param urlOrPath The URL or path to convert
      * @return The Resource for the URL/path
-     * @throws IOException The Resource could not be created.
      */
-    public Resource newResource(String urlOrPath) throws IOException
+    public Resource newResource(String urlOrPath)
     {
-        // TODO wrong factory
         return ResourceFactory.of(this).newResource(urlOrPath);
     }
 
