@@ -860,7 +860,10 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        Path warPath = MavenPaths.findTestResourceFile("wars/dump.war");
+        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+        Path warPath = createWar(testPath, "test.war");
         context.setBaseResource(context.getResourceFactory().newResource(warPath));
 
         server.setHandler(context);
@@ -884,7 +887,10 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        Path warPath = MavenPaths.findTestResourceFile("wars/dump.war");
+        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+        Path warPath = createWar(testPath, "test.war");
         context.setBaseResource(context.getResourceFactory().newResource(warPath));
 
         server.setHandler(context);
