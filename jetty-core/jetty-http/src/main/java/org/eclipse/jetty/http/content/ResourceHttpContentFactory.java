@@ -19,6 +19,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 
 /**
@@ -34,7 +35,7 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     public ResourceHttpContentFactory(Resource baseResource, MimeTypes mimeTypes)
     {
         Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
-        _baseResource = Objects.requireNonNull(baseResource);
+        _baseResource = Objects.requireNonNullElse(baseResource, ResourceFactory.root().newResource("."));
         _mimeTypes = mimeTypes;
     }
 
