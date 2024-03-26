@@ -1590,7 +1590,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      */
     public Resource newResource(String uriOrPath) throws IOException
     {
-        return ResourceFactory.of(this).newResource(uriOrPath);
+        return ResourceFactory.of(this).newResource(getBaseResource(), uriOrPath);
     }
 
     public Set<String> getResourcePaths(String path)

@@ -589,6 +589,11 @@ public final class URIUtil
         return true;
     }
 
+    public static boolean isRelative(String uriOrPath)
+    {
+        return uriOrPath.isEmpty() || (!URIUtil.hasScheme(uriOrPath) && !uriOrPath.startsWith("/"));
+    }
+
     /**
      * Test if codepoint is safe and unambiguous to pass as input to {@link URI}
      *

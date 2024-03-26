@@ -789,7 +789,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public Resource newResource(URI uri) throws IOException
     {
-        return ResourceFactory.root().newResource(uri);
+        return ResourceFactory.of(this).newResource(uri);
     }
 
     /**
@@ -801,7 +801,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public Resource newResource(String urlOrPath) throws IOException
     {
-        return ResourceFactory.of(this).newResource(urlOrPath);
+        return ResourceFactory.of(this).newResource(getBaseResource(), urlOrPath);
     }
 
     public Set<String> getResourcePaths(String path)

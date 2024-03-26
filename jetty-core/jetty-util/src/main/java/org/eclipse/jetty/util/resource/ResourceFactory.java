@@ -321,6 +321,24 @@ public interface ResourceFactory
     }
 
     /**
+     * Construct a resource from a string.
+     *
+     * @param resource A URL or filename.
+     * @param base Resource base.
+     * @return A Resource object, or null if the string points to a location
+     *    that does not exist
+     * @throws IllegalArgumentException if resource is invalid
+     */
+    default Resource newResource(Resource base, String resource)
+    {
+        if (StringUtil.isBlank(resource))
+            throw new IllegalArgumentException("Resource String is invalid: " + resource);
+        if (URIUtil.isRelative(resource))
+            return base.resolve(resource);
+        return newResource(URIUtil.toURI(resource));
+    }
+
+    /**
      * Construct a Resource from provided path.
      *
      * @param path the path
