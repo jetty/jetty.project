@@ -63,7 +63,7 @@ public class Util
         if (path.startsWith("file:/"))
             return new URI(path);
 
-        if (path.startsWith("/") && File.pathSeparatorChar != '/')
+        if (path.startsWith("/") && File.separatorChar != '/')
             return new URI("file:" + path);
 
         try
