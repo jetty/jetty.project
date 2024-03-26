@@ -1220,14 +1220,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             //resolve the metadata
             _metadata.resolve(this);
-            super.startContext();
+            startWebapp();
         }
     }
 
     @Override
     protected void stopContext() throws Exception
     {
-        super.stopContext();
+        stopWebapp();
         try
         {
             for (int i = _configurations.size(); i-- > 0; )
@@ -1251,6 +1251,24 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             _unavailableException = null;
         }
+    }
+
+    /**
+     * Continue the {@link #startContext()} before calling {@code super.startContext()}.
+     * @throws Exception If there was a problem starting
+     */
+    protected void startWebapp() throws Exception
+    {
+        super.startContext();
+    }
+
+    /**
+     * Continue the {@link #stopContext()} before calling {@code super.stopContext()}.
+     * @throws Exception If there was a problem stopping
+     */
+    protected void stopWebapp() throws Exception
+    {
+        super.stopContext();
     }
 
     @Override
@@ -1331,15 +1349,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
         @Override
-        public jakarta.servlet.ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String path)
         {
-            jakarta.servlet.ServletContext servletContext = super.getContext(uripath);
+            jakarta.servlet.ServletContext servletContext = super.getContext(path);
 
             if (servletContext != null && _contextWhiteList != null)
             {
                 for (String context : _contextWhiteList)
                 {
-                    if (context.equals(uripath))
+                    if (context.equals(path))
                     {
                         return servletContext;
                     }
@@ -1364,7 +1382,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             // If a WAR file is mounted, or is extracted to a temp directory,
             // then the first entry of the resource base must be the WAR file.
             Resource resource = WebAppContext.this.getResource(path);
-            if (resource == null)
+            if (Resources.missing(resource))
                 return null;
 
             for (Resource r: resource)

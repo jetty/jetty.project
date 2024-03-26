@@ -37,6 +37,8 @@ Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain
 
 Proxying is supported for any version of the HTTP protocol.
 
+The communication between the client and the proxy may be encrypted, so that it would not be possible for another party on the same network as the client to know what servers the client connects to.
+
 [[pg-client-http-proxy-socks5]]
 ===== SOCKS5 Proxy Support
 

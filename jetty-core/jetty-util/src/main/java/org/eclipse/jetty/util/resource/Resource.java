@@ -268,7 +268,8 @@ public abstract class Resource implements Iterable<Resource>
      * Resolve an existing Resource.
      *
      * @param subUriPath the encoded subUriPath
-     * @return an existing Resource representing the requested subUriPath, or null if resource does not exist.
+     * @return a Resource representing the requested subUriPath, which may not {@link #exists() exist},
+     * or null if the resource cannot exist.
      * @throws IllegalArgumentException if subUriPath is invalid
      */
     public abstract Resource resolve(String subUriPath);
@@ -303,11 +304,17 @@ public abstract class Resource implements Iterable<Resource>
     public void copyTo(Path destination)
         throws IOException
     {
+        if (!exists())
+            throw new IOException("Resource does not exist: " + getFileName());
+
         Path src = getPath();
         if (src == null)
         {
             if (!isDirectory())
             {
+                if (Files.isDirectory(destination))
+                    destination = destination.resolve(getFileName());
+
                 // use old school stream based copy
                 try (InputStream in = newInputStream(); OutputStream out = Files.newOutputStream(destination))
                 {
@@ -327,7 +334,6 @@ public abstract class Resource implements Iterable<Resource>
                 // to a directory, preserve the filename
                 Path destPath = destination.resolve(src.getFileName().toString());
                 Files.copy(src, destPath,
-                    StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.COPY_ATTRIBUTES,
                     StandardCopyOption.REPLACE_EXISTING);
             }
@@ -335,7 +341,6 @@ public abstract class Resource implements Iterable<Resource>
             {
                 // to a file, use destination as-is
                 Files.copy(src, destination,
-                    StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.COPY_ATTRIBUTES,
                     StandardCopyOption.REPLACE_EXISTING);
             }

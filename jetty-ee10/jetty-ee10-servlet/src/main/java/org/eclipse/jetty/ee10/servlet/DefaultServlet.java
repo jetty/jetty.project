@@ -487,7 +487,7 @@ public class DefaultServlet extends HttpServlet
                 // otherwise wrap the servlet request as a core request
                 Request coreRequest = httpServletRequest instanceof ServletApiRequest
                     ? servletChannel.getRequest()
-                    : new ServletCoreRequest(httpServletRequest);
+                    : ServletCoreRequest.wrap(httpServletRequest);
 
                 // If the servlet response has been wrapped and has been written to,
                 // then the servlet response must be wrapped as a core response
