@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
@@ -287,7 +288,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (!Resources.isReadableDirectory(libs))
             return;
 
-        libs.list().stream().filter(r -> isFileSupported(r.getName())).sorted(Resource.COMPARATOR_BY_NAME).forEach(this::addClassPath);
+        libs.list().stream().filter(r -> isFileSupported(r.getName())).sorted(ResourceCollators.byName(true)).forEach(this::addClassPath);
     }
 
     @Override
