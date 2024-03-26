@@ -370,7 +370,8 @@ public class IOResources
         {
             super(callback);
             this.channel = Files.newByteChannel(path);
-            channel.position(first);
+            if (first > -1)
+                channel.position(first);
             this.sink = sink;
             this.pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
             this.bufferSize = bufferSize <= 0 ? 4096 : bufferSize;
@@ -399,7 +400,8 @@ public class IOResources
                 byteBuffer.limit((int)Math.min(byteBuffer.capacity(), remainingLength));
             int read = channel.read(byteBuffer);
             BufferUtil.flipToFlush(byteBuffer, 0);
-            remainingLength -= byteBuffer.remaining();
+            if (remainingLength >= 0)
+                remainingLength -= byteBuffer.remaining();
             terminated = read == -1 || remainingLength == 0;
             sink.write(terminated, byteBuffer, this);
             return Action.SCHEDULED;

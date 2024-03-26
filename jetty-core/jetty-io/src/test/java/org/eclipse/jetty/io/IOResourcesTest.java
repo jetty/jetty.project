@@ -15,8 +15,10 @@ package org.eclipse.jetty.io;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -50,5 +52,69 @@ public class IOResourcesTest
         RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool, false);
         assertThat(retainableByteBuffer.remaining(), is((int)Files.size(resourcePath)));
         retainableByteBuffer.release();
+    }
+
+    @Test
+    public void testCopy() throws Exception
+    {
+        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Resource resource = ResourceFactory.root().newResource(resourcePath);
+
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, sink, bufferPool, 1, false, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(Files.size(resourcePath)));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
+    public void testCopyWithFirst() throws Exception
+    {
+        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Resource resource = ResourceFactory.root().newResource(resourcePath);
+
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, sink, bufferPool, 1, false, 100, -1, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(Files.size(resourcePath) - 100L));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
+    public void testCopyWithLength() throws Exception
+    {
+        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Resource resource = ResourceFactory.root().newResource(resourcePath);
+
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, sink, bufferPool, 1, false, -1, 500, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(500L));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
+    public void testCopyWithFirstAndLength() throws Exception
+    {
+        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Resource resource = ResourceFactory.root().newResource(resourcePath);
+
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, sink, bufferPool, 1, false, 100, 500, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(500L));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 }
