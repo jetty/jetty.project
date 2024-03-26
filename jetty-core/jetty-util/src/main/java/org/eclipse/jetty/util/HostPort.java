@@ -51,7 +51,7 @@ public class HostPort
     public HostPort(String host, int port)
     {
         _host = normalizeHost(host);
-        _port = port;
+        _port = (port > 0) ? port : -1;
     }
 
     public HostPort(String authority) throws IllegalArgumentException
@@ -63,8 +63,7 @@ public class HostPort
     private HostPort(String authority, boolean unsafe)
     {
         String host;
-        //noinspection UnusedAssignment
-        int port = 0;
+        int port = -1;
 
         if (authority == null)
         {
@@ -72,14 +71,14 @@ public class HostPort
             if (!unsafe)
                 throw new IllegalArgumentException("No Authority");
             _host = "";
-            _port = 0;
+            _port = -1;
             return;
         }
 
         if (authority.isEmpty())
         {
             _host = authority;
-            _port = 0;
+            _port = -1;
             return;
         }
 
@@ -117,7 +116,7 @@ public class HostPort
                         if (!unsafe)
                             throw new IllegalArgumentException("Bad IPv6 port");
                         host = authority; // whole authority (no substring)
-                        port = 0; // no port
+                        port = -1; // no port
                     }
                     else
                     {
@@ -126,13 +125,13 @@ public class HostPort
                         if (unsafe && (port == BAD_PORT))
                         {
                             host = authority; // whole authority (no substring)
-                            port = 0;
+                            port = -1;
                         }
                     }
                 }
                 else
                 {
-                    port = 0;
+                    port = -1;
                 }
             }
             else
@@ -144,7 +143,7 @@ public class HostPort
                     if (c != authority.indexOf(':'))
                     {
                         // ipv6address no port
-                        port = 0;
+                        port = -1;
                         host = "[" + authority + "]";
                         if (!isValidIpAddress(host))
                         {
@@ -180,7 +179,7 @@ public class HostPort
                         if (unsafe && (port == BAD_PORT))
                         {
                             host = authority; // whole authority (no substring)
-                            port = 0;
+                            port = -1;
                         }
                     }
                 }
@@ -194,7 +193,7 @@ public class HostPort
                         if (!unsafe)
                             throw new IllegalArgumentException("Bad Authority");
                     }
-                    port = 0;
+                    port = -1;
                 }
             }
         }
@@ -203,17 +202,17 @@ public class HostPort
             if (!unsafe)
                 throw iae;
             host = authority;
-            port = 0;
+            port = -1;
         }
         catch (Exception ex)
         {
             if (!unsafe)
                 throw new IllegalArgumentException("Bad HostPort", ex);
             host = authority;
-            port = 0;
+            port = -1;
         }
         _host = host;
-        _port = port;
+        _port = ( port > 0 ) ? port : -1;
     }
 
     protected boolean isValidIpAddress(String ip)

@@ -304,7 +304,7 @@ public interface HttpURI
             _scheme = URIUtil.normalizeScheme(scheme);
             _user = null;
             _host = host;
-            _port = port;
+            _port = ( port > 0 ) ? port : -1;
             _path = path;
             _canonicalPath = _path == null ? null : URIUtil.canonicalPath(_path);
             _param = null;
@@ -551,7 +551,7 @@ public interface HttpURI
         private String _scheme;
         private String _user;
         private String _host;
-        private int _port;
+        private int _port = -1;
         private String _path;
         private String _param;
         private String _query;
@@ -625,7 +625,7 @@ public interface HttpURI
 
             _scheme = URIUtil.normalizeScheme(scheme);
             _host = host;
-            _port = port;
+            _port = (port > 0) ? port : -1;
 
             if (pathQuery != null)
                 parse(State.PATH, pathQuery);
@@ -654,7 +654,7 @@ public interface HttpURI
                 throw new IllegalArgumentException("Relative path with authority");
             _user = null;
             _host = host;
-            _port = port;
+            _port = (port > 0) ? port : -1;
             _uri = null;
             return this;
         }
@@ -927,7 +927,7 @@ public interface HttpURI
 
         public Mutable port(int port)
         {
-            _port = port;
+            _port = ( port > 0) ? port : -1;
             _uri = null;
             return this;
         }
