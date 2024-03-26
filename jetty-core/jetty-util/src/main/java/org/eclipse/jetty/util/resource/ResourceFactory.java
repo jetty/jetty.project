@@ -466,10 +466,10 @@ public interface ResourceFactory
                     Resource dir = newResource(reference.substring(0, reference.length() - 2));
                     if (dir.isDirectory())
                     {
-
                         List<Resource> expanded = dir.list();
                         expanded.sort(ResourceCollators.byName(true));
-                        list.addAll(expanded);
+                        // TODO it is unclear why non archive files are not expanded into the list
+                        expanded.stream().filter(r -> FileID.isLibArchive(r.getName())).forEach(list::add);
                     }
                 }
                 else
