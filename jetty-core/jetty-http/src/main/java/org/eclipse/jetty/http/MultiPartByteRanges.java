@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
@@ -139,9 +138,7 @@ public class MultiPartByteRanges
     /**
      * <p>A specialized {@link org.eclipse.jetty.io.content.InputStreamContentSource}
      * whose content is sliced by a byte range.</p>
-     * @deprecated Use {@link IOResources#asContentSource(Resource, ByteBufferPool, int, boolean, long, long)} instead.
      */
-    @Deprecated(since = "12.0.8", forRemoval = true)
     public static class InputStreamContentSource extends org.eclipse.jetty.io.content.InputStreamContentSource
     {
         private long toRead;
@@ -169,9 +166,7 @@ public class MultiPartByteRanges
     /**
      * <p>A specialized {@link org.eclipse.jetty.io.content.PathContentSource}
      * whose content is sliced by a byte range.</p>
-     * @deprecated Use {@link IOResources#asContentSource(Resource, ByteBufferPool, int, boolean, long, long)} instead.
      */
-    @Deprecated(since = "12.0.8", forRemoval = true)
     public static class PathContentSource extends org.eclipse.jetty.io.content.PathContentSource
     {
         private final ByteRange byteRange;
