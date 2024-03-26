@@ -11,11 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.servlet;
+package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -47,7 +48,7 @@ import static org.eclipse.jetty.util.URIUtil.encodePath;
 /**
  * Wrap a {@link jakarta.servlet.ServletRequest} as a core {@link Request}.
  * <p>
- * Whilst similar to a {@link Request.Wrapper}, this class is not a {@code Wrapper}
+ * Whilst similar to a {@link Wrapper}, this class is not a {@code Wrapper}
  * as callers should not be able to access {@link Wrapper#getWrapped()} and bypass
  * the {@link jakarta.servlet.ServletRequest}.
  * </p>
@@ -57,25 +58,27 @@ import static org.eclipse.jetty.util.URIUtil.encodePath;
  */
 public class ServletCoreRequest implements Request
 {
-    public static Request wrap(HttpServletRequest httpServletRequest)
+    public Request wrap(HttpServletRequest httpServletRequest)
     {
-        return new ServletCoreRequest(httpServletRequest, null);
+        org.eclipse.jetty.ee9.nested.Request baseRequest = Objects.requireNonNull(org.eclipse.jetty.ee9.nested.Request.getBaseRequest(httpServletRequest));
+        ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
+        return new ServletCoreRequest(coreContextRequest, httpServletRequest, coreContextRequest);
     }
 
     private final HttpServletRequest _servletRequest;
-    private final ServletContextRequest _servletContextRequest;
+    private final ContextHandler.CoreContextRequest _coreContextRequest;
     private final HttpFields _httpFields;
     private final HttpURI _uri;
     private final Attributes _attributes;
     private final boolean _wrapped;
     private Content.Source _source;
 
-    ServletCoreRequest(HttpServletRequest request, Attributes attributes)
+    ServletCoreRequest(ContextHandler.CoreContextRequest coreContextRequest, HttpServletRequest request, Attributes attributes)
     {
         _servletRequest = request;
-        _wrapped = !(request instanceof ServletApiRequest);
-        _servletContextRequest = ServletContextRequest.getServletContextRequest(_servletRequest);
-        _attributes = attributes == null ? _servletContextRequest : attributes;
+        _wrapped = !(request instanceof Request);
+        _coreContextRequest = coreContextRequest;
+        _attributes = attributes;
 
         HttpFields.Mutable fields = HttpFields.build();
 
@@ -99,22 +102,23 @@ public class ServletCoreRequest implements Request
         builder.scheme(request.getScheme())
             .authority(request.getServerName(), request.getServerPort());
 
-        if (included)
-            builder.path(addEncodedPaths(request.getContextPath(), encodePath(DefaultServlet.getIncludedPathInContext(request, includedServletPath, false))));
-        else if (request.getDispatcherType() != DispatcherType.REQUEST)
+        // TODO if (included)
+        //    builder.path(addEncodedPaths(request.getContextPath(), encodePath(DefaultServlet.getIncludedPathInContext(request, includedServletPath, false))));
+        // else
+        if (request.getDispatcherType() != DispatcherType.REQUEST)
             builder.path(addEncodedPaths(request.getContextPath(), encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()))));
         else
             builder.path(request.getRequestURI());
         builder.query(request.getQueryString());
         _uri = builder.asImmutable();
 
-        _source = _wrapped ? null : _servletContextRequest;
+        _source = _wrapped ? null : _coreContextRequest;
     }
 
     private Content.Source source() throws IOException
     {
         if (_source == null)
-            _source = _wrapped ? new InputStreamContentSource(getServletRequest().getInputStream()) : _servletContextRequest;
+            _source = _wrapped ? new InputStreamContentSource(getServletRequest().getInputStream()) : _coreContextRequest;
         return _source;
     }
 
@@ -133,7 +137,7 @@ public class ServletCoreRequest implements Request
     @Override
     public String getId()
     {
-        return _servletRequest.getRequestId();
+        return _coreContextRequest.getId();
     }
 
     @Override
@@ -199,19 +203,19 @@ public class ServletCoreRequest implements Request
     @Override
     public Components getComponents()
     {
-        return _servletContextRequest.getComponents();
+        return _coreContextRequest.getComponents();
     }
 
     @Override
     public ConnectionMetaData getConnectionMetaData()
     {
-        return _servletContextRequest.getConnectionMetaData();
+        return _coreContextRequest.getConnectionMetaData();
     }
 
     @Override
     public Context getContext()
     {
-        return _servletContextRequest.getContext();
+        return _coreContextRequest.getContext();
     }
 
     @Override
@@ -230,19 +234,19 @@ public class ServletCoreRequest implements Request
     @Override
     public HttpFields getTrailers()
     {
-        return _servletContextRequest.getTrailers();
+        return _coreContextRequest.getTrailers();
     }
 
     @Override
     public long getBeginNanoTime()
     {
-        return _servletContextRequest.getBeginNanoTime();
+        return _coreContextRequest.getBeginNanoTime();
     }
 
     @Override
     public long getHeadersNanoTime()
     {
-        return _servletContextRequest.getHeadersNanoTime();
+        return _coreContextRequest.getHeadersNanoTime();
     }
 
     @Override
@@ -275,20 +279,20 @@ public class ServletCoreRequest implements Request
         }
         else
         {
-            return _servletContextRequest.consumeAvailable();
+            return _coreContextRequest.consumeAvailable();
         }
     }
 
     @Override
     public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
     {
-        _servletContextRequest.addIdleTimeoutListener(onIdleTimeout);
+        _coreContextRequest.addIdleTimeoutListener(onIdleTimeout);
     }
 
     @Override
     public void addFailureListener(Consumer<Throwable> onFailure)
     {
-        _servletContextRequest.addFailureListener(onFailure);
+        _coreContextRequest.addFailureListener(onFailure);
     }
 
     @Override
@@ -300,7 +304,7 @@ public class ServletCoreRequest implements Request
     @Override
     public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
     {
-        _servletContextRequest.addHttpStreamWrapper(wrapper);
+        _coreContextRequest.addHttpStreamWrapper(wrapper);
     }
 
     @Override

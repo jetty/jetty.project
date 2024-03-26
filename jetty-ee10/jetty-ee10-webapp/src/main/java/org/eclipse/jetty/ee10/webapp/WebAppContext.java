@@ -51,6 +51,7 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -1318,6 +1319,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void stopContext() throws Exception
     {
         stopWebapp();
+
         try
         {
             for (int i = _configurations.size(); i-- > 0; )
@@ -1340,6 +1342,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
 
             _unavailableException = null;
+
+            super.cleanupAfterStop();
         }
     }
 
@@ -1359,6 +1363,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void stopWebapp() throws Exception
     {
         super.stopContext();
+    }
+
+    /**
+     * Prevent the temp directory from being deleted during the normal stop sequence, and require that
+     * {@link ContextHandler#cleanupAfterStop()} is explicitly called after the webapp classloader is closed
+     */
+    @Override
+    protected void cleanupAfterStop() throws Exception
+    {
+        //intentionally left blank
     }
 
     @Override
@@ -1439,15 +1453,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
         @Override
-        public jakarta.servlet.ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String path)
         {
-            jakarta.servlet.ServletContext servletContext = super.getContext(uripath);
+            jakarta.servlet.ServletContext servletContext = super.getContext(path);
 
             if (servletContext != null && _contextWhiteList != null)
             {
                 for (String context : _contextWhiteList)
                 {
-                    if (context.equals(uripath))
+                    if (context.equals(path))
                     {
                         return servletContext;
                     }
