@@ -29,7 +29,6 @@ import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
@@ -61,22 +60,24 @@ public class Util
         if (StringUtil.isBlank(path))
             return null;
 
-        if (path.startsWith("/") || path.startsWith("file:/")) //absolute location
-            return URIUtil.toURI(path);
-        else
+        if (path.startsWith("file:/"))
+            return new URI(path);
+
+        if (path.startsWith("/") && File.pathSeparatorChar != '/')
+            return new URI("file:" + path);
+
+        try
         {
-            try
-            {
-                Path p = FileSystems.getDefault().getPath(path);
-                if (p.isAbsolute())
-                    return p.toUri();
-            }
-            catch (InvalidPathException x)
-            {
-                //ignore and try via the jetty bundle instead
-                LOG.trace("IGNORED", x);
-            }
+            Path p = FileSystems.getDefault().getPath(path);
+            if (p.isAbsolute())
+                return p.toUri();
         }
+        catch (InvalidPathException x)
+        {
+            //ignore and try via the jetty bundle instead
+            LOG.trace("IGNORED", x);
+        }
+
         
         //relative location
         //try inside the bundle first

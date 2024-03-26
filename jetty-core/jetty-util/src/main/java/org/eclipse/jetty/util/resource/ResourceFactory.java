@@ -16,7 +16,9 @@ package org.eclipse.jetty.util.resource;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -317,7 +319,44 @@ public interface ResourceFactory
         if (StringUtil.isBlank(resource))
             throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
-        return newResource(URIUtil.toURI(resource));
+        if (URIUtil.hasScheme(resource))
+        {
+            try
+            {
+                URI uri = new URI(resource);
+                if (isSupported(uri))
+                    return newResource(URIUtil.correctURI(uri));
+
+                if (uri.getScheme().length() != 1)
+                    throw new IllegalArgumentException("URI scheme not registered: " + uri.getScheme());
+            }
+            catch (URISyntaxException x)
+            {
+                // We have an input string that has what looks like a scheme, but isn't a URI.
+                // Eg: "C:\path\to\resource.txt"
+                LOG.trace("ignored", x);
+            }
+        }
+
+        // If we reached this point, we have a String with no valid/supported scheme.
+        // Treat it as a Path, as that's all we have left to investigate.
+        try
+        {
+            Path path = Paths.get(resource);
+            URI uri = new URI(path.toUri().toASCIIString());
+            return new PathResource(path, uri, true);
+        }
+        catch (InvalidPathException | URISyntaxException x)
+        {
+            LOG.trace("ignored", x);
+        }
+
+        // If we reached this here, that means the input string cannot be used as
+        // a URI or a File Path.  The cause is usually due to bad input (eg:
+        // characters that are not supported by file system)
+        if (LOG.isDebugEnabled())
+            LOG.debug("Input string cannot be converted to URI \"{}\"", resource);
+        throw new IllegalArgumentException("Cannot be converted to URI");
     }
 
     /**
