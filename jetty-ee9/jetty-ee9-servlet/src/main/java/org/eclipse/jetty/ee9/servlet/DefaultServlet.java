@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,7 +128,7 @@ import org.slf4j.LoggerFactory;
  *                    Max entries in a cache of ACCEPT-ENCODING headers.
  * </pre>
  */
-public class DefaultServlet extends HttpServlet implements ResourceFactory, WelcomeFactory
+public class DefaultServlet extends HttpServlet implements WelcomeFactory
 {
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
@@ -197,7 +196,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _relativeBaseResource = getInitParameter("relativeBaseResource", "relativeResourceBase");
 
         String br = getInitParameter("baseResource", "resourceBase");
-        if (br != null)
+        if (br == null)
+        {
+            _baseResource = _contextHandler.getBaseResource();
+        }
+        else
         {
             if (_relativeBaseResource != null)
                 throw new UnavailableException("baseResource & relativeBaseResource");
@@ -252,7 +255,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
             if (contentFactory == null)
             {
-                contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes);
                 if (_useFileMappedBuffer)
                     contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css");
@@ -441,19 +444,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (value != null && value.length() > 0)
             return Integer.parseInt(value);
         return dft;
-    }
-
-    @Override
-    public Resource newResource(String resource)
-    {
-        return resolve(resource);
-    }
-
-    @Override
-    public Resource newResource(URI uri)
-    {
-        // TODO optimised path for URI?
-        return resolve(uri.toString());
     }
 
     /**

@@ -374,7 +374,7 @@ public class DefaultServletTest
     @Test
     public void testListingWithSession() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -405,7 +405,7 @@ public class DefaultServletTest
     @Test
     public void testListingXSS() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -453,7 +453,7 @@ public class DefaultServletTest
     @Test
     public void testListingWithQuestionMarks() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -481,7 +481,7 @@ public class DefaultServletTest
     @Test
     public void testSimpleListing() throws Exception
     {
-        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
         defHolder.setInitParameter("dirAllowed", "true");
 
         String rawResponse = connector.getResponse("""
@@ -501,7 +501,7 @@ public class DefaultServletTest
     @Test
     public void testIncludeListingAllowed() throws Exception
     {
-        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
         defHolder.setInitParameter("dirAllowed", "true");
 
         /* create a file with a non-fully ASCII name in the docroot */
@@ -541,7 +541,7 @@ public class DefaultServletTest
     @Test
     public void testIncludeListingForbidden() throws Exception
     {
-        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
         defHolder.setInitParameter("dirAllowed", "false");
 
         ServletHolder incHolder = new ServletHolder();
@@ -581,7 +581,7 @@ public class DefaultServletTest
     @Test
     public void testListingFilenamesOnly() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -719,7 +719,7 @@ public class DefaultServletTest
     @Test
     public void testListingProperUrlEncoding() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -1325,6 +1325,52 @@ public class DefaultServletTest
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
         }
+    }
+
+    @Test
+    public void testDifferentBaseAbsolute() throws Exception
+    {
+        Path altRoot = workDir.getEmptyPathDir().resolve("altroot");
+        FS.ensureDirExists(altRoot);
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        defholder.setInitParameter("resourceBase", altRoot.toAbsolutePath().toUri().toASCIIString());
+
+        Path file = altRoot.resolve("file.txt");
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        String rawResponse = connector.getResponse("""
+            GET /context/alt/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+    }
+
+    @Test
+    public void testDifferentBaseRelative() throws Exception
+    {
+        Path alt = docRoot.resolve("alt");
+        FS.ensureDirExists(alt);
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        defholder.setInitParameter("resourceBase", "alt");
+
+        Path file = alt.resolve("file.txt");
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        String rawResponse = connector.getResponse("""
+            GET /context/alt/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
     }
 
     @Test

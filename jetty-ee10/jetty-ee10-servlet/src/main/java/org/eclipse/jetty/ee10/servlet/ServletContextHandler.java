@@ -789,6 +789,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public Resource newResource(URI uri) throws IOException
     {
+        // TODO wrong factory
         return ResourceFactory.of(this).newResource(uri);
     }
 
@@ -801,7 +802,8 @@ public class ServletContextHandler extends ContextHandler
      */
     public Resource newResource(String urlOrPath) throws IOException
     {
-        return ResourceFactory.of(this).newResource(getBaseResource(), urlOrPath);
+        // TODO wrong factory
+        return ResourceFactory.of(this).newResource(urlOrPath);
     }
 
     public Set<String> getResourcePaths(String path)

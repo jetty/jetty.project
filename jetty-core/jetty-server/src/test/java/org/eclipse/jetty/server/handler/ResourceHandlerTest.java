@@ -665,7 +665,7 @@ public class ResourceHandlerTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());

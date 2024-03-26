@@ -19,7 +19,6 @@ import java.util.Objects;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 
 /**
@@ -29,13 +28,13 @@ import org.eclipse.jetty.util.resource.Resources;
  */
 public class ResourceHttpContentFactory implements HttpContent.Factory
 {
-    private final ResourceFactory _factory;
+    private final Resource _baseResource;
     private final MimeTypes _mimeTypes;
 
-    public ResourceHttpContentFactory(ResourceFactory factory, MimeTypes mimeTypes)
+    public ResourceHttpContentFactory(Resource baseResource, MimeTypes mimeTypes)
     {
         Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
-        _factory = factory;
+        _baseResource = baseResource;
         _mimeTypes = mimeTypes;
     }
 
@@ -45,7 +44,7 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
         try
         {
             // try loading the content from our factory.
-            Resource resource = this._factory.newResource(pathInContext);
+            Resource resource = _baseResource.resolve(pathInContext);
             if (Resources.missing(resource))
                 return null;
             return load(pathInContext, resource);
@@ -75,6 +74,6 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     @Override
     public String toString()
     {
-        return "ResourceContentFactory[" + _factory + "]@" + hashCode();
+        return "ResourceContentFactory[" + _baseResource + "]@" + hashCode();
     }
 }

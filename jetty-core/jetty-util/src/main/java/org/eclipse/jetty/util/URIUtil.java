@@ -1875,7 +1875,10 @@ public final class URIUtil
      * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
      * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
      * @return The {@link URI} form of the resource.
+     * @deprecated This method is currently resolving relative paths against the current directory, which is a mechanism
+     * that should be implemented by a {@link ResourceFactory}.   All calls to this method need to be reviewed.
      */
+    @Deprecated(since = "12.0.8")
     public static URI toURI(String resource)
     {
         Objects.requireNonNull(resource);
@@ -1895,6 +1898,7 @@ public final class URIUtil
                     // Input is a possible Windows path disguised as a URI "D:/path/to/resource.txt".
                     try
                     {
+                        // TODO remove this method or at least move this aspect of it to a ResourceFactory
                         return toURI(Paths.get(resource).toUri().toASCIIString());
                     }
                     catch (InvalidPathException x)

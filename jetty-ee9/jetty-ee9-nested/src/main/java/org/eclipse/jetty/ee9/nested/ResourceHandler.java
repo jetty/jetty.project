@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -40,7 +39,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * This handle will serve static content and handle If-Modified-Since headers. No caching is done. Requests for resources that do not exist are let pass (Eg no
  * 404's).
  */
-public class ResourceHandler extends HandlerWrapper implements ResourceFactory, WelcomeFactory
+public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
@@ -89,7 +87,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         for (String s : _welcomes)
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, s);
-            Resource welcome = newResource(welcomeInContext);
+            Resource welcome = _baseResource.resolve(welcomeInContext);
             if (welcome.exists())
                 return welcomeInContext;
         }
@@ -130,7 +128,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
     protected HttpContent.Factory newHttpContentFactory()
     {
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), _mimeTypes);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
@@ -168,64 +166,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     public MimeTypes getMimeTypes()
     {
         return _mimeTypes;
-    }
-
-    @Override
-    public Resource newResource(String path)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
-
-        Resource r = null;
-
-        if (_baseResource != null)
-        {
-            r = _baseResource.resolve(path);
-        }
-        else if (_context != null)
-        {
-            Resource contextBase = _context.getBaseResource();
-            if (contextBase != null)
-                r = contextBase.resolve(path);
-        }
-
-        if (Resources.missing(r) && path.endsWith("/jetty-dir.css"))
-            r = getStyleSheet();
-
-        if (r == null)
-        {
-            throw new IllegalArgumentException("Resource: " + path);
-        }
-
-        return r;
-    }
-
-    @Override
-    public Resource newResource(URI uri)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, uri);
-
-        Resource r = null;
-
-        if (_baseResource != null)
-        {
-            r = ResourceFactory.of(_baseResource).newResource(uri);
-        }
-        else if (_context != null)
-        {
-            r = ResourceFactory.of(_context).newResource(uri);
-        }
-
-        if ((r == null || !r.exists()) && uri.getPath().endsWith("/jetty-dir.css"))
-            r = getStyleSheet();
-
-        if (r == null)
-        {
-            throw new IllegalArgumentException("Resource: " + uri);
-        }
-
-        return r;
     }
 
     /**
