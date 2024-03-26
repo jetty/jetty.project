@@ -1772,7 +1772,7 @@ public final class URIUtil
      *
      * @param str the input string of references
      * @see #toJarFileUri(URI)
-     * @deprecated use {@link ResourceFactory#split(String}
+     * @deprecated use {@link ResourceFactory#split(String)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
     public static List<URI> split(String str)
