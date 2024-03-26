@@ -771,14 +771,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     protected void doStop() throws Exception
     {
         _context.call(super::doStop, null);
+        cleanupAfterStop();
+        _tempDirectoryCreated = false;
+    }
 
+    protected void cleanupAfterStop() throws Exception
+    {
         File tempDirectory = getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
             IO.delete(tempDirectory);
-
-        _tempDirectoryCreated = false;
     }
 
     public boolean checkVirtualHost(Request request)
