@@ -208,7 +208,7 @@ public class DefaultServlet extends HttpServlet
         if (contentFactory == null)
         {
             MimeTypes mimeTypes = _contextHandler.getMimeTypes();
-            contentFactory = new ResourceHttpContentFactory(Objects.requireNonNullElse(baseResource, _contextHandler.getBaseResource()), mimeTypes);
+            contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
             Resource styleSheet = _contextHandler.getServer().getDefaultStyleSheet();

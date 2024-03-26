@@ -43,7 +43,6 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     {
         try
         {
-            // try loading the content from our factory.
             Resource resource = resolve(pathInContext);
             if (Resources.missing(resource))
                 return null;

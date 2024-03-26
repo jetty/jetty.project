@@ -141,16 +141,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
         UriPatternPredicate uriPatternPredicate = new UriPatternPredicate(pattern, false);
-        Consumer<URI> addContainerResource = (uri) ->
+        Consumer<Resource> addContainerResource = (resource) ->
         {
-            Resource resource = resourceFactory.newResource(uri);
             if (Resources.missing(resource))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Classpath URI doesn't exist: " + uri);
+                    LOG.debug("Classpath URI doesn't exist: " + resource);
             }
             else
+            {
                 context.getMetaData().addContainerResource(resource);
+            }
         };
 
         List<URI> containerUris = getAllContainerJars(context);
@@ -158,6 +159,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             LOG.debug("All container urls {}", containerUris);
         containerUris.stream()
             .filter(uriPatternPredicate)
+            .map(resourceFactory::newResource)
             .forEach(addContainerResource);
 
         // When running on jvm 9 or above, we won't be able to look at the application
@@ -167,8 +169,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         {
             Stream.of(classPath.split(File.pathSeparator))
                 .map(resourceFactory::newResource)
-                .map(Resource::getURI)
-                .filter(uriPatternPredicate)
+                .filter(r -> uriPatternPredicate.test(r.getURI()))
                 .forEach(addContainerResource);
         }
 
