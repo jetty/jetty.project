@@ -255,7 +255,14 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
             HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
             if (contentFactory == null)
             {
-                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes);
+                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes)
+                {
+                    @Override
+                    protected Resource resolve(String pathInContext)
+                    {
+                        return DefaultServlet.this.resolve(pathInContext);
+                    }
+                };
                 if (_useFileMappedBuffer)
                     contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css");

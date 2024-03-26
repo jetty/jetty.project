@@ -44,7 +44,7 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
         try
         {
             // try loading the content from our factory.
-            Resource resource = _baseResource.resolve(pathInContext);
+            Resource resource = resolve(pathInContext);
             if (Resources.missing(resource))
                 return null;
             return load(pathInContext, resource);
@@ -62,6 +62,11 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
             saferException.initCause(t);
             throw saferException;
         }
+    }
+
+    protected Resource resolve(String pathInContext)
+    {
+        return _baseResource.resolve(pathInContext);
     }
 
     private HttpContent load(String pathInContext, Resource resource)
