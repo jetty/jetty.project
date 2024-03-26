@@ -252,104 +252,122 @@ public class ResourceFactoryTest
     @MethodSource("newResourceCases")
     public void testNewResource(String inputRaw, String expectedUri)
     {
-        URI actual = ResourceFactory.root().newResource(inputRaw).getURI();
-        URI expected = URI.create(expectedUri);
-        assertEquals(expected, actual);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            URI actual = resourceFactory.newResource(inputRaw).getURI();
+            URI expected = URI.create(expectedUri);
+            assertEquals(expected, actual);
+        }
     }
 
     @Test
     public void testSplitSingleJar()
     {
-        Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
-        String input = testJar.toUri().toASCIIString();
-        List<Resource> resources = ResourceFactory.root().split(input);
-        String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
-        assertThat(resources.get(0).getURI().toString(), is(expected));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+            String input = testJar.toUri().toASCIIString();
+            List<Resource> resources = resourceFactory.split(input);
+            String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
+            assertThat(resources.get(0).getURI().toString(), is(expected));
+        }
     }
 
     @Test
     public void testSplitSinglePath()
     {
-        Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
-        String input = testJar.toString();
-        List<Resource> resources = ResourceFactory.root().split(input);
-        String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
-        assertThat(resources.get(0).getURI().toString(), is(expected));
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+            String input = testJar.toString();
+            List<Resource> resources = resourceFactory.split(input);
+            String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
+            assertThat(resources.get(0).getURI().toString(), is(expected));
+        }
     }
 
     @Test
     public void testSplitOnComma()
     {
-        Path base = workDir.getEmptyPathDir();
-        Path dir = base.resolve("dir");
-        FS.ensureDirExists(dir);
-        Path foo = dir.resolve("foo");
-        FS.ensureDirExists(foo);
-        Path bar = dir.resolve("bar");
-        FS.ensureDirExists(bar);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path base = workDir.getEmptyPathDir();
+            Path dir = base.resolve("dir");
+            FS.ensureDirExists(dir);
+            Path foo = dir.resolve("foo");
+            FS.ensureDirExists(foo);
+            Path bar = dir.resolve("bar");
+            FS.ensureDirExists(bar);
 
-        // This represents the user-space raw configuration
-        String config = String.format("%s,%s,%s", dir, foo, bar);
+            // This represents the user-space raw configuration
+            String config = String.format("%s,%s,%s", dir, foo, bar);
 
-        // Split using commas
-        List<URI> uris = ResourceFactory.root().split(config).stream().map(Resource::getURI).toList();
+            // Split using commas
+            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
 
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
-        assertThat(uris, contains(expected));
+            URI[] expected = new URI[]{
+                dir.toUri(),
+                foo.toUri(),
+                bar.toUri()
+            };
+            assertThat(uris, contains(expected));
+        }
     }
 
     @Test
     public void testSplitOnPipe()
     {
-        Path base = workDir.getEmptyPathDir();
-        Path dir = base.resolve("dir");
-        FS.ensureDirExists(dir);
-        Path foo = dir.resolve("foo");
-        FS.ensureDirExists(foo);
-        Path bar = dir.resolve("bar");
-        FS.ensureDirExists(bar);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path base = workDir.getEmptyPathDir();
+            Path dir = base.resolve("dir");
+            FS.ensureDirExists(dir);
+            Path foo = dir.resolve("foo");
+            FS.ensureDirExists(foo);
+            Path bar = dir.resolve("bar");
+            FS.ensureDirExists(bar);
 
-        // This represents the user-space raw configuration
-        String config = String.format("%s|%s|%s", dir, foo, bar);
+            // This represents the user-space raw configuration
+            String config = String.format("%s|%s|%s", dir, foo, bar);
 
-        // Split using commas
-        List<URI> uris = ResourceFactory.root().split(config).stream().map(Resource::getURI).toList();
+            // Split using commas
+            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
 
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
-        assertThat(uris, contains(expected));
+            URI[] expected = new URI[]{
+                dir.toUri(),
+                foo.toUri(),
+                bar.toUri()
+            };
+            assertThat(uris, contains(expected));
+        }
     }
 
     @Test
     public void testSplitOnSemicolon()
     {
-        Path base = workDir.getEmptyPathDir();
-        Path dir = base.resolve("dir");
-        FS.ensureDirExists(dir);
-        Path foo = dir.resolve("foo");
-        FS.ensureDirExists(foo);
-        Path bar = dir.resolve("bar");
-        FS.ensureDirExists(bar);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path base = workDir.getEmptyPathDir();
+            Path dir = base.resolve("dir");
+            FS.ensureDirExists(dir);
+            Path foo = dir.resolve("foo");
+            FS.ensureDirExists(foo);
+            Path bar = dir.resolve("bar");
+            FS.ensureDirExists(bar);
 
-        // This represents the user-space raw configuration
-        String config = String.format("%s;%s;%s", dir, foo, bar);
+            // This represents the user-space raw configuration
+            String config = String.format("%s;%s;%s", dir, foo, bar);
 
-        // Split using commas
-        List<URI> uris = ResourceFactory.root().split(config).stream().map(Resource::getURI).toList();
+            // Split using commas
+            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
 
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
-        assertThat(uris, contains(expected));
+            URI[] expected = new URI[]{
+                dir.toUri(),
+                foo.toUri(),
+                bar.toUri()
+            };
+            assertThat(uris, contains(expected));
+        }
     }
 
     @Test
