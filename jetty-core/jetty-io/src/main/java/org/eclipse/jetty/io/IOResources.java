@@ -398,11 +398,17 @@ public class IOResources
             BufferUtil.clearToFill(byteBuffer);
             if (remainingLength >= 0 && remainingLength < Integer.MAX_VALUE)
                 byteBuffer.limit((int)Math.min(byteBuffer.capacity(), remainingLength));
-            int read = channel.read(byteBuffer);
+            boolean eof = false;
+            while (byteBuffer.hasRemaining() && !eof)
+            {
+                int read = channel.read(byteBuffer);
+                if (read == -1)
+                    eof = true;
+                else if (remainingLength >= 0)
+                    remainingLength -= read;
+            }
             BufferUtil.flipToFlush(byteBuffer, 0);
-            if (remainingLength >= 0)
-                remainingLength -= byteBuffer.remaining();
-            terminated = read == -1 || remainingLength == 0;
+            terminated = eof || remainingLength == 0;
             sink.write(terminated, byteBuffer, this);
             return Action.SCHEDULED;
         }

@@ -1168,7 +1168,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (Blocker blocker = _writeBlocker.acquire())
         {
-            new InputStreamWritingCB(in, blocker).iterate();
+            sendContent(in, blocker);
             blocker.block();
         }
     }
@@ -1178,14 +1178,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      *
      * @param in The channel content to send
      * @throws IOException if the send fails
-     * @deprecated use {@link #sendContent(Resource)} instead.
      */
-    @Deprecated(since = "12.0.7", forRemoval = true)
     public void sendContent(ReadableByteChannel in) throws IOException
     {
         try (Blocker blocker = _writeBlocker.acquire())
         {
-            new ReadableByteChannelWritingCB(in, blocker).iterate();
+            sendContent(in, blocker);
             blocker.block();
         }
     }
@@ -1229,9 +1227,29 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(Resource resource, Callback callback) throws IOException
     {
-        IOResources.copy(resource,
-            (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb), _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
-            callback);
+        if (prepareSendContent(0, callback))
+            IOResources.copy(resource,
+                (last, byteBuffer, cb) ->
+                {
+                    _written += byteBuffer.remaining();
+                    channelWrite(byteBuffer, last, cb);
+                }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
+                new Callback.Nested(callback)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        onWriteComplete(true, null);
+                        super.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        onWriteComplete(true, x);
+                        super.failed(x);
+                    }
+                });
     }
 
     /**
@@ -1361,7 +1379,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
                 IOResources.copy(httpContent.getResource(),
-                    (last, byteBuffer, cb) -> channelWrite(byteBuffer, last, cb), _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
+                    (last, byteBuffer, cb) ->
+                    {
+                        _written += byteBuffer.remaining();
+                        channelWrite(byteBuffer, last, cb);
+                    }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
                     callback);
         }
         catch (Throwable x)

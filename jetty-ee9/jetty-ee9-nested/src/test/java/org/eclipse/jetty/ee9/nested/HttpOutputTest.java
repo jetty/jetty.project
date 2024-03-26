@@ -19,7 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +32,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -91,6 +94,7 @@ public class HttpOutputTest
     public void destroy() throws Exception
     {
         IO.close(_handler._contentInputStream);
+        IO.close(_handler._contentChannel);
         _server.stop();
         _server.join();
     }
@@ -186,6 +190,27 @@ public class HttpOutputTest
     }
 
     @Test
+    public void testSendChannelSimple() throws Exception
+    {
+        Resource simple = ResourceFactory.of(_contextHandler).newClassPathResource("simple/simple.txt");
+        _handler._contentChannel = Files.newByteChannel(simple.getPath());
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Content-Length: 11"));
+    }
+
+    @Test
+    public void testSendChannelBig() throws Exception
+    {
+        Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
+        _handler._contentChannel = Files.newByteChannel(big.getPath());
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, Matchers.not(containsString("Content-Length")));
+        assertThat(response, endsWith(toUTF8String(big)));
+    }
+
+    @Test
     public void testSendResourceSimple() throws Exception
     {
         Resource simple = ResourceFactory.of(_contextHandler).newClassPathResource("simple/simple.txt");
@@ -211,7 +236,7 @@ public class HttpOutputTest
     public void testSendBigDirect() throws Exception
     {
         Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
-        _handler._content = BufferUtil.toBuffer(big, true);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), true).getByteBuffer();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
@@ -222,7 +247,7 @@ public class HttpOutputTest
     public void testSendBigInDirect() throws Exception
     {
         Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
@@ -230,11 +255,64 @@ public class HttpOutputTest
     }
 
     @Test
+    public void testSendChannelBigChunked() throws Exception
+    {
+        Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
+        final ReadableByteChannel channel = Files.newByteChannel(big.getPath());
+        _handler._contentChannel = new ReadableByteChannel()
+        {
+            @Override
+            public boolean isOpen()
+            {
+                return channel.isOpen();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                channel.close();
+            }
+
+            @Override
+            public int read(ByteBuffer dst) throws IOException
+            {
+                int filled = 0;
+                if (dst.position() == 0 && dst.limit() > 2000)
+                {
+                    int limit = dst.limit();
+                    dst.limit(2000);
+                    filled = channel.read(dst);
+                    dst.limit(limit);
+                }
+                else
+                    filled = channel.read(dst);
+                return filled;
+            }
+        };
+
+        LocalEndPoint endp = _connector.executeRequest(
+            "GET / HTTP/1.1\nHost: localhost:80\n\n" +
+                "GET / HTTP/1.1\nHost: localhost:80\nConnection: close\n\n"
+        );
+
+        String response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Transfer-Encoding: chunked"));
+        assertThat(response, containsString("1\tThis is a big file"));
+        assertThat(response, containsString("400\tThis is a big file"));
+        assertThat(response, containsString("\r\n0\r\n"));
+
+        response = endp.getResponse();
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Connection: close"));
+    }
+
+    @Test
     public void testWriteByte() throws Exception
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[1];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -248,7 +326,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[8];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -262,7 +340,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[4000];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -276,7 +354,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[8192];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -290,7 +368,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[1];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -305,7 +383,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[8];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -320,7 +398,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[4000];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -335,7 +413,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[8192];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -368,7 +446,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(8);
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -383,7 +461,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(4000);
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -398,7 +476,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(8192);
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -413,7 +491,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(8);
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -428,7 +506,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(4000);
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -443,7 +521,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(8192);
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -458,7 +536,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[1];
         _handler._async = true;
 
@@ -474,7 +552,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[8];
         _handler._async = true;
 
@@ -490,7 +568,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[4000];
         _handler._async = true;
 
@@ -506,7 +584,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[8192];
         _handler._async = true;
 
@@ -541,7 +619,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(8);
         _handler._async = true;
 
@@ -557,7 +635,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(4000);
         _handler._async = true;
 
@@ -573,7 +651,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(8192);
         _handler._async = true;
 
@@ -590,7 +668,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, true);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), true).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocateDirect(8192);
         _handler._async = true;
 
@@ -606,7 +684,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._byteBuffer = BufferUtil.allocate(8192);
         _handler._async = true;
 
@@ -626,7 +704,7 @@ public class HttpOutputTest
 
         _handler._async = true;
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[4000];
 
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -643,7 +721,7 @@ public class HttpOutputTest
 
         _handler._async = true;
         _handler._writeLengthIfKnown = true;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[4000];
 
         int start = _handler._owp.get();
@@ -659,7 +737,7 @@ public class HttpOutputTest
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
-        _handler._content = BufferUtil.toBuffer(big, false);
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.NonPooling(), false).getByteBuffer();
         _handler._arrayBuffer = new byte[1024];
         _handler._interceptor = new ChainedInterceptor()
         {
@@ -1116,9 +1194,8 @@ public class HttpOutputTest
     }
 
     private static String toUTF8String(Resource resource)
-        throws IOException
     {
-        return BufferUtil.toUTF8String(BufferUtil.toBuffer(resource, false));
+        return BufferUtil.toUTF8String(IOResources.toRetainableByteBuffer(resource, new ByteBufferPool.NonPooling(), false).getByteBuffer());
     }
 
     interface ChainedInterceptor extends HttpOutput.Interceptor
@@ -1138,6 +1215,7 @@ public class HttpOutputTest
         ByteBuffer _byteBuffer;
         byte[] _arrayBuffer;
         InputStream _contentInputStream;
+        ReadableByteChannel _contentChannel;
         Resource _contentResource;
         ByteBuffer _content;
         ChainedInterceptor _interceptor;
@@ -1162,6 +1240,14 @@ public class HttpOutputTest
             {
                 out.sendContent(_contentInputStream);
                 _contentInputStream = null;
+                _closedAfterWrite.succeeded(out.isClosed());
+                return;
+            }
+
+            if (_contentChannel != null)
+            {
+                out.sendContent(_contentChannel);
+                _contentChannel = null;
                 _closedAfterWrite.succeeded(out.isClosed());
                 return;
             }
