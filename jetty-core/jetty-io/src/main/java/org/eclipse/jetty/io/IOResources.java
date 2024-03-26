@@ -71,12 +71,17 @@ public class IOResources
             RetainableByteBuffer retainableByteBuffer = bufferPool.acquire(length, direct);
             try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
             {
-                int pos = BufferUtil.flipToFill(retainableByteBuffer.getByteBuffer());
-                while (retainableByteBuffer.hasRemaining())
+                long totalRead = 0L;
+                ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
+                int pos = BufferUtil.flipToFill(byteBuffer);
+                while (totalRead < length)
                 {
-                    seekableByteChannel.read(retainableByteBuffer.getByteBuffer());
+                    int read = seekableByteChannel.read(byteBuffer);
+                    if (read == -1)
+                        break;
+                    totalRead += read;
                 }
-                BufferUtil.flipToFlush(retainableByteBuffer.getByteBuffer(), pos);
+                BufferUtil.flipToFlush(byteBuffer, pos);
                 return retainableByteBuffer;
             }
             catch (IOException e)

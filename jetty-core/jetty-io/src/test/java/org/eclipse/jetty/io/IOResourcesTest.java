@@ -19,6 +19,8 @@ import java.nio.file.Path;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -26,12 +28,27 @@ import static org.hamcrest.Matchers.is;
 
 public class IOResourcesTest
 {
+    private ArrayByteBufferPool.Tracking bufferPool;
+
+    @BeforeEach
+    public void setUp()
+    {
+        bufferPool = new ArrayByteBufferPool.Tracking();
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+    }
+
     @Test
     public void testToRetainableByteBuffer() throws Exception
     {
         Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
         Resource resource = ResourceFactory.root().newResource(resourcePath);
-        RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, new ByteBufferPool.NonPooling(), false);
+        RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool, false);
         assertThat(retainableByteBuffer.remaining(), is((int)Files.size(resourcePath)));
+        retainableByteBuffer.release();
     }
 }
