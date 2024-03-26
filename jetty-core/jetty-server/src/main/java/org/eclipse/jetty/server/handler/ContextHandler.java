@@ -775,18 +775,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         _tempDirectoryCreated = false;
     }
 
-    protected void cleanupAfterStop()
+    protected void cleanupAfterStop() throws Exception
     {
         File tempDirectory = getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
-        {
-            if (!IO.delete(tempDirectory.toPath()))
-            {
-                throw new RuntimeException("Unable to delete persistent temp directory: " + tempDirectory.toPath());
-            }
-        }
+            IO.delete(tempDirectory);
     }
 
     public boolean checkVirtualHost(Request request)
