@@ -220,11 +220,11 @@ public class WebInfConfiguration extends AbstractConfiguration
             Resource originalWarResource = webApp;
 
             // Is the WAR usable directly?
-            if (Resources.isReadableFile(webApp) && FileID.isJavaArchive(webApp.getURI()) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
+            if (Resources.isReadableFile(webApp) && (FileID.isJavaArchive(webApp.getURI()) || FileID.isWebArchive(webApp.getURI())) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
             {
                 // Turned this into a jar URL.
                 Resource jarWebApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
-                if (Resources.isReadableFile(jarWebApp)) // but only if it is readable
+                if (jarWebApp.exists() && jarWebApp.isDirectory())
                     webApp = jarWebApp;
             }
 
@@ -233,7 +233,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 (context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() == null) ||
-                    !originalWarResource.isDirectory())
+                    !webApp.isDirectory())
             )
             {
                 // Look for sibling directory.
