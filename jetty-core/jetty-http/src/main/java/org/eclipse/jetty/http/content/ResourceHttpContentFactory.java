@@ -34,7 +34,7 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     public ResourceHttpContentFactory(Resource baseResource, MimeTypes mimeTypes)
     {
         Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
-        _baseResource = baseResource;
+        _baseResource = Objects.requireNonNull(baseResource);
         _mimeTypes = mimeTypes;
     }
 
