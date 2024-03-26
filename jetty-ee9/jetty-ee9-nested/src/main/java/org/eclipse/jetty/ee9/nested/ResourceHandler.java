@@ -128,7 +128,10 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
 
     protected HttpContent.Factory newHttpContentFactory()
     {
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), _mimeTypes);
+        Resource baseResource = getBaseResource();
+        if (baseResource == null)
+            baseResource = _context.getBaseResource();
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(baseResource, _mimeTypes);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
@@ -142,7 +145,7 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
     public Resource getBaseResource()
     {
         if (_baseResource == null)
-            return null;
+            return _context.getBaseResource();
         return _baseResource;
     }
 
