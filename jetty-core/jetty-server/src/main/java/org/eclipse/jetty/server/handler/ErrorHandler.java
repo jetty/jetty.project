@@ -71,7 +71,7 @@ public class ErrorHandler implements Request.Handler
     public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     boolean _showStacks = false;
-    boolean _showCauses = true;
+    boolean _showCauses = false;
     boolean _showMessageInTitle = true;
     String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
