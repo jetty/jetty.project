@@ -20,8 +20,8 @@ lib/jetty-ee9-webapp-${jetty.version}.jar
 
 [ini-template]
 ## Add to the environment wide default jars and packages protected or hidden from webapps.
-## Protected (aka System) classes cannot be overridden by a webapp.
-## Hidden (aka Server) classes cannot be seen by a webapp
+## System (aka Protected) classes cannot be overridden by a webapp.
+## Server (aka Hidden) classes cannot be seen by a webapp
 ## Lists of patterns are comma separated and may be either:
 ##  + a qualified classname e.g. 'com.acme.Foo' 
 ##  + a package name e.g. 'net.example.'
@@ -31,8 +31,8 @@ lib/jetty-ee9-webapp-${jetty.version}.jar
 ##
 ## The +=, operator appends to a CSV list with a comma as needed.
 ##
-#jetty.webapp.addProtectedClasses+=,org.example.
-#jetty.webapp.addHiddenClasses+=,org.example.
+#jetty.webapp.addSystemClasses+=,org.example.
+#jetty.webapp.addServerClasses+=,org.example.
 
 [ini]
 contextHandlerClass?=org.eclipse.jetty.ee9.webapp.WebAppContext

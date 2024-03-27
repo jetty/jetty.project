@@ -6,7 +6,7 @@
     <Arg><Ref refid="Server"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-        <Arg><Property name="jetty.webapp.addProtectedClasses" deprecated="jetty.webapp.addSystemClasses"/></Arg>
+        <Arg><Property name="jetty.webapp.addSystemClasses"/></Arg>
       </Call>
     </Arg>
   </Call>
@@ -15,7 +15,7 @@
     <Arg><Ref refid="Server"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-        <Arg><Property name="jetty.webapp.addHiddenClasses" deprecated="jetty.webapp.addServerClasses"/></Arg>
+        <Arg><Property name="jetty.webapp.addServerClasses"/></Arg>
       </Call>
     </Arg>
   </Call>
