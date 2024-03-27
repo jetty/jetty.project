@@ -15,6 +15,7 @@ package org.eclipse.jetty.docs.programming.server.http2;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -301,7 +302,7 @@ public class HTTP2ServerDocs
     {
         // tag::push[]
         // The favicon bytes.
-        ByteBuffer faviconBuffer = BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true);
+        ByteBuffer faviconBuffer = BufferUtil.toMappedBuffer(Paths.get("/path/to/favicon.ico"));
 
         ServerSessionListener sessionListener = new ServerSessionListener()
         {
@@ -334,7 +335,7 @@ public class HTTP2ServerDocs
                             // Send the favicon "response".
                             MetaData.Response pushedResponse = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             return pushedStream.headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
-                                .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer, true)));
+                                .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer.slice(), true)));
                         });
                 }
                 // Return a Stream.Listener to handle the request events.
