@@ -83,13 +83,13 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         try
         {
-            Transaction.bindTransactionToENC(ServletContextHandler.__environment.getName());
+            Transaction.bindTransactionToENC(ServletContextHandler.ENVIRONMENT.getName());
         }
         catch (NameNotFoundException e)
         {
             try
             {
-                org.eclipse.jetty.plus.jndi.Transaction.bindTransactionToENC(ServletContextHandler.__environment.getName());
+                org.eclipse.jetty.plus.jndi.Transaction.bindTransactionToENC(ServletContextHandler.ENVIRONMENT.getName());
             }
             catch (NameNotFoundException x)
             {

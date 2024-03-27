@@ -487,7 +487,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void doStart() throws Exception
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(__environment.getClassLoader());
+        Thread.currentThread().setContextClassLoader(ServletContextHandler.ENVIRONMENT.getClassLoader());
         try
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
@@ -729,20 +729,20 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             if (__dftSystemClasses.equals(_systemClasses))
             {
-                Object systemClasses = server.getAttribute(SERVER_SYS_CLASSES);
-                if (systemClasses instanceof String[])
-                    systemClasses = new ClassMatcher((String[])systemClasses);
-                if (systemClasses instanceof ClassMatcher)
-                    _systemClasses.add(((ClassMatcher)systemClasses).getPatterns());
+                Object systemClasses = ServletContextHandler.ENVIRONMENT.getAttribute(SERVER_SYS_CLASSES);
+                if (systemClasses instanceof String[] patterns)
+                    _systemClasses.add(patterns);
+                if (systemClasses instanceof ClassMatcher classMatcher)
+                    _systemClasses.add(classMatcher.getPatterns());
             }
 
             if (__dftServerClasses.equals(_serverClasses))
             {
-                Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
-                if (serverClasses instanceof String[])
-                    serverClasses = new ClassMatcher((String[])serverClasses);
-                if (serverClasses instanceof ClassMatcher)
-                    _serverClasses.add(((ClassMatcher)serverClasses).getPatterns());
+                Object serverClasses = ServletContextHandler.ENVIRONMENT.getAttribute(SERVER_SRV_CLASSES);
+                if (serverClasses instanceof String[] patterns)
+                    _serverClasses.add(patterns);
+                if (serverClasses instanceof ClassMatcher classMatcher)
+                    _serverClasses.add(classMatcher.getPatterns());
             }
         }
     }
@@ -1415,24 +1415,62 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _metadata;
     }
 
-    public static void addServerClasses(Server server, String... pattern)
+    /**
+     * @param server ignored.
+     * @param patterns the patterns to add
+     * @deprecated use {@link #addServerClasses(String...)} instead, will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    public static void addServerClasses(Server server, String... patterns)
     {
-        addClasses(__dftServerClasses, SERVER_SRV_CLASSES, server, pattern);
+        addServerClasses(patterns);
     }
 
-    public static void addSystemClasses(Server server, String... pattern)
+    /**
+     * Add a Server Class pattern to use for all ee10 WebAppContexts.
+     * @param patterns the patterns to use
+     * @see #getServerClassMatcher()
+     * @see #getServerClasses()
+     */
+    public static void addServerClasses(String... patterns)
     {
-        addClasses(__dftSystemClasses, SERVER_SYS_CLASSES, server, pattern);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding {} ServerClasses: {}", ServletContextHandler.ENVIRONMENT, String.join(", ", patterns));
+        addClasses(__dftServerClasses, SERVER_SRV_CLASSES, patterns);
     }
 
-    private static void addClasses(ClassMatcher matcher, String attribute, Server server, String... pattern)
+    /**
+     * @param server ignored.
+     * @param patterns the patterns to add
+     * @deprecated use {@link #addSystemClasses(String...)} instead, will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    public static void addSystemClasses(Server server, String... patterns)
+    {
+        addSystemClasses(patterns);
+    }
+
+    /**
+     * Add a System Class pattern to use for all ee10 WebAppContexts.
+     * @param patterns the patterns to use
+     * @see #getSystemClassMatcher()
+     * @see #getSystemClasses()
+     */
+    public static void addSystemClasses(String... patterns)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding {} SystemClasses: {}", ServletContextHandler.ENVIRONMENT, String.join(", ", patterns));
+        addClasses(__dftSystemClasses, SERVER_SYS_CLASSES, patterns);
+    }
+
+    private static void addClasses(ClassMatcher matcher, String attributeKey, String... pattern)
     {
         if (pattern == null || pattern.length == 0)
             return;
 
-        // look for a Server attribute with the list of System classes
-        // to apply to every web application. If not present, use our defaults.
-        Object o = server.getAttribute(attribute);
+        // look for a ClassMatcher attribute with the list of Server / System classes
+        // to apply to every ee10 web application. If not present, use our defaults.
+        Object o = ServletContextHandler.ENVIRONMENT.getAttribute(attributeKey);
         if (o instanceof ClassMatcher)
         {
             ((ClassMatcher)o).add(pattern);
@@ -1447,6 +1485,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         int l = classes.length;
         classes = Arrays.copyOf(classes, l + pattern.length);
         System.arraycopy(pattern, 0, classes, l, pattern.length);
-        server.setAttribute(attribute, classes);
+        ServletContextHandler.ENVIRONMENT.setAttribute(attributeKey, classes);
     }
 }

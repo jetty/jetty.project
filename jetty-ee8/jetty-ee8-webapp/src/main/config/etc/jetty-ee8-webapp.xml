@@ -3,7 +3,6 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call class="org.eclipse.jetty.ee8.webapp.WebAppContext" name="addSystemClasses">
-    <Arg><Ref refid="Environment"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
         <Arg><Property name="jetty.webapp.addSystemClasses"/></Arg>
@@ -12,7 +11,6 @@
   </Call>
 
   <Call class="org.eclipse.jetty.ee8.webapp.WebAppContext" name="addServerClasses">
-    <Arg><Ref refid="Environment"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
         <Arg><Property name="jetty.webapp.addServerClasses"/></Arg>
