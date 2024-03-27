@@ -67,6 +67,7 @@ import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -3934,10 +3935,20 @@ public class ResourceHandlerTest
 
     private void setupQuestionMarkDir(Path base) throws IOException
     {
-        Path dirQ = base.resolve("dir?");
-        Files.createDirectories(dirQ);
-        Path welcome = dirQ.resolve("welcome.txt");
-        Files.writeString(welcome, "Hello");
+        boolean filesystemSupportsQuestionMarkDir = false;
+        try
+        {
+            Path dirQ = base.resolve("dir?");
+            Files.createDirectories(dirQ);
+            Path welcome = dirQ.resolve("welcome.txt");
+            Files.writeString(welcome, "Hello");
+            filesystemSupportsQuestionMarkDir = true;
+        }
+        catch (InvalidPathException e)
+        {
+            filesystemSupportsQuestionMarkDir = false;
+        }
+        Assumptions.assumeTrue(filesystemSupportsQuestionMarkDir);
     }
 
     private void setupSimpleText(Path base) throws IOException

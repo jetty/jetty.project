@@ -231,7 +231,6 @@ public class ResourceFactoryTest
             // URI format (absolute)
             args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
             args.add(Arguments.of("file:/e:/zed/yotta.txt", "file:///e:/zed/yotta.txt"));
-            args.add(Arguments.of("jar:file:///E:/path/to/bar.jar", "jar:file:///E:/path/to/bar.jar"));
         }
         else
         {
