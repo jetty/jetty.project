@@ -32,6 +32,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
     private void start(InvalidURIRule rule) throws Exception
     {
         _rewriteHandler.addRule(rule);
+        _httpConfig.setUriCompliance(UriCompliance.UNSAFE);
         start(new Handler.Abstract()
         {
             @Override
