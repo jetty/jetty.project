@@ -46,10 +46,12 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
@@ -94,7 +96,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletTest
 {
-
     public Path docRoot;
 
     // The name of the odd-jar used for testing "jar:file://" based resource access.
@@ -1974,6 +1975,7 @@ public class DefaultServletTest
     @Test
     public void testControlCharacter() throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         FS.ensureDirExists(docRoot);
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());

@@ -56,6 +56,7 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
@@ -3039,6 +3040,7 @@ public class DefaultServletTest
     @Test
     public void testControlCharacter() throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         FS.ensureDirExists(docRoot);
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
