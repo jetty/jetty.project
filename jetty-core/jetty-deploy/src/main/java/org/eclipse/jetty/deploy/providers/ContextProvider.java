@@ -502,7 +502,7 @@ public class ContextProvider extends ScanningAppProvider
                 !Files.exists(path.getParent().resolve(basename + ".WAR"));
         }
 
-        // deploy if there is not a .war for of the same basename
+        // deploy if it is a .war and there is not a .xml for of the same basename
         if (FileID.isWebArchive(path))
         {
             // if a .xml file exists for it
@@ -519,5 +519,12 @@ public class ContextProvider extends ScanningAppProvider
     {
         if (isDeployable(path))
             super.pathAdded(path);
+    }
+
+    @Override
+    protected void pathChanged(Path path) throws Exception
+    {
+        if (isDeployable(path))
+            super.pathChanged(path);
     }
 }
