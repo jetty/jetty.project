@@ -27,7 +27,10 @@ import org.slf4j.LoggerFactory;
 public class HostPort
 {
     private static final Logger LOG = LoggerFactory.getLogger(HostPort.class);
-    private static final int UNDEFINED_PORT = -1;
+    /**
+     * Indicator that the provided port string was bad see unsafe mode at {@link #parsePort(String, boolean)}
+     */
+    private static final int BAD_PORT = -2;
     private final String _host;
     private final int _port;
 
@@ -51,7 +54,7 @@ public class HostPort
     public HostPort(String host, int port)
     {
         _host = normalizeHost(host);
-        _port = (port > 0) ? port : UNDEFINED_PORT;
+        _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
     }
 
     public HostPort(String authority) throws IllegalArgumentException
@@ -63,7 +66,7 @@ public class HostPort
     private HostPort(String authority, boolean unsafe)
     {
         String host;
-        int port = UNDEFINED_PORT;
+        int port = URIUtil.UNDEFINED_PORT;
 
         if (authority == null)
         {
@@ -71,14 +74,14 @@ public class HostPort
             if (!unsafe)
                 throw new IllegalArgumentException("No Authority");
             _host = "";
-            _port = UNDEFINED_PORT;
+            _port = URIUtil.UNDEFINED_PORT;
             return;
         }
 
         if (authority.isEmpty())
         {
             _host = authority;
-            _port = UNDEFINED_PORT;
+            _port = URIUtil.UNDEFINED_PORT;
             return;
         }
 
@@ -116,22 +119,22 @@ public class HostPort
                         if (!unsafe)
                             throw new IllegalArgumentException("Bad IPv6 port");
                         host = authority; // whole authority (no substring)
-                        port = UNDEFINED_PORT; // no port
+                        port = URIUtil.UNDEFINED_PORT; // no port
                     }
                     else
                     {
                         port = parsePort(authority.substring(close + 2), unsafe);
-                        // horribly bad port during unsafe
-                        if (unsafe && (port == UNDEFINED_PORT))
+                        // horribly bad port during unsafe (eg: "Host:xxx")
+                        if (unsafe && port == BAD_PORT)
                         {
                             host = authority; // whole authority (no substring)
-                            port = UNDEFINED_PORT;
+                            port = URIUtil.UNDEFINED_PORT;
                         }
                     }
                 }
                 else
                 {
-                    port = UNDEFINED_PORT;
+                    port = URIUtil.UNDEFINED_PORT;
                 }
             }
             else
@@ -143,7 +146,7 @@ public class HostPort
                     if (c != authority.indexOf(':'))
                     {
                         // ipv6address no port
-                        port = UNDEFINED_PORT;
+                        port = URIUtil.UNDEFINED_PORT;
                         host = "[" + authority + "]";
                         if (!isValidIpAddress(host))
                         {
@@ -175,11 +178,11 @@ public class HostPort
                         }
 
                         port = parsePort(authority.substring(c + 1), unsafe);
-                        // horribly bad port during unsafe
-                        if (unsafe && (port == UNDEFINED_PORT))
+                        // horribly bad port during unsafe (eg: "Host:xxx")
+                        if (unsafe && port == BAD_PORT)
                         {
                             host = authority; // whole authority (no substring)
-                            port = UNDEFINED_PORT;
+                            port = URIUtil.UNDEFINED_PORT;
                         }
                     }
                 }
@@ -193,7 +196,7 @@ public class HostPort
                         if (!unsafe)
                             throw new IllegalArgumentException("Bad Authority");
                     }
-                    port = UNDEFINED_PORT;
+                    port = URIUtil.UNDEFINED_PORT;
                 }
             }
         }
@@ -202,17 +205,17 @@ public class HostPort
             if (!unsafe)
                 throw iae;
             host = authority;
-            port = UNDEFINED_PORT;
+            port = URIUtil.UNDEFINED_PORT;
         }
         catch (Exception ex)
         {
             if (!unsafe)
                 throw new IllegalArgumentException("Bad HostPort", ex);
             host = authority;
-            port = UNDEFINED_PORT;
+            port = URIUtil.UNDEFINED_PORT;
         }
         _host = host;
-        _port = (port > 0) ? port : UNDEFINED_PORT;
+        _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
     }
 
     protected boolean isValidIpAddress(String ip)
@@ -326,9 +329,19 @@ public class HostPort
     /**
      * Parse a potential port.
      *
+     * <p>
+     *     In safe mode, this will either return a port in the valid range of 0 to 65535, or throw an {@link IllegalArgumentException}.
+     * </p>
+     * <p>
+     *     In unsafe mode, this will return a port in the valid range of 0 to 65535, or {@link #BAD_PORT} indicating that the
+     *     port provided was not a number (eg: {@code ":xxx"}) or was not in the valid range (eg: {@code ":-80"} or {@code ":11222333"})
+     * </p>
+     * <p>
+     *     In both safe and unsafe, an empty {@code rawPort} will result in a return value of {@link URIUtil#UNDEFINED_PORT}
+     * </p>
+     *
      * @param rawPort the raw port string to parse
-     * @param unsafe true to always return a port in the range 0 to 65535 (or -1 for undefined if rawPort is horribly bad), false to return
-     *  the provided port (or {@link IllegalArgumentException} if it is horribly bad)
+     * @param unsafe true for unsafe mode (no exceptions), false for safe mode (with exceptions if there is a problem).
      * @return the port
      * @throws IllegalArgumentException if unable to parse a valid port and {@code unsafe} is false
      */
@@ -337,8 +350,8 @@ public class HostPort
         if (StringUtil.isEmpty(rawPort))
         {
             if (!unsafe)
-                throw new IllegalArgumentException("Bad port [" + rawPort + "]");
-            return UNDEFINED_PORT;
+                throw new IllegalArgumentException("Blank port");
+            return URIUtil.UNDEFINED_PORT;
         }
 
         try
@@ -349,7 +362,7 @@ public class HostPort
                 LOG.warn("Bad port [{}]", port);
                 if (!unsafe)
                     throw new IllegalArgumentException("Bad port");
-                return UNDEFINED_PORT;
+                return BAD_PORT;
             }
             return port;
         }
@@ -358,7 +371,7 @@ public class HostPort
             LOG.warn("Bad port [{}]", rawPort);
             if (!unsafe)
                 throw new IllegalArgumentException("Bad Port");
-            return UNDEFINED_PORT;
+            return BAD_PORT;
         }
     }
 }
