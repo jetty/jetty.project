@@ -47,7 +47,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -2338,7 +2337,7 @@ public class DefaultServletTest
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()
@@ -2369,7 +2368,7 @@ public class DefaultServletTest
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()

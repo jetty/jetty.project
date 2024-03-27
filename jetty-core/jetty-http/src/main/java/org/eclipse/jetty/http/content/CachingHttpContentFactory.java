@@ -343,7 +343,10 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                 {
                     buffer = null;
                     isValid = false;
-                    LOG.warn("Failed to read Resource: " + httpContent.getResource(), t);
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Failed to read Resource: {}", httpContent.getResource(), t);
+                    else
+                        LOG.warn("Failed to read Resource: {} - {}", httpContent.getResource(), t.toString());
                 }
             }
             else

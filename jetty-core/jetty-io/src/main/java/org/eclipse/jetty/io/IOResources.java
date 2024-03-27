@@ -46,7 +46,7 @@ public class IOResources
      *
      * @param resource the resource to be read.
      * @param bufferPool the {@link ByteBufferPool} to get buffers from. null means allocate new buffers as needed.
-     * @param direct the directness of the buffers, this parameter is ignored if {@code bufferSize} is &lt; 1.
+     * @param direct the directness of the buffers.
      * @return a {@link RetainableByteBuffer} containing the resource's contents.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
@@ -63,6 +63,8 @@ public class IOResources
         if (longLength > Integer.MAX_VALUE)
             throw new IllegalArgumentException("Resource length exceeds 2 GiB: " + resource);
         int length = (int)longLength;
+
+        bufferPool = bufferPool == null ? new ByteBufferPool.NonPooling() : bufferPool;
 
         // Optimize for PathResource.
         Path path = resource.getPath();
