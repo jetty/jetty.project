@@ -222,7 +222,7 @@ public class IOResources
 
     /**
      * <p>Gets an {@link InputStream} with the contents of a resource.</p>
-     * <p>The resource must not be a directory, must exists and there must return non-null to {@link Resource#newInputStream()}.</p>
+     * <p>The resource must not be a directory, must exist and must return non-null to {@link Resource#newInputStream()}.</p>
      *
      * @param resource the resource from which to get an {@link InputStream}.
      * @return the {@link InputStream}.
@@ -247,10 +247,10 @@ public class IOResources
 
     /**
      * <p>Performs an asynchronous copy of the contents of a resource to a sink, using the given buffer pool and buffer characteristics.</p>
-     * <p>The resource must not be a directory, must exists and there must be
-     * a way to access its contents.</p>
+     * <p>The resource must not be a directory, must exist and there must be a way to access its contents.</p>
      * <p>Multiple optimized methods are used to access the resource's contents but if they all fail,
-     * {@link Resource#newInputStream()} is used as a fallback.</p>
+     * {@link #asContentSource(Resource, ByteBufferPool, int, boolean)} is used as a fallback to perform the
+     * {@link Content#copy(Content.Source, Content.Sink, Callback) copy}.</p>
      *
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
@@ -295,10 +295,10 @@ public class IOResources
 
     /**
      * <p>Performs an asynchronous copy of a subset of the contents of a resource to a sink, using the given buffer pool and buffer characteristics.</p>
-     * <p>The resource must not be a directory, must exists and there must be
-     * a way to access its contents.</p>
+     * <p>The resource must not be a directory, must exist and there must be a way to access its contents.</p>
      * <p>Multiple optimized methods are used to access the resource's contents but if they all fail,
-     * {@link Resource#newInputStream()} is used as a fallback.</p>
+     * {@link #asContentSource(Resource, ByteBufferPool, int, boolean, long, long)} is used as a fallback to perform the
+     * {@link Content#copy(Content.Source, Content.Sink, Callback) copy}.</p>
      *
      * @param resource the resource to copy from.
      * @param sink the sink to copy to.
