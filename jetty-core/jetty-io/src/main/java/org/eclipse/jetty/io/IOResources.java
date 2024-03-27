@@ -25,7 +25,7 @@ import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -418,15 +418,7 @@ public class IOResources
         {
             if (retainableByteBuffer != null)
                 retainableByteBuffer.release();
-            try
-            {
-                channel.close();
-            }
-            catch (IOException e)
-            {
-                if (LOG.isTraceEnabled())
-                    LOG.trace("", e);
-            }
+            IO.close(channel);
             super.onCompleteSuccess();
         }
 
@@ -435,14 +427,7 @@ public class IOResources
         {
             if (retainableByteBuffer != null)
                 retainableByteBuffer.release();
-            try
-            {
-                channel.close();
-            }
-            catch (IOException e)
-            {
-                ExceptionUtil.addSuppressedIfNotAssociated(x, e);
-            }
+            IO.close(channel);
             super.onCompleteFailure(x);
         }
     }

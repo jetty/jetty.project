@@ -30,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Tag;
@@ -185,7 +186,7 @@ public class UrlResourceFactoryTest
 
         assertThat(resource.isDirectory(), is(false));
 
-        ByteBuffer buffer = toBuffer(resource);
+        ByteBuffer buffer = BufferUtil.toBuffer(resource, false);
         assertThat(buffer.remaining(), is(fileSize));
     }
 
@@ -208,7 +209,7 @@ public class UrlResourceFactoryTest
 
         assertThat(resource.isDirectory(), is(false));
 
-        ByteBuffer buffer = toBuffer(resource);
+        ByteBuffer buffer = BufferUtil.toBuffer(resource, false);
         assertThat(buffer.remaining(), is(fileSize));
     }
 
@@ -305,16 +306,6 @@ public class UrlResourceFactoryTest
                 totalRead += read;
             }
             return totalRead;
-        }
-    }
-
-    private static ByteBuffer toBuffer(Resource resource) throws IOException
-    {
-        try (InputStream is = resource.newInputStream())
-        {
-            byte[] buffer = new byte[Math.toIntExact(resource.length())];
-            is.read(buffer);
-            return ByteBuffer.wrap(buffer);
         }
     }
 }
