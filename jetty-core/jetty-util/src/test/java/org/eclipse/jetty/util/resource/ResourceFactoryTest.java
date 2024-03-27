@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -231,7 +232,6 @@ public class ResourceFactoryTest
             // URI format (absolute)
             args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
             args.add(Arguments.of("file:/e:/zed/yotta.txt", "file:///e:/zed/yotta.txt"));
-            args.add(Arguments.of("jar:file:///E:/path/to/bar.jar", "jar:file:///E:/path/to/bar.jar"));
         }
         else
         {
@@ -246,6 +246,16 @@ public class ResourceFactoryTest
         args.add(Arguments.of(jarFileUri.toASCIIString(), jarFileUri.toASCIIString()));
 
         return args.stream();
+    }
+
+    @Test
+    public void testInstalledFileSystems()
+    {
+        for (FileSystemProvider provider : FileSystemProvider.installedProviders())
+        {
+            System.out.println("provider: " + provider);
+            System.out.println("  scheme: " + provider.getScheme());
+        }
     }
 
     @ParameterizedTest

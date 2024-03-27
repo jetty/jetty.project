@@ -151,7 +151,9 @@ public class FileSystemPool implements Dumpable
     {
         String rawURI = uri.toASCIIString();
         int idx = rawURI.indexOf("!/");
-        return URI.create(rawURI.substring(0, idx + 2));
+        if (idx > 0)
+            return URI.create(rawURI.substring(0, idx + 2));
+        return uri;
     }
 
     private void unmount(URI fsUri)
