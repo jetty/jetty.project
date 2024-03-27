@@ -15,7 +15,6 @@ package org.eclipse.jetty.docs.programming.server.http2;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -302,7 +301,7 @@ public class HTTP2ServerDocs
     {
         // tag::push[]
         // The favicon bytes.
-        ByteBuffer faviconBuffer = BufferUtil.toMappedBuffer(Paths.get("/path/to/favicon.ico"));
+        ByteBuffer faviconBuffer = BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true);
 
         ServerSessionListener sessionListener = new ServerSessionListener()
         {

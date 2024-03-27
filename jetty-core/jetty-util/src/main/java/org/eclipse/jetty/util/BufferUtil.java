@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1090,6 +1091,30 @@ public class BufferUtil
         return ByteBuffer.wrap(array, offset, length);
     }
 
+    public static ByteBuffer toBuffer(Resource resource, boolean direct) throws IOException
+    {
+        if (!resource.exists() || resource.isDirectory())
+            throw new IllegalArgumentException("invalid resource: " + resource);
+        int len = (int)resource.length();
+        if (len < 0)
+            throw new IllegalArgumentException("invalid resource: " + resource + " len=" + len);
+
+        ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
+
+        int pos = BufferUtil.flipToFill(buffer);
+        try (ReadableByteChannel channel = resource.newReadableByteChannel())
+        {
+            long needed = len;
+            while (needed > 0 && buffer.hasRemaining())
+            {
+                needed = needed - channel.read(buffer);
+            }
+        }
+        BufferUtil.flipToFlush(buffer, pos);
+
+        return buffer;
+    }
+
     public static ByteBuffer toDirectBuffer(String s)
     {
         return toDirectBuffer(s, StandardCharsets.ISO_8859_1);
@@ -1117,6 +1142,22 @@ public class BufferUtil
         {
             return channel.map(MapMode.READ_ONLY, pos, len);
         }
+    }
+
+    public static ByteBuffer toMappedBuffer(Resource resource) throws IOException
+    {
+        Path path = resource.getPath();
+        if (path == null || !"file".equalsIgnoreCase(path.toUri().getScheme()))
+            return null;
+        return toMappedBuffer(path);
+    }
+
+    public static ByteBuffer toMappedBuffer(Resource resource, long pos, long len) throws IOException
+    {
+        Path path = resource.getPath();
+        if (path == null || !"file".equalsIgnoreCase(path.toUri().getScheme()))
+            return null;
+        return toMappedBuffer(path, pos, len);
     }
 
     public static String toSummaryString(ByteBuffer buffer)
