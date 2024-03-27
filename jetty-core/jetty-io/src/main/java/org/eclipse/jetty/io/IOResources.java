@@ -29,8 +29,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Common IO operations for {@link Resource} content.
@@ -352,8 +350,6 @@ public class IOResources
 
     private static class PathToSinkCopier extends IteratingNestedCallback
     {
-        private static final Logger LOG = LoggerFactory.getLogger(PathToSinkCopier.class);
-
         private final SeekableByteChannel channel;
         private final Content.Sink sink;
         private final ByteBufferPool pool;
