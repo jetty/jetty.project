@@ -55,6 +55,74 @@ public class IOResourcesTest
     }
 
     @Test
+    public void testAsContentSource() throws Exception
+    {
+        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Resource resource = ResourceFactory.root().newResource(resourcePath);
+
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false);
+        Content.copy(contentSource, sink, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(Files.size(resourcePath)));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
+    public void testAsContentSourceWithFirst() throws Exception
+    {
+        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Resource resource = ResourceFactory.root().newResource(resourcePath);
+
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, 100, -1);
+        Content.copy(contentSource, sink, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(Files.size(resourcePath) - 100L));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
+    public void testAsContentSourceWithLength() throws Exception
+    {
+        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Resource resource = ResourceFactory.root().newResource(resourcePath);
+
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, -1, 500);
+        Content.copy(contentSource, sink, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(500L));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
+    public void testAsContentSourceWithFirstAndLength() throws Exception
+    {
+        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Resource resource = ResourceFactory.root().newResource(resourcePath);
+
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, 100, 500);
+        Content.copy(contentSource, sink, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(500L));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @Test
     public void testCopy() throws Exception
     {
         Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");

@@ -454,7 +454,8 @@ public class IOResources
         protected SeekableByteChannel open() throws IOException
         {
             SeekableByteChannel channel = super.open();
-            channel.position(first);
+            if (first > -1)
+                channel.position(first);
             toRead = length;
             return channel;
         }
@@ -467,8 +468,11 @@ public class IOResources
                 return read;
 
             read = (int)Math.min(read, toRead);
-            toRead -= read;
-            byteBuffer.position(read);
+            if (read > -1)
+            {
+                toRead -= read;
+                byteBuffer.position(read);
+            }
             return read;
         }
 
