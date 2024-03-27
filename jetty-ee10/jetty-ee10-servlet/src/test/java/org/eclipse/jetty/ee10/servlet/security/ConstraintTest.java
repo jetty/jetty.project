@@ -61,7 +61,6 @@ import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1051,7 +1050,6 @@ public class ConstraintTest
     }
 
     @Test
-    @Disabled("Dispatch unsupported")
     public void testFormDispatch() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", true));
@@ -1680,7 +1678,6 @@ public class ConstraintTest
     }
 
     @Test
-    @Disabled("Dispatch unsupported")
     public void testStrictFormDispatch()
         throws Exception
     {

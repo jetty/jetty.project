@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.servlet;
+package org.eclipse.jetty.ee9.nested;
 
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
@@ -29,37 +29,37 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.ByteBufferInputStream;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
  * All write operations are internally converted to blocking writes on the servlet API.
  */
-public class ServletCoreResponse implements Response
+public class ServletCoreResponse implements org.eclipse.jetty.server.Response
 {
-    public Response wrap(Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
+    public static org.eclipse.jetty.server.Response wrap(org.eclipse.jetty.server.Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
     {
-        return new ServletCoreResponse(coreRequest, httpServletResponse, included);
+        Response baseResponse = Objects.requireNonNull(Response.getBaseResponse(httpServletResponse));
+        return new ServletCoreResponse(coreRequest, httpServletResponse, baseResponse, baseResponse.getHttpChannel().getCoreResponse(), included);
     }
 
     private final HttpServletResponse _httpServletResponse;
-    private final Request _coreRequest;
+    private final org.eclipse.jetty.server.Request _coreRequest;
     private final HttpFields.Mutable _httpFields;
     private final boolean _included;
-    private final ServletContextResponse _servletContextResponse;
+    private final Response _baseResponse;
+    private final org.eclipse.jetty.server.Response _coreResponse;
     private final boolean _wrapped;
 
-    ServletCoreResponse(Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
+    ServletCoreResponse(org.eclipse.jetty.server.Request coreRequest, HttpServletResponse httpServletResponse, Response baseResponse, org.eclipse.jetty.server.Response coreResponse, boolean included)
     {
         _coreRequest = coreRequest;
         _httpServletResponse = httpServletResponse;
-        _servletContextResponse = ServletContextResponse.getServletContextResponse(httpServletResponse);
-        _wrapped = !(httpServletResponse instanceof ServletApiResponse);
+        _baseResponse = baseResponse;
+        _coreResponse = coreResponse;
+        _wrapped = !(httpServletResponse instanceof Response);
         HttpFields.Mutable fields = new HttpServletResponseHttpFields(httpServletResponse);
         if (included)
         {
@@ -69,11 +69,12 @@ public class ServletCoreResponse implements Response
                 @Override
                 public HttpField onAddField(HttpField field)
                 {
+                    /* TODO
                     String name = field == null ? null : field.getName();
                     if (!StringUtil.isBlank(name) && name.startsWith(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX))
                     {
                         return new HttpField(name.substring(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX.length()), field.getValue());
-                    }
+                    }*/
 
                     return null;
                 }
@@ -109,13 +110,13 @@ public class ServletCoreResponse implements Response
     @Override
     public boolean hasLastWrite()
     {
-        return _servletContextResponse.hasLastWrite();
+        return _coreResponse.hasLastWrite();
     }
 
     @Override
     public boolean isCompletedSuccessfully()
     {
-        return _servletContextResponse.isCompletedSuccessfully();
+        return _coreResponse.isCompletedSuccessfully();
     }
 
     @Override
@@ -126,7 +127,7 @@ public class ServletCoreResponse implements Response
 
     private boolean isWriting()
     {
-        return _servletContextResponse.isWriting();
+        return _baseResponse.isWriting();
     }
 
     @Override
@@ -136,9 +137,9 @@ public class ServletCoreResponse implements Response
             last = false;
         try
         {
-            if (!_wrapped && !_servletContextResponse.isWritingOrStreaming())
+            if (!_wrapped && !_baseResponse.isWritingOrStreaming())
             {
-                _servletContextResponse.write(last, byteBuffer, callback);
+                _coreResponse.write(last, byteBuffer, callback);
             }
             else
             {
@@ -174,7 +175,7 @@ public class ServletCoreResponse implements Response
     }
 
     @Override
-    public Request getRequest()
+    public org.eclipse.jetty.server.Request getRequest()
     {
         return _coreRequest;
     }
@@ -213,7 +214,7 @@ public class ServletCoreResponse implements Response
     @Override
     public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
     {
-        return _servletContextResponse.writeInterim(status, headers);
+        return _coreResponse.writeInterim(status, headers);
     }
 
     @Override
