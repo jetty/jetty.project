@@ -1219,40 +1219,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     /**
-     * Asynchronous send of whole resource.
-     *
-     * @param resource The resource content to send
-     * @param callback The callback to use to notify success or failure
-     * @throws IOException if the send fails
-     */
-    public void sendContent(Resource resource, Callback callback) throws IOException
-    {
-        if (prepareSendContent(0, callback))
-            IOResources.copy(resource,
-                (last, byteBuffer, cb) ->
-                {
-                    _written += byteBuffer.remaining();
-                    channelWrite(byteBuffer, last, cb);
-                }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
-                new Callback.Nested(callback)
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        onWriteComplete(true, null);
-                        super.succeeded();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        onWriteComplete(true, x);
-                        super.failed(x);
-                    }
-                });
-    }
-
-    /**
      * Asynchronous send of whole content.
      *
      * @param content The whole content to send
@@ -1264,23 +1230,24 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.debug("sendContent(buffer={},{})", BufferUtil.toDetailString(content), callback);
 
         if (prepareSendContent(content.remaining(), callback))
-            channelWrite(content, true,
-                new Callback.Nested(callback)
+        {
+            channelWrite(content, true, new Callback.Nested(callback)
+            {
+                @Override
+                public void succeeded()
                 {
-                    @Override
-                    public void succeeded()
-                    {
-                        onWriteComplete(true, null);
-                        super.succeeded();
-                    }
+                    onWriteComplete(true, null);
+                    super.succeeded();
+                }
 
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        onWriteComplete(true, x);
-                        super.failed(x);
-                    }
-                });
+                @Override
+                public void failed(Throwable x)
+                {
+                    onWriteComplete(true, x);
+                    super.failed(x);
+                }
+            });
+        }
     }
 
     /**
@@ -1313,6 +1280,67 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (prepareSendContent(0, callback))
             new ReadableByteChannelWritingCB(in, callback).iterate();
+    }
+
+    /**
+     * Asynchronous send of whole resource.
+     *
+     * @param resource The resource content to send
+     * @param callback The callback to use to notify success or failure
+     */
+    public void sendContent(Resource resource, Callback callback)
+    {
+        try
+        {
+            if (prepareSendContent(0, callback))
+            {
+                IOResources.copy(resource, (last, byteBuffer, cb) ->
+                {
+                    _written += byteBuffer.remaining();
+                    channelWrite(byteBuffer, last, cb);
+                }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(), new Callback.Nested(callback)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        onWriteComplete(true, null);
+                        super.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        onWriteComplete(true, x);
+                        super.failed(x);
+                    }
+                });
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to send resource {}", resource, x);
+            _channel.abort(x);
+            callback.failed(x);
+        }
+    }
+
+    /**
+     * Asynchronous send of HTTP content.
+     *
+     * @param httpContent The HTTP content to send
+     * @param callback The callback to use to notify success or failure
+     */
+    public void sendContent(HttpContent httpContent, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendContent(http={},{})", httpContent, callback);
+
+        ByteBuffer buffer = httpContent.getByteBuffer();
+        if (buffer != null)
+            sendContent(buffer, callback);
+        else
+            sendContent(httpContent.getResource(), callback);
     }
 
     private boolean prepareSendContent(int len, Callback callback)
@@ -1354,44 +1382,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (len > 0)
                 _written += len;
             return true;
-        }
-    }
-
-    /**
-     * Asynchronous send of HTTP content.
-     *
-     * @param httpContent The HTTP content to send
-     * @param callback The callback to use to notify success or failure
-     */
-    public void sendContent(HttpContent httpContent, Callback callback)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("sendContent(http={},{})", httpContent, callback);
-
-        ByteBuffer buffer = httpContent.getByteBuffer();
-        if (buffer != null)
-        {
-            sendContent(buffer, callback);
-            return;
-        }
-
-        try
-        {
-            if (prepareSendContent(0, callback))
-                IOResources.copy(httpContent.getResource(),
-                    (last, byteBuffer, cb) ->
-                    {
-                        _written += byteBuffer.remaining();
-                        channelWrite(byteBuffer, last, cb);
-                    }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(),
-                    callback);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to access ReadableByteChannel for content {}", httpContent, x);
-            _channel.abort(x);
-            callback.failed(x);
         }
     }
 
