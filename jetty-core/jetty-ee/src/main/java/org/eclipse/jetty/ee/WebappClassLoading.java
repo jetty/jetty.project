@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.component.Environment;
  * can be directly access to configure a specific context.
  * </p>
  */
-public class WebappClassLoading
+public class WebAppClassLoading
 {
     public static final String PROTECTED_CLASSES_ATTRIBUTE = "org.eclipse.jetty.webapp.systemClasses";
     public static final String HIDDEN_CLASSES_ATTRIBUTE = "org.eclipse.jetty.webapp.serverClasses";
