@@ -101,8 +101,8 @@ public class WebAppDefaultServletTest
             Arguments.of("/other.html", new String[]{"HTTP/1.1 200 ", "<h1>other resource</h1>"}),
 
             // The ContextHandler will filter these ones out as as WEB-INF is a protected target.
-            Arguments.of("/WEB-INF/one.js#/", new String[]{"HTTP/1.1 404 "}),
-            Arguments.of("/js/../WEB-INF/one.js#/", new String[]{"HTTP/1.1 404 "}),
+            Arguments.of("/WEB-INF/one.js;/", new String[]{"HTTP/1.1 404 "}),
+            Arguments.of("/js/../WEB-INF/one.js;/", new String[]{"HTTP/1.1 404 "}),
 
             // Test the URI is not double decoded by the dispatcher that serves the welcome file (we get index.html not one.js).
             Arguments.of("/%2557EB-INF/one.js%23/", new String[]{"HTTP/1.1 200 ", "this content does not matter"})

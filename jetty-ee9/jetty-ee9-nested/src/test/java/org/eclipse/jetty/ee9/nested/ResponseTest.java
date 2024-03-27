@@ -1742,81 +1742,76 @@ public class ResponseTest
         }
     }
 
-    @Test
-    public void testSendRedirectRelative()
-        throws Exception
+    public static Stream<Arguments> redirectRelativeCases()
     {
-        String[][] tests = {
-            // No cookie
-            {
-                "http://myhost:8888/other/location;jsessionid=12345?name=value",
-                "http://myhost:8888/other/location;jsessionid=12345?name=value"
-            },
-            {"/other/location;jsessionid=12345?name=value", "/other/location;jsessionid=12345?name=value"},
-            {"./location;jsessionid=12345?name=value", "/path/location;jsessionid=12345?name=value"},
+        List<Arguments> cases = new ArrayList<>();
 
-            // From cookie
-            {"/other/location", "/other/location"},
-            {"/other/l%20cation", "/other/l%20cation"},
-            {"location", "/path/location"},
-            {"./location", "/path/location"},
-            {"../location", "/location"},
-            {"/other/l%20cation", "/other/l%20cation"},
-            {"l%20cation", "/path/l%20cation"},
-            {"./l%20cation", "/path/l%20cation"},
-            {"../l%20cation", "/l%20cation"},
-            {"../locati%C3%abn", "/locati%C3%abn"},
-            {"../other%2fplace", "/other%2fplace"},
-            {"http://somehost.com/other/location", "http://somehost.com/other/location"},
-        };
+        int[] ports = {8080, 80};
+        String[] hosts = {null, "myhost", "192.168.0.1", "[0::1]"};
 
-        int[] ports = new int[]{8080, 80};
-        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "[0::1]"};
-        for (int port : ports)
+        for (String host: hosts)
         {
-            for (String host : hosts)
+            for (int port: ports)
             {
-                for (int i = 0; i < tests.length; i++)
-                {
-                    // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
+                // No cookie
+                cases.add(Arguments.of(host, port, "http://myhost:8888/other/location;jsessionid=12345?name=value",
+                    "http://myhost:8888/other/location;jsessionid=12345?name=value", false));
+                cases.add(Arguments.of(host, port, "/other/location;jsessionid=12345?name=value", "/other/location;jsessionid=12345?name=value", false));
+                cases.add(Arguments.of(host, port, "./location;jsessionid=12345?name=value", "/path/location;jsessionid=12345?name=value", false));
 
-                    Response response = getResponse();
-                    Request request = response.getHttpChannel().getRequest();
-                    request.getHttpChannel().getHttpConfiguration().setRelativeRedirectAllowed(true);
-
-                    HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
-                    uri.scheme("http");
-                    if (host != null)
-                        uri.authority(host, port);
-                    uri.pathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
-                    request.setHttpURI(uri);
-                    request.setContext(_context._apiContext, "/info");
-
-                    ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
-                    coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", i > 2));
-                    SessionHandler handler = new SessionHandler();
-
-                    NullSessionDataStore dataStore = new NullSessionDataStore();
-                    DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
-                    handler.getSessionManager().setSessionCache(sessionCache);
-                    sessionCache.setSessionDataStore(dataStore);
-                    DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
-                    sessionIdManager.setWorkerName(null);
-                    handler.getSessionManager().setSessionIdManager(sessionIdManager);
-                    coreRequest.setSessionManager(handler.getSessionManager());
-                    handler.setCheckingRemoteSessionIdEncoding(false);
-
-                    response.sendRedirect(tests[i][0]);
-
-                    String location = response.getHeader("Location");
-
-                    String expected = tests[i][1]
-                        .replace("@HOST@", host == null ? request.getLocalAddr() : host)
-                        .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
-                    assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
-                }
+                    // From cookie
+                cases.add(Arguments.of(host, port, "/other/location", "/other/location", true));
+                cases.add(Arguments.of(host, port, "/other/l%20cation", "/other/l%20cation", true));
+                cases.add(Arguments.of(host, port, "location", "/path/location", true));
+                cases.add(Arguments.of(host, port, "./location", "/path/location", true));
+                cases.add(Arguments.of(host, port, "../location", "/location", true));
+                cases.add(Arguments.of(host, port, "/other/l%20cation", "/other/l%20cation", true));
+                cases.add(Arguments.of(host, port, "l%20cation", "/path/l%20cation", true));
+                cases.add(Arguments.of(host, port, "./l%20cation", "/path/l%20cation", true));
+                cases.add(Arguments.of(host, port, "../l%20cation", "/l%20cation", true));
+                cases.add(Arguments.of(host, port, "../locati%C3%abn", "/locati%C3%abn", true));
+                cases.add(Arguments.of(host, port, "../other%2fplace", "/other%2fplace", true));
+                cases.add(Arguments.of(host, port, "http://somehost.com/other/location", "http://somehost.com/other/location", true));
             }
         }
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("redirectRelativeCases")
+    public void testSendRedirectRelative(String host, int port, String sendRedirect, String expected, boolean sessionIdFromCookie)
+        throws Exception
+    {
+        Response response = getResponse();
+        Request request = response.getHttpChannel().getRequest();
+        request.getHttpChannel().getHttpConfiguration().setRelativeRedirectAllowed(true);
+
+        HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
+        uri.scheme("http");
+        if (host != null)
+            uri.authority(host, port);
+        uri.pathQuery("/path/info;param;jsessionid=12345?query=0&more=1");
+        request.setHttpURI(uri);
+        request.setContext(_context._apiContext, "/info");
+
+        ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+        coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", sessionIdFromCookie));
+        SessionHandler handler = new SessionHandler();
+
+        NullSessionDataStore dataStore = new NullSessionDataStore();
+        DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
+        handler.getSessionManager().setSessionCache(sessionCache);
+        sessionCache.setSessionDataStore(dataStore);
+        DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
+        sessionIdManager.setWorkerName(null);
+        handler.getSessionManager().setSessionIdManager(sessionIdManager);
+        coreRequest.setSessionManager(handler.getSessionManager());
+        handler.setCheckingRemoteSessionIdEncoding(false);
+
+        response.sendRedirect(sendRedirect);
+        String location = response.getHeader("Location");
+        assertEquals(expected, location);
     }
 
     @Test
