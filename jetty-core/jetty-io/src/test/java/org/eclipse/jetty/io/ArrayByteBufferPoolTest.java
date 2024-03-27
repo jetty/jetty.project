@@ -81,7 +81,7 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
-        RetainableByteBuffer buf1 = pool.acquire(1, true);
+        RetainableByteBuffer.Mutable buf1 = pool.acquire(1, true);
         assertThat(buf1.capacity(), is(1));
         assertThat(pool.getDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
@@ -96,7 +96,7 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
-        RetainableByteBuffer buf1 = pool.acquire(21, true);
+        RetainableByteBuffer.Mutable buf1 = pool.acquire(21, true);
         assertThat(buf1.capacity(), is(21));
         assertThat(pool.getDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
@@ -111,7 +111,7 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
-        RetainableByteBuffer buf1 = pool.acquire(10, true);
+        RetainableByteBuffer.Mutable buf1 = pool.acquire(10, true);
 
         assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
@@ -146,7 +146,7 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
-        RetainableByteBuffer buf1 = pool.acquire(10, true);
+        RetainableByteBuffer.Mutable buf1 = pool.acquire(10, true);
 
         assertThat(pool.getDirectMemory(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
@@ -173,11 +173,11 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 20, 2);
 
-        RetainableByteBuffer buf1 = pool.acquire(1, true);
+        RetainableByteBuffer.Mutable buf1 = pool.acquire(1, true);
         assertThat(buf1.capacity(), is(10));
-        RetainableByteBuffer buf2 = pool.acquire(1, true);
+        RetainableByteBuffer.Mutable buf2 = pool.acquire(1, true);
         assertThat(buf2.capacity(), is(10));
-        RetainableByteBuffer buf3 = pool.acquire(1, true);
+        RetainableByteBuffer.Mutable buf3 = pool.acquire(1, true);
         assertThat(buf3.capacity(), is(10));
 
         assertThat(pool.getDirectByteBufferCount(), is(0L));
@@ -190,11 +190,11 @@ public class ArrayByteBufferPoolTest
         assertTrue(buf3.release()); // not pooled, bucket is full.
         assertThat(pool.getDirectByteBufferCount(), is(2L));
 
-        RetainableByteBuffer buf4 = pool.acquire(11, true);
+        RetainableByteBuffer.Mutable buf4 = pool.acquire(11, true);
         assertThat(buf4.capacity(), is(20));
-        RetainableByteBuffer buf5 = pool.acquire(11, true);
+        RetainableByteBuffer.Mutable buf5 = pool.acquire(11, true);
         assertThat(buf5.capacity(), is(20));
-        RetainableByteBuffer buf6 = pool.acquire(11, true);
+        RetainableByteBuffer.Mutable buf6 = pool.acquire(11, true);
         assertThat(buf6.capacity(), is(20));
 
         assertThat(pool.getDirectByteBufferCount(), is(2L));
@@ -238,10 +238,10 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(10, 10, 20, Integer.MAX_VALUE);
 
-        RetainableByteBuffer buf1 = pool.acquire(1, true);
-        RetainableByteBuffer buf2 = pool.acquire(10, true);
-        RetainableByteBuffer buf3 = pool.acquire(20, true);
-        RetainableByteBuffer buf4 = pool.acquire(30, true);
+        RetainableByteBuffer.Mutable buf1 = pool.acquire(1, true);
+        RetainableByteBuffer.Mutable buf2 = pool.acquire(10, true);
+        RetainableByteBuffer.Mutable buf3 = pool.acquire(20, true);
+        RetainableByteBuffer.Mutable buf4 = pool.acquire(30, true);
 
         assertThat(pool.getDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
@@ -264,8 +264,8 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool();
 
-        RetainableByteBuffer buffer1 = pool.acquire(10, true);
-        RetainableByteBuffer buffer2 = pool.acquire(10, true);
+        RetainableByteBuffer.Mutable buffer1 = pool.acquire(10, true);
+        RetainableByteBuffer.Mutable buffer2 = pool.acquire(10, true);
 
         assertThat(pool.getDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
@@ -291,7 +291,7 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool();
 
-        RetainableByteBuffer buf1 = pool.acquire(10, true);
+        RetainableByteBuffer.Mutable buf1 = pool.acquire(10, true);
 
         assertThat(pool.getDirectByteBufferCount(), is(0L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
@@ -303,7 +303,7 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getAvailableDirectByteBufferCount(), is(1L));
 
         // Check that the buffer is still available.
-        RetainableByteBuffer buf2 = pool.acquire(10, true);
+        RetainableByteBuffer.Mutable buf2 = pool.acquire(10, true);
         assertThat(pool.getDirectByteBufferCount(), is(1L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         // The ByteBuffer is re-wrapped by a different RetainableByteBuffer upon the first release.
@@ -314,7 +314,7 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getDirectByteBufferCount(), is(1L));
         assertThat(pool.getAvailableDirectByteBufferCount(), is(1L));
 
-        RetainableByteBuffer buf3 = pool.acquire(10, true);
+        RetainableByteBuffer.Mutable buf3 = pool.acquire(10, true);
         assertThat(buf3, sameInstance(buf2));
         assertThat(buf3.release(), is(true));
     }
@@ -326,26 +326,26 @@ public class ArrayByteBufferPoolTest
 
         for (int i = 0; i < 3; i++)
         {
-            RetainableByteBuffer buf1 = pool.acquire(10, true);
+            RetainableByteBuffer.Mutable buf1 = pool.acquire(10, true);
             assertThat(buf1, is(notNullValue()));
             assertThat(buf1.capacity(), is(ArrayByteBufferPool.DEFAULT_FACTOR));
-            RetainableByteBuffer buf2 = pool.acquire(10, true);
+            RetainableByteBuffer.Mutable buf2 = pool.acquire(10, true);
             assertThat(buf2, is(notNullValue()));
             assertThat(buf2.capacity(), is(ArrayByteBufferPool.DEFAULT_FACTOR));
             buf1.release();
             buf2.release();
 
-            RetainableByteBuffer buf3 = pool.acquire(16384 + 1, true);
+            RetainableByteBuffer.Mutable buf3 = pool.acquire(16384 + 1, true);
             assertThat(buf3, is(notNullValue()));
             assertThat(buf3.capacity(), is(16384 + ArrayByteBufferPool.DEFAULT_FACTOR));
             buf3.release();
 
-            RetainableByteBuffer buf4 = pool.acquire(32768, true);
+            RetainableByteBuffer.Mutable buf4 = pool.acquire(32768, true);
             assertThat(buf4, is(notNullValue()));
             assertThat(buf4.capacity(), is(32768));
             buf4.release();
 
-            RetainableByteBuffer buf5 = pool.acquire(32768, false);
+            RetainableByteBuffer.Mutable buf5 = pool.acquire(32768, false);
             assertThat(buf5, is(notNullValue()));
             assertThat(buf5.capacity(), is(32768));
             buf5.release();
@@ -369,27 +369,27 @@ public class ArrayByteBufferPoolTest
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic();
 
-        RetainableByteBuffer retain5 = pool.acquire(5, false);
+        RetainableByteBuffer.Mutable retain5 = pool.acquire(5, false);
         retain5.release();
-        RetainableByteBuffer retain6 = pool.acquire(6, false);
+        RetainableByteBuffer.Mutable retain6 = pool.acquire(6, false);
         assertThat(retain6, not(sameInstance(retain5)));
         assertThat(retain6.getByteBuffer(), sameInstance(retain5.getByteBuffer()));
         retain6.release();
-        RetainableByteBuffer retain9 = pool.acquire(9, false);
+        RetainableByteBuffer.Mutable retain9 = pool.acquire(9, false);
         assertThat(retain9, not(sameInstance(retain5)));
         retain9.release();
 
         assertThat(pool.acquire(1, false).capacity(), is(1));
         assertThat(pool.acquire(2, false).capacity(), is(2));
-        RetainableByteBuffer b3 = pool.acquire(3, false);
+        RetainableByteBuffer.Mutable b3 = pool.acquire(3, false);
         assertThat(b3.capacity(), is(4));
-        RetainableByteBuffer b4 = pool.acquire(4, false);
+        RetainableByteBuffer.Mutable b4 = pool.acquire(4, false);
         assertThat(b4.capacity(), is(4));
 
         int capacity = 4;
         while (true)
         {
-            RetainableByteBuffer b = pool.acquire(capacity - 1, false);
+            RetainableByteBuffer.Mutable b = pool.acquire(capacity - 1, false);
             assertThat(b.capacity(), Matchers.is(capacity));
             b = pool.acquire(capacity, false);
             assertThat(b.capacity(), Matchers.is(capacity));
@@ -438,9 +438,9 @@ public class ArrayByteBufferPoolTest
         Collections.reverse(buffers);
         buffers.forEach(RetainableByteBuffer::release);
 
-        Pool<RetainableByteBuffer> bucketPool = pool.poolFor(maxCapacity, true);
+        Pool<RetainableByteBuffer.Mutable> bucketPool = pool.poolFor(maxCapacity, true);
         assertThat(bucketPool, instanceOf(CompoundPool.class));
-        CompoundPool<RetainableByteBuffer> compoundPool = (CompoundPool<RetainableByteBuffer>)bucketPool;
+        CompoundPool<RetainableByteBuffer.Mutable> compoundPool = (CompoundPool<RetainableByteBuffer.Mutable>)bucketPool;
         assertThat(compoundPool.getPrimaryPool().size(), is(ConcurrentPool.OPTIMAL_MAX_SIZE));
         assertThat(compoundPool.getSecondaryPool().size(), is(0));
     }

@@ -119,7 +119,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private final boolean _encryptedDirectBuffers;
     private final boolean _decryptedDirectBuffers;
     private RetainableByteBuffer _decryptedInput;
-    private RetainableByteBuffer _encryptedInput;
+    private RetainableByteBuffer.Mutable _encryptedInput;
     private RetainableByteBuffer _encryptedOutput;
     private boolean _renegotiationAllowed;
     private int _renegotiationLimit = -1;

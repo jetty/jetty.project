@@ -55,7 +55,7 @@ public class Parser
     private int cursor;
     private byte[] mask;
     private int payloadLength;
-    private RetainableByteBuffer aggregate;
+    private RetainableByteBuffer.Mutable aggregate;
 
     public Parser(ByteBufferPool bufferPool)
     {

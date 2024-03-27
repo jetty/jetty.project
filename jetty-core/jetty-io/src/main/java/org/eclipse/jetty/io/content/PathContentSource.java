@@ -128,8 +128,8 @@ public class PathContentSource implements Content.Source
         if (!channel.isOpen())
             return Content.Chunk.EOF;
 
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
-        ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
+        RetainableByteBuffer buffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
 
         int read;
         try
@@ -140,7 +140,7 @@ public class PathContentSource implements Content.Source
         }
         catch (Throwable x)
         {
-            retainableByteBuffer.release();
+            buffer.release();
             return failure(x);
         }
 
@@ -151,7 +151,7 @@ public class PathContentSource implements Content.Source
         if (last)
             IO.close(channel);
 
-        return Content.Chunk.asChunk(byteBuffer, last, retainableByteBuffer);
+        return Content.Chunk.asChunk(byteBuffer, last, buffer);
     }
 
     protected SeekableByteChannel open() throws IOException

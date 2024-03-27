@@ -19,7 +19,7 @@ import java.util.Objects;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
- * <p>Abstract implementation of {@link RetainableByteBuffer} with
+ * <p>Abstract implementation of {@link RetainableByteBuffer.Mutable} with
  * reference counting.</p>
  */
 public abstract class AbstractRetainableByteBuffer implements RetainableByteBuffer
@@ -74,5 +74,13 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
     public String toString()
     {
         return "%s@%x[rc=%d,%s]".formatted(getClass().getSimpleName(), hashCode(), refCount.get(), BufferUtil.toDetailString(byteBuffer));
+    }
+
+    public abstract static class Mutable extends AbstractRetainableByteBuffer implements RetainableByteBuffer.Mutable
+    {
+        public Mutable(ByteBuffer byteBuffer)
+        {
+            super(byteBuffer);
+        }
     }
 }

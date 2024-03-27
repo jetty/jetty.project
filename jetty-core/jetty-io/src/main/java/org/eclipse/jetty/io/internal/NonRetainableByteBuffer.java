@@ -37,4 +37,12 @@ public class NonRetainableByteBuffer implements RetainableByteBuffer
     {
         return byteBuffer;
     }
+
+    public static class Mutable extends NonRetainableByteBuffer implements RetainableByteBuffer.Mutable
+    {
+        public Mutable(ByteBuffer byteBuffer)
+        {
+            super(byteBuffer);
+        }
+    }
 }

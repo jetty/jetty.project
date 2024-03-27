@@ -48,7 +48,7 @@ public class BufferedContentSink implements Content.Sink
     private final boolean _direct;
     private final int _maxBufferSize;
     private final int _maxAggregationSize;
-    private RetainableByteBuffer _aggregator;
+    private RetainableByteBuffer.Mutable _aggregator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
@@ -102,7 +102,7 @@ public class BufferedContentSink implements Content.Sink
         {
             // current buffer can be aggregated
             if (_aggregator == null)
-                _aggregator = new RetainableByteBuffer.Aggregator(_bufferPool, _direct, _maxBufferSize);
+                _aggregator = new RetainableByteBuffer.Mutable.Aggregator(_bufferPool, _direct, _maxBufferSize);
             aggregate(last, current, callback);
             return;
         }

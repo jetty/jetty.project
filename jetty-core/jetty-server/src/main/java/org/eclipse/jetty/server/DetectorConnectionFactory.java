@@ -140,7 +140,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
     private class DetectorConnection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
     {
         private final Connector _connector;
-        private final RetainableByteBuffer _buffer;
+        private final RetainableByteBuffer.Mutable _buffer;
 
         private DetectorConnection(EndPoint endp, Connector connector)
         {

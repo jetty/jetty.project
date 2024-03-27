@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * {@link ScheduledExecutorScheduler} instance.
  * </li>
  * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release
- * {@link RetainableByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool}
+ * {@link RetainableByteBuffer.Mutable} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool}
  * instance.
  * </li>
  * </ul>

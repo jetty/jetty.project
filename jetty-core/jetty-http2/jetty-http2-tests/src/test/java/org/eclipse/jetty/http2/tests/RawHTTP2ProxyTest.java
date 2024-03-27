@@ -242,7 +242,7 @@ public class RawHTTP2ProxyTest
         CountDownLatch latch1 = new CountDownLatch(1);
         Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener()
         {
-            private final RetainableByteBuffer.Aggregator aggregator = new RetainableByteBuffer.Aggregator(client.getByteBufferPool(), true, data1.length * 2);
+            private final RetainableByteBuffer.Mutable.Aggregator aggregator = new RetainableByteBuffer.Mutable.Aggregator(client.getByteBufferPool(), true, data1.length * 2);
 
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

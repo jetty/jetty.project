@@ -1014,7 +1014,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             encoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
         }
         ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
-        RetainableByteBuffer out = pool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
+        RetainableByteBuffer.Mutable out = pool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         try
         {
             CharBuffer in = CharBuffer.wrap(s);
@@ -1050,7 +1050,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (result.isOverflow())
                 {
                     BufferUtil.flipToFlush(byteBuffer, 0);
-                    RetainableByteBuffer bigger = pool.acquire(out.capacity() + s.length() + 2, out.isDirect());
+                    RetainableByteBuffer.Mutable bigger = pool.acquire(out.capacity() + s.length() + 2, out.isDirect());
                     BufferUtil.flipToFill(bigger.getByteBuffer());
                     bigger.getByteBuffer().put(byteBuffer);
                     out.release();

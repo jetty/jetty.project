@@ -1082,7 +1082,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             encoder.reset();
         }
 
-        RetainableByteBuffer out = getHttpChannel().getByteBufferPool().acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
+        RetainableByteBuffer.Mutable out = getHttpChannel().getByteBufferPool().acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         try
         {
             CharBuffer in = CharBuffer.wrap(s);
@@ -1118,7 +1118,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (result.isOverflow())
                 {
                     BufferUtil.flipToFlush(byteBuffer, 0);
-                    RetainableByteBuffer bigger = _channel.getByteBufferPool().acquire(out.capacity() + s.length() + 2, out.isDirect());
+                    RetainableByteBuffer.Mutable bigger = _channel.getByteBufferPool().acquire(out.capacity() + s.length() + 2, out.isDirect());
                     BufferUtil.flipToFill(bigger.getByteBuffer());
                     bigger.getByteBuffer().put(byteBuffer);
                     out.release();

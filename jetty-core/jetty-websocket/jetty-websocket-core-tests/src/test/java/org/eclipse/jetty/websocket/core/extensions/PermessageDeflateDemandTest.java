@@ -125,13 +125,13 @@ public class PermessageDeflateDemandTest
         public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
         public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
         private StringBuilder _stringBuilder = new StringBuilder();
-        private RetainableByteBuffer.Accumulator _byteBuilder;
+        private RetainableByteBuffer.Mutable.Accumulator _byteBuilder;
 
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
         {
             _coreSession = coreSession;
-            _byteBuilder = new RetainableByteBuffer.Accumulator(_coreSession.getByteBufferPool(), false, -1);
+            _byteBuilder = new RetainableByteBuffer.Mutable.Accumulator(_coreSession.getByteBufferPool(), false, -1);
             callback.succeeded();
             coreSession.demand();
         }

@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
  *
  * The method {@link #ensureBuffer(int, int)} is used to write directly to the last buffer stored in the buffer list,
  * if there is less than a certain amount of space available in that buffer then a new one will be allocated and returned instead.
- * @deprecated use {@link RetainableByteBuffer.Accumulator}
+ * @deprecated use {@link RetainableByteBuffer.Mutable.Accumulator}
  */
 @Deprecated(forRemoval = true)
 public class ByteBufferAccumulator implements AutoCloseable
@@ -107,7 +107,7 @@ public class ByteBufferAccumulator implements AutoCloseable
 
     /**
      * Take the combined buffer containing all content written to the accumulator.
-     * The caller is responsible for releasing this {@link RetainableByteBuffer}.
+     * The caller is responsible for releasing this {@link RetainableByteBuffer.Mutable}.
      * @return a buffer containing all content written to the accumulator.
      * @see #toRetainableByteBuffer()
      */

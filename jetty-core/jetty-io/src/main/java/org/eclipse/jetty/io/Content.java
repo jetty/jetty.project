@@ -221,7 +221,7 @@ public class Content
         }
 
         /**
-         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
+         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer.Mutable}.</p>
          *
          * @param source The {@link Content.Source} to read
          * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
@@ -246,7 +246,7 @@ public class Content
         }
 
         /**
-         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
+         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer.Mutable}.</p>
          *
          * @param source the source to read
          * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer

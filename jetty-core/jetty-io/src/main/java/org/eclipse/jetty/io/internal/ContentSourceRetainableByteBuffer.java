@@ -20,14 +20,14 @@ import org.eclipse.jetty.util.Promise;
 
 public class ContentSourceRetainableByteBuffer implements Runnable
 {
-    private final RetainableByteBuffer.Accumulator accumulator;
+    private final RetainableByteBuffer.Mutable.Accumulator accumulator;
     private final Content.Source source;
     private final Promise<RetainableByteBuffer> promise;
 
     public ContentSourceRetainableByteBuffer(Content.Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<RetainableByteBuffer> promise)
     {
         this.source = source;
-        this.accumulator = new RetainableByteBuffer.Accumulator(pool, direct, maxSize);
+        this.accumulator = new RetainableByteBuffer.Mutable.Accumulator(pool, direct, maxSize);
         this.promise = promise;
     }
 

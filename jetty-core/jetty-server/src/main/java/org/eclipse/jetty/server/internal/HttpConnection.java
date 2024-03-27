@@ -104,7 +104,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
     private final HttpFields.Mutable _headerBuilder = HttpFields.build();
-    private volatile RetainableByteBuffer _retainableByteBuffer;
+    private volatile RetainableByteBuffer.Mutable _retainableByteBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
     private long _requests;
@@ -356,7 +356,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
     }
 
-    private RetainableByteBuffer getRetainableRequestBuffer()
+    private RetainableByteBuffer.Mutable getRetainableRequestBuffer()
     {
         if (_retainableByteBuffer == null)
             _retainableByteBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
@@ -510,7 +510,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
         {
             // TODO this is almost certainly wrong
-            RetainableByteBuffer newBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            RetainableByteBuffer.Mutable newBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
                 LOG.debug("replace buffer {} <- {} in {}", _retainableByteBuffer, newBuffer, this);
             _retainableByteBuffer.release();
@@ -709,8 +709,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         private ByteBuffer _content;
         private boolean _lastContent;
         private Callback _callback;
-        private RetainableByteBuffer _header;
-        private RetainableByteBuffer _chunk;
+        private RetainableByteBuffer.Mutable _header;
+        private RetainableByteBuffer.Mutable _chunk;
         private boolean _shutdownOut;
 
         private SendCallback()

@@ -20,9 +20,9 @@ import java.util.List;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
- * <p>A pool for {@link RetainableByteBuffer} instances.</p>
- * <p>{@link RetainableByteBuffer} that are {@link #acquire(int, boolean) acquired}
- * <b>must</b> be released by calling {@link RetainableByteBuffer#release()}
+ * <p>A pool for {@link RetainableByteBuffer.Mutable} instances.</p>
+ * <p>{@link RetainableByteBuffer.Mutable} that are {@link #acquire(int, boolean) acquired}
+ * <b>must</b> be released by calling {@link RetainableByteBuffer.Mutable#release()}
  * otherwise the memory they hold will be leaked.</p>
  *
  * <p><b>API NOTE</b></p>
@@ -41,21 +41,21 @@ import org.eclipse.jetty.util.BufferUtil;
  * For this reason there is no {@code release(RetainableByteBuffer)} method.</p>
  * <p>Therefore, in order to track acquire/release counts both the pool and the
  * buffer returned by {@link #acquire(int, boolean)} must be wrapped, see
- * {@link RetainableByteBuffer.Wrapper}</p>
+ * {@link RetainableByteBuffer.Mutable.Wrapper}</p>
  */
 public interface ByteBufferPool
 {
     /**
-     * <p>Acquires a {@link RetainableByteBuffer} from this pool.</p>
+     * <p>Acquires a {@link RetainableByteBuffer.Mutable} from this pool.</p>
      *
      * @param size The size of the buffer. The returned buffer will have at least this capacity.
      * @param direct true if a direct memory buffer is needed, false otherwise.
-     * @return a {@link RetainableByteBuffer} with position and limit set to 0.
+     * @return a {@link RetainableByteBuffer.Mutable} with position and limit set to 0.
      */
-    RetainableByteBuffer acquire(int size, boolean direct);
+    RetainableByteBuffer.Mutable acquire(int size, boolean direct);
 
     /**
-     * <p>Removes all {@link RetainableByteBuffer#isRetained() non-retained}
+     * <p>Removes all {@link RetainableByteBuffer.Mutable#isRetained() non-retained}
      * pooled instances from this pool.</p>
      */
     void clear();
@@ -78,7 +78,7 @@ public interface ByteBufferPool
         }
 
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
             return getWrapped().acquire(size, direct);
         }
@@ -92,7 +92,7 @@ public interface ByteBufferPool
 
     /**
      * <p>A {@link ByteBufferPool} that does not pool its
-     * {@link RetainableByteBuffer}s.</p>
+     * {@link RetainableByteBuffer.Mutable}s.</p>
      * <p>The returned {@code RetainableByteBuffer}s are reference
      * counted.</p>
      * <p>{@code RetainableByteBuffer}s returned by this class
@@ -100,12 +100,12 @@ public interface ByteBufferPool
      * implementations that may delegate calls to
      * {@link Retainable#retain()}.</p>
      *
-     * @see RetainableByteBuffer#wrap(ByteBuffer)
+     * @see RetainableByteBuffer.Mutable#wrap(ByteBuffer)
      */
     class NonPooling implements ByteBufferPool
     {
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
             return new Buffer(BufferUtil.allocate(size, direct));
         }
@@ -115,7 +115,7 @@ public interface ByteBufferPool
         {
         }
 
-        private static class Buffer extends AbstractRetainableByteBuffer
+        private static class Buffer extends AbstractRetainableByteBuffer.Mutable
         {
             private Buffer(ByteBuffer byteBuffer)
             {
@@ -126,16 +126,16 @@ public interface ByteBufferPool
     }
 
     /**
-     * <p>Accumulates a sequence of {@link RetainableByteBuffer} that
+     * <p>Accumulates a sequence of {@link RetainableByteBuffer.Mutable} that
      * are typically created during the generation of protocol bytes.
      * The accumulated buffers are then used individually rather than
-     * as a single buffer (like {@link RetainableByteBuffer.Accumulator}.</p>
+     * as a single buffer (like {@link RetainableByteBuffer.Mutable.Accumulator}.</p>
      * <p>{@code RetainableByteBuffer}s can be either
      * {@link #append(RetainableByteBuffer) appended} to the sequence,
      * or {@link #insert(int, RetainableByteBuffer) inserted} at a
      * specific position in the sequence, and then
      * {@link #release() released} when they are consumed.</p>
-     * @see RetainableByteBuffer.Accumulator
+     * @see RetainableByteBuffer.Mutable.Accumulator
      */
     class Accumulator
     {

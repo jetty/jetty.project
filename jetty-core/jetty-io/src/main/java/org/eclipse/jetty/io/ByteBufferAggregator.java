@@ -36,7 +36,7 @@ public class ByteBufferAggregator
     private final ByteBufferPool _bufferPool;
     private final boolean _direct;
     private final int _maxSize;
-    private RetainableByteBuffer _retainableByteBuffer;
+    private RetainableByteBuffer _buffer;
     private int _aggregatedSize;
     private int _currentSize;
 
@@ -81,14 +81,14 @@ public class ByteBufferAggregator
     public boolean aggregate(ByteBuffer buffer)
     {
         tryExpandBufferCapacity(buffer.remaining());
-        if (_retainableByteBuffer == null)
+        if (_buffer == null)
         {
-            _retainableByteBuffer = _bufferPool.acquire(_currentSize, _direct);
-            BufferUtil.flipToFill(_retainableByteBuffer.getByteBuffer());
+            _buffer = _bufferPool.acquire(_currentSize, _direct);
+            BufferUtil.flipToFill(_buffer.getByteBuffer());
         }
         int copySize = Math.min(_currentSize - _aggregatedSize, buffer.remaining());
 
-        ByteBuffer byteBuffer = _retainableByteBuffer.getByteBuffer();
+        ByteBuffer byteBuffer = _buffer.getByteBuffer();
         byteBuffer.put(byteBuffer.position(), buffer, buffer.position(), copySize);
         byteBuffer.position(byteBuffer.position() + copySize);
         buffer.position(buffer.position() + copySize);
@@ -108,14 +108,14 @@ public class ByteBufferAggregator
         int need = remaining - capacityLeft;
         _currentSize = Math.min(_maxSize, TypeUtil.ceilToNextPowerOfTwo(_currentSize + need));
 
-        if (_retainableByteBuffer != null)
+        if (_buffer != null)
         {
-            BufferUtil.flipToFlush(_retainableByteBuffer.getByteBuffer(), 0);
+            BufferUtil.flipToFlush(_buffer.getByteBuffer(), 0);
             RetainableByteBuffer newBuffer = _bufferPool.acquire(_currentSize, _direct);
             BufferUtil.flipToFill(newBuffer.getByteBuffer());
-            newBuffer.getByteBuffer().put(_retainableByteBuffer.getByteBuffer());
-            _retainableByteBuffer.release();
-            _retainableByteBuffer = newBuffer;
+            newBuffer.getByteBuffer().put(_buffer.getByteBuffer());
+            _buffer.release();
+            _buffer = newBuffer;
         }
     }
 
@@ -127,11 +127,11 @@ public class ByteBufferAggregator
      */
     public RetainableByteBuffer takeRetainableByteBuffer()
     {
-        if (_retainableByteBuffer == null)
+        if (_buffer == null)
             return null;
-        BufferUtil.flipToFlush(_retainableByteBuffer.getByteBuffer(), 0);
-        RetainableByteBuffer result = _retainableByteBuffer;
-        _retainableByteBuffer = null;
+        BufferUtil.flipToFlush(_buffer.getByteBuffer(), 0);
+        RetainableByteBuffer result = _buffer;
+        _buffer = null;
         _aggregatedSize = 0;
         return result;
     }
@@ -139,6 +139,6 @@ public class ByteBufferAggregator
     @Override
     public String toString()
     {
-        return "%s@%x{a=%d c=%d m=%d b=%s}".formatted(getClass().getSimpleName(), hashCode(), _aggregatedSize, _currentSize, _maxSize, _retainableByteBuffer);
+        return "%s@%x{a=%d c=%d m=%d b=%s}".formatted(getClass().getSimpleName(), hashCode(), _aggregatedSize, _currentSize, _maxSize, _buffer);
     }
 }

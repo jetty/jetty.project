@@ -146,7 +146,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private final Connector _connector;
             private final ConnectionFactory _next;
-            private final RetainableByteBuffer _buffer;
+            private final RetainableByteBuffer.Mutable _buffer;
             private final StringBuilder _builder = new StringBuilder();
             private final String[] _fields = new String[6];
             private int _index;
@@ -457,7 +457,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private final Connector _connector;
             private final ConnectionFactory _next;
-            private final RetainableByteBuffer _buffer;
+            private final RetainableByteBuffer.Mutable _buffer;
             private boolean _local;
             private Family _family;
             private int _length;

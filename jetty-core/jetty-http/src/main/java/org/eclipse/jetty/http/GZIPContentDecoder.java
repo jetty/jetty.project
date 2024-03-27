@@ -73,8 +73,8 @@ public class GZIPContentDecoder implements Destroyable
 
     /**
      * <p>Inflates compressed data from a buffer.</p>
-     * <p>The {@link RetainableByteBuffer} returned by this method
-     * <b>must</b> be released via {@link RetainableByteBuffer#release()}.</p>
+     * <p>The {@link RetainableByteBuffer.Mutable} returned by this method
+     * <b>must</b> be released via {@link RetainableByteBuffer.Mutable#release()}.</p>
      * <p>This method may fully consume the input buffer, but return
      * only a chunk of the inflated bytes, to allow applications to
      * consume the inflated chunk before performing further inflation,
@@ -106,7 +106,7 @@ public class GZIPContentDecoder implements Destroyable
             _inflateds.add(_inflated);
             _inflated = null;
             int length = _inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
-            RetainableByteBuffer result = acquire(length);
+            RetainableByteBuffer.Mutable result = acquire(length);
             for (RetainableByteBuffer buffer : _inflateds)
             {
                 result.append(buffer);
@@ -420,11 +420,11 @@ public class GZIPContentDecoder implements Destroyable
      * @param capacity capacity of the ByteBuffer to acquire
      * @return a heap buffer of the configured capacity either from the pool or freshly allocated.
      */
-    public RetainableByteBuffer acquire(int capacity)
+    public RetainableByteBuffer.Mutable acquire(int capacity)
     {
         // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
         if (capacity == 0)
-            return RetainableByteBuffer.EMPTY;
+            return RetainableByteBuffer.Mutable.EMPTY;
         return _pool.acquire(capacity, false);
     }
 }

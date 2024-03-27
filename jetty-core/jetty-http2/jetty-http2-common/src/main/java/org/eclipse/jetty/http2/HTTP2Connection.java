@@ -499,7 +499,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
     private class NetworkBuffer implements Retainable
     {
-        private final RetainableByteBuffer delegate;
+        private final RetainableByteBuffer.Mutable delegate;
 
         private NetworkBuffer()
         {

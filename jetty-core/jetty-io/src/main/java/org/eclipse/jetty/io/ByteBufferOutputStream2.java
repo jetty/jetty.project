@@ -41,7 +41,7 @@ public class ByteBufferOutputStream2 extends OutputStream
 
     /**
      * Take the combined buffer containing all content written to the OutputStream.
-     * The caller is responsible for releasing this {@link RetainableByteBuffer}.
+     * The caller is responsible for releasing this {@link RetainableByteBuffer.Mutable}.
      * @return a buffer containing all content written to the OutputStream.
      */
     public RetainableByteBuffer takeByteBuffer()

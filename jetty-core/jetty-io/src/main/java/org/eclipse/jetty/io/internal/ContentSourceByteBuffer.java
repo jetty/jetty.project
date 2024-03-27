@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.Promise;
 
 public class ContentSourceByteBuffer implements Runnable
 {
-    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator(null, false, -1);
+    private final RetainableByteBuffer.Mutable.Accumulator accumulator = new RetainableByteBuffer.Mutable.Accumulator(null, false, -1);
     private final Content.Source source;
     private final Promise<ByteBuffer> promise;
 

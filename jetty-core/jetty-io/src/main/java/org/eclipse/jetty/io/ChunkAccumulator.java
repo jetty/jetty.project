@@ -106,7 +106,7 @@ public class ChunkAccumulator
             }
         }
 
-        RetainableByteBuffer buffer = Objects.requireNonNullElse(pool, NON_POOLING).acquire(_length, direct);
+        RetainableByteBuffer.Mutable buffer = Objects.requireNonNullElse(pool, NON_POOLING).acquire(_length, direct);
         int offset = 0;
         for (Chunk chunk : _chunks)
         {
