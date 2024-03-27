@@ -21,7 +21,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -246,16 +245,6 @@ public class ResourceFactoryTest
         args.add(Arguments.of(jarFileUri.toASCIIString(), jarFileUri.toASCIIString()));
 
         return args.stream();
-    }
-
-    @Test
-    public void testInstalledFileSystems()
-    {
-        for (FileSystemProvider provider : FileSystemProvider.installedProviders())
-        {
-            System.out.println("provider: " + provider);
-            System.out.println("  scheme: " + provider.getScheme());
-        }
     }
 
     @ParameterizedTest
