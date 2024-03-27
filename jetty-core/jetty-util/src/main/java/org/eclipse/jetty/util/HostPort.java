@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 public class HostPort
 {
     private static final Logger LOG = LoggerFactory.getLogger(HostPort.class);
-    private static final int BAD_PORT = -1;
+    private static final int UNDEFINED_PORT = -1;
     private final String _host;
     private final int _port;
 
@@ -51,7 +51,7 @@ public class HostPort
     public HostPort(String host, int port)
     {
         _host = normalizeHost(host);
-        _port = (port > 0) ? port : -1;
+        _port = (port > 0) ? port : UNDEFINED_PORT;
     }
 
     public HostPort(String authority) throws IllegalArgumentException
@@ -63,7 +63,7 @@ public class HostPort
     private HostPort(String authority, boolean unsafe)
     {
         String host;
-        int port = -1;
+        int port = UNDEFINED_PORT;
 
         if (authority == null)
         {
@@ -71,14 +71,14 @@ public class HostPort
             if (!unsafe)
                 throw new IllegalArgumentException("No Authority");
             _host = "";
-            _port = -1;
+            _port = UNDEFINED_PORT;
             return;
         }
 
         if (authority.isEmpty())
         {
             _host = authority;
-            _port = -1;
+            _port = UNDEFINED_PORT;
             return;
         }
 
@@ -116,22 +116,22 @@ public class HostPort
                         if (!unsafe)
                             throw new IllegalArgumentException("Bad IPv6 port");
                         host = authority; // whole authority (no substring)
-                        port = -1; // no port
+                        port = UNDEFINED_PORT; // no port
                     }
                     else
                     {
                         port = parsePort(authority.substring(close + 2), unsafe);
                         // horribly bad port during unsafe
-                        if (unsafe && (port == BAD_PORT))
+                        if (unsafe && (port == UNDEFINED_PORT))
                         {
                             host = authority; // whole authority (no substring)
-                            port = -1;
+                            port = UNDEFINED_PORT;
                         }
                     }
                 }
                 else
                 {
-                    port = -1;
+                    port = UNDEFINED_PORT;
                 }
             }
             else
@@ -143,7 +143,7 @@ public class HostPort
                     if (c != authority.indexOf(':'))
                     {
                         // ipv6address no port
-                        port = -1;
+                        port = UNDEFINED_PORT;
                         host = "[" + authority + "]";
                         if (!isValidIpAddress(host))
                         {
@@ -176,10 +176,10 @@ public class HostPort
 
                         port = parsePort(authority.substring(c + 1), unsafe);
                         // horribly bad port during unsafe
-                        if (unsafe && (port == BAD_PORT))
+                        if (unsafe && (port == UNDEFINED_PORT))
                         {
                             host = authority; // whole authority (no substring)
-                            port = -1;
+                            port = UNDEFINED_PORT;
                         }
                     }
                 }
@@ -193,7 +193,7 @@ public class HostPort
                         if (!unsafe)
                             throw new IllegalArgumentException("Bad Authority");
                     }
-                    port = -1;
+                    port = UNDEFINED_PORT;
                 }
             }
         }
@@ -202,17 +202,17 @@ public class HostPort
             if (!unsafe)
                 throw iae;
             host = authority;
-            port = -1;
+            port = UNDEFINED_PORT;
         }
         catch (Exception ex)
         {
             if (!unsafe)
                 throw new IllegalArgumentException("Bad HostPort", ex);
             host = authority;
-            port = -1;
+            port = UNDEFINED_PORT;
         }
         _host = host;
-        _port = ( port > 0 ) ? port : -1;
+        _port = (port > 0) ? port : UNDEFINED_PORT;
     }
 
     protected boolean isValidIpAddress(String ip)
@@ -338,7 +338,7 @@ public class HostPort
         {
             if (!unsafe)
                 throw new IllegalArgumentException("Bad port [" + rawPort + "]");
-            return 0;
+            return UNDEFINED_PORT;
         }
 
         try
@@ -349,7 +349,7 @@ public class HostPort
                 LOG.warn("Bad port [{}]", port);
                 if (!unsafe)
                     throw new IllegalArgumentException("Bad port");
-                return BAD_PORT;
+                return UNDEFINED_PORT;
             }
             return port;
         }
@@ -358,7 +358,7 @@ public class HostPort
             LOG.warn("Bad port [{}]", rawPort);
             if (!unsafe)
                 throw new IllegalArgumentException("Bad Port");
-            return BAD_PORT;
+            return UNDEFINED_PORT;
         }
     }
 }

@@ -268,6 +268,7 @@ public interface HttpURI
     {
         @Serial
         private static final long serialVersionUID = 2245620284548399386L;
+        private static final int UNDEFINED_PORT = -1;
 
         private final String _scheme;
         private final String _user;
@@ -304,7 +305,7 @@ public interface HttpURI
             _scheme = URIUtil.normalizeScheme(scheme);
             _user = null;
             _host = host;
-            _port = ( port > 0 ) ? port : -1;
+            _port = (port > 0) ? port : UNDEFINED_PORT;
             _path = path;
             _canonicalPath = _path == null ? null : URIUtil.canonicalPath(_path);
             _param = null;
@@ -548,10 +549,12 @@ public interface HttpURI
             .with("%u002e%u002e", Boolean.TRUE)
             .build();
 
+        private static final int UNDEFINED_PORT = -1;
+
         private String _scheme;
         private String _user;
         private String _host;
-        private int _port = -1;
+        private int _port = UNDEFINED_PORT;
         private String _path;
         private String _param;
         private String _query;
@@ -598,7 +601,6 @@ public interface HttpURI
 
         private Mutable(String uri)
         {
-            _port = -1;
             parse(State.START, uri);
         }
 
@@ -625,7 +627,7 @@ public interface HttpURI
 
             _scheme = URIUtil.normalizeScheme(scheme);
             _host = host;
-            _port = (port > 0) ? port : -1;
+            _port = (port > 0) ? port : UNDEFINED_PORT;
 
             if (pathQuery != null)
                 parse(State.PATH, pathQuery);
@@ -654,7 +656,7 @@ public interface HttpURI
                 throw new IllegalArgumentException("Relative path with authority");
             _user = null;
             _host = host;
-            _port = (port > 0) ? port : -1;
+            _port = (port > 0) ? port : UNDEFINED_PORT;
             _uri = null;
             return this;
         }
@@ -689,7 +691,7 @@ public interface HttpURI
             _scheme = null;
             _user = null;
             _host = null;
-            _port = -1;
+            _port = UNDEFINED_PORT;
             _path = null;
             _param = null;
             _query = null;
@@ -927,7 +929,7 @@ public interface HttpURI
 
         public Mutable port(int port)
         {
-            _port = ( port > 0) ? port : -1;
+            _port = (port > 0) ? port : UNDEFINED_PORT;
             _uri = null;
             return this;
         }
