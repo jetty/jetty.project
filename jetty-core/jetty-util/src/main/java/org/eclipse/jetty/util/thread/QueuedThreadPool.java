@@ -449,7 +449,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * @return the name of the this thread pool
+     * @return the name of this thread pool
      */
     @ManagedAttribute("name of the thread pool")
     public String getName()
@@ -460,7 +460,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     /**
      * <p>Sets the name of this thread pool, used as a prefix for the thread names.</p>
      *
-     * @param name the name of the this thread pool
+     * @param name the name of this thread pool
      */
     public void setName(String name)
     {
@@ -835,7 +835,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
         while (isStopping())
         {
-            Thread.sleep(1);
+            Thread.onSpinWait();
         }
     }
 
