@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +26,10 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -94,6 +98,49 @@ public class RequestTest
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+    }
+
+    @Test
+    public void testAmbiguousPathSep() throws Exception
+    {
+        server.stop();
+        for (Connector connector: server.getConnectors())
+        {
+            HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
+            if (httpConnectionFactory != null)
+            {
+                HttpConfiguration httpConfiguration = httpConnectionFactory.getHttpConfiguration();
+                httpConfiguration.setUriCompliance(UriCompliance.from(
+                    EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)
+                ));
+            }
+        }
+
+        ContextHandler fooContext = new ContextHandler();
+        fooContext.setContextPath("/foo");
+        fooContext.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                String pathInContext = Request.getPathInContext(request);
+                String msg = String.format("pathInContext=\"%s\"", pathInContext);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, true, msg, callback);
+                return true;
+            }
+        });
+        server.setHandler(fooContext);
+        server.start();
+        String request = """
+                GET /foo/zed%2Fbar HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getContent(), is("pathInContext=\"/zed%2Fbar\""));
     }
 
     @Test
