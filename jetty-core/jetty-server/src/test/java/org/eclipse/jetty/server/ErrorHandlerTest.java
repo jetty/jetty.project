@@ -482,7 +482,7 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void testContainsStacks() throws Exception
+    public void testContainsStacksIfSpecified() throws Exception
     {
         ErrorHandler errorHandler = new ErrorHandler();
         errorHandler.setShowStacks(true);
@@ -503,12 +503,8 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void testContainsNoStacks() throws Exception
+    public void testContainsNoStacksByDefault() throws Exception
     {
-        ErrorHandler errorHandler = new ErrorHandler();
-        errorHandler.setShowStacks(false);
-        server.setErrorHandler(errorHandler);
-
         String rawResponse = connector.getResponse("""
                         GET /badmessage/444 HTTP/1.1
                         Host: Localhost
@@ -524,7 +520,7 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void testContainsCauses() throws Exception
+    public void testContainsCausesIfSpecified() throws Exception
     {
         ErrorHandler errorHandler = new ErrorHandler();
         errorHandler.setShowCauses(true);
@@ -545,12 +541,8 @@ public class ErrorHandlerTest
     }
 
     @Test
-    public void testContainsNoCauses() throws Exception
+    public void testContainsNoCausesByDefault() throws Exception
     {
-        ErrorHandler errorHandler = new ErrorHandler();
-        errorHandler.setShowCauses(false);
-        server.setErrorHandler(errorHandler);
-
         String rawResponse = connector.getResponse("""
                         GET /badmessage/444 HTTP/1.1
                         Host: Localhost
