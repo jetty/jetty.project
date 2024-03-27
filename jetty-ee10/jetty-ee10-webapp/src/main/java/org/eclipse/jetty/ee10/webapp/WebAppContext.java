@@ -38,7 +38,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee.WebappClassLoading;
+import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -85,25 +85,25 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault-ee10.xml";
-    public static final String SERVER_SYS_CLASSES = WebappClassLoading.PROTECTED_CLASSES_ATTRIBUTE;
-    public static final String SERVER_SRV_CLASSES = WebappClassLoading.HIDDEN_CLASSES_ATTRIBUTE;
+    public static final String SERVER_SYS_CLASSES = WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE;
+    public static final String SERVER_SRV_CLASSES = WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE;
 
     private static final String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
     /**
-     * @deprecated use {@link WebappClassLoading#DEFAULT_PROTECTED_CLASSES}
+     * @deprecated use {@link WebAppClassLoading#DEFAULT_PROTECTED_CLASSES}
      */
     @Deprecated
-    public static final ClassMatcher __dftSystemClasses = WebappClassLoading.DEFAULT_PROTECTED_CLASSES;
+    public static final ClassMatcher __dftSystemClasses = WebAppClassLoading.DEFAULT_PROTECTED_CLASSES;
 
     /**
-     * @deprecated use {@link WebappClassLoading#DEFAULT_HIDDEN_CLASSES}
+     * @deprecated use {@link WebAppClassLoading#DEFAULT_HIDDEN_CLASSES}
      */
     @Deprecated
-    public static final ClassMatcher __dftServerClasses = WebappClassLoading.DEFAULT_HIDDEN_CLASSES;
+    public static final ClassMatcher __dftServerClasses = WebAppClassLoading.DEFAULT_HIDDEN_CLASSES;
 
-    private final ClassMatcher _protectedClasses = new ClassMatcher(WebappClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
-    private final ClassMatcher _hiddenClasses = new ClassMatcher(WebappClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
 
     private Configurations _configurations;
     private String _defaultsDescriptor = WEB_DEFAULTS_XML;
@@ -832,8 +832,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super.setServer(server);
         if (server != null)
         {
-            _protectedClasses.add(WebappClassLoading.getProtectedClasses(server).getPatterns());
-            _hiddenClasses.add(WebappClassLoading.getHiddenClasses(server).getPatterns());
+            _protectedClasses.add(WebAppClassLoading.getProtectedClasses(server).getPatterns());
+            _hiddenClasses.add(WebAppClassLoading.getHiddenClasses(server).getPatterns());
         }
     }
 
@@ -1511,12 +1511,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param patterns the patterns to use
      * @see #getHiddenClassMatcher()
      * @see #getHiddenClasses()
-     * @deprecated use {@link WebappClassLoading#addProtectedClasses(Server, String...)}
+     * @deprecated use {@link WebAppClassLoading#addProtectedClasses(Server, String...)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
     public static void addServerClasses(Server server, String... patterns)
     {
-        WebappClassLoading.addHiddenClasses(server, patterns);
+        WebAppClassLoading.addHiddenClasses(server, patterns);
     }
 
     /**
@@ -1525,11 +1525,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param patterns the patterns to use
      * @see #getProtectedClassMatcher()
      * @see #getProtectedClasses()
-     * @deprecated use {@link WebappClassLoading#addHiddenClasses(Server, String...)}
+     * @deprecated use {@link WebAppClassLoading#addHiddenClasses(Server, String...)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
     public static void addSystemClasses(Server server, String... patterns)
     {
-        WebappClassLoading.addProtectedClasses(server, patterns);
+        WebAppClassLoading.addProtectedClasses(server, patterns);
     }
 }

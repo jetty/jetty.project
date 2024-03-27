@@ -36,7 +36,7 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import org.eclipse.jetty.ee.WebappClassLoading;
+import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -963,7 +963,7 @@ public class WebAppContextTest
         List<String> serverClasses = List.of(context.getHiddenClasses());
         assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
         assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
-        for (String defaultServerClass: WebappClassLoading.DEFAULT_HIDDEN_CLASSES)
+        for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
             assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
     }
 
@@ -990,7 +990,7 @@ public class WebAppContextTest
         List<String> systemClasses = List.of(context.getProtectedClasses());
         assertThat("Should have environment specific test pattern", systemClasses, hasItem(testPattern));
         assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
-        for (String defaultSystemClass: WebappClassLoading.DEFAULT_PROTECTED_CLASSES)
+        for (String defaultSystemClass: WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
             assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
     }
 }
