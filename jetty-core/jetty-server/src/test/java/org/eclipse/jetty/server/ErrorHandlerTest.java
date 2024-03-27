@@ -519,7 +519,6 @@ public class ErrorHandlerTest
         assertThat(response.getContent(), containsString("org.eclipse.jetty.server.ErrorHandlerTest$1.handle"));
     }
 
-
     @Test
     public void testContainsNoCausesByDefault() throws Exception
     {
