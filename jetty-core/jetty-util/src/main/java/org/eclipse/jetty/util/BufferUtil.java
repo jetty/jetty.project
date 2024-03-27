@@ -21,6 +21,7 @@ import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.ReadableByteChannel;
@@ -431,8 +432,9 @@ public class BufferUtil
      * @param from Buffer to take bytes from in flush mode, whose position is modified with the bytes taken.
      * @param to Buffer to put bytes to in fill mode.
      * @return number of bytes moved
+     * @throws ReadOnlyBufferException if the buffer is read only
      */
-    public static int put(ByteBuffer from, ByteBuffer to)
+    public static int put(ByteBuffer from, ByteBuffer to) throws ReadOnlyBufferException
     {
         int length = from.remaining();
         if (length == 0)
@@ -469,8 +471,9 @@ public class BufferUtil
      * @param off offset into byte
      * @param len length to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
+     * @throws ReadOnlyBufferException if the buffer is read only
      */
-    public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException
+    public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException, ReadOnlyBufferException
     {
         int pos = flipToFill(to);
         try
@@ -489,8 +492,9 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param b bytes to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
+     * @throws ReadOnlyBufferException if the buffer is read only
      */
-    public static void append(ByteBuffer to, byte[] b) throws BufferOverflowException
+    public static void append(ByteBuffer to, byte[] b) throws BufferOverflowException, ReadOnlyBufferException
     {
         append(to, b, 0, b.length);
     }
@@ -501,8 +505,9 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param s String to append as UTF8
      * @throws BufferOverflowException if unable to append buffer due to space limits
+     * @throws ReadOnlyBufferException if the buffer is read only
      */
-    public static void append(ByteBuffer to, String s) throws BufferOverflowException
+    public static void append(ByteBuffer to, String s) throws BufferOverflowException, ReadOnlyBufferException
     {
         byte[] b = s.getBytes(StandardCharsets.UTF_8);
         append(to, b, 0, b.length);
@@ -514,8 +519,9 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param b byte to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
+     * @throws ReadOnlyBufferException if the buffer is read only
      */
-    public static void append(ByteBuffer to, byte b)
+    public static void append(ByteBuffer to, byte b) throws BufferOverflowException, ReadOnlyBufferException
     {
         int pos = flipToFill(to);
         try
@@ -534,8 +540,9 @@ public class BufferUtil
      * @param to Buffer in flush mode, whose position will be incremented by the number of bytes appended
      * @param b buffer to append to in flush mode, whose limit will be incremented by the number of bytes appended.
      * @return The number of bytes appended.
+     * @throws ReadOnlyBufferException if the buffer is read only
      */
-    public static int append(ByteBuffer to, ByteBuffer b)
+    public static int append(ByteBuffer to, ByteBuffer b) throws ReadOnlyBufferException
     {
         int pos = flipToFill(to);
         try

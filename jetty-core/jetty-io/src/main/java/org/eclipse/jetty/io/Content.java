@@ -890,52 +890,6 @@ public class Content
         boolean isLast();
 
         /**
-         * <p>Copies the bytes from this Chunk to the given byte array.</p>
-         *
-         * @param bytes the byte array to copy the bytes into
-         * @param offset the offset within the byte array
-         * @param length the maximum number of bytes to copy
-         * @return the number of bytes actually copied
-         */
-        default int get(byte[] bytes, int offset, int length)
-        {
-            ByteBuffer b = getByteBuffer();
-            if (b == null || !b.hasRemaining())
-                return 0;
-            length = Math.min(length, b.remaining());
-            b.get(bytes, offset, length);
-            return length;
-        }
-
-        /**
-         * <p>Skips, advancing the ByteBuffer position, the given number of bytes.</p>
-         *
-         * @param length the maximum number of bytes to skip
-         * @return the number of bytes actually skipped
-         */
-        default int skip(int length)
-        {
-            if (length == 0)
-                return 0;
-            ByteBuffer byteBuffer = getByteBuffer();
-            length = Math.min(byteBuffer.remaining(), length);
-            byteBuffer.position(byteBuffer.position() + length);
-            return length;
-        }
-
-        /**
-         * @return an immutable version of this Chunk
-         */
-        default Chunk asReadOnly()
-        {
-            if (getByteBuffer().isReadOnly())
-                return this;
-            if (canRetain())
-                return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
-            return from(getByteBuffer().asReadOnlyBuffer(), isLast());
-        }
-
-        /**
          * <p>Implementations of this interface may process {@link Chunk}s being copied by the
          * {@link Content#copy(Source, Sink, Processor, Callback)} method, so that
          * {@link Chunk}s of unknown types can be copied.

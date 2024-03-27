@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -221,9 +222,10 @@ public interface RetainableByteBuffer extends Retainable
      * Copies the contents of the given byte buffer at the end of this buffer.
      * @param bytes the byte buffer to copy from.
      * @return true if all bytes of the given buffer were copied, false otherwise.
+     * @throws ReadOnlyBufferException if the buffer is read only
      * @see BufferUtil#append(ByteBuffer, ByteBuffer)
      */
-    default boolean append(ByteBuffer bytes)
+    default boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
     {
         BufferUtil.append(getByteBuffer(), bytes);
         return !bytes.hasRemaining();
@@ -233,11 +235,46 @@ public interface RetainableByteBuffer extends Retainable
      * Copies the contents of the given retainable byte buffer at the end of this buffer.
      * @param bytes the retainable byte buffer to copy from.
      * @return true if all bytes of the given buffer were copied, false otherwise.
+     * @throws ReadOnlyBufferException if the buffer is read only
      * @see BufferUtil#append(ByteBuffer, ByteBuffer)
      */
-    default boolean append(RetainableByteBuffer bytes)
+    default boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
     {
         return bytes.remaining() == 0 || append(bytes.getByteBuffer());
+    }
+
+    /**
+     * <p>Copies the bytes from this Chunk to the given byte array.</p>
+     *
+     * @param bytes the byte array to copy the bytes into
+     * @param offset the offset within the byte array
+     * @param length the maximum number of bytes to copy
+     * @return the number of bytes actually copied
+     */
+    default int get(byte[] bytes, int offset, int length)
+    {
+        ByteBuffer b = getByteBuffer();
+        if (b == null || !b.hasRemaining())
+            return 0;
+        length = Math.min(length, b.remaining());
+        b.get(bytes, offset, length);
+        return length;
+    }
+
+    /**
+     * <p>Skips, advancing the ByteBuffer position, the given number of bytes.</p>
+     *
+     * @param length the maximum number of bytes to skip
+     * @return the number of bytes actually skipped
+     */
+    default int skip(int length)
+    {
+        if (length == 0)
+            return 0;
+        ByteBuffer byteBuffer = getByteBuffer();
+        length = Math.min(byteBuffer.remaining(), length);
+        byteBuffer.position(byteBuffer.position() + length);
+        return length;
     }
 
     /**
