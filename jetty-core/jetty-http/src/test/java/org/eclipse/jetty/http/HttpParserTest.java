@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -2117,7 +2118,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("host", _host);
-        assertEquals(0, _port);
+        assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest
@@ -2182,7 +2183,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("192.168.0.1", _host);
-        assertEquals(0, _port);
+        assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest
@@ -2200,7 +2201,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("[::1]", _host);
-        assertEquals(0, _port);
+        assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest
