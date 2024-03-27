@@ -19,6 +19,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
@@ -124,6 +126,12 @@ public class MemoryResource extends Resource
     public InputStream newInputStream() throws IOException
     {
         return new ByteArrayInputStream(_bytes);
+    }
+
+    @Override
+    public ReadableByteChannel newReadableByteChannel() throws IOException
+    {
+        return Channels.newChannel(newInputStream());
     }
 
     @Override

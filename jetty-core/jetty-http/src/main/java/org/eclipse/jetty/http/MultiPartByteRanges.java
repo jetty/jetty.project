@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
@@ -214,25 +215,37 @@ public class MultiPartByteRanges
     {
         private final Resource resource;
         private final ByteRange byteRange;
+        private final ByteBufferPool bufferPool;
 
         public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength)
         {
             this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
-                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange);
+                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, null);
+        }
+
+        public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength, ByteBufferPool bufferPool)
+        {
+            this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
+                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, bufferPool);
         }
 
         public Part(HttpFields headers, Resource resource, ByteRange byteRange)
         {
+            this(headers, resource, byteRange, null);
+        }
+
+        public Part(HttpFields headers, Resource resource, ByteRange byteRange, ByteBufferPool bufferPool)
+        {
             super(null, null, headers);
             this.resource = resource;
             this.byteRange = byteRange;
+            this.bufferPool = bufferPool == null ? new ByteBufferPool.NonPooling() : bufferPool;
         }
 
         @Override
         public Content.Source newContentSource()
         {
-            // TODO use a buffer pool
-            return IOResources.asContentSource(resource, null, 0, false, byteRange.first(), byteRange.getLength());
+            return IOResources.asContentSource(resource, bufferPool, 0, false, byteRange.first(), byteRange.getLength());
         }
     }
 

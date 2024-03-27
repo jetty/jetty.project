@@ -13,17 +13,19 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URI;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -44,22 +46,28 @@ public class IOResourcesTest
         assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
-    @Test
-    public void testToRetainableByteBuffer() throws Exception
+    public static Stream<Resource> all()
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
+        URI resourceUri = MavenTestingUtils.getTestResourcePath("keystore.p12").toUri();
+        return Stream.of(
+            ResourceFactory.root().newResource(resourceUri),
+            new URLResourceFactory().newResource(resourceUri)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testToRetainableByteBuffer(Resource resource)
+    {
         RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool, false);
-        assertThat(retainableByteBuffer.remaining(), is((int)Files.size(resourcePath)));
+        assertThat(retainableByteBuffer.remaining(), is((int)resource.length()));
         retainableByteBuffer.release();
     }
 
-    @Test
-    public void testAsContentSource() throws Exception
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testAsContentSource(Resource resource) throws Exception
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
-
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
         Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false);
@@ -67,16 +75,14 @@ public class IOResourcesTest
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(Files.size(resourcePath)));
+        assertThat(sum, is(resource.length()));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
-    @Test
-    public void testAsContentSourceWithFirst() throws Exception
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testAsContentSourceWithFirst(Resource resource) throws Exception
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
-
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
         Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, 100, -1);
@@ -84,16 +90,14 @@ public class IOResourcesTest
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(Files.size(resourcePath) - 100L));
+        assertThat(sum, is(resource.length() - 100L));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
-    @Test
-    public void testAsContentSourceWithLength() throws Exception
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testAsContentSourceWithLength(Resource resource) throws Exception
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
-
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
         Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, -1, 500);
@@ -105,12 +109,10 @@ public class IOResourcesTest
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
-    @Test
-    public void testAsContentSourceWithFirstAndLength() throws Exception
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testAsContentSourceWithFirstAndLength(Resource resource) throws Exception
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
-
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
         Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, 100, 500);
@@ -122,44 +124,38 @@ public class IOResourcesTest
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
-    @Test
-    public void testCopy() throws Exception
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testCopy(Resource resource) throws Exception
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
-
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
         IOResources.copy(resource, sink, bufferPool, 1, false, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(Files.size(resourcePath)));
+        assertThat(sum, is(resource.length()));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
-    @Test
-    public void testCopyWithFirst() throws Exception
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testCopyWithFirst(Resource resource) throws Exception
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
-
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
         IOResources.copy(resource, sink, bufferPool, 1, false, 100, -1, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
-        assertThat(sum, is(Files.size(resourcePath) - 100L));
+        assertThat(sum, is(resource.length() - 100L));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
-    @Test
-    public void testCopyWithLength() throws Exception
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testCopyWithLength(Resource resource) throws Exception
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
-
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
         IOResources.copy(resource, sink, bufferPool, 1, false, -1, 500, callback);
@@ -170,12 +166,10 @@ public class IOResourcesTest
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 
-    @Test
-    public void testCopyWithFirstAndLength() throws Exception
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testCopyWithFirstAndLength(Resource resource) throws Exception
     {
-        Path resourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-        Resource resource = ResourceFactory.root().newResource(resourcePath);
-
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
         IOResources.copy(resource, sink, bufferPool, 1, false, 100, 500, callback);

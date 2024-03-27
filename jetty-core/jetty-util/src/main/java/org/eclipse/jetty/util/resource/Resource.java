@@ -243,7 +243,10 @@ public abstract class Resource implements Iterable<Resource>
     @Deprecated(since = "12.0.8", forRemoval = true)
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
-       return null;
+        Path path = getPath();
+        if (path == null)
+            return null;
+        return Files.newByteChannel(getPath(), StandardOpenOption.READ);
     }
 
     /**
