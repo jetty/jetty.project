@@ -474,6 +474,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         if (next == null)
             return false;
 
+        // Skip security check if this is a dispatch rather than a fresh request
+        if (request.getContext().isCrossContextDispatch(request))
+            return next.handle(request, response, callback);
+
         String pathInContext = Request.getPathInContext(request);
         Constraint constraint = getConstraint(pathInContext, request);
         if (LOG.isDebugEnabled())

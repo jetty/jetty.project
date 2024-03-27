@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import jakarta.servlet.AsyncListener;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
@@ -125,12 +126,12 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     {
         super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
-        _servletApiRequest = newServletApiRequest();
         _matchedResource = matchedResource;
         _httpInput = _servletChannel.getHttpInput();
         _decodedPathInContext = decodedPathInContext;
-        _response =  newServletContextResponse(response);
         _sessionManager = sessionManager;
+        _servletApiRequest = newServletApiRequest();
+        _response =  newServletContextResponse(response);
         _attributes = new Attributes.Synthetic(request)
         {
             @Override
@@ -155,6 +156,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 return ATTRIBUTES;
             }
         };
+
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
     }
 
@@ -219,7 +221,17 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 return new ServletApiRequest.AmbiguousURI(this, msg.toString());
         }
 
-        return new ServletApiRequest(this);
+        if (getServletContextHandler().isCrossContextDispatchSupported())
+        {
+            if (DispatcherType.INCLUDE.toString().equals(getContext().getCrossContextDispatchType(getWrapped())))
+                return new ServletApiRequest.CrossContextIncluded(this);
+            else if (DispatcherType.FORWARD.toString().equals(getContext().getCrossContextDispatchType(getWrapped())))
+                return new ServletApiRequest.CrossContextForwarded(this);
+            else
+                return new ServletApiRequest(this);
+        }
+        else
+           return new ServletApiRequest(this);
     }
 
     protected ServletContextResponse newServletContextResponse(Response response)

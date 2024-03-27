@@ -1133,11 +1133,15 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected ContextRequest wrapRequest(Request request, Response response)
     {
+        String decodedPathInContext;
+        MatchedResource<ServletHandler.MappedServlet> matchedResource;
+
         // Need to ask directly to the Context for the pathInContext, rather than using
         // Request.getPathInContext(), as the request is not yet wrapped in this Context.
-        String decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
 
-        MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
+
         if (matchedResource == null)
             return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
@@ -2703,10 +2707,14 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public jakarta.servlet.ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String path)
         {
-            //TODO jetty-12 does not currently support cross context dispatch
-            return null;
+            ContextHandler context = getContextHandler().getCrossContextHandler(path);
+            if (context == null)
+                return null;
+            if (context == ServletContextHandler.this)
+                return this;
+            return new CrossContextServletContext(ServletContextHandler.this, context.getContext());
         }
 
         @Override
