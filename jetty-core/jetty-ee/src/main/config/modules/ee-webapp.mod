@@ -9,7 +9,7 @@ This module provide common configuration of Java Servlet web applications over a
 etc/jetty-ee-webapp.xml
 
 [lib]
-lib/jetty-ee-webapp-${jetty.version}.jar
+lib/jetty-ee-${jetty.version}.jar
 
 [ini-template]
 # tag::ini-template[]
