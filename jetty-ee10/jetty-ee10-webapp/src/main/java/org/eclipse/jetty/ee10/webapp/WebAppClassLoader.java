@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
@@ -283,27 +284,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     {
         if (!Resources.isReadableDirectory(libs))
             return;
-
-        for (Resource libDir: libs)
-        {
-            Path dir = libDir.getPath();
-
-            try (Stream<Path> streamEntries = Files.list(dir))
-            {
-                streamEntries
-                    .filter(Files::isRegularFile)
-                    .filter(this::isFileSupported)
-                    .sorted(Comparator.naturalOrder())
-                    .map(Path::toUri)
-                    .map(URIUtil::toJarFileUri)
-                    .map(_resourceFactory::newResource)
-                    .forEach(this::addClassPath);
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
-            }
-        }
+        libs.list().stream().filter(r -> isFileSupported(r.getName())).sorted(ResourceCollators.byName(true)).forEach(this::addClassPath);
     }
 
     @Override
