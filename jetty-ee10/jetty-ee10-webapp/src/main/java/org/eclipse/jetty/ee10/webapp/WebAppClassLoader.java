@@ -125,9 +125,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
      * configured so as to allow server classes to be visible</p>
      *
-     * @param <T> The type returned by the action
      * @param action The action to run
-     * @param <T> the type of PrivilegedExceptionAction
+     * @param <T> the type of PrivilegedExceptionAction and the type returned by the action
      * @return The return from the action
      * @throws Exception if thrown by the action
      */
