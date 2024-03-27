@@ -552,10 +552,6 @@ public class HttpURITest
                 {"%2e%2e", null, null, null},
                 {"..;/info", null, null, null},
                 {"..;param/info", null, null, null},
-                {"#n=v", null, null, null},
-                {"/#", null, null, null},
-                {"/foo/#bar", null, null, null},
-                {"/foo#bar", null, null, null},
 
                 // ambiguous dot encodings
                 {"/path/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
@@ -569,6 +565,7 @@ public class HttpURITest
 
                 // empty segment treated as ambiguous
                 {"/", "/", "/", EnumSet.noneOf(Violation.class)},
+                {"/#", "/", "/", EnumSet.noneOf(Violation.class)},
                 {"/path", "/path", "/path", EnumSet.noneOf(Violation.class)},
                 {"/path/", "/path/", "/path/", EnumSet.noneOf(Violation.class)},
                 {"//", "//", "//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
@@ -576,8 +573,10 @@ public class HttpURITest
                 {"/foo//bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
                 {"//foo/bar", "//foo/bar", "//foo/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
                 {"/foo?bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
+                {"/foo#bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
                 {"/foo;bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
                 {"/foo/?bar", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
+                {"/foo/#bar", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
                 {"/foo/;param", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
                 {"/foo/;param/bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
                 {"/foo//bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
@@ -592,6 +591,7 @@ public class HttpURITest
                 {";/bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
                 {";?n=v", "", "", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
                 {"?n=v", "", "", EnumSet.noneOf(Violation.class)},
+                {"#n=v", "", "", EnumSet.noneOf(Violation.class)},
                 {"", "", "", EnumSet.noneOf(Violation.class)},
 
                 // ambiguous parameter inclusions

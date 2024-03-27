@@ -509,7 +509,6 @@ public interface HttpURI
         private enum State
         {
             START,
-            ASTERISK,
             HOST_OR_PATH,
             SCHEME_OR_PATH,
             HOST,
@@ -518,7 +517,8 @@ public interface HttpURI
             PATH,
             PARAM,
             QUERY,
-            FRAGMENT
+            FRAGMENT,
+            ASTERISK
         }
 
         /**
@@ -703,7 +703,7 @@ public interface HttpURI
             _port = port;
 
             if (pathQuery != null)
-                parse(State.PATH, State.QUERY, pathQuery);
+                parse(State.PATH, pathQuery);
         }
 
         @Override
@@ -960,7 +960,7 @@ public interface HttpURI
         }
 
         /**
-         * @param path the encoded path
+         * @param path the path
          * @return this Mutable
          */
         public Mutable path(String path)
@@ -974,7 +974,7 @@ public interface HttpURI
             _canonicalPath = null;
             String param = _param;
             _param = null;
-            parse(State.PATH, State.PARAM, path);
+            parse(State.PATH, path);
 
             // If the passed path does not have a parameter, then keep the current parameter
             // else delete the current parameter
@@ -997,7 +997,7 @@ public interface HttpURI
             _param = null;
             _query = null;
             if (pathQuery != null)
-                parse(State.PATH, State.QUERY, pathQuery);
+                parse(State.PATH, pathQuery);
             return this;
         }
 
@@ -1092,11 +1092,6 @@ public interface HttpURI
         }
 
         private void parse(State state, final String uri)
-        {
-            parse(state, null, uri);
-        }
-
-        private void parse(State state, State last, final String uri)
         {
             int mark = 0; // the start of the current section being parsed
             int pathMark = 0; // the start of the path section
@@ -1456,9 +1451,6 @@ public interface HttpURI
                     }
                 }
             }
-
-            if (last != null && state.ordinal() > last.ordinal())
-                throw new IllegalArgumentException("uri cannot go beyond " + last);
 
             switch (state)
             {
