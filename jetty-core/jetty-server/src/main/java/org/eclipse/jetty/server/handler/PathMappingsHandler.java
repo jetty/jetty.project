@@ -18,9 +18,11 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -111,11 +113,49 @@ public class PathMappingsHandler extends Handler.AbstractContainer
             return false;
         }
         Handler handler = matchedResource.getResource();
+        PathSpec pathSpec = matchedResource.getPathSpec();
         if (LOG.isDebugEnabled())
             LOG.debug("Matched {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), handler);
-        boolean handled = handler.handle(request, response, callback);
+
+        PathSpecRequest pathSpecRequest = new PathSpecRequest(request, pathSpec);
+        boolean handled = handler.handle(pathSpecRequest, response, callback);
         if (LOG.isDebugEnabled())
             LOG.debug("Handled {} {} by {}", handled, pathInContext, handler);
         return handled;
+    }
+
+    private static class PathSpecRequest extends Request.Wrapper
+    {
+        private final PathSpec pathSpec;
+        private final Context context;
+        private final MatchedPath matchedPath;
+
+        public PathSpecRequest(Request request, PathSpec pathSpec)
+        {
+            super(request);
+            this.pathSpec = pathSpec;
+            matchedPath = pathSpec.matched(request.getHttpURI().getCanonicalPath());
+            setAttribute(PathSpec.class.getName(), this.pathSpec);
+            this.context = new Context.Wrapper(request.getContext())
+            {
+                @Override
+                public String getContextPath()
+                {
+                    return matchedPath.getPathMatch();
+                }
+
+                @Override
+                public String getPathInContext(String canonicallyEncodedPath)
+                {
+                    return matchedPath.getPathInfo();
+                }
+            };
+        }
+
+        @Override
+        public Context getContext()
+        {
+            return context;
+        }
     }
 }
