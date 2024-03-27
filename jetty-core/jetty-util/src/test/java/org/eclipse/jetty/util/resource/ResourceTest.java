@@ -350,7 +350,7 @@ public class ResourceTest
         assertEquals(Instant.EPOCH, resource.lastModified());
         assertEquals(-1L, resource.length());
         assertThrows(IOException.class, resource::newInputStream);
-        assertNull(resource.newReadableByteChannel());
+        assertThrows(IOException.class, resource::newReadableByteChannel);
         assertEquals(nonExistentFile.toUri(), resource.getURI());
         assertFalse(resource.isAlias());
         assertNull(resource.getRealURI());
