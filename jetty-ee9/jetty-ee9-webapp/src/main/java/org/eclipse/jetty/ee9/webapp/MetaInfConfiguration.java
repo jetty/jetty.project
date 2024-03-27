@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -136,7 +137,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (StringUtil.isBlank(pattern))
             return; // TODO review if this short cut will allow later code simplifications
 
-        ResourceFactory resourceFactory = ResourceFactory.of(context);
+        ResourceFactory resourceFactory = context.getResourceFactory();
 
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
@@ -160,6 +161,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         containerUris.stream()
             .filter(uriPatternPredicate)
             .map(resourceFactory::newResource)
+            .filter(Objects::nonNull)
             .forEach(addContainerResource);
 
         // When running on jvm 9 or above, we won't be able to look at the application
@@ -183,6 +185,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             List<Path> matchingBasePaths =
                 Stream.of(modulePath.split(File.pathSeparator))
                     .map(resourceFactory::newResource)
+                    .filter(Objects::nonNull)
                     .map(Resource::getURI)
                     .filter(uriPatternPredicate)
                     .map(Paths::get)

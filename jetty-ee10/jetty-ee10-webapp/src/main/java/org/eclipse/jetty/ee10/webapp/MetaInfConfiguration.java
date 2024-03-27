@@ -20,7 +20,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -119,6 +119,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * To find them, examine the classloaders in the hierarchy above the
      * webapp classloader that are URLClassLoaders. For jdk-9 we also
      * look at the java.class.path, and the jdk.module.path.
+     * <p>
+     * Any {@code jar:file:} resources found will be mounted in the
+     * {@link ResourceFactory} of the context.
+     * </p>
      *
      * @param context the WebAppContext being deployed
      */
@@ -130,7 +134,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (StringUtil.isBlank(pattern))
             return; // TODO review if this short cut will allow later code simplifications
 
-        ResourceFactory resourceFactory = ResourceFactory.of(context);
+        ResourceFactory resourceFactory = context.getResourceFactory();
 
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
@@ -154,6 +158,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         containerUris.stream()
             .filter(uriPatternPredicate)
             .map(resourceFactory::newResource)
+            .filter(Objects::nonNull)
             .forEach(addContainerResource);
 
         // When running on jvm 9 or above, we won't be able to look at the application
@@ -163,6 +168,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         {
             Stream.of(classPath.split(File.pathSeparator))
                 .map(resourceFactory::newResource)
+                .filter(Objects::nonNull)
                 .filter(r -> uriPatternPredicate.test(r.getURI()))
                 .forEach(addContainerResource);
         }
@@ -174,32 +180,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
         String modulePath = System.getProperty("jdk.module.path");
         if (modulePath != null)
         {
-            List<Path> matchingBasePaths =
-                Stream.of(modulePath.split(File.pathSeparator))
-                    .map(resourceFactory::newResource)
-                    .map(Resource::getURI)
-                    .filter(uriPatternPredicate)
-                    .map(Paths::get)
-                    .toList();
-            for (Path path : matchingBasePaths)
-            {
-                if (Files.isDirectory(path))
+            Stream.of(modulePath.split(File.pathSeparator))
+                .map(resourceFactory::newResource)
+                .filter(Objects::nonNull)
+                .filter(r -> uriPatternPredicate.test(r.getURI()))
+                .forEach(r ->
                 {
-                    try (Stream<Path> listing = Files.list(path))
-                    {
-                        for (Path listEntry : listing.toList())
-                        {
-                            Resource resource = resourceFactory.newResource(listEntry);
-                            context.getMetaData().addContainerResource(resource);
-                        }
-                    }
-                }
-                else
-                {
-                    Resource resource = resourceFactory.newResource(path);
-                    context.getMetaData().addContainerResource(resource);
-                }
-            }
+                    if (r.isDirectory())
+                        r.list().forEach(i -> context.getMetaData().addContainerResource(i));
+                    else
+                        context.getMetaData().addContainerResource(r);
+                });
         }
 
         if (LOG.isDebugEnabled())

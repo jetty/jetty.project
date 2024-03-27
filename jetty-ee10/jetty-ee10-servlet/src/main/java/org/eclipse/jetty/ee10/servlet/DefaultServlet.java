@@ -198,6 +198,8 @@ public class DefaultServlet extends HttpServlet
                 throw new UnavailableException(e.toString());
             }
         }
+        if (baseResource != null && !(baseResource.isDirectory() && baseResource.isReadable()))
+            LOG.warn("baseResource {} is not a readable directory", baseResource);
 
         List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
             getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());

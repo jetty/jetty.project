@@ -589,9 +589,21 @@ public final class URIUtil
         return true;
     }
 
+    /**
+     * Test if a string is a relative path or a URI
+     * @param uriOrPath A string that is either a path, a URI path segment or an absolute URI
+     * @return True if the string does not start with any absolute URI or file characters sequences.
+     */
     public static boolean isRelative(String uriOrPath)
     {
-        return uriOrPath.isEmpty() || (!URIUtil.hasScheme(uriOrPath) && !uriOrPath.startsWith("/"));
+        if (uriOrPath.isEmpty())
+            return true;
+
+        char c = uriOrPath.charAt(0);
+        if (c == '/' || (File.separatorChar != '/' && c == File.separatorChar))
+            return false;
+
+        return !URIUtil.hasScheme(uriOrPath);
     }
 
     /**
