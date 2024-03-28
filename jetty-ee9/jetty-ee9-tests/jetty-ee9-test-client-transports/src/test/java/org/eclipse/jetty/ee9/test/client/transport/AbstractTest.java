@@ -87,7 +87,7 @@ public class AbstractTest
     public static Collection<Transport> transports()
     {
         EnumSet<Transport> transports = EnumSet.allOf(Transport.class);
-        if ("ci".equals(System.getProperty("env")))
+        if (Boolean.getBoolean("skip.http3.tests"))
             transports.remove(Transport.H3);
         return transports;
     }
