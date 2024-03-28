@@ -22,11 +22,11 @@ import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.hibernate.search.cfg.Environment;
-import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.cache.ConfigurationChildBuilder;
+import org.infinispan.configuration.cache.IndexStorage;
+import org.infinispan.configuration.cache.SingleFileStoreConfigurationBuilder;
 import org.infinispan.configuration.cache.StorageType;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.eviction.EvictionStrategy;
@@ -92,12 +92,6 @@ public class InfinispanTestSupport
         Path tmpdir = root.resolve("tmp");
         FS.ensureDirExists(indexesDir);
 
-        SearchMapping mapping = new SearchMapping();
-        mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
-        Properties properties = new Properties();
-        properties.put(Environment.MODEL_MAPPING, mapping);
-        properties.put("hibernate.search.default.indexBase", indexesDir.toString());
-        properties.put("hibernate.cache.infinispan.entity.eviction.strategy", "NONE");
 
         if (_manager.cacheExists(_name))
         {
@@ -108,14 +102,16 @@ public class InfinispanTestSupport
         {
             ConfigurationChildBuilder b = _builder
                 .indexing()
-                .addIndexedEntity(SessionData.class)
-                .withProperties(properties)
+                .enable()
+                .addIndexedEntity(InfinispanSessionData.class)
+                .storage(IndexStorage.FILESYSTEM)
+                .path(tmpdir.toFile().getAbsolutePath())
                 .memory()
                 .whenFull(EvictionStrategy.NONE)
                 .persistence()
-                .addSingleFileStore()
-                .segmented(false)
-                .location(tmpdir.toFile().getAbsolutePath());
+                .addStore(SingleFileStoreConfigurationBuilder.class)
+                .location(System.getProperty("java.io.tmpdir"));
+
             if (_serializeSessionData)
             {
                 b = b.memory().storage(StorageType.HEAP)
@@ -127,8 +123,9 @@ public class InfinispanTestSupport
         else
         {
             ConfigurationChildBuilder b = _builder.indexing()
-                .withProperties(properties)
-                .addIndexedEntity(SessionData.class);
+                    .enable()
+                    .storage(IndexStorage.LOCAL_HEAP)
+                    .addIndexedEntity(InfinispanSessionData.class);
         
             if (_serializeSessionData)
             {

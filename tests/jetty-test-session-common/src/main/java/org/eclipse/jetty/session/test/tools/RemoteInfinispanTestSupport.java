@@ -26,14 +26,12 @@ import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitia
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.eclipse.jetty.util.IO;
-import org.hibernate.search.cfg.Environment;
-import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.commons.configuration.XMLStringConfiguration;
+import org.infinispan.commons.configuration.StringConfiguration;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +54,7 @@ public class RemoteInfinispanTestSupport
     private static final Logger INFINISPAN_LOG =
             LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
-    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "11.0.14.Final");
+    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "14.0.25.Final");
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + INFINISPAN_VERSION;
 
@@ -77,15 +75,7 @@ public class RemoteInfinispanTestSupport
 
         // setup instance
         {
-
-            SearchMapping mapping = new SearchMapping();
-            mapping.entity(InfinispanSessionData.class).indexed().providedId()
-                    .property("expiry", ElementType.METHOD).field();
-
-            Properties properties = new Properties();
-            properties.put(Environment.MODEL_MAPPING, mapping);
-
-            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
+            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
                     .addServer()
                     .host(infinispan.getHost())
                     .port(infinispan.getMappedPort(11222))
@@ -139,7 +129,7 @@ public class RemoteInfinispanTestSupport
                 "</cache-container>" +
                 "</infinispan>", _name);
 
-        XMLStringConfiguration xmlConfig = new XMLStringConfiguration(xml);
+        StringConfiguration xmlConfig = new StringConfiguration(xml);
         _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 

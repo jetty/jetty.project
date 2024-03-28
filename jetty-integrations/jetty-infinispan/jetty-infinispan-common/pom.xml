@@ -17,6 +17,10 @@
       <artifactId>jetty-session</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.hibernate.search</groupId>
+      <artifactId>hibernate-search-mapper-pojo-base</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
       <optional>true</optional>

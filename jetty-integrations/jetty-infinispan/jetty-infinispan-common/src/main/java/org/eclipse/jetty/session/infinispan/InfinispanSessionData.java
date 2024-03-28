@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 /**
  * InfinispanSessionData
@@ -32,6 +33,7 @@ import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
  * pool and thus these threads have no knowledge of the correct classloader to
  * use.
  */
+@Indexed
 public class InfinispanSessionData extends SessionData
 {
     protected byte[] _serializedAttributes;
