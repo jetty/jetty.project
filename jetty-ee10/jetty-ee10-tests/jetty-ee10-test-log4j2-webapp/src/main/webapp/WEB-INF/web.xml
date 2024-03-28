@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+  <servlet>
+    <servlet-name>logservlet</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee10.log4j2.LogServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>logservlet</servlet-name>
+    <url-pattern>/log/*</url-pattern>
+  </servlet-mapping>
+
+  <listener>
+    <listener-class>org.eclipse.jetty.ee10.log4j2.LogContextListener</listener-class>
+  </listener>
+</web-app>
