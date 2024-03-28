@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ public abstract class Descriptor
         if (_root == null)
         {
             Objects.requireNonNull(parser);
-            try (InputStream is = _xml.newInputStream())
+            try (InputStream is = IOResources.asInputStream(_xml))
             {
                 _root = parser.parse(is);
                 _dtd = parser.getDTD();
