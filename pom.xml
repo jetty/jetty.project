@@ -947,6 +947,12 @@
         <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
         <version>${osgi-services-version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.platform</groupId>
