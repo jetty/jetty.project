@@ -147,7 +147,7 @@ public class PathContentSource implements Content.Source
         if (read > 0)
             totalRead += read;
 
-        boolean last = isReadComplete(totalRead);
+        boolean last = read == -1 || isReadComplete(totalRead);
         if (last)
             IO.close(channel);
 

@@ -98,7 +98,18 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Allow Bad UTF-8 encodings to be substituted by the replacement character.
          */
-        BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding");
+        BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding"),
+
+        /**
+         * Allow encoded path characters not allowed by the Servlet spec rules.
+         */
+        SUSPICIOUS_PATH_CHARACTERS("https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization", "Suspicious Path Character"),
+
+        /**
+         * Allow path characters not allowed in the path portion of the URI and HTTP specs.
+         * <p>This would allow characters that fall outside of the {@code unreserved / pct-encoded / sub-delims / ":" / "@"} ABNF</p>
+         */
+        ILLEGAL_PATH_CHARACTERS("https://datatracker.ietf.org/doc/html/rfc3986#section-3.3", "Illegal Path Character");
 
         private final String _url;
         private final String _description;
@@ -167,7 +178,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.UTF16_ENCODINGS));
 
     /**
-     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form.
+     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form, and illegal characters
      */
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 

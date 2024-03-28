@@ -872,9 +872,9 @@ public class WebAppContextTest
         List<String> actualRefs = getWebAppClassLoaderUrlRefs(context);
         String[] expectedRefs = new String[]{
             "/webapp/WEB-INF/classes/",
-            "/webapp/WEB-INF/lib/acme.jar!/",
-            "/webapp/WEB-INF/lib/alpha.jar!/",
-            "/webapp/WEB-INF/lib/omega.jar!/"
+            "/webapp/WEB-INF/lib/acme.jar",
+            "/webapp/WEB-INF/lib/alpha.jar",
+            "/webapp/WEB-INF/lib/omega.jar"
         };
 
         assertThat("URLs (sub) refs", actualRefs, containsInAnyOrder(expectedRefs));
@@ -892,9 +892,9 @@ public class WebAppContextTest
         actualRefs = getWebAppClassLoaderUrlRefs(context);
         expectedRefs = new String[]{
             "/webapp/WEB-INF/classes/",
-            "/webapp/WEB-INF/lib/acme.jar!/",
-            "/webapp/WEB-INF/lib/alpha.jar!/",
-            "/webapp/WEB-INF/lib/omega.jar!/"
+            "/webapp/WEB-INF/lib/acme.jar",
+            "/webapp/WEB-INF/lib/alpha.jar",
+            "/webapp/WEB-INF/lib/omega.jar"
         };
         assertThat("URLs (sub) refs", actualRefs, containsInAnyOrder(expectedRefs));
     }

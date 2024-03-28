@@ -53,9 +53,12 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
@@ -3039,6 +3042,7 @@ public class DefaultServletTest
     @Test
     public void testControlCharacter() throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         FS.ensureDirExists(docRoot);
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
@@ -3466,7 +3470,7 @@ public class DefaultServletTest
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()
@@ -3520,7 +3524,7 @@ public class DefaultServletTest
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()

@@ -1409,14 +1409,14 @@
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
-            <additionalOptions>-html5</additionalOptions>
             <docfilessubdirs>true</docfilessubdirs>
+            <doclint>all,-missing</doclint>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
             <detectOfflineLinks>false</detectOfflineLinks>
             <show>protected</show>
             <attach>true</attach>
-            <isOffline>true</isOffline>
+            <offline>true</offline>
             <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
           </configuration>
         </plugin>
@@ -2313,7 +2313,6 @@
                   <skip>${spotbugs.skip}</skip>
                   <failOnError>${spotbugs.failOnError}</failOnError>
                   <xmlOutput>true</xmlOutput>
-                  <spotbugsXmlOutput>false</spotbugsXmlOutput>
                   <effort>${spotbugs.effort}</effort>
                   <threshold>${spotbugs.threshold}</threshold>
                 </configuration>
