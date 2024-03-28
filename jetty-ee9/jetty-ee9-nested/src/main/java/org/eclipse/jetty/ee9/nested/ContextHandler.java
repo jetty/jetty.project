@@ -66,6 +66,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Context;
@@ -1980,7 +1981,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;
-                return r.newInputStream();
+                return IOResources.asInputStream(r);
             }
             catch (Exception e)
             {

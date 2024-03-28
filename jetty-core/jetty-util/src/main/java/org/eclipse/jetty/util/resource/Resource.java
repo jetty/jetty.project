@@ -238,7 +238,9 @@ public abstract class Resource implements Iterable<Resource>
      *
      * @return a readable {@link java.nio.channels.ByteChannel} to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
+     * @deprecated use {@link #newInputStream()} or {@code IOResources} instead.
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         Path path = getPath();
