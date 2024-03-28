@@ -305,7 +305,7 @@ public interface HttpURI
             _scheme = URIUtil.normalizeScheme(scheme);
             _user = null;
             _host = host;
-            _port = port;
+            _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
             _path = path;
             _canonicalPath = _path == null ? null : URIUtil.canonicalPath(_path);
             _param = null;
@@ -626,7 +626,7 @@ public interface HttpURI
         private String _scheme;
         private String _user;
         private String _host;
-        private int _port;
+        private int _port = URIUtil.UNDEFINED_PORT;
         private String _path;
         private String _param;
         private String _query;
@@ -673,7 +673,6 @@ public interface HttpURI
 
         private Mutable(String uri)
         {
-            _port = -1;
             parse(State.START, uri);
         }
 
@@ -700,7 +699,7 @@ public interface HttpURI
 
             _scheme = URIUtil.normalizeScheme(scheme);
             _host = host;
-            _port = port;
+            _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
 
             if (pathQuery != null)
                 parse(State.PATH, pathQuery);
@@ -729,7 +728,7 @@ public interface HttpURI
                 throw new IllegalArgumentException("Relative path with authority");
             _user = null;
             _host = host;
-            _port = port;
+            _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
             _uri = null;
             return this;
         }
@@ -764,7 +763,7 @@ public interface HttpURI
             _scheme = null;
             _user = null;
             _host = null;
-            _port = -1;
+            _port = URIUtil.UNDEFINED_PORT;
             _path = null;
             _param = null;
             _query = null;
@@ -1003,7 +1002,7 @@ public interface HttpURI
 
         public Mutable port(int port)
         {
-            _port = port;
+            _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
             _uri = null;
             return this;
         }

@@ -52,6 +52,14 @@ public final class URIUtil
 {
     private static final Logger LOG = LoggerFactory.getLogger(URIUtil.class);
 
+    /**
+     * Port number indicating that the port is undefined.
+     * <p>
+     *     This is the same value as used in {@link java.net.URL} and {@link java.net.URI} classes.
+     * </p>
+     */
+    public static final int UNDEFINED_PORT = -1;
+
     // From https://www.rfc-editor.org/rfc/rfc3986
     private static final String UNRESERVED = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~";
     private static final String SUBDELIMS = "!$&'()*+,;=";
