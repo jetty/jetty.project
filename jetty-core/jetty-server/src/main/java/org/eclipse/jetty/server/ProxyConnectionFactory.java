@@ -170,7 +170,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     while (_index < LF_INDEX)
                     {
                         // Read data
-                        int fill = getEndPoint().fill(_buffer.getByteBuffer());
+                        int fill = _buffer.fillFrom(getEndPoint());
                         if (LOG.isDebugEnabled())
                             LOG.debug("Proxy v1 filled buffer with {} bytes", fill);
                         if (fill < 0)
@@ -268,7 +268,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 // Parse fields
                 while (_buffer.hasRemaining())
                 {
-                    byte b = _buffer.getByteBuffer().get();
+                    byte b = _buffer.get();
                     if (_index < CR_INDEX)
                     {
                         if (b == ' ' || b == '\r')
@@ -519,7 +519,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     while (!_headerParsed)
                     {
                         // Read data
-                        int fill = getEndPoint().fill(_buffer.getByteBuffer());
+                        int fill = _buffer.fillFrom(getEndPoint());
                         if (LOG.isDebugEnabled())
                             LOG.debug("Proxy v2 filled buffer with {} bytes", fill);
                         if (fill < 0)
@@ -595,12 +595,11 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     LOG.debug("Proxy v2 body {} from {} for {}", _next, _buffer, this);
 
                 // Do we need to wrap the endpoint?
-                ByteBuffer byteBuffer = _buffer.getByteBuffer();
                 ProxyEndPoint proxyEndPoint;
                 EndPoint endPoint = getEndPoint();
                 if (_local)
                 {
-                    byteBuffer.position(byteBuffer.position() + _length);
+                    _buffer.skip(_length);
                     proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
                 }
                 else
@@ -612,33 +611,33 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         case INET ->
                         {
                             byte[] addr = new byte[4];
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             InetAddress srcAddr = Inet4Address.getByAddress(addr);
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             InetAddress dstAddr = Inet4Address.getByAddress(addr);
-                            int srcPort = byteBuffer.getChar();
-                            int dstPort = byteBuffer.getChar();
+                            int srcPort = _buffer.getChar();
+                            int dstPort = _buffer.getChar();
                             local = new InetSocketAddress(dstAddr, dstPort);
                             remote = new InetSocketAddress(srcAddr, srcPort);
                         }
                         case INET6 ->
                         {
                             byte[] addr = new byte[16];
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             InetAddress srcAddr = Inet6Address.getByAddress(addr);
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             InetAddress dstAddr = Inet6Address.getByAddress(addr);
-                            int srcPort = byteBuffer.getChar();
-                            int dstPort = byteBuffer.getChar();
+                            int srcPort = _buffer.getChar();
+                            int dstPort = _buffer.getChar();
                             local = new InetSocketAddress(dstAddr, dstPort);
                             remote = new InetSocketAddress(srcAddr, srcPort);
                         }
                         case UNIX ->
                         {
                             byte[] addr = new byte[108];
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             String src = toUnixDomainPath(addr);
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             String dst = toUnixDomainPath(addr);
                             local = UnixDomainSocketAddress.of(dst);
                             remote = UnixDomainSocketAddress.of(src);
@@ -651,12 +650,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     Map<Integer, byte[]> tlvs = null;
 
                     // Any additional info?
-                    while (byteBuffer.remaining() > nonProxyRemaining)
+                    while (_buffer.remaining() > nonProxyRemaining)
                     {
-                        int type = 0xff & byteBuffer.get();
-                        int length = byteBuffer.getChar();
+                        int type = 0xff & _buffer.get();
+                        int length = _buffer.getChar();
                         byte[] value = new byte[length];
-                        byteBuffer.get(value);
+                        _buffer.get(value);
 
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("Proxy v2 T=%x L=%d V=%s for %s", type, length, StringUtil.toHexString(value), this));
@@ -709,8 +708,6 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 header {} for {}", _buffer, this);
 
-                ByteBuffer byteBuffer = _buffer.getByteBuffer();
-
                 // struct proxy_hdr_v2 {
                 //     uint8_t sig[12];  /* hex 0D 0A 0D 0A 00 0D 0A 51 55 49 54 0A */
                 //     uint8_t ver_cmd;  /* protocol version and command */
@@ -719,16 +716,16 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 // };
                 for (byte signatureByte : SIGNATURE)
                 {
-                    if (byteBuffer.get() != signatureByte)
+                    if (_buffer.get() != signatureByte)
                         throw new IOException("Proxy v2 bad PROXY signature");
                 }
 
-                int versionAndCommand = 0xFF & byteBuffer.get();
+                int versionAndCommand = 0xFF & _buffer.get();
                 if ((versionAndCommand & 0xF0) != 0x20)
                     throw new IOException("Proxy v2 bad PROXY version");
                 _local = (versionAndCommand & 0xF) == 0x00;
 
-                int transportAndFamily = 0xFF & byteBuffer.get();
+                int transportAndFamily = 0xFF & _buffer.get();
                 switch (transportAndFamily >> 4)
                 {
                     case 0 -> _family = Family.UNSPEC;
@@ -746,7 +743,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     default -> throw new IOException("Proxy v2 bad PROXY family");
                 };
 
-                _length = byteBuffer.getChar();
+                _length = _buffer.getChar();
 
                 if (!_local && (_family == Family.UNSPEC || transport != Transport.STREAM))
                     throw new IOException(String.format("Proxy v2 unsupported PROXY mode 0x%x,0x%x", versionAndCommand, transportAndFamily));

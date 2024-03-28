@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
@@ -239,7 +240,45 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * <p>Copies the bytes from this Chunk to the given byte array.</p>
+     * <p>Read and consume a single byte from this buffer.</p>
+     * @return the byte
+     * @throws java.nio.BufferUnderflowException if the buffer has no remaining bytes
+     */
+    default byte get()
+    {
+        return getByteBuffer().get();
+    }
+
+    default char getChar()
+    {
+        return getByteBuffer().getChar();
+    }
+
+    /**
+     * <p>Read a single byte from this buffer at the given offset. No bytes are consumed.</p>
+     * @return the byte
+     * @throws java.nio.BufferUnderflowException if the buffer has no remaining bytes
+     */
+    default int get(int bufferOffset)
+    {
+        ByteBuffer b = getByteBuffer();
+        int index = b.position() + bufferOffset;
+        return b.get(index);
+    }
+
+    /**
+     * <p>Copy and consume the bytes from this buffer to the given byte array.</p>
+     *
+     * @param bytes the byte array to copy the bytes into
+     * @return the number of bytes actually copied
+     */
+    default int get(byte[] bytes)
+    {
+        return get(bytes, 0, bytes.length);
+    }
+
+    /**
+     * <p>Copy and consume the bytes from this buffer to the given byte array</p>
      *
      * @param bytes the byte array to copy the bytes into
      * @param offset the offset within the byte array
@@ -253,6 +292,38 @@ public interface RetainableByteBuffer extends Retainable
             return 0;
         length = Math.min(length, b.remaining());
         b.get(bytes, offset, length);
+        return length;
+    }
+
+    /**
+     * <p>Copies the bytes from this buffer at a specific index
+     * to the given byte array. No bytes are consumed from the buffer.</p>
+     * @param bufferOffset the position with the buffer to start copying from
+     * @param bytes the byte array to copy the bytes into
+     * @return the number of bytes actually copied
+     */
+    default int get(int bufferOffset, byte[] bytes)
+    {
+        return get(bufferOffset, bytes, 0, bytes.length);
+    }
+
+    /**
+     * <p>Copies the bytes from this buffer at a specific index
+     * to the given byte array. No bytes are consumed from the buffer.</p>
+     * @param bufferOffset the position with the buffer to start copying from
+     * @param bytes the byte array to copy the bytes into
+     * @param bytesOffset the offset within the byte array
+     * @param length the maximum number of bytes to copy
+     * @return the number of bytes actually copied
+     */
+    default int get(int bufferOffset, byte[] bytes, int bytesOffset, int length)
+    {
+        ByteBuffer b = getByteBuffer();
+        if (b == null)
+            return 0;
+        int index = b.position() + bufferOffset;
+        length = Math.min(length, b.limit() - index);
+        b.get(index, bytes, bytesOffset, length);
         return length;
     }
 
@@ -923,6 +994,18 @@ public interface RetainableByteBuffer extends Retainable
                     }.iterate();
                 }
             }
+        }
+
+        /**
+         * Fill the buffer from an Endpoint.
+         * @param endPoint The {@link EndPoint} to fill from
+         * @return The number of bytes filled
+         * @throws IOException IF there is a problem filling
+         * @see EndPoint#fill(ByteBuffer)
+         */
+        default int fillFrom(EndPoint endPoint) throws IOException
+        {
+            return endPoint.fill(getByteBuffer());
         }
     }
 }

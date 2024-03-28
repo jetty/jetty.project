@@ -182,8 +182,8 @@ public interface EndPoint extends Closeable
      * by writing from the buffers limit up to its capacity.
      * The limit is updated to include the filled bytes.</p>
      *
-     * @param buffer The buffer to fill. The position and limit are modified during the fill. After the
-     * operation, the position is unchanged and the limit is increased to reflect the new data filled.
+     * @param buffer The buffer to fill. After the operation, the position is unchanged and
+     * the limit is increased to reflect the new data filled.
      * @return an {@code int} value indicating the number of bytes
      * filled or -1 if EOF is read or the input is shutdown.
      * @throws IOException if the endpoint is closed.

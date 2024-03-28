@@ -84,8 +84,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private int get(Content.Chunk chunk, byte[] bytes, int offset, int length)
     {
-        length = Math.min(chunk.remaining(), length);
-        chunk.getByteBuffer().get(bytes, offset, length);
+        length = chunk.get(bytes, offset, length);
         _contentConsumed.add(length);
         return length;
     }
