@@ -56,7 +56,9 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             assertEquals(0, setupRun.getExitValue());
 
             Path webApp = distribution.resolveArtifact("org.eclipse.jetty.ee10:jetty-ee10-test-log4j2-webapp:war:" + jettyVersion);
-            Path testWebApp = distribution.installWar(webApp, "test");
+            Path testWebApp = distribution.getJettyBase().resolve("webapps/test.war");
+
+            Files.copy(webApp, testWebApp);
 
             Path tempDir = distribution.getJettyBase().resolve("work");
             FS.ensureEmpty(tempDir);
@@ -68,7 +70,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 <Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
                    <Set name="contextPath">/test</Set>
                    <Set name="war"><Property name="jetty.webapps"/>/test.war</Set>
-                   <Set name="tempDirectory"><Property name="jetty.base}"/>/work/test</Set>
+                   <Set name="tempDirectory"><Property name="jetty.base"/>/work/test</Set>
                    <Set name="tempDirectoryPersistent">false</Set>
                 </Configure>
                 """;
@@ -93,6 +95,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 assertThat(content, containsString("GET at LogServlet"));
 
                 // Trigger a hot-reload
+                run2.getLogs().clear();
                 touch(warXmlPath);
 
                 // Wait for reload
@@ -103,7 +106,6 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 content = response.getContentAsString();
                 assertThat(content, containsString("GET at LogServlet"));
-
             }
         }
     }
@@ -111,7 +113,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
     private void touch(Path path) throws IOException
     {
         System.err.println("touch: " + path);
-        FileTime now = FileTime.fromMillis(System.currentTimeMillis());
+        FileTime now = FileTime.fromMillis(System.currentTimeMillis() + 2000);
         Files.setLastModifiedTime(path, now);
     }
 }
