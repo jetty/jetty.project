@@ -151,13 +151,6 @@ public interface ResourceFactory
         return CombinedResource.combine(List.of(resources));
     }
 
-    static Resource resolveElseNew(Resource base, String pathOrUri, Function<String, Resource> factory)
-    {
-        if (URIUtil.isRelative(pathOrUri))
-            return base.resolve(pathOrUri);
-        return factory.apply(pathOrUri);
-    }
-
     /**
      * Construct a resource from a uri.
      *
