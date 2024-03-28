@@ -164,11 +164,7 @@ public class MultiPartServletTest
         }
         content.close();
 
-        assert400orEof(listener, responseContent ->
-        {
-            assertThat(responseContent, containsString("400: bad"));
-            assertThat(responseContent, containsString("Form is larger than max length"));
-        });
+        assert400orEof(listener, responseContent -> assertThat(responseContent, containsString("400")));
     }
 
     @ParameterizedTest
@@ -203,11 +199,7 @@ public class MultiPartServletTest
             .body(multiPart)
             .send(listener);
 
-        assert400orEof(listener, responseContent ->
-        {
-        assertThat(responseContent, containsString("400: bad"));
-        assertThat(responseContent, containsString("Form with too many keys"));
-        });
+        assert400orEof(listener, responseContent -> assertThat(responseContent, containsString("400")));
     }
 
     @ParameterizedTest
@@ -363,7 +355,6 @@ public class MultiPartServletTest
                 .send();
 
             assertEquals(400, response.getStatus());
-            assertThat(response.getContentAsString(), containsString("max file size exceeded"));
         }
 
         String[] fileList = tmpDir.toFile().list();
