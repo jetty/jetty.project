@@ -24,8 +24,8 @@ import org.junit.jupiter.api.AfterEach;
 public abstract class AbstractRuleTest
 {
     protected Server _server = new Server();
-    protected HttpConfiguration httpConfig = new HttpConfiguration();
-    protected LocalConnector _connector = new LocalConnector(_server, new HttpConnectionFactory(httpConfig));
+    protected HttpConfiguration _httpConfig = new HttpConfiguration();
+    protected LocalConnector _connector = new LocalConnector(_server, new HttpConnectionFactory(_httpConfig));
     protected RewriteHandler _rewriteHandler = new RewriteHandler();
 
     @AfterEach

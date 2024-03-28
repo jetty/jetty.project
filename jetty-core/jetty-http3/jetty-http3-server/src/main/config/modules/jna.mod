@@ -5,6 +5,9 @@ https://github.com/java-native-access/jna
 [files]
 maven://net.java.dev.jna/jna-jpms/${jna.version}|lib/http3/jna-jpms-${jna.version}.jar
 
+[lib]
+lib/http3/jna-jpms-${jna.version}.jar
+
 [ini]
 jna.version?=@jna.version@
 

@@ -218,11 +218,11 @@ public class WebInfConfiguration extends AbstractConfiguration
             Resource originalWarResource = webApp;
 
             // Is the WAR usable directly?
-            if (Resources.isReadableFile(webApp) && FileID.isJavaArchive(webApp.getURI()) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
+            if (Resources.isReadableFile(webApp) && FileID.isArchive(webApp.getURI()) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
             {
                 // Turned this into a jar URL.
                 Resource jarWebApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
-                if (Resources.isReadableFile(jarWebApp)) // but only if it is readable
+                if (Resources.isDirectory(jarWebApp))
                     webApp = jarWebApp;
             }
 
@@ -230,7 +230,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if ((context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() == null) ||
-                    !originalWarResource.isDirectory()
+                    !webApp.isDirectory()
             )
             {
                 // Look for sibling directory.
@@ -238,10 +238,10 @@ public class WebInfConfiguration extends AbstractConfiguration
 
                 if (war != null)
                 {
-                    Path warPath = Path.of(URIUtil.toURI(war));
-                    
+                    Path warPath = context.getResourceFactory().newResource(war).getPath();
+
                     // look for a sibling like "foo/" to a "foo.war"
-                    if (FileID.isWebArchive(warPath) && Files.exists(warPath))
+                    if (warPath != null && FileID.isWebArchive(warPath) && Files.exists(warPath))
                     {
                         Path sibling = warPath.getParent().resolve(FileID.getBasename(warPath));
                         if (Files.exists(sibling) && Files.isDirectory(sibling) && Files.isWritable(sibling))

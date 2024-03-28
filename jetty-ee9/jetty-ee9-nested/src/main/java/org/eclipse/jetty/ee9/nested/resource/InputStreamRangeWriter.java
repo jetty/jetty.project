@@ -114,6 +114,7 @@ public class InputStreamRangeWriter implements RangeWriter
             pos = skipTo;
         }
 
+        // TODO this is very inefficient as copy() allocates a 64K buffer.
         IO.copy(inputStream, outputStream, length);
         pos += length;
     }

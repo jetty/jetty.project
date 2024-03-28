@@ -33,6 +33,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -224,6 +226,7 @@ public class ResponseHeadersTest
     @Test
     public void testMultilineResponseHeaderValue() throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         String actualPathInfo = "%0a%20Content-Type%3a%20image/png%0a%20Content-Length%3a%208%0A%20%0A%20yuck<!--";
 
         HttpTester.Request request = new HttpTester.Request();
