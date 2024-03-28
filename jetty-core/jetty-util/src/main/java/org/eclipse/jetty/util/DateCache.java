@@ -26,7 +26,7 @@ import java.util.TimeZone;
  * <p>
  * If consecutive calls are frequently very different, then this
  * may be a little slower than a normal DateFormat.
- * <p>
+ * </p>
  * @see DateTimeFormatter for date formatting patterns.
  */
 public class DateCache

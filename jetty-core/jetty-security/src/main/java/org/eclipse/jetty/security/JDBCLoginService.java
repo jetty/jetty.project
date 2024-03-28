@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Credential;
@@ -96,7 +97,7 @@ public class JDBCLoginService extends AbstractLoginService
     {
         Properties properties = new Properties();
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
-             InputStream in = resourceFactory.newResource(_config).newInputStream())
+             InputStream in = IOResources.asInputStream(resourceFactory.newResource(_config)))
         {
             properties.load(in);
         }

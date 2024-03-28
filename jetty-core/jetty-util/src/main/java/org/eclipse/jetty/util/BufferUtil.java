@@ -22,6 +22,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ReadOnlyBufferException;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.ReadableByteChannel;
@@ -1111,7 +1112,7 @@ public class BufferUtil
         ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
 
         int pos = BufferUtil.flipToFill(buffer);
-        try (ReadableByteChannel channel = resource.newReadableByteChannel())
+        try (ReadableByteChannel channel = Channels.newChannel(resource.newInputStream()))
         {
             long needed = len;
             while (needed > 0 && buffer.hasRemaining())

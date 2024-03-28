@@ -88,7 +88,6 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsH
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
@@ -1629,7 +1628,7 @@ public class ResourceHandlerTest
                 \r
                 """);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-            assertThat("Response.status", response.getStatus(), anyOf(is(HttpStatus.NOT_FOUND_404), is(HttpStatus.INTERNAL_SERVER_ERROR_500)));
+            assertThat("Response.status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
             assertThat("Response.content", response.getContent(), is(not(containsString(docRoot.toString()))));
         }
     }
