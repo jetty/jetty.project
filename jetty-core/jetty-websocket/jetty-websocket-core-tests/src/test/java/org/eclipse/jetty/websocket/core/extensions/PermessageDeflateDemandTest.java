@@ -19,12 +19,14 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -40,12 +42,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PermessageDeflateDemandTest
 {
     private Server _server;
+    private ArrayByteBufferPool.Tracking _bufferPool;
     private WebSocketCoreClient _client;
     private ServerConnector _connector;
     private WebSocketUpgradeHandler _upgradeHandler;
@@ -53,7 +57,8 @@ public class PermessageDeflateDemandTest
     @BeforeEach
     public void before() throws Exception
     {
-        _server = new Server();
+        _bufferPool = new ArrayByteBufferPool.Tracking();
+        _server = new Server(null, null, _bufferPool);
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
@@ -68,8 +73,15 @@ public class PermessageDeflateDemandTest
     @AfterEach
     public void after() throws Exception
     {
-        _client.stop();
-        _server.stop();
+        try
+        {
+            assertThat("Detected leaks: " + _bufferPool.dumpLeaks(), _bufferPool.getLeaks().size(), is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(_client);
+            LifeCycle.stop(_server);
+        }
     }
 
     @Test
@@ -113,12 +125,13 @@ public class PermessageDeflateDemandTest
         public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
         public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
         private StringBuilder _stringBuilder = new StringBuilder();
-        private ByteBufferCallbackAccumulator _byteBuilder = new ByteBufferCallbackAccumulator();
+        private RetainableByteBuffer.Accumulator _byteBuilder;
 
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
         {
             _coreSession = coreSession;
+            _byteBuilder = new RetainableByteBuffer.Accumulator(_coreSession.getByteBufferPool(), false, -1);
             callback.succeeded();
             coreSession.demand();
         }
@@ -154,11 +167,14 @@ public class PermessageDeflateDemandTest
                         }
                         break;
                     case OpCode.BINARY:
-                        _byteBuilder.addEntry(frame.getPayload(), callback);
+                        RetainableByteBuffer wrappedPayload = RetainableByteBuffer.wrap(frame.getPayload(), callback::succeeded);
+                        _byteBuilder.append(wrappedPayload);
+                        wrappedPayload.release();
                         if (frame.isFin())
                         {
-                            binaryMessages.add(BufferUtil.toBuffer(_byteBuilder.takeByteArray()));
-                            _byteBuilder = new ByteBufferCallbackAccumulator();
+                            // TODO this looks wrong
+                            binaryMessages.add(ByteBuffer.wrap(BufferUtil.toArray(_byteBuilder.getByteBuffer())));
+                            _byteBuilder.clear();
                         }
                         break;
                     default:
@@ -177,12 +193,16 @@ public class PermessageDeflateDemandTest
         public void onError(Throwable cause, Callback callback)
         {
             cause.printStackTrace();
+            if (_byteBuilder != null)
+                _byteBuilder.clear();
             callback.succeeded();
         }
 
         @Override
         public void onClosed(CloseStatus closeStatus, Callback callback)
         {
+            if (_byteBuilder != null)
+                _byteBuilder.clear();
             callback.succeeded();
         }
     }

@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,9 +38,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -270,6 +276,12 @@ public class BufferedContentSinkTest
             assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("Hello World!"));
             chunk.release();
             callback.get(5, TimeUnit.SECONDS);
+
+            buffered.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+            chunk = async.read();
+            assertThat(chunk.isLast(), is(true));
+            assertThat(chunk.remaining(), is(0));
+            chunk.release();
         }
     }
 
@@ -509,10 +521,11 @@ public class BufferedContentSinkTest
     @Test
     public void testByteByByteAsync() throws Exception
     {
+        // This test relies on selecting a size that will not be over allocated by the buffer pool
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 1024);
-            AtomicInteger count = new AtomicInteger(2048);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 8 * 1024, 8 * 1024);
+            AtomicInteger count = new AtomicInteger(16 * 1024);
             CountDownLatch complete = new CountDownLatch(1);
             Callback callback = new Callback()
             {
@@ -540,12 +553,12 @@ public class BufferedContentSinkTest
 
             Content.Chunk read = await().atMost(5, TimeUnit.SECONDS).until(async::read, Objects::nonNull);
             assertThat(read.isLast(), is(false));
-            assertThat(read.remaining(), is(1024));
+            assertThat(read.remaining(), is(8 * 1024));
             assertThat(read.release(), is(true));
 
             read = await().atMost(5, TimeUnit.SECONDS).until(async::read, Objects::nonNull);
             assertThat(read.isLast(), is(true));
-            assertThat(read.remaining(), is(1024));
+            assertThat(read.remaining(), is(8 * 1024));
             assertThat(read.release(), is(true));
 
             assertTrue(complete.await(5, TimeUnit.SECONDS));
@@ -592,6 +605,47 @@ public class BufferedContentSinkTest
 
             assertTrue(complete.await(5, TimeUnit.SECONDS));
             assertThat(count.get(), is(-1));
+        }
+    }
+
+    @Test
+    public void testFromOutputStream()
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Content.Sink sink = Content.Sink.from(baos);
+
+        AccountingCallback accountingCallback = new AccountingCallback();
+
+        sink.write(false, ByteBuffer.wrap("hello ".getBytes(US_ASCII)), accountingCallback);
+        assertThat(accountingCallback.reports, equalTo(List.of("succeeded")));
+        accountingCallback.reports.clear();
+
+        sink.write(true, ByteBuffer.wrap("world".getBytes(US_ASCII)), accountingCallback);
+        assertThat(accountingCallback.reports, equalTo(List.of("succeeded")));
+        accountingCallback.reports.clear();
+
+        sink.write(true, ByteBuffer.wrap(" again".getBytes(US_ASCII)), accountingCallback);
+        assertThat(accountingCallback.reports.size(), is(1));
+        assertThat(accountingCallback.reports.get(0), instanceOf(EOFException.class));
+        accountingCallback.reports.clear();
+
+        assertThat(baos.toString(US_ASCII), is("hello world"));
+    }
+
+    private static class AccountingCallback implements Callback
+    {
+        private final List<Object> reports = new ArrayList<>();
+
+        @Override
+        public void succeeded()
+        {
+            reports.add("succeeded");
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            reports.add(x);
         }
     }
 }

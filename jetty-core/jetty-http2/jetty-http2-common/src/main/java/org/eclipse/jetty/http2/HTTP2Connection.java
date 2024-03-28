@@ -479,6 +479,12 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         }
 
         @Override
+        public boolean isRetained()
+        {
+            return retainable.isRetained();
+        }
+
+        @Override
         public void retain()
         {
             retainable.retain();
@@ -541,7 +547,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
         private void put(ByteBuffer source)
         {
-            BufferUtil.append(delegate.getByteBuffer(), source);
+            delegate.append(source);
         }
     }
 }

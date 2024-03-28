@@ -344,7 +344,7 @@ public class Parser
                 // No space in the buffer, so we have to copy the partial payload.
                 // The size of this allocation is limited by the maxFrameSize.
                 aggregate = bufferPool.acquire(payloadLength, false);
-                BufferUtil.append(aggregate.getByteBuffer(), buffer);
+                aggregate.append(buffer);
                 return null;
             }
 
@@ -376,7 +376,7 @@ public class Parser
             if (available < expecting)
             {
                 // not enough data to complete this frame, just copy it
-                BufferUtil.append(aggregate.getByteBuffer(), buffer);
+                aggregate.append(buffer);
                 return null;
             }
 

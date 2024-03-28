@@ -302,6 +302,12 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         }
 
         @Override
+        public boolean isRetained()
+        {
+            return canRetain() && referenceCounter.isRetained();
+        }
+
+        @Override
         public void retain()
         {
             if (canRetain())
@@ -329,6 +335,18 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         public void failed(Throwable x)
         {
             callback.failed(x);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[rc=%s,l=%b,b=%s]".formatted(
+                getClass().getSimpleName(),
+                hashCode(),
+                referenceCounter == null ? "-" : referenceCounter.get(),
+                isLast(),
+                BufferUtil.toDetailString(getByteBuffer())
+            );
         }
     }
 }

@@ -155,7 +155,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             if (LOG.isDebugEnabled())
                 LOG.debug("Detector {} adopting {}", getProtocol(), BufferUtil.toDetailString(byteBuffer));
             // Throws if the ByteBuffer to adopt is too big, but it is handled.
-            BufferUtil.append(_buffer.getByteBuffer(), byteBuffer);
+            _buffer.append(byteBuffer);
         }
 
         @Override

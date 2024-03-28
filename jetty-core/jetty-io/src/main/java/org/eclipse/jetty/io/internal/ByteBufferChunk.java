@@ -66,6 +66,12 @@ public abstract class ByteBufferChunk implements Content.Chunk
         }
 
         @Override
+        public boolean isRetained()
+        {
+            return references.isRetained();
+        }
+
+        @Override
         public boolean canRetain()
         {
             return true;
@@ -146,6 +152,12 @@ public abstract class ByteBufferChunk implements Content.Chunk
         {
             super(byteBuffer, last);
             this.retainable = retainable;
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return retainable.isRetained();
         }
 
         @Override

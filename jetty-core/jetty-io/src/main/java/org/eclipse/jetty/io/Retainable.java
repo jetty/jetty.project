@@ -63,6 +63,15 @@ public interface Retainable
     }
 
     /**
+     * @return whether this instance is retained
+     * @see ReferenceCounter#isRetained()
+     */
+    default boolean isRetained()
+    {
+        return false;
+    }
+
+    /**
      * <p>Retains this resource, potentially incrementing a reference count if there are resources that will be released.</p>
      */
     default void retain()
@@ -101,6 +110,12 @@ public interface Retainable
         public boolean canRetain()
         {
             return getWrapped().canRetain();
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return getWrapped().isRetained();
         }
 
         @Override
@@ -195,11 +210,7 @@ public interface Retainable
             return ref == 0;
         }
 
-        /**
-         * <p>Returns whether {@link #retain()} has been called at least one more time than {@link #release()}.</p>
-         *
-         * @return whether this buffer is retained
-         */
+        @Override
         public boolean isRetained()
         {
             return references.get() > 1;

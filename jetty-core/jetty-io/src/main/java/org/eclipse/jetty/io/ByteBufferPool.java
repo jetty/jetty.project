@@ -127,12 +127,15 @@ public interface ByteBufferPool
 
     /**
      * <p>Accumulates a sequence of {@link RetainableByteBuffer} that
-     * are typically created during the generation of protocol bytes.</p>
+     * are typically created during the generation of protocol bytes.
+     * The accumulated buffers are then used individually rather than
+     * as a single buffer (like {@link RetainableByteBuffer.Accumulator}.</p>
      * <p>{@code RetainableByteBuffer}s can be either
      * {@link #append(RetainableByteBuffer) appended} to the sequence,
      * or {@link #insert(int, RetainableByteBuffer) inserted} at a
      * specific position in the sequence, and then
      * {@link #release() released} when they are consumed.</p>
+     * @see RetainableByteBuffer.Accumulator
      */
     class Accumulator
     {
