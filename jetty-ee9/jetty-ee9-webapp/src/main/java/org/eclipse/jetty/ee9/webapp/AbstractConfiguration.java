@@ -19,6 +19,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.ClassMatcher;
+
 public class AbstractConfiguration implements Configuration
 {
     private final boolean _enabledByDefault;

@@ -2,26 +2,18 @@
 
 [description]
 # tag::description[]
-This module enables deployment of Java Servlet web applications.
+This module provide common configuration of Java Servlet web applications over all environments.
 # end::description[]
 
-[environment]
-ee10
-
-[depend]
-ee-webapp
-ee10-servlet
-ee10-security
-
 [xml]
-etc/jetty-ee10-webapp.xml
+etc/jetty-ee-webapp.xml
 
 [lib]
-lib/jetty-ee10-webapp-${jetty.version}.jar
+lib/jetty-ee-${jetty.version}.jar
 
 [ini-template]
 # tag::ini-template[]
-## Add to the environment wide default jars and packages protected or hidden from webapps.
+## Add to the server wide default jars and packages protected or hidden from webapps.
 ## Protected (aka System) classes cannot be overridden by a webapp.
 ## Hidden (aka Server) classes cannot be seen by a webapp
 ## Lists of patterns are comma separated and may be either:
@@ -33,12 +25,7 @@ lib/jetty-ee10-webapp-${jetty.version}.jar
 ##
 ## The +=, operator appends to a CSV list with a comma as needed.
 ##
-#jetty.webapp.addProtectedClasses+=,org.example.
-#jetty.webapp.addHiddenClasses+=,org.example.
+#jetty.server.addProtectedClasses+=,org.example.
+#jetty.server.addHiddenClasses+=,org.example.
 # end::ini-template[]
 
-[ini]
-contextHandlerClass?=org.eclipse.jetty.ee10.webapp.WebAppContext
-
-[jpms]
-add-modules:java.instrument

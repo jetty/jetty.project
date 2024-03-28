@@ -28,7 +28,7 @@ lib/logging/log4j-core-${log4j2.version}.jar
 
 [ini]
 log4j2.version?=@log4j2.version@
-jetty.webapp.addServerClasses+=,org.apache.logging.log4j.
+jetty.webapp.addHiddenClasses+=,org.apache.logging.log4j.
 
 [license]
 Log4j is released under the Apache 2.0 license.

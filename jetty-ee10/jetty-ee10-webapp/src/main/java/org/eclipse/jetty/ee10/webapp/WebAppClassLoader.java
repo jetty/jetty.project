@@ -60,8 +60,8 @@ import org.slf4j.LoggerFactory;
  * parent loader.  Java2 compliant loading, where the parent loader
  * always has priority, can be selected with the
  * {@link WebAppContext#setParentLoaderPriority(boolean)}
- * method and influenced with {@link WebAppContext#isServerClass(Class)} and
- * {@link WebAppContext#isSystemClass(Class)}.
+ * method and influenced with {@link WebAppContext#isHiddenClass(Class)} and
+ * {@link WebAppContext#isProtectedClass(Class)}.
  * <p>
  * If no parent class loader is provided, then the current thread
  * context classloader will be used.  If that is null then the
@@ -115,9 +115,9 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         List<Resource> getExtraClasspath();
 
-        boolean isServerResource(String name, URL parentUrl);
+        boolean isHiddenResource(String name, URL parentUrl);
 
-        boolean isSystemResource(String name, URL webappUrl);
+        boolean isProtectedResource(String name, URL webappUrl);
     }
 
     /**
@@ -302,7 +302,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         while (urls != null && urls.hasMoreElements())
         {
             URL url = urls.nextElement();
-            if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerResource(name, url))
+            if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenResource(name, url))
                 fromParent.add(url);
         }
 
@@ -310,7 +310,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         while (urls != null && urls.hasMoreElements())
         {
             URL url = urls.nextElement();
-            if (!_context.isSystemResource(name, url) || fromParent.isEmpty())
+            if (!_context.isProtectedResource(name, url) || fromParent.isEmpty())
                 fromWebapp.add(url);
         }
 
@@ -351,7 +351,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             // return if we have a url the webapp is allowed to see
             if (parentUrl != null &&
                 (Boolean.TRUE.equals(__loadServerClasses.get()) ||
-                    !_context.isServerResource(name, parentUrl)))
+                    !_context.isHiddenResource(name, parentUrl)))
                 resource = parentUrl;
             else
             {
@@ -370,7 +370,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         {
             URL webappUrl = this.findResource(name);
 
-            if (webappUrl != null && !_context.isSystemResource(name, webappUrl))
+            if (webappUrl != null && !_context.isProtectedResource(name, webappUrl))
                 resource = webappUrl;
             else
             {
@@ -379,7 +379,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 URL parentUrl = _parent.getResource(name);
                 if (parentUrl != null &&
                     (Boolean.TRUE.equals(__loadServerClasses.get()) ||
-                        !_context.isServerResource(name, parentUrl)))
+                        !_context.isHiddenResource(name, parentUrl)))
                     resource = parentUrl;
                     // We couldn't find a parent resource, so OK to return a webapp one if it exists
                     // and we just couldn't see it before
@@ -425,7 +425,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                         throw new ClassNotFoundException("Bad ClassLoader: returned null for loadClass(" + name + ")");
 
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenClass(parentClass))
                     {
                         return parentClass;
                     }
@@ -473,7 +473,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 {
                     parentClass = _parent.loadClass(name);
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenClass(parentClass))
                     {
                         return parentClass;
                     }
@@ -524,7 +524,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         String path = TypeUtil.toClassReference(name);
         URL webappUrl = findResource(path);
 
-        if (webappUrl != null && (!checkSystemResource || !_context.isSystemResource(name, webappUrl)))
+        if (webappUrl != null && (!checkSystemResource || !_context.isProtectedResource(name, webappUrl)))
         {
 
             webappClass = this.foundClass(name, webappUrl);
@@ -605,14 +605,14 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     @Override
-    public boolean isSystemClass(Class<?> clazz)
+    public boolean isProtectedClass(Class<?> clazz)
     {
-        return _context.isSystemClass(clazz);
+        return _context.isProtectedClass(clazz);
     }
 
     @Override
-    public boolean isServerClass(Class<?> clazz)
+    public boolean isHiddenClass(Class<?> clazz)
     {
-        return _context.isServerClass(clazz);
+        return _context.isHiddenClass(clazz);
     }
 }

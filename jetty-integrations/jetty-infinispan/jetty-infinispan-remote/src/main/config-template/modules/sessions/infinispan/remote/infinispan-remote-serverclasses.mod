@@ -9,4 +9,4 @@ infinispan
 
 [ini]
 ## Hide the infinispan libraries from deployed webapps
-jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/infinispan/
+jetty.webapp.addHiddenClasses+=,${jetty.base.uri}/lib/infinispan/

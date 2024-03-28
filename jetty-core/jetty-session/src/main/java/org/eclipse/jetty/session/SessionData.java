@@ -89,7 +89,7 @@ public class SessionData implements Serializable
                 //Clazz not loaded by context classloader, but ask if loadable by context classloader,
                 //because preferable to use context classloader if possible (eg for deep structures).
                 ClassVisibilityChecker checker = (ClassVisibilityChecker)(contextLoader);
-                isContextLoader = (checker.isSystemClass(clazz) && !(checker.isServerClass(clazz)));
+                isContextLoader = (checker.isProtectedClass(clazz) && !(checker.isHiddenClass(clazz)));
             }
             else
             {

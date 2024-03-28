@@ -11,32 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.webapp;
-
-/**
- * @deprecated Use org.eclipse.jetty.util.ClassMatcher
- */
-
-@Deprecated(since = "12.0.8", forRemoval = true)
-public class ClassMatcher extends org.eclipse.jetty.util.ClassMatcher
+module org.eclipse.jetty.ee
 {
-    public ClassMatcher()
-    {
-        super();
-    }
+    requires org.slf4j;
 
-    public ClassMatcher(org.eclipse.jetty.util.ClassMatcher patterns)
-    {
-        super(patterns);
-    }
+    requires transitive org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.server;
 
-    public ClassMatcher(String... patterns)
-    {
-        super(patterns);
-    }
-
-    public ClassMatcher(String pattern)
-    {
-        super(pattern);
-    }
+    exports org.eclipse.jetty.ee;
 }

@@ -60,8 +60,8 @@ import org.slf4j.LoggerFactory;
  * parent loader.  Java2 compliant loading, where the parent loader
  * always has priority, can be selected with the
  * {@link WebAppContext#setParentLoaderPriority(boolean)}
- * method and influenced with {@link WebAppContext#isServerClass(Class)} and
- * {@link WebAppContext#isSystemClass(Class)}.
+ * method and influenced with {@link WebAppContext#isHiddenClass(Class)} and
+ * {@link WebAppContext#isProtectedClass(Class)}.
  * <p>
  * If no parent class loader is provided, then the current thread
  * context classloader will be used.  If that is null then the
@@ -429,7 +429,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                         throw new ClassNotFoundException("Bad ClassLoader: returned null for loadClass(" + name + ")");
 
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenClass(parentClass))
                     {
                         return parentClass;
                     }
@@ -477,7 +477,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 {
                     parentClass = _parent.loadClass(name);
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenClass(parentClass))
                     {
                         return parentClass;
                     }
@@ -609,14 +609,14 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     @Override
-    public boolean isSystemClass(Class<?> clazz)
+    public boolean isProtectedClass(Class<?> clazz)
     {
-        return _context.isSystemClass(clazz);
+        return _context.isProtectedClass(clazz);
     }
 
     @Override
-    public boolean isServerClass(Class<?> clazz)
+    public boolean isHiddenClass(Class<?> clazz)
     {
-        return _context.isServerClass(clazz);
+        return _context.isHiddenClass(clazz);
     }
 }
