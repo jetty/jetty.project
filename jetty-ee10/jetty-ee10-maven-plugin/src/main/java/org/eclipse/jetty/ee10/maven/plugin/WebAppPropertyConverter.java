@@ -17,7 +17,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,9 +28,9 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -226,9 +225,8 @@ public class WebAppPropertyConverter
         if (!StringUtil.isBlank(str))
         {
             // This is a use provided list of overlays, which could have mountable entries.
-            List<URI> uris = URIUtil.split(str);
             webApp.setWar(null);
-            webApp.setBaseResource(webApp.getResourceFactory().newResource(uris));
+            webApp.setBaseResource(ResourceFactory.combine(webApp.getResourceFactory().split(str)));
         }
 
         str = webAppProperties.getProperty(WAR_FILE);
