@@ -22,8 +22,6 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
@@ -39,7 +37,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -172,14 +169,16 @@ public class FileSystemResourceTest
         Files.createDirectories(testdir);
 
         Path pwd = Paths.get(System.getProperty("user.dir"));
-        Path relativePath = pwd.relativize(testdir);
+
+        // Establish a relative path URI that uses uri "/" path separators (now windows "\")
+        URI relativePath = pwd.toUri().relativize(testdir.toUri());
 
         // Get a path relative name using unix/uri "/" (not windows "\")
-        String relativeName = FS.separators(relativePath.toString());
-        assertThat("Should not have path navigation entries", relativeName, not(containsString("..")));
+        assertThat("Should not have path navigation entries", relativePath.toASCIIString(), not(containsString("..")));
+        assertFalse(relativePath.isAbsolute());
 
-        resource = ResourceFactory.root().newResource(new URI(relativeName));
-        assertThat("Relative newResource: " + relativeName, resource, notNullValue());
+        resource = ResourceFactory.root().newResource(relativePath);
+        assertThat("Relative newResource: " + relativePath, resource, notNullValue());
         assertThat(resource.getURI().toString(), startsWith("file:"));
         assertThat(resource.getURI().toString(), endsWith("/path/to/resource/"));
     }
@@ -469,31 +468,6 @@ public class FileSystemResourceTest
         {
             IO.copy(reader, writer);
             assertThat("Stream", writer.toString(), is(content));
-        }
-    }
-
-    @Test
-    public void testReadableByteChannel(WorkDir workDir) throws Exception
-    {
-        Path dir = workDir.getEmptyPathDir();
-        Path file = dir.resolve("foo");
-        String content = "Foo is here";
-
-        try (StringReader reader = new StringReader(content);
-             BufferedWriter writer = Files.newBufferedWriter(file))
-        {
-            IO.copy(reader, writer);
-        }
-
-        Resource base = ResourceFactory.root().newResource(dir);
-        Resource foo = base.resolve("foo");
-        try (ReadableByteChannel channel = foo.newReadableByteChannel())
-        {
-            ByteBuffer buf = ByteBuffer.allocate(256);
-            channel.read(buf);
-            buf.flip();
-            String actual = BufferUtil.toUTF8String(buf);
-            assertThat("ReadableByteChannel content", actual, is(content));
         }
     }
 
@@ -1095,7 +1069,8 @@ public class FileSystemResourceTest
 
             if (WINDOWS.isCurrentOs())
             {
-                assertThat("getURI()", r.getPath().toString(), containsString("aa\\/foo.txt"));
+                // On windows, the extra "\" is stripped when working with java.nio.Path objects
+                assertThat("getURI()", r.getPath().toString(), containsString("aa\\foo.txt"));
                 assertThat("getURI()", r.getURI().toASCIIString(), containsString("aa%5C/foo.txt"));
                 assertThat("isAlias()", r.isAlias(), is(true));
                 assertThat("getRealURI()", r.getRealURI(), notNullValue());
@@ -1279,7 +1254,16 @@ public class FileSystemResourceTest
 
         Resource r = base.resolve("file.txt");
         assertThat("Exists: " + r, r.exists(), is(true));
-        assertThat("Is Not Alias: " + r, r, isNotAlias());
+        if (WINDOWS.isCurrentOs())
+        {
+            // On windows, the base.resolve results in a representation of ".../testUtf8Dir/b%C3%A3m/file.txt"
+            // But that differs from the input URI of ".../testUtf8Dir/bãm/file.txt", so it is viewed as an alias.
+            assertThat("Is Alias: " + r, r, isAlias());
+            URI realURI = r.getRealURI();
+            assertThat(realURI, is(file.toUri()));
+        }
+        else
+            assertThat("Is Not Alias: " + r, r, isNotAlias());
     }
 
     @Test
@@ -1287,6 +1271,7 @@ public class FileSystemResourceTest
     public void testUncPath()
     {
         Resource base = ResourceFactory.root().newResource(URI.create("file:////127.0.0.1/path"));
+        assumeTrue(base != null);
         Resource resource = base.resolve("WEB-INF/");
         assertThat("getURI()", resource.getURI().toASCIIString(), containsString("path/WEB-INF/"));
         assertThat("isAlias()", resource.isAlias(), is(false));

@@ -18,7 +18,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -53,7 +54,7 @@ public class DynamicListenerTests extends AbstractJettyHomeTest
             assertEquals(0, run1.getExitValue());
         }
 
-        int port = distribution.freePort();
+        int port = Tester.freePort();
         try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
         {
             assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));

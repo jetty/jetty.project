@@ -55,6 +55,11 @@ public class MemoryResource extends Resource
         }
     }
 
+    public byte[] getBytes()
+    {
+        return _bytes;
+    }
+
     @Override
     public Path getPath()
     {

@@ -24,6 +24,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.Authentication;
@@ -65,10 +67,18 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.transport.ClientConnectionFactoryOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.MemoryConnector;
+import org.eclipse.jetty.server.MemoryTransport;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -143,6 +153,35 @@ public class HTTPClientDocs
         // Only allow to connect to subdomains of domain.com.
         sslContextFactory.setHostnameVerifier((hostName, session) -> hostName.endsWith(".domain.com"));
         // end::tlsAppValidation[]
+    }
+
+    public void sslHandshakeListener()
+    {
+        // tag::sslHandshakeListener[]
+        // Create a SslHandshakeListener.
+        SslHandshakeListener listener = new SslHandshakeListener()
+        {
+            @Override
+            public void handshakeSucceeded(Event event) throws SSLException
+            {
+                SSLEngine sslEngine = event.getSSLEngine();
+                System.getLogger("tls").log(INFO, "TLS handshake successful to %s", sslEngine.getPeerHost());
+            }
+
+            @Override
+            public void handshakeFailed(Event event, Throwable failure)
+            {
+                SSLEngine sslEngine = event.getSSLEngine();
+                System.getLogger("tls").log(ERROR, "TLS handshake failure to %s", sslEngine.getPeerHost(), failure);
+            }
+        };
+
+        HttpClient httpClient = new HttpClient();
+
+        // Add the SslHandshakeListener as bean to HttpClient.
+        // The listener will be notified of TLS handshakes success and failure.
+        httpClient.addBean(listener);
+        // end::sslHandshakeListener[]
     }
 
     public void simpleBlockingGet() throws Exception
@@ -450,90 +489,6 @@ public class HTTPClientDocs
             response.abort(new IOException("Unexpected HTTP response"));
         }
         // end::inputStreamResponseListener[]
-    }
-
-    public void contentSourceListener() throws Exception
-    {
-        HttpClient httpClient = new HttpClient();
-        httpClient.start();
-
-        // tag::contentSourceListener[]
-        httpClient.newRequest("http://domain.com/path")
-            .onResponseContentSource(((response, contentSource) ->
-            {
-                // The function (as a Runnable) that reads the response content.
-                Runnable demander = new Runnable() // <1>
-                {
-                    @Override
-                    public void run()
-                    {
-                        while (true) // <2>
-                        {
-                            Content.Chunk chunk = contentSource.read(); // <3>
-
-                            // No chunk of content, demand again and return.
-                            if (chunk == null)
-                            {
-                                contentSource.demand(this); // <4>
-                                return;
-                            }
-
-                            // A failure happened.
-                            if (Content.Chunk.isFailure(chunk)) // <5>
-                            {
-                                Throwable failure = chunk.getFailure();
-                                if (chunk.isLast())
-                                {
-                                    // A terminal failure, such as a network failure.
-                                    // Your logic to handle terminal failures here.
-                                    System.getLogger("failure").log(ERROR, "Unexpected terminal failure", failure);
-                                    return;
-                                }
-                                else
-                                {
-                                    // A transient failure such as a read timeout.
-                                    // Your logic to handle transient failures here.
-                                    if (ignoreTransientFailure(response, failure))
-                                    {
-                                        // Try to read again.
-                                        continue;
-                                    }
-                                    else
-                                    {
-                                        // The transient failure is treated as a terminal failure.
-                                        System.getLogger("failure").log(ERROR, "Unexpected transient failure", failure);
-                                        return;
-                                    }
-                                }
-                            }
-
-                            // A normal chunk of content.
-                            consumeResponseContentChunk(response, chunk); // <6>
-                            // Release the chunk.
-                            chunk.release(); // <7>
-
-                            // Loop around to read another response chunk.
-                        }
-                    }
-                };
-
-                // Initiate the reads.
-                demander.run();
-            }))
-            .send(result ->
-            {
-
-            });
-        // end::contentSourceListener[]
-    }
-
-    private boolean ignoreTransientFailure(Response response, Throwable failure)
-    {
-        return false;
-    }
-
-    private void consumeResponseContentChunk(Response response, Content.Chunk chunk)
-    {
     }
 
     public void forwardContent() throws Exception
@@ -856,11 +811,11 @@ public class HTTPClientDocs
     {
         // tag::http2Transport[]
         // The HTTP2Client powers the HTTP/2 transport.
-        HTTP2Client h2Client = new HTTP2Client();
-        h2Client.setInitialSessionRecvWindow(64 * 1024 * 1024);
+        HTTP2Client http2Client = new HTTP2Client();
+        http2Client.setInitialSessionRecvWindow(64 * 1024 * 1024);
 
         // Create and configure the HTTP/2 transport.
-        HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(h2Client);
+        HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2Client);
         transport.setUseALPN(true);
 
         HttpClient client = new HttpClient(transport);
@@ -871,12 +826,15 @@ public class HTTPClientDocs
     public void http3Transport() throws Exception
     {
         // tag::http3Transport[]
+        // HTTP/3 requires secure communication.
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         // The HTTP3Client powers the HTTP/3 transport.
-        HTTP3Client h3Client = new HTTP3Client();
-        h3Client.getQuicConfiguration().setSessionRecvWindow(64 * 1024 * 1024);
+        ClientQuicConfiguration clientQuicConfig = new ClientQuicConfiguration(sslContextFactory, null);
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+        http3Client.getQuicConfiguration().setSessionRecvWindow(64 * 1024 * 1024);
 
         // Create and configure the HTTP/3 transport.
-        HttpClientTransportOverHTTP3 transport = new HttpClientTransportOverHTTP3(h3Client);
+        HttpClientTransportOverHTTP3 transport = new HttpClientTransportOverHTTP3(http3Client);
 
         HttpClient client = new HttpClient(transport);
         client.start();
@@ -919,57 +877,136 @@ public class HTTPClientDocs
         // end::dynamicOneProtocol[]
     }
 
-    public void dynamicH1H2() throws Exception
+    public void dynamicH1H2H3() throws Exception
     {
-        // tag::dynamicH1H2[]
+        // tag::dynamicH1H2H3[]
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+
         ClientConnector connector = new ClientConnector();
+        connector.setSslContextFactory(sslContextFactory);
 
         ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
 
         HTTP2Client http2Client = new HTTP2Client(connector);
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
 
-        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
+        ClientQuicConfiguration quicConfiguration = new ClientQuicConfiguration(sslContextFactory, null);
+        HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client);
+
+        // The order of the protocols indicates the client's preference.
+        // The first is the most preferred, the last is the least preferred, but
+        // the protocol version to use can be explicitly specified in the request.
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2, http3);
 
         HttpClient client = new HttpClient(transport);
         client.start();
-        // end::dynamicH1H2[]
+        // end::dynamicH1H2H3[]
     }
 
-    public void dynamicClearText() throws Exception
+    public void dynamicExplicitVersion() throws Exception
     {
-        // tag::dynamicClearText[]
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+
         ClientConnector connector = new ClientConnector();
+        connector.setSslContextFactory(sslContextFactory);
+
         ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+
         HTTP2Client http2Client = new HTTP2Client(connector);
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
-        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
+
+        ClientQuicConfiguration quicConfiguration = new ClientQuicConfiguration(sslContextFactory, null);
+        HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client);
+        // tag::dynamicExplicitVersion[]
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2, http3);
         HttpClient client = new HttpClient(transport);
         client.start();
 
-        // The server supports both HTTP/1.1 and HTTP/2 clear-text on port 8080.
+        // The server supports HTTP/1.1, HTTP/2 and HTTP/3.
 
-        // Make a clear-text request without explicit version.
-        // The first protocol specified to HttpClientTransportDynamic
-        // is picked, in this example will be HTTP/1.1.
-        ContentResponse http1Response = client.newRequest("host", 8080).send();
+        ContentResponse http1Response = client.newRequest("https://host/")
+            // Specify the version explicitly.
+            .version(HttpVersion.HTTP_1_1)
+            .send();
 
-        // Make a clear-text request with explicit version.
-        // Clear-text HTTP/2 is used for this request.
-        ContentResponse http2Response = client.newRequest("host", 8080)
+        ContentResponse http2Response = client.newRequest("https://host/")
             // Specify the version explicitly.
             .version(HttpVersion.HTTP_2)
             .send();
 
+        ContentResponse http3Response = client.newRequest("https://host/")
+            // Specify the version explicitly.
+            .version(HttpVersion.HTTP_3)
+            .send();
+
         // Make a clear-text upgrade request from HTTP/1.1 to HTTP/2.
         // The request will start as HTTP/1.1, but the response will be HTTP/2.
-        ContentResponse upgradedResponse = client.newRequest("host", 8080)
+        ContentResponse upgradedResponse = client.newRequest("https://host/")
             .headers(headers -> headers
                 .put(HttpHeader.UPGRADE, "h2c")
                 .put(HttpHeader.HTTP2_SETTINGS, "")
                 .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .send();
-        // end::dynamicClearText[]
+        // end::dynamicExplicitVersion[]
+    }
+
+    public void dynamicPreferH3() throws Exception
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+
+        ClientConnector connector = new ClientConnector();
+        connector.setSslContextFactory(sslContextFactory);
+
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+
+        HTTP2Client http2Client = new HTTP2Client(connector);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+
+        ClientQuicConfiguration quicConfiguration = new ClientQuicConfiguration(sslContextFactory, null);
+        HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client);
+        // tag::dynamicPreferH3[]
+        // Client prefers HTTP/3.
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http3, http2, http1);
+        HttpClient client = new HttpClient(transport);
+        client.start();
+
+        // No explicit HTTP version specified.
+        // Either HTTP/3 succeeds, or communication failure.
+        ContentResponse httpResponse = client.newRequest("https://host/")
+            .send();
+        // end::dynamicPreferH3[]
+    }
+
+    public void dynamicPreferH2() throws Exception
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+
+        ClientConnector connector = new ClientConnector();
+        connector.setSslContextFactory(sslContextFactory);
+
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+
+        HTTP2Client http2Client = new HTTP2Client(connector);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+
+        ClientQuicConfiguration quicConfiguration = new ClientQuicConfiguration(sslContextFactory, null);
+        HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client);
+        // tag::dynamicPreferH2[]
+        // Client prefers HTTP/2.
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http2, http1, http3);
+        HttpClient client = new HttpClient(transport);
+        client.start();
+
+        // No explicit HTTP version specified.
+        // Either HTTP/1.1 or HTTP/2 will be negotiated via ALPN.
+        // HTTP/3 only possible by specifying the version explicitly.
+        ContentResponse httpResponse = client.newRequest("https://host/")
+            .send();
+        // end::dynamicPreferH2[]
     }
 
     public void getConnectionPool() throws Exception
@@ -1018,25 +1055,104 @@ public class HTTPClientDocs
         // This is the path where the server "listens" on.
         Path unixDomainPath = Path.of("/path/to/server.sock");
 
-        // Creates a ClientConnector that uses Unix-Domain
-        // sockets, not the network, to connect to the server.
-        ClientConnector unixDomainClientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+        // Creates a ClientConnector.
+        ClientConnector clientConnector = new ClientConnector();
 
-        // Use Unix-Domain for HTTP/1.1.
-        HttpClientTransportOverHTTP http1Transport = new HttpClientTransportOverHTTP(unixDomainClientConnector);
+        // You can use Unix-Domain for HTTP/1.1.
+        HttpClientTransportOverHTTP http1Transport = new HttpClientTransportOverHTTP(clientConnector);
 
         // You can use Unix-Domain also for HTTP/2.
-        HTTP2Client http2Client = new HTTP2Client(unixDomainClientConnector);
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
         HttpClientTransportOverHTTP2 http2Transport = new HttpClientTransportOverHTTP2(http2Client);
 
-        // You can also use UnixDomain for the dynamic transport.
+        // You can use Unix-Domain also for the dynamic transport.
         ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
-        HttpClientTransportDynamic dynamicTransport = new HttpClientTransportDynamic(unixDomainClientConnector, http1, http2);
+        HttpClientTransportDynamic dynamicTransport = new HttpClientTransportDynamic(clientConnector, http1, http2);
 
         // Choose the transport you prefer for HttpClient, for example the dynamic transport.
         HttpClient httpClient = new HttpClient(dynamicTransport);
         httpClient.start();
+
+        ContentResponse response = httpClient.newRequest("jetty.org", 80)
+            // Specify that the request must be sent over Unix-Domain.
+            .transport(new Transport.TCPUnix(unixDomainPath))
+            .send();
         // end::unixDomain[]
+    }
+
+    public void memory() throws Exception
+    {
+        // tag::memory[]
+        // The server-side MemoryConnector speaking HTTP/1.1.
+        Server server = new Server();
+        MemoryConnector memoryConnector = new MemoryConnector(server, new HttpConnectionFactory());
+        server.addConnector(memoryConnector);
+        // ...
+
+        // The code above is the server-side.
+        // ----
+        // The code below is the client-side.
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // Use the MemoryTransport to communicate with the server-side.
+        Transport transport = new MemoryTransport(memoryConnector);
+
+        httpClient.newRequest("http://localhost/")
+            // Specify the Transport to use.
+            .transport(transport)
+            .send();
+        // end::memory[]
+    }
+
+    public void mixedTransports() throws Exception
+    {
+        Path unixDomainPath = Path.of("/path/to/server.sock");
+
+        Server server = new Server();
+        MemoryConnector memoryConnector = new MemoryConnector(server, new HttpConnectionFactory());
+
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSslContextFactory(sslContextFactory);
+
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+
+        ClientQuicConfiguration quicConfiguration = new ClientQuicConfiguration(sslContextFactory, null);
+        HTTP3Client http3Client = new HTTP3Client(quicConfiguration, clientConnector);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client);
+
+        // tag::mixedTransports[]
+        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, http2, http1, http3));
+        httpClient.start();
+
+        // Make a TCP request to a 3rd party web application.
+        ContentResponse thirdPartyResponse = httpClient.newRequest("https://third-party.com/api")
+            // No need to specify the Transport, TCP will be used by default.
+            .send();
+
+        // Upload the third party response content to a validation process.
+        ContentResponse validatedResponse = httpClient.newRequest("http://localhost/validate")
+            // The validation process is available via Unix-Domain.
+            .transport(new Transport.TCPUnix(unixDomainPath))
+            .method(HttpMethod.POST)
+            .body(new BytesRequestContent(thirdPartyResponse.getContent()))
+            .send();
+
+        // Process the validated response intra-process by sending
+        // it to another web application in the same Jetty server.
+        ContentResponse response = httpClient.newRequest("http://localhost/process")
+            // The processing is in-memory.
+            .transport(new MemoryTransport(memoryConnector))
+            .method(HttpMethod.POST)
+            .body(new BytesRequestContent(validatedResponse.getContent()))
+            .send();
+        // end::mixedTransports[]
     }
 }

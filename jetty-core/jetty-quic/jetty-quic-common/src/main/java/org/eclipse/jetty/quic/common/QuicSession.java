@@ -82,7 +82,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         this.quicheConnection = quicheConnection;
         this.connection = connection;
         this.flusher = new Flusher(scheduler);
-        addBean(flusher);
+        installBean(flusher);
         this.remoteAddress = remoteAddress;
         Arrays.setAll(ids, i -> new AtomicLong());
     }
@@ -306,7 +306,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         int remaining = cipherBufferIn.remaining();
         if (LOG.isDebugEnabled())
             LOG.debug("feeding {} cipher bytes to {}", remaining, this);
-        int accepted = quicheConnection.feedCipherBytes(cipherBufferIn, getLocalAddress(), remoteAddress);
+        int accepted = quicheConnection.feedCipherBytes(cipherBufferIn, connection.getLocalInetSocketAddress(), remoteAddress);
         if (accepted != remaining)
             throw new IllegalStateException();
 
@@ -398,11 +398,15 @@ public abstract class QuicSession extends ContainerLifeCycle
 
     public void outwardClose(long error, String reason)
     {
+        boolean closed = quicheConnection.close(error, reason);
         if (LOG.isDebugEnabled())
-            LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        quicheConnection.close(error, reason);
-        // Flushing will eventually forward the outward close to the connection.
-        flush();
+            LOG.debug("outward closing ({}) 0x{}/{} on {}", closed, Long.toHexString(error), reason, this);
+        if (closed)
+        {
+            // Flushing will eventually forward
+            // the outward close to the connection.
+            flush();
+        }
     }
 
     private void finishOutwardClose(Throwable failure)

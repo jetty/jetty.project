@@ -81,6 +81,8 @@ public class Jetty
     {
         try
         {
+            if (StringUtil.isBlank(timestamp))
+                return "unknown";
             long epochMillis = Long.parseLong(timestamp);
             return Instant.ofEpochMilli(epochMillis).toString();
         }

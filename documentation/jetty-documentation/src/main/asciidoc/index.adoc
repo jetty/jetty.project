@@ -23,7 +23,7 @@ The Eclipse Jetty Operations Guide targets sysops, devops, and developers who wa
 
 The Eclipse Jetty Programming Guide targets developers who want to use the Eclipse Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.
 
-== xref:contribution-guide/index.adoc[Jetty Contribution Guide]
+== https://eclipse.dev/jetty/documentation/contribution-guide/index.html[Jetty Contribution Guide]
 
 The Eclipse Jetty Programming Guide targets developers that wish to contribute to the Jetty Project with code patches or documentation improvements.
 

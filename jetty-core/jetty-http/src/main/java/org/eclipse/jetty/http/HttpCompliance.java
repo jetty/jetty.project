@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,8 +157,14 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
     /**
      * The request attribute which may be set to record any allowed HTTP violations.
+     * @deprecated use {@link ComplianceViolation.CapturingListener#VIOLATIONS_ATTR_KEY} instead.<br>
+     *   (Note: new ATTR captures all Compliance violations, not just HTTP.<br>
+     *   Make sure you have {@code HttpConnectionFactory.setRecordHttpComplianceViolations(true)}.<br>
+     *   Also make sure that a {@link ComplianceViolation.CapturingListener} has been added as a bean to
+     *   either the {@code Connector} or {@code Server} for the Attribute to be created.)
      */
-    public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
+    @Deprecated(since = "12.0.6", forRemoval = true)
+    public static final String VIOLATIONS_ATTR = ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY;
 
     /**
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>
@@ -210,7 +217,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
             if (compliance.getName().equals(name))
                 return compliance;
         }
-        LOG.warn("Unknown HttpCompliance mode {}", name);
+        if (name.indexOf(',') == -1) // skip warning if delimited, will be handled by .from() properly as a CUSTOM mode.
+            LOG.warn("Unknown HttpCompliance mode {}", name);
         return null;
     }
 
@@ -350,5 +358,66 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         if (violations == null || violations.isEmpty())
             return EnumSet.noneOf(Violation.class);
         return EnumSet.copyOf(violations);
+    }
+
+    public static void checkHttpCompliance(MetaData.Request request, HttpCompliance mode,
+                             ComplianceViolation.Listener listener)
+    {
+        boolean seenContentLength = false;
+        boolean seenTransferEncoding = false;
+        boolean seenHostHeader = false;
+
+        HttpFields fields = request.getHttpFields();
+        for (HttpField httpField: fields)
+        {
+            if (httpField.getHeader() == null)
+                continue;
+
+            switch (httpField.getHeader())
+            {
+                case CONTENT_LENGTH ->
+                {
+                    if (seenContentLength)
+                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, mode, listener);
+                    String[] lengths = httpField.getValues();
+                    if (lengths.length > 1)
+                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, mode, listener);
+                    if (seenTransferEncoding)
+                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, mode, listener);
+                    seenContentLength = true;
+                }
+                case TRANSFER_ENCODING ->
+                {
+                    if (seenContentLength)
+                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, mode, listener);
+                    seenTransferEncoding = true;
+                }
+                case HOST ->
+                {
+                    if (seenHostHeader)
+                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
+                    String[] hostValues = httpField.getValues();
+                    if (hostValues.length > 1)
+                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
+                    for (String hostValue: hostValues)
+                        if (StringUtil.isBlank(hostValue))
+                            assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
+                    String authority = request.getHttpURI().getHost();
+                    if (StringUtil.isBlank(authority))
+                        assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
+                    seenHostHeader = true;
+                }
+            }
+        }
+    }
+
+    private static void assertAllowed(Violation violation, HttpCompliance mode, ComplianceViolation.Listener listener)
+    {
+        if (mode.allows(violation))
+            listener.onComplianceViolation(new ComplianceViolation.Event(
+                mode, violation, violation.getDescription()
+            ));
+        else
+            throw new BadMessageException(violation.getDescription());
     }
 }

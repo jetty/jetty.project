@@ -23,6 +23,8 @@ import org.eclipse.jetty.http3.client.HTTP3ClientConnectionFactory;
 import org.eclipse.jetty.http3.client.transport.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -30,12 +32,10 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle implements ClientConnectionFactory
 {
     private final HTTP3ClientConnectionFactory factory = new HTTP3ClientConnectionFactory();
-    private final HTTP3Client client;
 
-    public ClientConnectionFactoryOverHTTP3(HTTP3Client client)
+    public ClientConnectionFactoryOverHTTP3(HTTP3Client http3Client)
     {
-        this.client = client;
-        addBean(client);
+        installBean(http3Client);
     }
 
     @Override
@@ -51,22 +51,38 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
      */
     public static class HTTP3 extends Info implements ProtocolSession.Factory
     {
+        private static final List<String> protocols = List.of("h3");
+
+        private final HTTP3Client http3Client;
+
         public HTTP3(HTTP3Client client)
         {
             super(new ClientConnectionFactoryOverHTTP3(client));
+            http3Client = client;
+        }
+
+        public HTTP3Client getHTTP3Client()
+        {
+            return http3Client;
         }
 
         @Override
         public List<String> getProtocols(boolean secure)
         {
-            return List.of("h3");
+            return protocols;
+        }
+
+        @Override
+        public Transport newTransport()
+        {
+            return new QuicTransport(getHTTP3Client().getQuicConfiguration());
         }
 
         @Override
         public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
         {
             ClientConnectionFactoryOverHTTP3 http3 = (ClientConnectionFactoryOverHTTP3)getClientConnectionFactory();
-            context.put(HTTP3Client.CLIENT_CONTEXT_KEY, http3.client);
+            context.put(HTTP3Client.CLIENT_CONTEXT_KEY, http3Client);
             SessionClientListener listener = new SessionClientListener(context);
             context.put(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY, listener);
             return http3.factory.newProtocolSession(quicSession, context);

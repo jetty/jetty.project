@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +87,7 @@ public class Dispatcher implements RequestDispatcher
 
         final DispatcherType old_type = baseRequest.getDispatcherType();
         final Attributes old_attr = baseRequest.getAttributes();
-        final MultiMap<String> old_query_params = baseRequest.getQueryParameters();
+        final Fields old_query_fields = baseRequest.getQueryFields();
         final ContextHandler.APIContext old_context = baseRequest.getContext();
         final ServletPathMapping old_mapping = baseRequest.getServletPathMapping();
         try
@@ -123,7 +123,7 @@ public class Dispatcher implements RequestDispatcher
         {
             baseRequest.setAttributes(old_attr);
             baseRequest.getResponse().included();
-            baseRequest.setQueryParameters(old_query_params);
+            baseRequest.setQueryFields(old_query_fields);
             baseRequest.resetParameters();
             baseRequest.setDispatcherType(old_type);
         }
@@ -151,7 +151,7 @@ public class Dispatcher implements RequestDispatcher
         final String old_path_in_context = baseRequest.getPathInContext();
         final ServletPathMapping old_mapping = baseRequest.getServletPathMapping();
         final ServletPathMapping source_mapping = baseRequest.findServletPathMapping();
-        final MultiMap<String> old_query_params = baseRequest.getQueryParameters();
+        final Fields old_query_params = baseRequest.getQueryFields();
         final Attributes old_attr = baseRequest.getAttributes();
         final DispatcherType old_type = baseRequest.getDispatcherType();
 
@@ -233,7 +233,7 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.setHttpURI(old_uri);
             baseRequest.setContext(old_context, old_path_in_context);
             baseRequest.setServletPathMapping(old_mapping);
-            baseRequest.setQueryParameters(old_query_params);
+            baseRequest.setQueryFields(old_query_params);
             baseRequest.resetParameters();
             baseRequest.setAttributes(old_attr);
             baseRequest.setDispatcherType(old_type);
@@ -246,7 +246,7 @@ public class Dispatcher implements RequestDispatcher
         {
             HttpChannel channel = baseRequest.getHttpChannel();
             UriCompliance compliance = channel == null || channel.getHttpConfiguration() == null ? null : channel.getHttpConfiguration().getUriCompliance();
-            String illegalState = UriCompliance.checkUriCompliance(compliance, uri);
+            String illegalState = UriCompliance.checkUriCompliance(compliance, uri, org.eclipse.jetty.server.HttpChannel.from(baseRequest.getCoreRequest()).getComplianceViolationListener());
             if (illegalState != null)
                 throw new IllegalStateException(illegalState);
         }

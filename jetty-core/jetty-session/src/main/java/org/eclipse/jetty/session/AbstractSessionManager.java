@@ -666,7 +666,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             path = (path == null ? "" : path);
             int port = httpURI.getPort();
             if (port < 0)
-                port = HttpScheme.getDefaultPort(httpURI.getScheme());
+            {
+                String scheme = httpURI.getScheme();
+                port = URIUtil.getDefaultPortForScheme(scheme);
+            }
 
             // Is it the same server?
             if (!Request.getServerName(request).equalsIgnoreCase(httpURI.getHost()))

@@ -31,3 +31,6 @@ etc/jetty-bytebufferpool.xml
 
 ## Maximum direct memory held idle by the pool (0 for heuristic, -1 for unlimited).
 #jetty.byteBufferPool.maxDirectMemory=0
+
+## Whether statistics are enabled.
+#jetty.byteBufferPool.statisticsEnabled=false

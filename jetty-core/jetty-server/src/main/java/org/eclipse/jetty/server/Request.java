@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -130,7 +129,6 @@ public interface Request extends Attributes, Content.Source
 {
     Logger LOG = LoggerFactory.getLogger(Request.class);
 
-    String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
     List<Locale> DEFAULT_LOCALES = List.of(Locale.getDefault());
 
@@ -580,23 +578,7 @@ public interface Request extends Attributes, Content.Source
     @SuppressWarnings("unchecked")
     static List<HttpCookie> getCookies(Request request)
     {
-        // TODO modify Request and HttpChannel to be optimised for the known attributes
-        List<HttpCookie> cookies = (List<HttpCookie>)request.getAttribute(COOKIE_ATTRIBUTE);
-        if (cookies != null)
-            return cookies;
-
-        // TODO: review whether to store the cookie cache at the connection level, or whether to cache them at all.
-        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(CACHE_ATTRIBUTE);
-        if (cookieCache == null)
-        {
-            // TODO compliance listeners?
-            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), null);
-            request.getComponents().getCache().setAttribute(CACHE_ATTRIBUTE, cookieCache);
-        }
-
-        cookies = cookieCache.getCookies(request.getHeaders());
-        request.setAttribute(COOKIE_ATTRIBUTE, cookies);
-        return cookies;
+        return CookieCache.getCookies(request);
     }
 
     /**

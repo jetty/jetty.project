@@ -4,13 +4,19 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addConnector">
     <Arg>
-      <New id="http3Connector" class="org.eclipse.jetty.http3.server.HTTP3ServerConnector">
+      <New id="quicConnector" class="org.eclipse.jetty.quic.server.QuicServerConnector">
         <Arg><Ref refid="Server" /></Arg>
-        <Arg><Ref refid="sslContextFactory" /></Arg>
+        <Arg>
+          <New id="quicConfiguration" class="org.eclipse.jetty.quic.server.ServerQuicConfiguration">
+            <Arg><Ref refid="sslContextFactory" /></Arg>
+            <Arg />
+          </New>
+        </Arg>
         <Arg>
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
             <Item>
               <New class="org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory">
+                <Arg><Ref refid="quicConfiguration" /></Arg>
                 <Arg><Ref refid="sslHttpConfig" /></Arg>
                 <Get name="HTTP3Configuration">
                   <Set name="streamIdleTimeout" property="jetty.http3.streamIdleTimeout" />

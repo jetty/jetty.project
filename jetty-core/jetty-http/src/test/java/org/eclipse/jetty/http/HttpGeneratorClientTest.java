@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
@@ -98,7 +99,8 @@ public class HttpGeneratorClientTest
 
         HttpFields.Mutable fields = HttpFields.build();
         fields.add("Host", "something");
-        assertThrows(IllegalArgumentException.class, () -> fields.add("Null", null));
+        assertThrows(IllegalArgumentException.class, () -> fields.add("Null", (String)null));
+        assertThrows(IllegalArgumentException.class, () -> fields.add("Null", (List<String>)null));
         fields.add("Empty", "");
         RequestInfo info = new RequestInfo("GET", "/index.html", fields);
         assertFalse(gen.isChunking());

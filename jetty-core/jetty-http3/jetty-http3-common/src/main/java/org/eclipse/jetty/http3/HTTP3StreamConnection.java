@@ -45,7 +45,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
     private HTTP3Stream stream;
-    private RetainableByteBuffer networkBuffer;
+    private RetainableByteBuffer inputBuffer;
     private boolean remotelyClosed;
 
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser)
@@ -58,12 +58,19 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     public void onFailure(Throwable failure)
     {
-        if (networkBuffer != null)
-        {
-            networkBuffer.release();
-            networkBuffer = null;
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFailure on {}", this, failure);
+        tryReleaseInputBuffer(true);
     }
+
+//    public void onFailure(Throwable failure)
+//    {
+//        if (networkBuffer != null)
+//        {
+//            networkBuffer.release();
+//            networkBuffer = null;
+//        }
+//    }
 
     @Override
     public QuicStreamEndPoint getEndPoint()
@@ -121,12 +128,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         try
         {
-            tryAcquireBuffer();
+            tryAcquireInputBuffer();
 
             MessageParser.Result result = parseAndFill(setFillInterest);
             switch (result)
             {
-                case NO_FRAME -> tryReleaseBuffer(false);
+                case NO_FRAME -> tryReleaseInputBuffer(false);
                 case SWITCH_MODE ->
                 {
                     parser.setDataMode(false);
@@ -141,14 +148,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     {
                         // The last frame may have caused a write that we need to flush.
                         getEndPoint().getQuicSession().flush();
-                        tryReleaseBuffer(false);
+                        tryReleaseInputBuffer(false);
                     }
                 }
             }
         }
         catch (Throwable x)
         {
-            tryReleaseBuffer(true);
+            tryReleaseInputBuffer(true);
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             getEndPoint().close(error, x);
             // Notify the application that a failure happened.
@@ -160,7 +167,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         try
         {
-            tryAcquireBuffer();
+            tryAcquireInputBuffer();
 
             while (true)
             {
@@ -169,14 +176,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 {
                     case NO_FRAME ->
                     {
-                        tryReleaseBuffer(false);
+                        tryReleaseInputBuffer(false);
                         return;
                     }
                     case BLOCKED_FRAME ->
                     {
                         // Return immediately because another thread may
                         // resume the processing as the stream is unblocked.
-                        tryReleaseBuffer(false);
+                        tryReleaseInputBuffer(false);
                         return;
                     }
                     case SWITCH_MODE ->
@@ -201,7 +208,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             // However, the last frame may have
                             // caused a write that we need to flush.
                             getEndPoint().getQuicSession().flush();
-                            tryReleaseBuffer(false);
+                            tryReleaseInputBuffer(false);
                             return;
                         }
 
@@ -210,7 +217,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
                         if (stream.hasDemandOrStall())
                         {
-                            if (networkBuffer != null && networkBuffer.hasRemaining())
+                            if (inputBuffer != null && inputBuffer.hasRemaining())
                             {
                                 // There are bytes left in the buffer; if there are not
                                 // enough bytes to parse a DATA frame and call the
@@ -221,7 +228,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             {
                                 // No bytes left in the buffer, but there is demand.
                                 // Set fill interest to call the application when bytes arrive.
-                                tryReleaseBuffer(false);
+                                tryReleaseInputBuffer(false);
                                 fillInterested();
                             }
                         }
@@ -236,7 +243,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            tryReleaseBuffer(true);
+            tryReleaseInputBuffer(true);
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             getEndPoint().close(error, x);
             // Notify the application that a failure happened.
@@ -251,28 +258,28 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         processDataFrames(false);
     }
 
-    private void tryAcquireBuffer()
+    private void tryAcquireInputBuffer()
     {
-        if (networkBuffer == null)
+        if (inputBuffer == null)
         {
-            networkBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            inputBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
-                LOG.debug("acquired {}", networkBuffer);
+                LOG.debug("acquired {}", inputBuffer);
         }
     }
 
-    private void tryReleaseBuffer(boolean force)
+    private void tryReleaseInputBuffer(boolean force)
     {
-        if (networkBuffer != null)
+        if (inputBuffer != null)
         {
-            if (networkBuffer.hasRemaining() && force)
-                networkBuffer.clear();
-            if (!networkBuffer.hasRemaining())
+            if (inputBuffer.hasRemaining() && force)
+                inputBuffer.clear();
+            if (!inputBuffer.hasRemaining())
             {
-                networkBuffer.release();
+                inputBuffer.release();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("released {}", networkBuffer);
-                networkBuffer = null;
+                    LOG.debug("released {}", inputBuffer);
+                inputBuffer = null;
             }
         }
     }
@@ -282,30 +289,30 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("parse+fill setFillInterest={} on {} with buffer {}", setFillInterest, this, networkBuffer);
+                LOG.debug("parse+fill setFillInterest={} on {} with buffer {}", setFillInterest, this, inputBuffer);
 
             while (true)
             {
-                ByteBuffer byteBuffer = networkBuffer.getByteBuffer();
+                ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
                 MessageParser.Result result = parser.parse(byteBuffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("parsed {} on {} with buffer {}", result, this, networkBuffer);
+                    LOG.debug("parsed {} on {} with buffer {}", result, this, inputBuffer);
                 if (result != MessageParser.Result.NO_FRAME)
                     return result;
 
-                if (networkBuffer.isRetained())
+                if (inputBuffer.isRetained())
                 {
-                    networkBuffer.release();
+                    inputBuffer.release();
                     RetainableByteBuffer newBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
                     if (LOG.isDebugEnabled())
-                        LOG.debug("reacquired {} for retained {}", newBuffer, networkBuffer);
-                    networkBuffer = newBuffer;
-                    byteBuffer = networkBuffer.getByteBuffer();
+                        LOG.debug("reacquired {} for retained {}", newBuffer, inputBuffer);
+                    inputBuffer = newBuffer;
+                    byteBuffer = inputBuffer.getByteBuffer();
                 }
 
                 int filled = fill(byteBuffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} on {} with buffer {}", filled, this, networkBuffer);
+                    LOG.debug("filled {} on {} with buffer {}", filled, this, inputBuffer);
 
                 if (filled > 0)
                     continue;
@@ -404,9 +411,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         else
         {
-            // No need to call networkBuffer.retain() here, since we know
-            // that the action will be run before releasing the networkBuffer.
-            data = new StreamData(frame, networkBuffer);
+            // No need to call inputBuffer.retain() here, since we know
+            // that the action will be run before releasing the inputBuffer.
+            data = new StreamData(frame, inputBuffer);
         }
 
         delegate.run();

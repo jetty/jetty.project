@@ -121,7 +121,7 @@ public class MultiplexedConnectionPoolTest
                 }
 
                 @Override
-                protected void removed(Connection connection)
+                protected void onRemoved(Connection connection)
                 {
                     poolRemoveCounter.incrementAndGet();
                 }
@@ -226,7 +226,7 @@ public class MultiplexedConnectionPoolTest
                 }
 
                 @Override
-                protected void removed(Connection connection)
+                protected void onRemoved(Connection connection)
                 {
                     poolRemoveCounter.incrementAndGet();
                 }
@@ -301,7 +301,7 @@ public class MultiplexedConnectionPoolTest
                 }
 
                 @Override
-                protected void removed(Connection connection)
+                protected void onRemoved(Connection connection)
                 {
                     poolRemoveCounter.incrementAndGet();
                 }
@@ -372,7 +372,7 @@ public class MultiplexedConnectionPoolTest
                 }
 
                 @Override
-                protected void removed(Connection connection)
+                protected void onRemoved(Connection connection)
                 {
                     poolRemoveCounter.incrementAndGet();
                 }

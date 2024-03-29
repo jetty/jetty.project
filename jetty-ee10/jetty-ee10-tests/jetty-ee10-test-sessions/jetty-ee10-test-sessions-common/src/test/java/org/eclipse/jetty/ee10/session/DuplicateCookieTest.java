@@ -190,7 +190,7 @@ public class DuplicateCookieTest
             assertEquals("1122", response.getContentAsString());
 
             //check valid session is drained of requests
-            assertEquals(0, s1122.getRequests());
+            await().atMost(5, TimeUnit.SECONDS).until(s1122::getRequests, Matchers.is(0L));
         }
         finally
         {
@@ -251,7 +251,7 @@ public class DuplicateCookieTest
             assertEquals("1122", response.getContentAsString());
 
             //check valid session drained of requests
-            assertEquals(0, s1122.getRequests());
+            await().atMost(5, TimeUnit.SECONDS).until(s1122::getRequests, Matchers.is(0L));
         }
         finally
         {
@@ -311,7 +311,7 @@ public class DuplicateCookieTest
             assertEquals("1122", response.getContentAsString());
 
             //check valid session drained of requests
-            assertEquals(0, s1122.getRequests());
+            await().atMost(5, TimeUnit.SECONDS).until(s1122::getRequests, Matchers.is(0L));
         }
         finally
         {
@@ -368,9 +368,9 @@ public class DuplicateCookieTest
             assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.getStatus());
 
             //check that all sessions have their request counts decremented correctly after the request, back to 0
-            assertEquals(0, s1234.getRequests());
-            assertEquals(0, s5678.getRequests());
-            assertEquals(0, s9111.getRequests());
+            await().atMost(5, TimeUnit.SECONDS).until(s1234::getRequests, Matchers.is(0L));
+            await().atMost(5, TimeUnit.SECONDS).until(s5678::getRequests, Matchers.is(0L));
+            await().atMost(5, TimeUnit.SECONDS).until(s9111::getRequests, Matchers.is(0L));
         }
         finally
         {
@@ -419,7 +419,7 @@ public class DuplicateCookieTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that all valid sessions have their request counts decremented correctly after the request, back to 0
-            assertEquals(0, s1234.getRequests());
+            await().atMost(5, TimeUnit.SECONDS).until(s1234::getRequests, Matchers.is(0L));
         }
         finally
         {

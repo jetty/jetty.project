@@ -129,14 +129,12 @@ public class FrameListenerTest
 
     public static class FrameEndpoint implements Session.Listener
     {
-        public Session session;
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public LinkedBlockingQueue<String> frameEvents = new LinkedBlockingQueue<>();
 
         @Override
         public void onWebSocketOpen(Session session)
         {
-            this.session = session;
             session.demand();
         }
 
@@ -149,7 +147,6 @@ public class FrameListenerTest
                 BufferUtil.toUTF8String(frame.getPayload()),
                 frame.getPayloadLength()));
             callback.succeed();
-            session.demand();
         }
 
         @Override

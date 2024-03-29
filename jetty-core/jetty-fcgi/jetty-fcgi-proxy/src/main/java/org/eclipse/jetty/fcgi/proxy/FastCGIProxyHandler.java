@@ -33,11 +33,13 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.proxy.ProxyHandler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.TryPathsHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -267,12 +269,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
     @Override
     protected HttpClient newHttpClient()
     {
-        ClientConnector clientConnector;
-        Path unixDomainPath = getUnixDomainPath();
-        if (unixDomainPath != null)
-            clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
-        else
-            clientConnector = new ClientConnector();
+        ClientConnector clientConnector = new ClientConnector();
         QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
         proxyClientThreads.setName("proxy-client");
         clientConnector.setExecutor(proxyClientThreads);
@@ -317,7 +314,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         // If the Host header is missing, add it.
         if (!proxyToServerRequest.getHeaders().contains(HttpHeader.HOST))
         {
-            if (serverPort != HttpScheme.getDefaultPort(scheme))
+            if (serverPort != URIUtil.getDefaultPortForScheme(scheme))
                 serverName += ":" + serverPort;
             String host = serverName;
             proxyToServerRequest.headers(headers -> headers
@@ -332,6 +329,10 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
             String allCookies = String.join("; ", cookies);
             proxyToServerRequest.headers(headers -> headers.put(HttpHeader.COOKIE, allCookies));
         }
+
+        Path unixDomain = getUnixDomainPath();
+        if (unixDomain != null)
+            proxyToServerRequest.transport(new Transport.TCPUnix(unixDomain));
 
         super.sendProxyToServerRequest(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
     }

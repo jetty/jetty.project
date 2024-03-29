@@ -41,6 +41,8 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Namespace class that contains the definitions of a {@link Source content source},
@@ -48,6 +50,8 @@ import org.eclipse.jetty.util.Promise;
  */
 public class Content
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Content.class);
+
     private Content()
     {
     }
@@ -666,15 +670,22 @@ public class Content
          * @param last whether the Chunk is the last one
          * @param retainable the Retainable this Chunk links to
          * @return a new Chunk
-         * @throws IllegalArgumentException if the {@code Retainable}
-         * {@link Retainable#canRetain() cannot be retained}
          */
         static Chunk asChunk(ByteBuffer byteBuffer, boolean last, Retainable retainable)
         {
-            if (!retainable.canRetain())
-                throw new IllegalArgumentException("Cannot create chunk from non-retainable " + retainable);
             if (byteBuffer.hasRemaining())
-                return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+            {
+                if (retainable.canRetain())
+                {
+                    return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Copying buffer because could not retain");
+                    return new ByteBufferChunk.WithReferenceCount(BufferUtil.copy(byteBuffer), last);
+                }
+            }
             retainable.release();
             return last ? EOF : EMPTY;
         }

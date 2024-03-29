@@ -14,8 +14,6 @@
 package org.eclipse.jetty.util.resource;
 
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class PathResourceFactory implements ResourceFactory
@@ -23,9 +21,6 @@ public class PathResourceFactory implements ResourceFactory
     @Override
     public Resource newResource(URI uri)
     {
-        Path path = Paths.get(uri.normalize());
-        if (!Files.exists(path))
-            return null;
-        return new PathResource(path, uri, false);
+        return new PathResource(Paths.get(uri.normalize()), uri, false);
     }
 }

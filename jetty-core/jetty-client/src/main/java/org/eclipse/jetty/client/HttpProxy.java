@@ -19,7 +19,6 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.internal.TunnelRequest;
@@ -32,44 +31,102 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>Client-side proxy configuration for HTTP proxying, as specified by
+ * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.</p>
+ * <p>By default the communication between client and proxy happens using
+ * the HTTP/1.1 protocol, but it may be configured to use
+ * also other HTTP protocol versions, such as HTTP/2.</p>
+ */
 public class HttpProxy extends ProxyConfiguration.Proxy
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpProxy.class);
 
+    /**
+     * <p>Creates a new instance with the given HTTP proxy host and port.</p>
+     *
+     * @param host the HTTP proxy host name
+     * @param port the HTTP proxy port
+     */
     public HttpProxy(String host, int port)
     {
         this(new Origin.Address(host, port), false);
     }
 
+    /**
+     * <p>Creates a new instance with the given HTTP proxy address.</p>
+     * <p>When {@code secure=true} the communication between the client and the
+     * proxy will be encrypted (using this proxy {@link #getSslContextFactory()}
+     * which typically defaults to that of {@link HttpClient}.</p>
+     *
+     * @param address the HTTP proxy address (host and port)
+     * @param secure whether the communication between the client and the HTTP proxy should be secure
+     */
     public HttpProxy(Origin.Address address, boolean secure)
     {
-        this(address, secure, null, new Origin.Protocol(List.of("http/1.1"), false));
+        this(address, secure, new Origin.Protocol(List.of("http/1.1"), false));
     }
 
+    /**
+     * <p>Creates a new instance with the given HTTP proxy address and protocol.</p>
+     *
+     * @param address the HTTP proxy address (host and port)
+     * @param secure whether the communication between the client and the HTTP proxy should be secure
+     * @param protocol the protocol to use to communicate with the HTTP proxy
+     */
     public HttpProxy(Origin.Address address, boolean secure, Origin.Protocol protocol)
     {
-        this(address, secure, null, Objects.requireNonNull(protocol));
+        this(new Origin(secure ? "https" : "http", address, null, protocol, Transport.TCP_IP), null);
     }
 
+    /**
+     * <p>Creates a new instance with the given HTTP proxy address and TLS configuration.</p>
+     * <p>The {@link SslContextFactory} could have a different configuration from the
+     * one configured in {@link HttpClient}, and it is used to communicate with the HTTP
+     * proxy only (not to communicate with the servers).</p>
+     *
+     * @param address the HTTP proxy address (host and port)
+     * @param sslContextFactory the {@link SslContextFactory.Client} to use to communicate with the HTTP proxy
+     */
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
     {
-        this(address, true, sslContextFactory, new Origin.Protocol(List.of("http/1.1"), false));
+        this(address, sslContextFactory, new Origin.Protocol(List.of("http/1.1"), false));
     }
 
+    /**
+     * <p>Creates a new instance with the given HTTP proxy address, TLS configuration and protocol.</p>
+     * <p>The {@link SslContextFactory} could have a different configuration from the
+     * one configured in {@link HttpClient} and it is used to communicate with the HTTP
+     * proxy only (not to communicate with the servers).</p>
+     *
+     * @param address the HTTP proxy address (host and port)
+     * @param sslContextFactory the {@link SslContextFactory.Client} to use to communicate with the HTTP proxy
+     * @param protocol the protocol to use to communicate with the HTTP proxy
+     */
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
     {
-        this(address, true, sslContextFactory, Objects.requireNonNull(protocol));
+        this(new Origin(sslContextFactory == null ? "http" : "https", address, null, protocol, Transport.TCP_IP), sslContextFactory);
     }
 
-    private HttpProxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
+    /**
+     * <p>Creates a new instance with the given HTTP proxy {@link Origin} and TLS configuration.</p>
+     * <p>The {@link SslContextFactory} could have a different configuration from the
+     * one configured in {@link HttpClient} and it is used to communicate with the HTTP
+     * proxy only (not to communicate with the servers).</p>
+     *
+     * @param origin the HTTP proxy {@link Origin} information
+     * @param sslContextFactory the {@link SslContextFactory.Client} to use to communicate with the HTTP proxy
+     */
+    public HttpProxy(Origin origin, SslContextFactory.Client sslContextFactory)
     {
-        super(address, secure, sslContextFactory, Objects.requireNonNull(protocol));
+        super(origin, sslContextFactory);
     }
 
     @Override

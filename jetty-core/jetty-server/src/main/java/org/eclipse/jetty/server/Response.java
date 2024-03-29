@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
@@ -355,10 +356,7 @@ public interface Response extends Content.Sink
             if (!request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
             {
                 // make the location an absolute URI
-                StringBuilder url = new StringBuilder(128);
-                URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
-                url.append(location);
-                location = url.toString();
+                location = URIUtil.newURI(uri.getScheme(), Request.getServerName(request), Request.getServerPort(request), location, null);
             }
         }
         return location;
@@ -378,7 +376,15 @@ public interface Response extends Content.Sink
 
         Request request = response.getRequest();
         CookieCompliance compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
-        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
+        try
+        {
+            response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
+        }
+        catch (ComplianceViolationException e)
+        {
+            HttpChannel.from(request).getComplianceViolationListener().onComplianceViolation(e.getEvent());
+            throw e;
+        }
 
         // Expire responses with set-cookie headers, so they do not get cached.
         if (!response.getHeaders().contains(HttpHeader.EXPIRES))
@@ -402,7 +408,17 @@ public interface Response extends Content.Sink
         Request request = response.getRequest();
         HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
         CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
-        HttpField setCookie = new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
+
+        HttpField setCookie;
+        try
+        {
+            setCookie = new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
+        }
+        catch (ComplianceViolationException e)
+        {
+            HttpChannel.from(request).getComplianceViolationListener().onComplianceViolation(e.getEvent());
+            throw e;
+        }
 
         boolean expires = false;
 
@@ -602,7 +618,7 @@ public interface Response extends Content.Sink
 
     /**
      * @param response the HTTP response
-     * @return the number of response content bytes written so far,
+     * @return the number of response content bytes written to the network so far,
      * or {@code -1} if the number is unknown
      */
     static long getContentBytesWritten(Response response)

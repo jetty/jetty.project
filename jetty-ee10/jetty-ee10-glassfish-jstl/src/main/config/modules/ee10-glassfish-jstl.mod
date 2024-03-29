@@ -9,5 +9,10 @@ ee10
 [depends]
 ee10-apache-jsp
 
+[ini]
+ee10.jakarta.servlet.jsp.jstl.api.version?=@jakarta.servlet.jsp.jstl.api.version@
+ee10.jakarta.servlet.jsp.jstl.impl.version?=@jakarta.servlet.jsp.jstl.impl.version@
+
 [lib]
-lib/ee10-glassfish-jstl/*.jar
+lib/ee10-glassfish-jstl/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee10.jakarta.servlet.jsp.jstl.api.version}.jar
+lib/ee10-glassfish-jstl/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee10.jakarta.servlet.jsp.jstl.impl.version}.jar

@@ -38,24 +38,23 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Resource Handler.
- *
- * This handle will serve static content and handle If-Modified-Since headers. No caching is done. Requests for resources that do not exist are let pass (Eg no
- * 404's).
- * TODO there is a lot of URI manipulation, this should be factored out in a utility class.
- *
- * TODO GW: Work out how this logic can be reused by the DefaultServlet... potentially for wrapped output streams
- *
- * Missing:
- *  - current context' mime types
- *  - Default stylesheet (needs Resource impl for classpath resources)
- *  - request ranges
- *  - a way to configure caching or not
+ * Resource Handler will serve static content and handle If-Modified-Since headers. No caching is done.
+ * Requests for resources that do not exist are let pass (Eg no 404's).
  */
 public class ResourceHandler extends Handler.Wrapper
 {
+    // TODO there is a lot of URI manipulation, this should be factored out in a utility class.
+    // TODO Missing:
+    //    - current context' mime types
+    //    - Default stylesheet (needs Resource impl for classpath resources)
+    //    - request ranges
+    //    - a way to configure caching or not
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
+
     private final ResourceService _resourceService = newResourceService();
     private ByteBufferPool _byteBufferPool;
     private Resource _baseResource;
@@ -93,6 +92,10 @@ public class ResourceHandler extends Handler.Wrapper
             if (context != null)
                 _baseResource = context.getBaseResource();
         }
+        else if (_baseResource.isAlias())
+        {
+            LOG.warn("Base Resource should not be an alias");
+        }
 
         setMimeTypes(context == null ? MimeTypes.DEFAULTS : context.getMimeTypes());
 
@@ -123,7 +126,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     protected HttpContent.Factory newHttpContentFactory()
     {
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
         if (isUseFileMapping())
             contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");

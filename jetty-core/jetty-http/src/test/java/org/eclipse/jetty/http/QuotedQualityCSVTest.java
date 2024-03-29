@@ -310,7 +310,7 @@ public class QuotedQualityCSVTest
         QuotedQualityCSV values = new QuotedQualityCSV()
         {
             @Override
-            protected void parsedValue(StringBuffer buffer)
+            protected void parsedValue(StringBuilder buffer)
             {
                 results.add("parsedValue: " + buffer.toString());
 
@@ -318,7 +318,7 @@ public class QuotedQualityCSVTest
             }
 
             @Override
-            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
             {
                 String param = buffer.substring(paramName, buffer.length());
                 results.add("parsedParam: " + param);

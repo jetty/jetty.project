@@ -16,10 +16,12 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -585,6 +587,23 @@ public final class URIUtil
             }
         }
         return true;
+    }
+
+    /**
+     * Test if a string is a relative path or a URI
+     * @param uriOrPath A string that is either a path, a URI path segment or an absolute URI
+     * @return True if the string does not start with any absolute URI or file characters sequences.
+     */
+    public static boolean isRelative(String uriOrPath)
+    {
+        if (uriOrPath.isEmpty())
+            return true;
+
+        char c = uriOrPath.charAt(0);
+        if (c == '/' || (File.separatorChar != '/' && c == File.separatorChar))
+            return false;
+
+        return !URIUtil.hasScheme(uriOrPath);
     }
 
     /**
@@ -1365,16 +1384,54 @@ public final class URIUtil
      * @param scheme the URI scheme
      * @param server the URI server
      * @param port the URI port
+     * @return A String URI
+     */
+    public static String newURI(String scheme, String server, int port)
+    {
+        return newURI(scheme, server, port, null, null);
+    }
+
+    /**
+     * Create a new URI from the arguments, handling IPv6 host encoding and default ports
+     *
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
      * @param path the URI path
      * @param query the URI query
      * @return A String URI
      */
     public static String newURI(String scheme, String server, int port, String path, String query)
     {
+        return newURI(scheme, server, port, path, query, null);
+    }
+
+    /**
+     * Create a new URI from the arguments, handling IPv6 host encoding and default ports
+     *
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
+     * @param path the URI path
+     * @param query the URI query
+     * @param fragment the URI fragment
+     * @return A String URI
+     */
+    public static String newURI(String scheme, String server, int port, String path, String query, String fragment)
+    {
         StringBuilder builder = newURIBuilder(scheme, server, port);
-        builder.append(path);
-        if (query != null && query.length() > 0)
+        // check only for null, as empty query/fragment have meaning.
+        // this also matches the behavior of java URL & URI
+        boolean hasQuery = query != null;
+        boolean hasFragment = fragment != null;
+        if (StringUtil.isNotBlank(path))
+            builder.append(path);
+        else if (hasQuery || hasFragment)
+            builder.append('/');
+        if (hasQuery)
             builder.append('?').append(query);
+        if (hasFragment)
+            builder.append('#').append(fragment);
         return builder.toString();
     }
 
@@ -1388,7 +1445,7 @@ public final class URIUtil
      */
     public static StringBuilder newURIBuilder(String scheme, String server, int port)
     {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new StringBuilder(128);
         appendSchemeHostPort(builder, scheme, server, port);
         return builder;
     }
@@ -1403,26 +1460,11 @@ public final class URIUtil
      */
     public static void appendSchemeHostPort(StringBuilder url, String scheme, String server, int port)
     {
+        scheme = normalizeScheme(scheme);
         url.append(scheme).append("://").append(HostPort.normalizeHost(server));
-
+        port = normalizePortForScheme(scheme, port);
         if (port > 0)
-        {
-            switch (scheme)
-            {
-                case "http":
-                    if (port != 80)
-                        url.append(':').append(port);
-                    break;
-
-                case "https":
-                    if (port != 443)
-                        url.append(':').append(port);
-                    break;
-
-                default:
-                    url.append(':').append(port);
-            }
-        }
+            url.append(':').append(port);
     }
 
     /**
@@ -1432,29 +1474,16 @@ public final class URIUtil
      * @param scheme the URI scheme
      * @param server the URI server
      * @param port the URI port
+     * @deprecated Use {@link #appendSchemeHostPort(StringBuilder, String, String, int)}
      */
+    @Deprecated
     public static void appendSchemeHostPort(StringBuffer url, String scheme, String server, int port)
     {
+        scheme = normalizeScheme(scheme);
         url.append(scheme).append("://").append(HostPort.normalizeHost(server));
-
+        port = normalizePortForScheme(scheme, port);
         if (port > 0)
-        {
-            switch (scheme)
-            {
-                case "http":
-                    if (port != 80)
-                        url.append(':').append(port);
-                    break;
-
-                case "https":
-                    if (port != 443)
-                        url.append(':').append(port);
-                    break;
-
-                default:
-                    url.append(':').append(port);
-            }
-        }
+            url.append(':').append(port);
     }
 
     /**
@@ -1630,7 +1659,7 @@ public final class URIUtil
         // Correct any bad `file:/path` usages, and
         // force encoding of characters that must be encoded (such as unicode)
         // for the base
-        String base = correctFileURI(uri).toASCIIString();
+        String base = correctURI(uri).toASCIIString();
 
         // ensure that the base has a safe encoding suitable for both
         // URI and Paths.get(URI) later usage
@@ -1688,8 +1717,36 @@ public final class URIUtil
      *
      * @param uri the URI to (possibly) correct
      * @return the new URI with the {@code file:/} substring corrected, or the original URI.
+     * @deprecated use {@link #correctURI(URI)} instead, will be removed in Jetty 12.1.0
      */
+    @Deprecated(since = "12.0.7", forRemoval = true)
     public static URI correctFileURI(URI uri)
+    {
+        return correctURI(uri);
+    }
+
+    /**
+     * <p>
+     * Corrects any bad {@code file} based URIs (even within a {@code jar:file:} based URIs) from the bad out-of-spec
+     * format that various older Java APIs creates (most notably: {@link java.io.File} creates with it's {@link File#toURL()}
+     * and {@link File#toURI()}, along with the side effects of using {@link URL#toURI()})
+     * </p>
+     *
+     * <p>
+     *     This correction is currently limited to only the {@code file:/} substring in the URI.
+     *     If there is a {@code file:/<not-a-slash>} detected, that substring is corrected to
+     *     {@code file:///<not-a-slash>}, all other uses of {@code file:}, and URIs without a {@code file:}
+     *     substring are left alone.
+     * </p>
+     *
+     * <p>
+     *     Note that Windows UNC based URIs are left alone, along with non-absolute URIs.
+     * </p>
+     *
+     * @param uri the URI to (possibly) correct
+     * @return the new URI with the {@code file:} scheme specific part corrected, or the original URI.
+     */
+    public static URI correctURI(URI uri)
     {
         if ((uri == null) || (uri.getScheme() == null))
             return uri;
@@ -1727,7 +1784,9 @@ public final class URIUtil
      *
      * @param str the input string of references
      * @see #toJarFileUri(URI)
+     * @deprecated use {@link ResourceFactory#split(String)}
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public static List<URI> split(String str)
     {
         List<URI> uris = new ArrayList<>();
@@ -1830,15 +1889,68 @@ public final class URIUtil
      * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
      * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
      * @return The {@link URI} form of the resource.
+     * @deprecated This method is currently resolving relative paths against the current directory, which is a mechanism
+     * that should be implemented by a {@link ResourceFactory}.   All calls to this method need to be reviewed.
      */
+    @Deprecated(since = "12.0.8")
     public static URI toURI(String resource)
     {
         Objects.requireNonNull(resource);
 
-        // Only try URI for string for known schemes, otherwise assume it is a Path
-        return (ResourceFactory.isSupported(resource))
-            ? correctFileURI(URI.create(resource))
-            : Paths.get(resource).toUri();
+        if (URIUtil.hasScheme(resource))
+        {
+            try
+            {
+                URI uri = new URI(resource);
+
+                if (ResourceFactory.isSupported(uri))
+                    return correctURI(uri);
+
+                // We don't have a supported URI scheme
+                if (uri.getScheme().length() == 1)
+                {
+                    // Input is a possible Windows path disguised as a URI "D:/path/to/resource.txt".
+                    try
+                    {
+                        return toURI(Paths.get(resource).toUri().toASCIIString());
+                    }
+                    catch (InvalidPathException x)
+                    {
+                        LOG.trace("ignored", x);
+                    }
+                }
+
+                // If we reached this point, that means the input String has a scheme,
+                // and is not recognized as supported by the registered schemes in ResourceFactory.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("URI scheme is not registered: {}", uri.toASCIIString());
+                throw new IllegalArgumentException("URI scheme not registered: " + uri.getScheme());
+            }
+            catch (URISyntaxException x)
+            {
+                // We have an input string that has what looks like a scheme, but isn't a URI.
+                // Eg: "C:\path\to\resource.txt"
+                LOG.trace("ignored", x);
+            }
+        }
+
+        // If we reached this point, we have a String with no valid scheme.
+        // Treat it as a Path, as that's all we have left to investigate.
+        try
+        {
+            return toURI(Paths.get(resource).toUri().toASCIIString());
+        }
+        catch (InvalidPathException x)
+        {
+            LOG.trace("ignored", x);
+        }
+
+        // If we reached this here, that means the input string cannot be used as
+        // a URI or a File Path.  The cause is usually due to bad input (eg:
+        // characters that are not supported by file system)
+        if (LOG.isDebugEnabled())
+            LOG.debug("Input string cannot be converted to URI \"{}\"", resource);
+        throw new IllegalArgumentException("Cannot be converted to URI");
     }
 
     /**
@@ -1919,6 +2031,54 @@ public final class URIUtil
             .map(URL::toString)
             .map(URI::create)
             .map(URIUtil::unwrapContainer)
-            .map(URIUtil::correctFileURI);
+            .map(URIUtil::correctURI);
+    }
+
+    private static final Index<Integer> DEFAULT_PORT_FOR_SCHEME = new Index.Builder<Integer>()
+        .caseSensitive(false)
+        .with("ftp", 21)
+        .with("ssh", 22)
+        .with("telnet", 23)
+        .with("smtp", 25)
+        .with("http", 80)
+        .with("ws", 80)
+        .with("https", 443)
+        .with("wss", 443)
+        .build();
+
+    /**
+     * Get the default port for some well known schemes
+     * @param scheme The scheme
+     * @return The default port or -1 if not known
+     */
+    public static int getDefaultPortForScheme(String scheme)
+    {
+        if (scheme == null)
+            return -1;
+        Integer port = DEFAULT_PORT_FOR_SCHEME.get(scheme);
+        return port == null ? -1 : port;
+    }
+
+    /**
+     * Normalize the scheme
+     * @param scheme The scheme to normalize
+     * @return The normalized version of the scheme
+     */
+    public static String normalizeScheme(String scheme)
+    {
+        return scheme == null ? null : StringUtil.asciiToLowerCase(scheme);
+    }
+
+    /**
+     * Normalize a port for a given scheme
+     * @param scheme The scheme
+     * @param port The port to normalize
+     * @return The port number or 0 if provided port was less than 0 or was equal to the default port for the scheme
+     */
+    public static int normalizePortForScheme(String scheme, int port)
+    {
+        if (port <= 0)
+            return 0;
+        return port == getDefaultPortForScheme(scheme) ? 0 : port;
     }
 }

@@ -1051,6 +1051,9 @@ public class ServletChannelState
             if (_requestState != RequestState.COMPLETING)
                 throw new IllegalStateException(this.getStatusStringLocked());
 
+            if (failure != null)
+                abortResponse(failure);
+
             if (_event == null)
             {
                 _requestState = RequestState.COMPLETED;
@@ -1171,7 +1174,7 @@ public class ServletChannelState
 
     protected void scheduleDispatch()
     {
-        _servletChannel.execute(_servletChannel::handle);
+        _servletChannel.execute(_servletChannel::handle, _servletChannel.getRequest());
     }
 
     protected void cancelTimeout()

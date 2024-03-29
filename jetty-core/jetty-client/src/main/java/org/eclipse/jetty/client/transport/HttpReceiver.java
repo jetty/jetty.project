@@ -148,8 +148,9 @@ public abstract class HttpReceiver
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseBegin for {} on {}", exchange, this);
 
-            if (exchange.isResponseComplete())
+            if (exchange.isResponseCompleteOrTerminated())
                 return;
+
             responseState = ResponseState.BEGIN;
             HttpResponse response = exchange.getResponse();
             HttpConversation conversation = exchange.getConversation();
@@ -192,8 +193,9 @@ public abstract class HttpReceiver
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseHeader on {}", this);
 
-            if (exchange.isResponseComplete())
+            if (exchange.isResponseCompleteOrTerminated())
                 return;
+
             responseState = ResponseState.HEADER;
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
@@ -243,7 +245,7 @@ public abstract class HttpReceiver
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseHeaders on {}", this);
 
-            if (exchange.isResponseComplete())
+            if (exchange.isResponseCompleteOrTerminated())
                 return;
 
             responseState = ResponseState.HEADERS;
@@ -284,7 +286,7 @@ public abstract class HttpReceiver
             ResponseListeners responseListeners = exchange.getConversation().getResponseListeners();
             responseListeners.notifyHeaders(response);
 
-            if (exchange.isResponseComplete())
+            if (exchange.isResponseCompleteOrTerminated())
                 return;
 
             if (HttpStatus.isInterim(response.getStatus()))
@@ -461,8 +463,7 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("Invoking abort with {} on {}", failure, this);
 
-        // This method should be called only after calling HttpExchange.responseComplete().
-        if (!exchange.isResponseComplete())
+        if (!exchange.isResponseCompleteOrTerminated())
             throw new IllegalStateException();
 
         invoker.run(() ->

@@ -19,6 +19,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -72,7 +75,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             requestMetaData = (MetaData.Request)frame.getMetaData();
 
+            // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
+            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
             Runnable handler = httpChannel.onRequest(requestMetaData);
+            Request request = this.httpChannel.getRequest();
+            listener.onRequestBegin(request);
+            // Note UriCompliance is done by HandlerInvoker
+            HttpCompliance httpCompliance = httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+            HttpCompliance.checkHttpCompliance(requestMetaData, httpCompliance, listener);
 
             if (frame.isLast())
             {
@@ -117,13 +127,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
             if (LOG.isDebugEnabled())
                 LOG.debug("onRequest() failure", x);
             HttpException httpException = x instanceof HttpException http ? http : new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, x);
-            return () -> onBadMessage(httpException);
+            return onBadMessage(httpException);
         }
     }
 
-    private void onBadMessage(HttpException x)
+    private Runnable onBadMessage(HttpException x)
     {
-        // TODO
+        if (LOG.isDebugEnabled())
+            LOG.debug("badMessage {} {}", this, x);
+
+        Throwable failure = (Throwable)x;
+        return httpChannel.onFailure(failure);
     }
 
     @Override
