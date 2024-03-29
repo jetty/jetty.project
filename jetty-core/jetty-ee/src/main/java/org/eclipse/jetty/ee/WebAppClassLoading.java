@@ -80,7 +80,7 @@ public class WebAppClassLoading
      */
     public static ClassMatcher getProtectedClasses(Server server)
     {
-        return getClassMatcher(server, PROTECTED_CLASSES_ATTRIBUTE, null);
+        return getClassMatcher(server, PROTECTED_CLASSES_ATTRIBUTE, DEFAULT_PROTECTED_CLASSES);
     }
 
     /**
@@ -140,7 +140,7 @@ public class WebAppClassLoading
      */
     public static ClassMatcher getHiddenClasses(Environment environment)
     {
-        return getClassMatcher(environment, HIDDEN_CLASSES_ATTRIBUTE, DEFAULT_HIDDEN_CLASSES);
+        return getClassMatcher(environment, HIDDEN_CLASSES_ATTRIBUTE, null);
     }
 
     /**
