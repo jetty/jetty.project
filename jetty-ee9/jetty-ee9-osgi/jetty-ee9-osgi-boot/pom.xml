@@ -119,6 +119,27 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.basepom.maven</groupId>
+        <artifactId>duplicate-finder-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase>
+            <configuration>
+              <!-- Additional ignoredResourcePatterns are not additive, you have to replace the whole list -->
+              <ignoredResourcePatterns>
+                <ignoredResourcePattern>about.html</ignoredResourcePattern>
+                <ignoredResourcePattern>.api_description</ignoredResourcePattern>
+                <ignoredResourcePattern>/?javax/servlet/resources/.*$</ignoredResourcePattern>
+              </ignoredResourcePatterns>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
