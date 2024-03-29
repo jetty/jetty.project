@@ -276,9 +276,11 @@
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
     <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
     <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
+    <osgi-http-service-api>1.2.2</osgi-http-service-api>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.1</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
+    <osgi-service-http-whiteboard>1.1.1</osgi-service-http-whiteboard>
     <osgi-services-version>3.12.0</osgi-services-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
     <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
@@ -937,6 +939,11 @@
         <artifactId>jetty-websocket-jetty-server</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.equinox.http.service.api</artifactId>
+        <version>${osgi-http-service-api}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.eclipse.platform</groupId>
@@ -1076,6 +1083,11 @@
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.service.event</artifactId>
         <version>${osgi-service-event-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.http.whiteboard</artifactId>
+        <version>${osgi-service-http-whiteboard}</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
