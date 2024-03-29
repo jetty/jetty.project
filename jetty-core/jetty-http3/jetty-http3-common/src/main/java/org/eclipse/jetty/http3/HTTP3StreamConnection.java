@@ -63,15 +63,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         tryReleaseInputBuffer(true);
     }
 
-//    public void onFailure(Throwable failure)
-//    {
-//        if (networkBuffer != null)
-//        {
-//            networkBuffer.release();
-//            networkBuffer = null;
-//        }
-//    }
-
     @Override
     public QuicStreamEndPoint getEndPoint()
     {
