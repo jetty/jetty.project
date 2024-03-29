@@ -22,8 +22,8 @@ import java.util.Map;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.hibernate.search.engine.backend.types.Searchable;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 /**
  * InfinispanSessionData
@@ -53,7 +53,8 @@ public class InfinispanSessionData extends SessionData
 
     @Override
     @GenericField(searchable = Searchable.YES)
-    public long getExpiry() {
+    public long getExpiry()
+    {
         return super.getExpiry();
     }
 
