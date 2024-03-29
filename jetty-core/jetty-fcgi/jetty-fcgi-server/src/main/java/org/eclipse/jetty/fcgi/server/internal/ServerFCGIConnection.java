@@ -55,7 +55,6 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
     private RetainableByteBuffer inputBuffer;
-    private HttpStreamOverFCGI stream;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
