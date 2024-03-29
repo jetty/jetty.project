@@ -244,7 +244,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         acquireInputBuffer();
         // This loop must run only until the request is completed.
         // See also HttpConnection.parseAndFillForContent().
-        while (true)
+        while (stream.get() != null)
         {
             // The inputBuffer cannot be released immediately after parse()
             // even if the buffer has been fully consumed because releaseInputBuffer()
@@ -254,7 +254,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 return;
 
             // Check if the request was completed by the parsing.
-            if (stream == null || fillInputBuffer() <= 0)
+            if (stream.get() == null || fillInputBuffer() <= 0)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("parseAndFill completed the request by parsing {}", this);
