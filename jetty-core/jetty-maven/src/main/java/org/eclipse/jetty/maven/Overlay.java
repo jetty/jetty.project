@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.maven.plugin;
+package org.eclipse.jetty.maven;
 
 import java.io.File;
 import java.io.IOException;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.maven.plugin;
+package org.eclipse.jetty.maven;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -45,41 +45,41 @@ public class OverlayManager
         this.warPlugin = warPlugin;
     }
 
-    public void applyOverlays(MavenWebAppContext webApp)
+    public void applyOverlays(ContextHandler contextHandler, boolean append)
         throws Exception
     {
         List<Resource> resourceBases = new ArrayList<Resource>();
 
-        for (Overlay o : getOverlays(webApp))
+        for (Overlay o : getOverlays(contextHandler))
         {
             //can refer to the current project in list of overlays for ordering purposes
-            if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getBaseResource().exists())
+            if (o.getConfig() != null && o.getConfig().isCurrentProject() && contextHandler.getBaseResource().exists())
             {
-                resourceBases.add(webApp.getBaseResource()); 
+                resourceBases.add(contextHandler.getBaseResource()); 
                 continue;
             }
             //add in the selectively unpacked overlay in the correct order to the webapp's resource base
-            resourceBases.add(unpackOverlay(webApp, o));
+            resourceBases.add(unpackOverlay(contextHandler, o));
         }
 
-        if (!resourceBases.contains(webApp.getBaseResource()) && webApp.getBaseResource().exists())
+        if (!resourceBases.contains(contextHandler.getBaseResource()) && contextHandler.getBaseResource().exists())
         {
-            if (webApp.getBaseAppFirst())
-                resourceBases.add(0, webApp.getBaseResource());
+            if (append)
+                resourceBases.add(0, contextHandler.getBaseResource());
             else
-                resourceBases.add(webApp.getBaseResource());
+                resourceBases.add(contextHandler.getBaseResource());
         }
 
-        webApp.setBaseResource(ResourceFactory.combine(resourceBases));
+        contextHandler.setBaseResource(ResourceFactory.combine(resourceBases));
     }
     
     /**
      * Generate an ordered list of overlays
      */
-    protected List<Overlay> getOverlays(WebAppContext webApp)
+    private List<Overlay> getOverlays(ContextHandler contextHandler)
         throws Exception
     {
-        Objects.requireNonNull(webApp);
+        Objects.requireNonNull(contextHandler);
 
         Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
         List<Overlay> overlays = new ArrayList<Overlay>();
@@ -104,7 +104,7 @@ public class OverlayManager
             if (a != null)
             {   
                 matchedWarArtifacts.add(a);
-                Resource resource = webApp.getResourceFactory().newJarFileResource(a.getFile().toPath().toUri());
+                Resource resource = contextHandler.getResourceFactory().newJarFileResource(a.getFile().toPath().toUri());
                 SelectiveJarResource r = new SelectiveJarResource(resource);
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
@@ -118,7 +118,7 @@ public class OverlayManager
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Resource resource = webApp.getResourceFactory().newJarFileResource(a.getFile().toPath().toUri());
+                Resource resource = contextHandler.getResourceFactory().newJarFileResource(a.getFile().toPath().toUri());
                 Overlay overlay = new Overlay(null, resource);
                 overlays.add(overlay);
             }
@@ -133,10 +133,10 @@ public class OverlayManager
      * @return the location to which it was unpacked
      * @throws IOException if there is an IO problem
      */
-    protected Resource unpackOverlay(WebAppContext webApp, Overlay overlay)
+    protected Resource unpackOverlay(ContextHandler contextHandler, Overlay overlay)
         throws IOException
     {
-        Objects.requireNonNull(webApp);
+        Objects.requireNonNull(contextHandler);
         Objects.requireNonNull(overlay);
 
         if (overlay.getResource() == null)
@@ -161,6 +161,6 @@ public class OverlayManager
         overlay.unpackTo(unpackDir);
         
         //use top level of unpacked content
-        return webApp.getResourceFactory().newResource(unpackDir.getCanonicalPath());
+        return contextHandler.getResourceFactory().newResource(unpackDir.getCanonicalPath());
     }
 }
