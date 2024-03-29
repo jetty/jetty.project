@@ -28,12 +28,13 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public abstract class AbstractHttpTest
@@ -49,7 +50,7 @@ public abstract class AbstractHttpTest
     public void setUp() throws Exception
     {
         server = new Server();
-        bufferPool = new ArrayByteBufferPool.Tracking();
+        bufferPool = new ArrayByteBufferPool.Tracking(64, 2048, 64 * 1024);
         connector = new ServerConnector(server, null, null, bufferPool, 1, 1, new HttpConnectionFactory());
         connector.setIdleTimeout(100000);
 
@@ -60,10 +61,15 @@ public abstract class AbstractHttpTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        Set<ArrayByteBufferPool.Tracking.Buffer> serverLeaks = bufferPool.getLeaks();
-        server.stop();
-        stacklessChannelLogging.close();
-        assertEquals(0, serverLeaks.size(), bufferPool.dumpLeaks());
+        try
+        {
+            assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+            IO.close(stacklessChannelLogging);
+        }
     }
 
     protected HttpTester.Response executeRequest(HttpVersion httpVersion) throws URISyntaxException, IOException

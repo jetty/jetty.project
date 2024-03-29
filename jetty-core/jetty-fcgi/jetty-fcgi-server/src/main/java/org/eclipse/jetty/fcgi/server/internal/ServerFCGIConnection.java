@@ -54,7 +54,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private final AtomicReference<HttpStreamOverFCGI> stream = new AtomicReference<>();
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
-    private RetainableByteBuffer inputBuffer;
+    private volatile RetainableByteBuffer inputBuffer;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
