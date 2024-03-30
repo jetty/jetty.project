@@ -29,13 +29,13 @@ import org.eclipse.jetty.util.resource.Resources;
  */
 public class ResourceHttpContentFactory implements HttpContent.Factory
 {
-    private final ResourceFactory _factory;
+    private final Resource _baseResource;
     private final MimeTypes _mimeTypes;
 
-    public ResourceHttpContentFactory(ResourceFactory factory, MimeTypes mimeTypes)
+    public ResourceHttpContentFactory(Resource baseResource, MimeTypes mimeTypes)
     {
         Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
-        _factory = factory;
+        _baseResource = Objects.requireNonNullElse(baseResource, ResourceFactory.root().newResource("."));
         _mimeTypes = mimeTypes;
     }
 
@@ -44,8 +44,7 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     {
         try
         {
-            // try loading the content from our factory.
-            Resource resource = this._factory.newResource(pathInContext);
+            Resource resource = resolve(pathInContext);
             if (Resources.missing(resource))
                 return null;
             return load(pathInContext, resource);
@@ -65,6 +64,11 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
         }
     }
 
+    protected Resource resolve(String pathInContext)
+    {
+        return _baseResource.resolve(pathInContext);
+    }
+
     private HttpContent load(String pathInContext, Resource resource)
     {
         if (resource == null || !resource.exists())
@@ -75,6 +79,6 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     @Override
     public String toString()
     {
-        return "ResourceContentFactory[" + _factory + "]@" + hashCode();
+        return "ResourceContentFactory[" + _baseResource + "]@" + hashCode();
     }
 }

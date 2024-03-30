@@ -159,32 +159,32 @@
     <asciidoctor.skip>false</asciidoctor.skip>
     <asciidoctorj-diagram.version>2.3.0</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.11</asciidoctorj.version>
-    <asm.version>9.6</asm.version>
-    <awaitility.version>4.2.0</awaitility.version>
+    <asm.version>9.7</asm.version>
+    <awaitility.version>4.2.1</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
     <build-helper.maven.plugin.version>3.5.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.14.0</checkstyle.version>
+    <checkstyle.version>10.14.2</checkstyle.version>
     <commons-codec.version>1.16.1</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
-    <commons.compress.version>1.26.0</commons.compress.version>
+    <commons.compress.version>1.26.1</commons.compress.version>
     <commons.io.version>2.15.1</commons.io.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
     <conscrypt.version>2.5.2</conscrypt.version>
-    <cyclonedx.maven.plugin.version>2.7.10</cyclonedx.maven.plugin.version>
+    <cyclonedx.maven.plugin.version>2.8.0</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
-    <eclipse.jdt.ecj.version>3.33.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.37.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.25.0</google.errorprone.version>
+    <google.errorprone.version>2.26.1</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
     <grpc.version>1.62.2</grpc.version>
     <gson.version>2.10.1</gson.version>
-    <guava.version>33.0.0-jre</guava.version>
+    <guava.version>33.1.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <h2spec.maven.plugin.version>1.0.11</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
@@ -195,7 +195,7 @@
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
-    <jackson.version>2.16.1</jackson.version>
+    <jackson.version>2.17.0</jackson.version>
     <jacoco.maven.plugin.version>0.8.11</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.0.4.Final</jboss-logmanager.version>
@@ -221,7 +221,7 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <jna.version>5.14.0</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
-    <json-smart.version>2.5.0</json-smart.version>
+    <json-smart.version>2.5.1</json-smart.version>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
     <junit.jupiter.execution.parallel.config.strategy>fixed</junit.jupiter.execution.parallel.config.strategy>
     <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
@@ -233,22 +233,22 @@
     <license.maven.plugin.version>4.3</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.23.0</log4j2.version>
-    <logback.version>1.5.1</logback.version>
+    <logback.version>1.5.3</logback.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.3.3</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.1.0</maven-build-cache.version>
     <maven-plugin.plugin.version>3.11.0</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
+    <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
     <maven.checkstyle.plugin.version>3.3.1</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.3.2</maven.clean.plugin.version>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
-    <maven.compiler.plugin.version>3.12.1</maven.compiler.plugin.version>
+    <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.6.1</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
-    <maven.deps.version>3.9.4</maven.deps.version>
+    <maven.deps.version>3.9.6</maven.deps.version>
     <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.2.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
@@ -256,15 +256,15 @@
     <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.6.3</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.10.2</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.11.0</maven.plugin-tools.version>
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
-    <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
+    <maven.remote-resources-plugin.version>3.2.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.18</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.5.2</maven.shade.plugin.version>
     <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
     <!-- do not upgrade as jpms issue with ee10 annotations -->
-    <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
+    <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
     <maven.version>3.9.0</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
     <mina.core.version>2.2.3</mina.core.version>
@@ -276,33 +276,35 @@
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
     <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
     <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
+    <osgi-http-service-api>1.2.2</osgi-http-service-api>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.1</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
-    <osgi-services-version>3.11.100</osgi-services-version>
+    <osgi-service-http-whiteboard>1.1.1</osgi-service-http-whiteboard>
+    <osgi-services-version>3.12.0</osgi-services-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
     <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
     <osgi-util-position-version>1.0.1</osgi-util-position-version>
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
-    <osgi-util-version>3.7.200</osgi-util-version>
+    <osgi-util-version>3.7.300</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.18.500</osgi-version>
+    <osgi-version>3.19.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.13.5</pax.exam.version>
     <pax.url.version>2.6.14</pax.url.version>
-    <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
+    <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.0</plexus-utils.version>
     <plexus-xml.version>4.0.3</plexus-xml.version>
     <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <settingsPath>src/it/settings.xml</settingsPath>
-    <slf4j.version>2.0.9</slf4j.version>
-    <spifly.version>1.3.6</spifly.version>
+    <slf4j.version>2.0.12</slf4j.version>
+    <spifly.version>1.3.7</spifly.version>
     <spotbugs.maven.plugin.version>4.8.3.1</spotbugs.maven.plugin.version>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <swissbox.version>1.8.3</swissbox.version>
-    <testcontainers.version>1.19.6</testcontainers.version>
+    <testcontainers.version>1.19.7</testcontainers.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <versions.maven.plugin.version>2.16.2</versions.maven.plugin.version>
     <wildfly.common.version>1.7.0.Final</wildfly.common.version>
@@ -937,6 +939,11 @@
         <artifactId>jetty-websocket-jetty-server</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.equinox.http.service.api</artifactId>
+        <version>${osgi-http-service-api}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.eclipse.platform</groupId>
@@ -1076,6 +1083,11 @@
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.service.event</artifactId>
         <version>${osgi-service-event-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.http.whiteboard</artifactId>
+        <version>${osgi-service-http-whiteboard}</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
@@ -2439,6 +2451,65 @@
                   </formats>
                   <onlyProjectDependencies>false</onlyProjectDependencies>
                   <onlyUpgradable>true</onlyUpgradable>
+                  <ruleSet>
+                    <rules>
+                      <rule>
+                        <!-- ignore maven alpha/beta releases -->
+                        <groupId>org.apache.maven</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-(alpha|beta).?[0-9]+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore jetty core level version changes -->
+                        <groupId>org.eclipse.jetty</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore jetty nested level version changes -->
+                        <groupId>org.eclipse.jetty.*</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                    </rules>
+                  </ruleSet>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        $ mvn -Pupdate-dependencies validate
+        -->
+      <id>update-dependencies</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>root-report</id>
+                <goals>
+                  <goal>update-properties</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
                   <ruleSet>
                     <rules>
                       <rule>

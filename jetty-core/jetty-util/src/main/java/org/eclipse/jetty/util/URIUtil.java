@@ -590,6 +590,23 @@ public final class URIUtil
     }
 
     /**
+     * Test if a string is a relative path or a URI
+     * @param uriOrPath A string that is either a path, a URI path segment or an absolute URI
+     * @return True if the string does not start with any absolute URI or file characters sequences.
+     */
+    public static boolean isRelative(String uriOrPath)
+    {
+        if (uriOrPath.isEmpty())
+            return true;
+
+        char c = uriOrPath.charAt(0);
+        if (c == '/' || (File.separatorChar != '/' && c == File.separatorChar))
+            return false;
+
+        return !URIUtil.hasScheme(uriOrPath);
+    }
+
+    /**
      * Test if codepoint is safe and unambiguous to pass as input to {@link URI}
      *
      * @param code the codepoint code to test
@@ -1767,7 +1784,9 @@ public final class URIUtil
      *
      * @param str the input string of references
      * @see #toJarFileUri(URI)
+     * @deprecated use {@link ResourceFactory#split(String)}
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public static List<URI> split(String str)
     {
         List<URI> uris = new ArrayList<>();
@@ -1870,7 +1889,10 @@ public final class URIUtil
      * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
      * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
      * @return The {@link URI} form of the resource.
+     * @deprecated This method is currently resolving relative paths against the current directory, which is a mechanism
+     * that should be implemented by a {@link ResourceFactory}.   All calls to this method need to be reviewed.
      */
+    @Deprecated(since = "12.0.8")
     public static URI toURI(String resource)
     {
         Objects.requireNonNull(resource);
