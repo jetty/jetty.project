@@ -253,7 +253,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v1 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
-                _buffer.append(buffer);
+                BufferUtil.append(_buffer.getByteBuffer(), buffer);
             }
 
             /**
@@ -476,7 +476,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
-                _buffer.append(buffer);
+                BufferUtil.append(_buffer.getByteBuffer(), buffer);
             }
 
             @Override

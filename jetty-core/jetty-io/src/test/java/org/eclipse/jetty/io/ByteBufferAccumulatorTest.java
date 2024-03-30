@@ -303,10 +303,10 @@ public class ByteBufferAccumulatorTest
         }
 
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
             _acquires.incrementAndGet();
-            return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+            return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
             {
                 @Override
                 public boolean release()

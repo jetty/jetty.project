@@ -17,13 +17,19 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public class NonRetainableByteBuffer implements RetainableByteBuffer
+public class NonRetainableByteBuffer implements RetainableByteBuffer.Mutable
 {
     private final ByteBuffer byteBuffer;
 
     public NonRetainableByteBuffer(ByteBuffer byteBuffer)
     {
         this.byteBuffer = byteBuffer;
+    }
+
+    @Override
+    public Mutable asMutable()
+    {
+        return this;
     }
 
     @Override

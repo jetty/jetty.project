@@ -109,7 +109,7 @@ public class GZIPContentDecoder implements Destroyable
             RetainableByteBuffer result = acquire(length);
             for (RetainableByteBuffer buffer : _inflateds)
             {
-                result.append(buffer);
+                buffer.appendTo(result);
                 buffer.release();
             }
             _inflateds.clear();

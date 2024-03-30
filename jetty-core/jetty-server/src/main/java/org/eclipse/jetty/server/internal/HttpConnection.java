@@ -333,7 +333,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public void onUpgradeTo(ByteBuffer buffer)
     {
-        getRetainableRequestBuffer().append(buffer);
+        BufferUtil.append(getRetainableRequestBuffer().getByteBuffer(), buffer);
     }
 
     @Override

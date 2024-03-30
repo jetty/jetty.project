@@ -78,8 +78,14 @@ public interface RetainableByteBuffer extends Retainable
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
     {
-        return new RetainableByteBuffer()
+        return new RetainableByteBuffer.Mutable()
         {
+            @Override
+            public Mutable asMutable()
+            {
+                return this;
+            }
+
             @Override
             public ByteBuffer getByteBuffer()
             {
@@ -146,9 +152,7 @@ public interface RetainableByteBuffer extends Retainable
     ByteBuffer getByteBuffer();
 
     /**
-     * Creates a copy of this RetainableByteBuffer that is entirely independent, but
-     * backed by the same memory space, i.e.: modifying the ByteBuffer of the original
-     * also modifies the ByteBuffer of the copy and vice-versa.
+     * Creates a deep copy of this RetainableByteBuffer that is entirely independent
      * @return A copy of this RetainableByteBuffer
      */
     default RetainableByteBuffer copy()
@@ -194,53 +198,12 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * @return the number of bytes left for appending in the {@code ByteBuffer}
-     */
-    default int space()
-    {
-        return capacity() - remaining();
-    }
-
-    /**
-     * @return whether the {@code ByteBuffer} has remaining bytes left for appending
-     */
-    default boolean isFull()
-    {
-        return space() == 0;
-    }
-
-    /**
      * Clears the contained byte buffer to be empty in flush mode.
      * @see BufferUtil#clear(ByteBuffer)
      */
     default void clear()
     {
         BufferUtil.clear(getByteBuffer());
-    }
-
-    /**
-     * Copies the contents of the given byte buffer at the end of this buffer.
-     * @param bytes the byte buffer to copy from.
-     * @return true if all bytes of the given buffer were copied, false otherwise.
-     * @throws ReadOnlyBufferException if the buffer is read only
-     * @see BufferUtil#append(ByteBuffer, ByteBuffer)
-     */
-    default boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
-    {
-        BufferUtil.append(getByteBuffer(), bytes);
-        return !bytes.hasRemaining();
-    }
-
-    /**
-     * Copies the contents of the given retainable byte buffer at the end of this buffer.
-     * @param bytes the retainable byte buffer to copy from.
-     * @return true if all bytes of the given buffer were copied, false otherwise.
-     * @throws ReadOnlyBufferException if the buffer is read only
-     * @see BufferUtil#append(ByteBuffer, ByteBuffer)
-     */
-    default boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
-    {
-        return bytes.remaining() == 0 || append(bytes.getByteBuffer());
     }
 
     /**
@@ -287,6 +250,17 @@ public interface RetainableByteBuffer extends Retainable
         toInfillMode.put(getByteBuffer());
     }
 
+    default boolean appendTo(ByteBuffer buffer)
+    {
+        BufferUtil.append(buffer, getByteBuffer());
+        return !hasRemaining();
+    }
+
+    default boolean appendTo(RetainableByteBuffer buffer)
+    {
+        return buffer.asMutable().append(getByteBuffer());
+    }
+
     /**
      * Asynchronously copies the contents of this retainable byte buffer into given sink.
      * @param sink the destination sink.
@@ -302,13 +276,13 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * An aggregating {@link RetainableByteBuffer} that may grow when content is appended to it.
      */
-    class Aggregator implements RetainableByteBuffer
+    class Aggregator implements RetainableByteBuffer.Mutable
     {
         private final ByteBufferPool _pool;
         private final boolean _direct;
         private final int _growBy;
         private final int _maxCapacity;
-        private RetainableByteBuffer _buffer;
+        private RetainableByteBuffer.Mutable _buffer;
 
         /**
          * Construct an aggregating {@link RetainableByteBuffer} that may grow when content is appended to it.
@@ -351,6 +325,12 @@ public interface RetainableByteBuffer extends Retainable
                 _growBy = growBy;
                 _buffer = _pool.acquire(_growBy, _direct);
             }
+        }
+
+        @Override
+        public Mutable asMutable()
+        {
+            return this;
         }
 
         @Override
@@ -431,14 +411,14 @@ public interface RetainableByteBuffer extends Retainable
         public boolean append(ByteBuffer bytes)
         {
             ensureSpace(bytes.remaining());
-            return RetainableByteBuffer.super.append(bytes);
+            BufferUtil.append(_buffer.getByteBuffer(), bytes);
+            return !bytes.hasRemaining();
         }
 
         @Override
         public boolean append(RetainableByteBuffer bytes)
         {
-            ensureSpace(bytes.remaining());
-            return RetainableByteBuffer.super.append(bytes);
+            return append(bytes.getByteBuffer());
         }
 
         private void ensureSpace(int spaceNeeded)
@@ -456,18 +436,23 @@ public interface RetainableByteBuffer extends Retainable
                     newCapacity = _maxCapacity;
             }
 
-            RetainableByteBuffer ensured = _pool.acquire(newCapacity, _direct);
+            RetainableByteBuffer.Mutable ensured = _pool.acquire(newCapacity, _direct);
             ensured.append(_buffer);
             _buffer.release();
             _buffer = ensured;
         }
     }
 
+    default Mutable asMutable()
+    {
+        throw new UnsupportedOperationException("Cannot be mutated");
+    }
+
     /**
      * An accumulating {@link RetainableByteBuffer} that may internally accumulate multiple other
      * {@link RetainableByteBuffer}s with zero-copy if the {@link #append(RetainableByteBuffer)} API is used
      */
-    class Accumulator implements RetainableByteBuffer
+    class Accumulator implements RetainableByteBuffer.Mutable
     {
         private final ReferenceCounter _retainable = new ReferenceCounter(1);
         private final ByteBufferPool _pool;
@@ -487,6 +472,12 @@ public interface RetainableByteBuffer extends Retainable
             _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
             _direct = direct;
             _maxLength = maxLength < 0 ? Long.MAX_VALUE : maxLength;
+        }
+
+        @Override
+        public Mutable asMutable()
+        {
+            return this;
         }
 
         @Override
@@ -689,6 +680,61 @@ public interface RetainableByteBuffer extends Retainable
         }
     }
 
+    interface Mutable extends RetainableByteBuffer
+    {
+        /**
+         * @return the number of bytes left for appending in the {@code ByteBuffer}
+         */
+        default int space()
+        {
+            return capacity() - remaining();
+        }
+
+        /**
+         * @return whether the {@code ByteBuffer} has remaining bytes left for appending
+         */
+        default boolean isFull()
+        {
+            return space() == 0;
+        }
+
+        /**
+         * Copies the contents of the given byte buffer at the end of this buffer.
+         * @param bytes the byte buffer to copy from.
+         * @return true if all bytes of the given buffer were copied, false otherwise.
+         * @throws ReadOnlyBufferException if the buffer is read only
+         * @see BufferUtil#append(ByteBuffer, ByteBuffer)
+         */
+        default boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
+        {
+            BufferUtil.append(getByteBuffer(), bytes);
+            return !bytes.hasRemaining();
+        }
+
+        /**
+         * Copies the contents of the given retainable byte buffer at the end of this buffer.
+         * @param bytes the retainable byte buffer to copy from.
+         * @return true if all bytes of the given buffer were copied, false otherwise.
+         * @throws ReadOnlyBufferException if the buffer is read only
+         * @see BufferUtil#append(ByteBuffer, ByteBuffer)
+         */
+        default boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
+        {
+            return bytes.remaining() == 0 || append(bytes.getByteBuffer());
+        }
+
+        /**
+         * A wrapper for {@link RetainableByteBuffer} instances
+         */
+        class Wrapper extends RetainableByteBuffer.Wrapper implements Mutable
+        {
+            public Wrapper(RetainableByteBuffer.Mutable wrapped)
+            {
+                super(wrapped);
+            }
+        }
+    }
+
     /**
      * A wrapper for {@link RetainableByteBuffer} instances
      */
@@ -732,12 +778,6 @@ public interface RetainableByteBuffer extends Retainable
         public boolean hasRemaining()
         {
             return getWrapped().hasRemaining();
-        }
-
-        @Override
-        public int capacity()
-        {
-            return getWrapped().capacity();
         }
 
         @Override

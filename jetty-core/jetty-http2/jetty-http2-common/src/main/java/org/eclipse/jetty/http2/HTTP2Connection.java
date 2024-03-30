@@ -547,7 +547,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
         private void put(ByteBuffer source)
         {
-            delegate.append(source);
+            BufferUtil.append(delegate.getByteBuffer(), source);
         }
     }
 }

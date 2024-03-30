@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * <p>Abstract implementation of {@link RetainableByteBuffer} with
  * reference counting.</p>
  */
-public abstract class AbstractRetainableByteBuffer implements RetainableByteBuffer
+public abstract class AbstractRetainableByteBuffer implements RetainableByteBuffer.Mutable
 {
     private final ReferenceCounter refCount = new ReferenceCounter(0);
     private final ByteBuffer byteBuffer;
@@ -30,6 +30,12 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
     public AbstractRetainableByteBuffer(ByteBuffer byteBuffer)
     {
         this.byteBuffer = Objects.requireNonNull(byteBuffer);
+    }
+
+    @Override
+    public Mutable asMutable()
+    {
+        return this;
     }
 
     /**

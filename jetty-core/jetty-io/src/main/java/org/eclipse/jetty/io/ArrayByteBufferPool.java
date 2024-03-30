@@ -199,7 +199,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     }
 
     @Override
-    public RetainableByteBuffer acquire(int size, boolean direct)
+    public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
     {
         RetainedBucket bucket = bucketFor(size, direct);
 
@@ -210,11 +210,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         bucket.recordAcquire();
 
         // Try to acquire a pooled entry.
-        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().acquire();
+        Pool.Entry<RetainableByteBuffer.Mutable> entry = bucket.getPool().acquire();
         if (entry != null)
         {
             bucket.recordPooled();
-            RetainableByteBuffer buffer = entry.getPooled();
+            RetainableByteBuffer.Mutable buffer = entry.getPooled();
             ((Buffer)buffer).acquire();
             return buffer;
         }
@@ -227,7 +227,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         bucket.recordRelease();
 
         // Try to reserve an entry to put the buffer into the pool.
-        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().reserve();
+        Pool.Entry<RetainableByteBuffer.Mutable> entry = bucket.getPool().reserve();
         if (entry == null)
         {
             bucket.recordNonPooled();
@@ -249,7 +249,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         entry.remove();
     }
 
-    private void release(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer> entry)
+    private void release(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer.Mutable> entry)
     {
         bucket.recordRelease();
 
@@ -309,7 +309,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer> releaser)
+    private RetainableByteBuffer.Mutable newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer.Mutable> releaser)
     {
         ByteBuffer buffer = BufferUtil.allocate(capacity, direct);
         Buffer retainableByteBuffer = new Buffer(buffer, releaser);
@@ -317,7 +317,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return retainableByteBuffer;
     }
 
-    public Pool<RetainableByteBuffer> poolFor(int capacity, boolean direct)
+    public Pool<RetainableByteBuffer.Mutable> poolFor(int capacity, boolean direct)
     {
         RetainedBucket bucket = bucketFor(capacity, direct);
         return bucket == null ? null : bucket.getPool();
@@ -445,7 +445,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private final LongAdder _evicts = new LongAdder();
         private final LongAdder _removes = new LongAdder();
         private final LongAdder _releases = new LongAdder();
-        private final Pool<RetainableByteBuffer> _pool;
+        private final Pool<RetainableByteBuffer.Mutable> _pool;
         private final int _capacity;
 
         private RetainedBucket(int capacity, int poolSize)
@@ -501,14 +501,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return _capacity;
         }
 
-        private Pool<RetainableByteBuffer> getPool()
+        private Pool<RetainableByteBuffer.Mutable> getPool()
         {
             return _pool;
         }
 
         private int evict()
         {
-            Pool.Entry<RetainableByteBuffer> entry;
+            Pool.Entry<RetainableByteBuffer.Mutable> entry;
             if (_pool instanceof BucketCompoundPool compound)
                 entry = compound.evict();
             else
@@ -539,7 +539,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             int entries = 0;
             int inUse = 0;
-            for (Pool.Entry<RetainableByteBuffer> entry : getPool().stream().toList())
+            for (Pool.Entry<RetainableByteBuffer.Mutable> entry : getPool().stream().toList())
             {
                 entries++;
                 if (entry.isInUse())
@@ -564,16 +564,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             );
         }
 
-        private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer>
+        private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer.Mutable>
         {
-            private BucketCompoundPool(ConcurrentPool<RetainableByteBuffer> concurrentBucket, QueuedPool<RetainableByteBuffer> queuedBucket)
+            private BucketCompoundPool(ConcurrentPool<RetainableByteBuffer.Mutable> concurrentBucket, QueuedPool<RetainableByteBuffer.Mutable> queuedBucket)
             {
                 super(concurrentBucket, queuedBucket);
             }
 
-            private Pool.Entry<RetainableByteBuffer> evict()
+            private Pool.Entry<RetainableByteBuffer.Mutable> evict()
             {
-                Entry<RetainableByteBuffer> entry = getSecondaryPool().acquire();
+                Entry<RetainableByteBuffer.Mutable> entry = getSecondaryPool().acquire();
                 if (entry == null)
                     entry = getPrimaryPool().acquire();
                 return entry;
@@ -583,10 +583,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private static class Buffer extends AbstractRetainableByteBuffer
     {
-        private final Consumer<RetainableByteBuffer> _releaser;
+        private final Consumer<RetainableByteBuffer.Mutable> _releaser;
         private int _usages;
 
-        private Buffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
+        private Buffer(ByteBuffer buffer, Consumer<RetainableByteBuffer.Mutable> releaser)
         {
             super(buffer);
             this._releaser = releaser;
@@ -682,9 +682,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
-            RetainableByteBuffer buffer = super.acquire(size, direct);
+            RetainableByteBuffer.Mutable buffer = super.acquire(size, direct);
             Buffer wrapper = new Buffer(buffer, size);
             if (LOG.isDebugEnabled())
                 LOG.debug("acquired {}", wrapper);
@@ -704,7 +704,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 .collect(Collectors.joining(System.lineSeparator()));
         }
 
-        public class Buffer extends RetainableByteBuffer.Wrapper
+        public class Buffer extends RetainableByteBuffer.Mutable.Wrapper
         {
             private final int size;
             private final Instant acquireInstant;
@@ -713,7 +713,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             private final List<Throwable> releaseStacks = new CopyOnWriteArrayList<>();
             private final List<Throwable> overReleaseStacks = new CopyOnWriteArrayList<>();
 
-            private Buffer(RetainableByteBuffer wrapped, int size)
+            private Buffer(RetainableByteBuffer.Mutable wrapped, int size)
             {
                 super(wrapped);
                 this.size = size;

@@ -342,7 +342,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     public void onUpgradeTo(ByteBuffer buffer)
     {
         acquireEncryptedInput();
-        _encryptedInput.append(buffer);
+        BufferUtil.append(_encryptedInput.getByteBuffer(), buffer);
     }
 
     @Override

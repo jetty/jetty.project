@@ -111,7 +111,7 @@ public class ChunkAccumulator
         for (Chunk chunk : _chunks)
         {
             offset += chunk.remaining();
-            buffer.append(chunk);
+            chunk.appendTo(buffer);
             chunk.release();
         }
         assert offset == _length;

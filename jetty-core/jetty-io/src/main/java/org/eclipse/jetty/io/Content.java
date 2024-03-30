@@ -867,6 +867,12 @@ public class Content
             return chunk != null && chunk.getFailure() != null && chunk.isLast() == last;
         }
 
+        @Override
+        default Mutable asMutable()
+        {
+            throw new UnsupportedOperationException("Chunks cannot be mutated");
+        }
+
         /**
          * Get a failure (which may be from a {@link Source#fail(Throwable) failure} or
          * a {@link Source#fail(Throwable, boolean) warning}), if any, associated with the chunk.

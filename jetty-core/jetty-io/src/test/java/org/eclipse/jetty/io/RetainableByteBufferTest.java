@@ -68,12 +68,12 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testEmptyBuffer(RetainableByteBuffer buffer)
+    public void testEmptyBuffer(RetainableByteBuffer.Mutable buffer)
     {
         assertThat(buffer.remaining(), is(0));
         assertFalse(buffer.hasRemaining());
         assertThat(buffer.capacity(), greaterThanOrEqualTo(MIN_CAPACITY));
-        assertFalse(buffer.isFull());
+        assertFalse(BufferUtil.isFull(buffer.getByteBuffer()));
 
         assertThat(buffer.getByteBuffer().remaining(), is(0));
         assertFalse(buffer.getByteBuffer().hasRemaining());
@@ -82,7 +82,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendOneByte(RetainableByteBuffer buffer)
+    public void testAppendOneByte(RetainableByteBuffer.Mutable buffer)
     {
         byte[] bytes = new byte[] {'-', 'X', '-'};
         while (!buffer.isFull())
@@ -94,7 +94,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendOneByteRetainable(RetainableByteBuffer buffer)
+    public void testAppendOneByteRetainable(RetainableByteBuffer.Mutable buffer)
     {
         RetainableByteBuffer toAppend = _pool.acquire(1, true);
         BufferUtil.append(toAppend.getByteBuffer(), (byte)'X');
@@ -107,7 +107,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendMoreBytesThanCapacity(RetainableByteBuffer buffer)
+    public void testAppendMoreBytesThanCapacity(RetainableByteBuffer.Mutable buffer)
     {
         byte[] bytes = new byte[MAX_CAPACITY * 2];
         Arrays.fill(bytes, (byte)'X');
@@ -131,7 +131,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendMoreBytesThanCapacityRetainable(RetainableByteBuffer buffer)
+    public void testAppendMoreBytesThanCapacityRetainable(RetainableByteBuffer.Mutable buffer)
     {
         RetainableByteBuffer toAppend = _pool.acquire(MAX_CAPACITY * 2, true);
         int pos = BufferUtil.flipToFill(toAppend.getByteBuffer());
@@ -159,7 +159,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendSmallByteBuffer(RetainableByteBuffer buffer)
+    public void testAppendSmallByteBuffer(RetainableByteBuffer.Mutable buffer)
     {
         byte[] bytes = new byte[] {'-', 'X', '-'};
         ByteBuffer from = ByteBuffer.wrap(bytes, 1, 1);
@@ -176,7 +176,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendBigByteBuffer(RetainableByteBuffer buffer)
+    public void testAppendBigByteBuffer(RetainableByteBuffer.Mutable buffer)
     {
         ByteBuffer from = BufferUtil.toBuffer("X".repeat(buffer.capacity() * 2));
         buffer.append(from);
@@ -188,7 +188,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testNonRetainableWriteTo(RetainableByteBuffer buffer) throws Exception
+    public void testNonRetainableWriteTo(RetainableByteBuffer.Mutable buffer) throws Exception
     {
         buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
         buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" ")));
@@ -204,7 +204,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testRetainableWriteTo(RetainableByteBuffer buffer) throws Exception
+    public void testRetainableWriteTo(RetainableByteBuffer.Mutable buffer) throws Exception
     {
         CountDownLatch released = new CountDownLatch(3);
         RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
@@ -227,10 +227,11 @@ public class RetainableByteBufferTest
     @MethodSource("buffers")
     public void testCopy(RetainableByteBuffer original)
     {
-        original.append(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
+        ByteBuffer bytes = ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8));
+        BufferUtil.append(original.getByteBuffer(), bytes);
         RetainableByteBuffer copy = original.copy();
 
-        assertEquals(0, copy.space());
+        assertEquals(0, BufferUtil.space(copy.getByteBuffer()));
         assertEquals(5, copy.remaining());
         assertEquals(5, original.remaining());
         assertEquals("hello", StandardCharsets.UTF_8.decode(original.getByteBuffer()).toString());
@@ -244,11 +245,11 @@ public class RetainableByteBufferTest
     @MethodSource("buffers")
     public void testCopyThenModifyOriginal(RetainableByteBuffer original)
     {
-        original.append(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
+        BufferUtil.append(original.getByteBuffer(), ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
         RetainableByteBuffer copy = original.copy();
-        original.append(ByteBuffer.wrap(" world".getBytes(StandardCharsets.UTF_8)));
+        BufferUtil.append(original.getByteBuffer(), ByteBuffer.wrap(" world".getBytes(StandardCharsets.UTF_8)));
 
-        assertEquals(0, copy.space());
+        assertEquals(0, BufferUtil.space(copy.getByteBuffer()));
         assertEquals(5, copy.remaining());
         assertEquals(11, original.remaining());
         assertEquals("hello world", StandardCharsets.UTF_8.decode(original.getByteBuffer()).toString());
