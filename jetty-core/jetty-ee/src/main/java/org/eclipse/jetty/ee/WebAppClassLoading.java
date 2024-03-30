@@ -54,8 +54,8 @@ public class WebAppClassLoading
     public static final String HIDDEN_CLASSES_ATTRIBUTE = "org.eclipse.jetty.webapp.serverClasses";
 
     /**
-     * The default protected (system) classes used by a web application, which can be overridden by {@link Server},
-     * {@link Environment} or {@link org.eclipse.jetty.server.handler.ContextHandler Context} configuration.
+     * The default protected (system) classes used by a web application, which will be applied to the {@link ClassMatcher}s created
+     * by {@link #getProtectedClasses(Environment)}.
      */
     public static final ClassMatcher DEFAULT_PROTECTED_CLASSES = new ClassMatcher(
         "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
@@ -66,8 +66,8 @@ public class WebAppClassLoading
     );
 
     /**
-     * The default hidden (server) classes used by a web application, which can be overridden by {@link Server},
-     * {@link Environment} or {@link org.eclipse.jetty.server.handler.ContextHandler Context} configuration.
+     * The default hidden (server) classes used by a web application, which can be applied to the {@link ClassMatcher}s created
+     * by {@link #getHiddenClasses(Environment)}.
      */
     public static final ClassMatcher DEFAULT_HIDDEN_CLASSES = new ClassMatcher(
         "org.eclipse.jetty."                // hide jetty classes
@@ -76,21 +76,21 @@ public class WebAppClassLoading
     /**
      * Get the default protected (system) classes for a {@link Server}
      * @param server The {@link Server} for the defaults
-     * @return The default protected (system) classes for the {@link Server}, which will be the {@link #DEFAULT_PROTECTED_CLASSES} if not previously configured.
+     * @return The default protected (system) classes for the {@link Server}, which will be empty if not previously configured.
      */
     public static ClassMatcher getProtectedClasses(Server server)
     {
-        return getClassMatcher(server, PROTECTED_CLASSES_ATTRIBUTE, DEFAULT_PROTECTED_CLASSES);
+        return getClassMatcher(server, PROTECTED_CLASSES_ATTRIBUTE, null);
     }
 
     /**
      * Get the default protected (system) classes for an {@link Environment}
      * @param environment The {@link Server} for the defaults
-     * @return The default protected (system) classes for the {@link Environment}, which will be empty if not previously configured.
+     * @return The default protected (system) classes for the {@link Environment}, which will be the {@link #DEFAULT_PROTECTED_CLASSES} if not previously configured.
      */
     public static ClassMatcher getProtectedClasses(Environment environment)
     {
-        return getClassMatcher(environment, PROTECTED_CLASSES_ATTRIBUTE, null);
+        return getClassMatcher(environment, PROTECTED_CLASSES_ATTRIBUTE, DEFAULT_PROTECTED_CLASSES);
     }
 
     /**
@@ -109,7 +109,8 @@ public class WebAppClassLoading
      */
     public static void addProtectedClasses(Server server, String... patterns)
     {
-        addClasses(server, PROTECTED_CLASSES_ATTRIBUTE, DEFAULT_PROTECTED_CLASSES, patterns);
+        if (patterns != null && patterns.length > 0)
+            getClassMatcher(server, PROTECTED_CLASSES_ATTRIBUTE, null).add(patterns);
     }
 
     /**
@@ -119,28 +120,29 @@ public class WebAppClassLoading
      */
     public static void addProtectedClasses(Environment environment, String... patterns)
     {
-        addClasses(environment, PROTECTED_CLASSES_ATTRIBUTE, DEFAULT_PROTECTED_CLASSES, patterns);
+        if (patterns != null && patterns.length > 0)
+            getClassMatcher(environment, PROTECTED_CLASSES_ATTRIBUTE, DEFAULT_PROTECTED_CLASSES).add(patterns);
     }
     
     /**
      * Get the default hidden (server) classes for a {@link Server}
      * @param server The {@link Server} for the defaults
-     * @return The default hidden (server) classes for the {@link Server}, which will be the 
-     *         {@link #DEFAULT_PROTECTED_CLASSES} if not previously configured.
+     * @return The default hidden (server) classes for the {@link Server}, which will be empty if not previously configured.
+     *
      */
     public static ClassMatcher getHiddenClasses(Server server)
     {
-        return getClassMatcher(server, HIDDEN_CLASSES_ATTRIBUTE, DEFAULT_HIDDEN_CLASSES);
+        return getClassMatcher(server, HIDDEN_CLASSES_ATTRIBUTE, null);
     }
 
     /**
      * Get the default hidden (server) classes for an {@link Environment}
      * @param environment The {@link Server} for the defaults
-     * @return The default hidden (server) classes for the {@link Environment}, which will be empty if not previously configured.
+     * @return The default hidden (server) classes for the {@link Environment}, which will be {@link #DEFAULT_PROTECTED_CLASSES} if not previously configured.
      */
     public static ClassMatcher getHiddenClasses(Environment environment)
     {
-        return getClassMatcher(environment, HIDDEN_CLASSES_ATTRIBUTE, null);
+        return getClassMatcher(environment, HIDDEN_CLASSES_ATTRIBUTE, DEFAULT_HIDDEN_CLASSES);
     }
 
     /**
@@ -159,7 +161,8 @@ public class WebAppClassLoading
      */
     public static void addHiddenClasses(Server server, String... patterns)
     {
-        addClasses(server, HIDDEN_CLASSES_ATTRIBUTE, DEFAULT_HIDDEN_CLASSES, patterns);
+        if (patterns != null && patterns.length > 0)
+            getClassMatcher(server, HIDDEN_CLASSES_ATTRIBUTE, null).add(patterns);
     }
 
     /**
@@ -169,14 +172,8 @@ public class WebAppClassLoading
      */
     public static void addHiddenClasses(Environment environment, String... patterns)
     {
-        addClasses(environment, HIDDEN_CLASSES_ATTRIBUTE, DEFAULT_HIDDEN_CLASSES, patterns);
-    }
-
-    private static void addClasses(Attributes attributes, String attribute, ClassMatcher defaultPatterns, String... patterns)
-    {
-        ClassMatcher classMatcher = getClassMatcher(attributes, attribute, defaultPatterns);
         if (patterns != null && patterns.length > 0)
-            classMatcher.add(patterns);
+            getClassMatcher(environment, HIDDEN_CLASSES_ATTRIBUTE, DEFAULT_HIDDEN_CLASSES).add(patterns);
     }
 
     private static ClassMatcher getClassMatcher(Attributes attributes, String attribute, ClassMatcher defaultPatterns)
