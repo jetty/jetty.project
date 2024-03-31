@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.io;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>A pooled {@link ByteBuffer} which maintains a reference count that is
@@ -76,6 +78,12 @@ public interface RetainableByteBuffer extends Retainable
         return new RetainableByteBuffer()
         {
             @Override
+            public boolean canRetain()
+            {
+                return retainable.canRetain();
+            }
+
+            @Override
             public ByteBuffer getByteBuffer()
             {
                 return byteBuffer;
@@ -84,19 +92,7 @@ public interface RetainableByteBuffer extends Retainable
             @Override
             public boolean isRetained()
             {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean canRetain()
-            {
-                return retainable.canRetain();
-            }
-
-            @Override
-            public void retain()
-            {
-                retainable.retain();
+                return retainable.isRetained();
             }
 
             @Override
@@ -104,43 +100,50 @@ public interface RetainableByteBuffer extends Retainable
             {
                 return retainable.release();
             }
+
+            @Override
+            public void retain()
+            {
+                retainable.retain();
+            }
         };
     }
 
     /**
-     * @return whether this instance is retained
-     * @see ReferenceCounter#isRetained()
+     * <p>Returns a {@code RetainableByteBuffer} that wraps
+     * the given {@code ByteBuffer} and {@link Runnable} releaser.</p>
+     *
+     * @param byteBuffer the {@code ByteBuffer} to wrap
+     * @param releaser a {@link Runnable} to call when the buffer is released.
+     * @return a {@code RetainableByteBuffer}
      */
-    boolean isRetained();
-
-    /**
-     * Get the wrapped, not {@code null}, {@code ByteBuffer}.
-     * @return the wrapped, not {@code null}, {@code ByteBuffer}
-     */
-    ByteBuffer getByteBuffer();
-
-    /**
-     * @return whether the {@code ByteBuffer} is direct
-     */
-    default boolean isDirect()
+    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
     {
-        return getByteBuffer().isDirect();
+        return new AbstractRetainableByteBuffer(byteBuffer)
+        {
+            {
+                acquire();
+            }
+
+            @Override
+            public boolean release()
+            {
+                boolean released = super.release();
+                if (released)
+                    releaser.run();
+                return released;
+            }
+        };
     }
 
-    /**
-     * @return the number of remaining bytes in the {@code ByteBuffer}
-     */
-    default int remaining()
+    default boolean appendTo(ByteBuffer buffer)
     {
-        return getByteBuffer().remaining();
+        return remaining() == BufferUtil.append(buffer, getByteBuffer());
     }
 
-    /**
-     * @return whether the {@code ByteBuffer} has remaining bytes
-     */
-    default boolean hasRemaining()
+    default boolean appendTo(RetainableByteBuffer buffer)
     {
-        return getByteBuffer().hasRemaining();
+        return appendTo(buffer.getByteBuffer());
     }
 
     /**
@@ -152,11 +155,148 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * Clears the contained byte buffer to be empty in flush mode.
      * @see BufferUtil#clear(ByteBuffer)
      */
     default void clear()
     {
         BufferUtil.clear(getByteBuffer());
+    }
+
+    /**
+     * Creates a deep copy of this RetainableByteBuffer that is entirely independent
+     * @return A copy of this RetainableByteBuffer
+     */
+    default RetainableByteBuffer copy()
+    {
+        return new AbstractRetainableByteBuffer(BufferUtil.copy(getByteBuffer()))
+        {
+            {
+                acquire();
+            }
+        };
+    }
+
+    /**
+     * <p>Copies the bytes from this Chunk to the given byte array.</p>
+     *
+     * @param bytes the byte array to copy the bytes into
+     * @param offset the offset within the byte array
+     * @param length the maximum number of bytes to copy
+     * @return the number of bytes actually copied
+     */
+    default int get(byte[] bytes, int offset, int length)
+    {
+        ByteBuffer b = getByteBuffer();
+        if (b == null || !b.hasRemaining())
+            return 0;
+        length = Math.min(length, b.remaining());
+        b.get(bytes, offset, length);
+        return length;
+    }
+
+    /**
+     * Get the wrapped, not {@code null}, {@code ByteBuffer}.
+     * @return the wrapped, not {@code null}, {@code ByteBuffer}
+     */
+    ByteBuffer getByteBuffer();
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes
+     */
+    default boolean hasRemaining()
+    {
+        return getByteBuffer().hasRemaining();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} is direct
+     */
+    default boolean isDirect()
+    {
+        return getByteBuffer().isDirect();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes left for reading
+     */
+    default boolean isEmpty()
+    {
+        return !hasRemaining();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes left for appending
+     */
+    default boolean isFull()
+    {
+        return space() == 0;
+    }
+
+    /**
+     * Copies the contents of this retainable byte buffer at the end of the given byte buffer.
+     * @param toInfillMode the destination buffer.
+     * @throws BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
+     * @see ByteBuffer#put(ByteBuffer)
+     */
+    default void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
+    {
+        toInfillMode.put(getByteBuffer());
+    }
+
+    /**
+     * @return the number of remaining bytes in the {@code ByteBuffer}
+     */
+    default int remaining()
+    {
+        return getByteBuffer().remaining();
+    }
+
+    /**
+     * <p>Skips, advancing the ByteBuffer position, the given number of bytes.</p>
+     *
+     * @param length the maximum number of bytes to skip
+     * @return the number of bytes actually skipped
+     */
+    default int skip(int length)
+    {
+        if (length == 0)
+            return 0;
+        ByteBuffer byteBuffer = getByteBuffer();
+        length = Math.min(byteBuffer.remaining(), length);
+        byteBuffer.position(byteBuffer.position() + length);
+        return length;
+    }
+
+    /**
+     * Get a slice of the buffer.
+     * @return A sliced {@link RetainableByteBuffer} sharing this buffers data and reference count, but
+     *         with independent position. The buffer is {@link #retain() retained} by this call.
+     */
+    default RetainableByteBuffer slice()
+    {
+        retain();
+        return RetainableByteBuffer.wrap(getByteBuffer().slice(), this);
+    }
+
+    /**
+     * @return the number of bytes left for appending in the {@code ByteBuffer}
+     */
+    default int space()
+    {
+        return capacity() - remaining();
+    }
+
+    /**
+     * Asynchronously copies the contents of this retainable byte buffer into given sink.
+     * @param sink the destination sink.
+     * @param last true if this is the last write.
+     * @param callback the callback to call upon the write completion.
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     */
+    default void writeTo(Content.Sink sink, boolean last, Callback callback)
+    {
+        sink.write(last, getByteBuffer(), callback);
     }
 
     /**
@@ -169,39 +309,16 @@ public interface RetainableByteBuffer extends Retainable
             super(wrapped);
         }
 
-        public RetainableByteBuffer getWrapped()
+        @Override
+        public boolean appendTo(ByteBuffer buffer)
         {
-            return (RetainableByteBuffer)super.getWrapped();
+            return getWrapped().appendTo(buffer);
         }
 
         @Override
-        public boolean isRetained()
+        public boolean appendTo(RetainableByteBuffer buffer)
         {
-            return getWrapped().isRetained();
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return getWrapped().getByteBuffer();
-        }
-
-        @Override
-        public boolean isDirect()
-        {
-            return getWrapped().isDirect();
-        }
-
-        @Override
-        public int remaining()
-        {
-            return getWrapped().remaining();
-        }
-
-        @Override
-        public boolean hasRemaining()
-        {
-            return getWrapped().hasRemaining();
+            return getWrapped().appendTo(buffer);
         }
 
         @Override
@@ -214,6 +331,95 @@ public interface RetainableByteBuffer extends Retainable
         public void clear()
         {
             getWrapped().clear();
+        }
+
+        @Override
+        public RetainableByteBuffer copy()
+        {
+            return getWrapped().copy();
+        }
+
+        @Override
+        public int get(byte[] bytes, int offset, int length)
+        {
+            return getWrapped().get(bytes, offset, length);
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return getWrapped().getByteBuffer();
+        }
+
+        public RetainableByteBuffer getWrapped()
+        {
+            return (RetainableByteBuffer)super.getWrapped();
+        }
+
+        @Override
+        public boolean hasRemaining()
+        {
+            return getWrapped().hasRemaining();
+        }
+
+        @Override
+        public boolean isDirect()
+        {
+            return getWrapped().isDirect();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return getWrapped().isEmpty();
+        }
+
+        @Override
+        public boolean isFull()
+        {
+            return getWrapped().isFull();
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return getWrapped().isRetained();
+        }
+
+        @Override
+        public void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
+        {
+            getWrapped().putTo(toInfillMode);
+        }
+
+        @Override
+        public int remaining()
+        {
+            return getWrapped().remaining();
+        }
+
+        @Override
+        public int skip(int length)
+        {
+            return getWrapped().skip(length);
+        }
+
+        @Override
+        public RetainableByteBuffer slice()
+        {
+            return getWrapped().slice();
+        }
+
+        @Override
+        public int space()
+        {
+            return getWrapped().space();
+        }
+
+        @Override
+        public void writeTo(Content.Sink sink, boolean last, Callback callback)
+        {
+            getWrapped().writeTo(sink, last, callback);
         }
     }
 }
