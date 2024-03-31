@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
@@ -650,8 +651,41 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public void putTo(ByteBuffer toInfillMode)
         {
-            for (RetainableByteBuffer buffer : _buffers)
+            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+            {
+                RetainableByteBuffer buffer = i.next();
                 buffer.putTo(toInfillMode);
+                buffer.release();
+                i.remove();
+            }
+        }
+
+        @Override
+        public boolean appendTo(ByteBuffer to)
+        {
+            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+            {
+                RetainableByteBuffer buffer = i.next();
+                if (!buffer.appendTo(to))
+                    return false;
+                buffer.release();
+                i.remove();
+            }
+            return true;
+        }
+
+        @Override
+        public boolean appendTo(RetainableByteBuffer to)
+        {
+            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+            {
+                RetainableByteBuffer buffer = i.next();
+                if (!buffer.appendTo(to))
+                    return false;
+                buffer.release();
+                i.remove();
+            }
+            return true;
         }
 
         @Override
@@ -660,20 +694,49 @@ public interface RetainableByteBuffer extends Retainable
             switch (_buffers.size())
             {
                 case 0 -> callback.succeeded();
-                case 1 -> _buffers.get(0).writeTo(sink, last, callback);
+                case 1 ->
+                {
+                    RetainableByteBuffer buffer = _buffers.get(0);
+                    buffer.writeTo(sink, last, Callback.from(() ->
+                    {
+                        if (!buffer.hasRemaining())
+                        {
+                            buffer.release();
+                            _buffers.clear();
+                        }
+                    }, callback));
+                }
                 default -> new IteratingNestedCallback(callback)
                 {
-                    private int i = 0;
+                    boolean _lastWritten;
 
                     @Override
                     protected Action process()
                     {
-                        if (i < _buffers.size())
+                        while (true)
                         {
-                            _buffers.get(i).writeTo(sink, last && ++i == _buffers.size(), this);
-                            return Action.SCHEDULED;
+                            if (_buffers.isEmpty())
+                            {
+                                if (last && !_lastWritten)
+                                {
+                                    _lastWritten = true;
+                                    sink.write(true, BufferUtil.EMPTY_BUFFER, this);
+                                    return Action.SCHEDULED;
+                                }
+                                return Action.SUCCEEDED;
+                            }
+
+                            RetainableByteBuffer buffer = _buffers.get(0);
+                            if (buffer.hasRemaining())
+                            {
+                                _lastWritten = last && _buffers.size() == 1;
+                                buffer.writeTo(sink, _lastWritten, this);
+                                return Action.SCHEDULED;
+                            }
+
+                            buffer.release();
+                            _buffers.remove(0);
                         }
-                        return Action.SUCCEEDED;
                     }
                 }.iterate();
             }
