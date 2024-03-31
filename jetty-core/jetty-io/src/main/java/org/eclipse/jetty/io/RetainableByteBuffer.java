@@ -83,12 +83,6 @@ public interface RetainableByteBuffer extends Retainable
         return new RetainableByteBuffer.Mutable()
         {
             @Override
-            public boolean canRetain()
-            {
-                return retainable.canRetain();
-            }
-
-            @Override
             public ByteBuffer getByteBuffer()
             {
                 return byteBuffer;
@@ -101,15 +95,21 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             @Override
-            public boolean release()
+            public boolean canRetain()
             {
-                return retainable.release();
+                return retainable.canRetain();
             }
 
             @Override
             public void retain()
             {
                 retainable.retain();
+            }
+
+            @Override
+            public boolean release()
+            {
+                return retainable.release();
             }
         };
     }
@@ -141,16 +141,6 @@ public interface RetainableByteBuffer extends Retainable
         };
     }
 
-    default boolean appendTo(ByteBuffer buffer)
-    {
-        return remaining() == BufferUtil.append(buffer, getByteBuffer());
-    }
-
-    default boolean appendTo(RetainableByteBuffer buffer)
-    {
-        return buffer.asMutable().append(getByteBuffer());
-    }
-
     /**
      * Get a mutable representation of this buffer.
      * @return A {@link Mutable} version of this buffer, sharing both data and position pointers.
@@ -162,21 +152,14 @@ public interface RetainableByteBuffer extends Retainable
         throw new ReadOnlyBufferException();
     }
 
-    /**
-     * @return the {@code ByteBuffer} capacity
-     */
-    default int capacity()
+    default boolean appendTo(ByteBuffer buffer)
     {
-        return getByteBuffer().capacity();
+        return remaining() == BufferUtil.append(buffer, getByteBuffer());
     }
 
-    /**
-     * Clears the contained byte buffer to be empty in flush mode.
-     * @see BufferUtil#clear(ByteBuffer)
-     */
-    default void clear()
+    default boolean appendTo(RetainableByteBuffer buffer)
     {
-        BufferUtil.clear(getByteBuffer());
+        return buffer.asMutable().append(getByteBuffer());
     }
 
     /**
@@ -216,14 +199,6 @@ public interface RetainableByteBuffer extends Retainable
      * @return the wrapped, not {@code null}, {@code ByteBuffer}
      */
     ByteBuffer getByteBuffer();
-
-    /**
-     * @return whether the {@code ByteBuffer} has remaining bytes
-     */
-    default boolean hasRemaining()
-    {
-        return getByteBuffer().hasRemaining();
-    }
 
     /**
      * @return whether the {@code ByteBuffer} is direct
@@ -266,6 +241,30 @@ public interface RetainableByteBuffer extends Retainable
     default int remaining()
     {
         return getByteBuffer().remaining();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes
+     */
+    default boolean hasRemaining()
+    {
+        return getByteBuffer().hasRemaining();
+    }
+
+    /**
+     * @return the {@code ByteBuffer} capacity
+     */
+    default int capacity()
+    {
+        return getByteBuffer().capacity();
+    }
+
+    /**
+     * @see BufferUtil#clear(ByteBuffer)
+     */
+    default void clear()
+    {
+        BufferUtil.clear(getByteBuffer());
     }
 
     /**
@@ -313,6 +312,215 @@ public interface RetainableByteBuffer extends Retainable
     default void writeTo(Content.Sink sink, boolean last, Callback callback)
     {
         sink.write(last, getByteBuffer(), callback);
+    }
+
+    /**
+     * A wrapper for {@link RetainableByteBuffer} instances
+     */
+    class Wrapper extends Retainable.Wrapper implements RetainableByteBuffer
+    {
+        public Wrapper(RetainableByteBuffer wrapped)
+        {
+            super(wrapped);
+        }
+
+        public RetainableByteBuffer getWrapped()
+        {
+            return (RetainableByteBuffer)super.getWrapped();
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return getWrapped().isRetained();
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return getWrapped().getByteBuffer();
+        }
+
+        @Override
+        public boolean isDirect()
+        {
+            return getWrapped().isDirect();
+        }
+
+        @Override
+        public int remaining()
+        {
+            return getWrapped().remaining();
+        }
+
+        @Override
+        public boolean hasRemaining()
+        {
+            return getWrapped().hasRemaining();
+        }
+
+        @Override
+        public int capacity()
+        {
+            return getWrapped().capacity();
+        }
+
+        @Override
+        public void clear()
+        {
+            getWrapped().clear();
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return getWrapped().canRetain();
+        }
+
+        @Override
+        public void retain()
+        {
+            getWrapped().retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return getWrapped().release();
+        }
+
+        @Override
+        public String toString()
+        {
+            return getWrapped().toString();
+        }
+
+        @Override
+        public boolean appendTo(ByteBuffer buffer)
+        {
+            return getWrapped().appendTo(buffer);
+        }
+
+        @Override
+        public boolean appendTo(RetainableByteBuffer buffer)
+        {
+            return getWrapped().appendTo(buffer);
+        }
+
+        @Override
+        public RetainableByteBuffer copy()
+        {
+            return getWrapped().copy();
+        }
+
+        @Override
+        public int get(byte[] bytes, int offset, int length)
+        {
+            return getWrapped().get(bytes, offset, length);
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return getWrapped().isEmpty();
+        }
+
+        @Override
+        public boolean isFull()
+        {
+            return getWrapped().isFull();
+        }
+
+        @Override
+        public void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
+        {
+            getWrapped().putTo(toInfillMode);
+        }
+
+        @Override
+        public int skip(int length)
+        {
+            return getWrapped().skip(length);
+        }
+
+        @Override
+        public RetainableByteBuffer slice()
+        {
+            return getWrapped().slice();
+        }
+
+        @Override
+        public int space()
+        {
+            return getWrapped().space();
+        }
+
+        @Override
+        public void writeTo(Content.Sink sink, boolean last, Callback callback)
+        {
+            getWrapped().writeTo(sink, last, callback);
+        }
+    }
+
+    interface Mutable extends RetainableByteBuffer
+    {
+        @Override
+        default Mutable asMutable() throws ReadOnlyBufferException
+        {
+            return this;
+        }
+
+        /**
+         * @return the number of bytes left for appending in the {@code ByteBuffer}
+         */
+        default int space()
+        {
+            return capacity() - remaining();
+        }
+
+        /**
+         * @return whether the {@code ByteBuffer} has remaining bytes left for appending
+         */
+        default boolean isFull()
+        {
+            return space() == 0;
+        }
+
+        /**
+         * Copies the contents of the given byte buffer at the end of this buffer.
+         * @param bytes the byte buffer to copy from.
+         * @return true if all bytes of the given buffer were copied, false otherwise.
+         * @throws ReadOnlyBufferException if the buffer is read only
+         * @see BufferUtil#append(ByteBuffer, ByteBuffer)
+         */
+        default boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
+        {
+            BufferUtil.append(getByteBuffer(), bytes);
+            return !bytes.hasRemaining();
+        }
+
+        /**
+         * Copies the contents of the given retainable byte buffer at the end of this buffer.
+         * @param bytes the retainable byte buffer to copy from.
+         * @return true if all bytes of the given buffer were copied, false otherwise.
+         * @throws ReadOnlyBufferException if the buffer is read only
+         * @see BufferUtil#append(ByteBuffer, ByteBuffer)
+         */
+        default boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
+        {
+            return bytes.remaining() == 0 || append(bytes.getByteBuffer());
+        }
+
+        /**
+         * A wrapper for {@link RetainableByteBuffer} instances
+         */
+        class Wrapper extends RetainableByteBuffer.Wrapper implements Mutable
+        {
+            public Wrapper(RetainableByteBuffer.Mutable wrapped)
+            {
+                super(wrapped);
+            }
+        }
     }
 
     /**
@@ -764,119 +972,6 @@ public interface RetainableByteBuffer extends Retainable
                     }
                 }.iterate();
             }
-        }
-    }
-
-    interface Mutable extends RetainableByteBuffer
-    {
-        @Override
-        default Mutable asMutable() throws ReadOnlyBufferException
-        {
-            return this;
-        }
-
-        /**
-         * @return the number of bytes left for appending in the {@code ByteBuffer}
-         */
-        default int space()
-        {
-            return capacity() - remaining();
-        }
-
-        /**
-         * @return whether the {@code ByteBuffer} has remaining bytes left for appending
-         */
-        default boolean isFull()
-        {
-            return space() == 0;
-        }
-
-        /**
-         * Copies the contents of the given byte buffer at the end of this buffer.
-         * @param bytes the byte buffer to copy from.
-         * @return true if all bytes of the given buffer were copied, false otherwise.
-         * @throws ReadOnlyBufferException if the buffer is read only
-         * @see BufferUtil#append(ByteBuffer, ByteBuffer)
-         */
-        default boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
-        {
-            BufferUtil.append(getByteBuffer(), bytes);
-            return !bytes.hasRemaining();
-        }
-
-        /**
-         * Copies the contents of the given retainable byte buffer at the end of this buffer.
-         * @param bytes the retainable byte buffer to copy from.
-         * @return true if all bytes of the given buffer were copied, false otherwise.
-         * @throws ReadOnlyBufferException if the buffer is read only
-         * @see BufferUtil#append(ByteBuffer, ByteBuffer)
-         */
-        default boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
-        {
-            return bytes.remaining() == 0 || append(bytes.getByteBuffer());
-        }
-
-        /**
-         * A wrapper for {@link RetainableByteBuffer} instances
-         */
-        class Wrapper extends RetainableByteBuffer.Wrapper implements Mutable
-        {
-            public Wrapper(RetainableByteBuffer.Mutable wrapped)
-            {
-                super(wrapped);
-            }
-        }
-    }
-
-    /**
-     * A wrapper for {@link RetainableByteBuffer} instances
-     */
-    class Wrapper extends Retainable.Wrapper implements RetainableByteBuffer
-    {
-        public Wrapper(RetainableByteBuffer wrapped)
-        {
-            super(wrapped);
-        }
-
-        public RetainableByteBuffer getWrapped()
-        {
-            return (RetainableByteBuffer)super.getWrapped();
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return getWrapped().isRetained();
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return getWrapped().getByteBuffer();
-        }
-
-        @Override
-        public boolean isDirect()
-        {
-            return getWrapped().isDirect();
-        }
-
-        @Override
-        public int remaining()
-        {
-            return getWrapped().remaining();
-        }
-
-        @Override
-        public boolean hasRemaining()
-        {
-            return getWrapped().hasRemaining();
-        }
-
-        @Override
-        public void clear()
-        {
-            getWrapped().clear();
         }
     }
 }
