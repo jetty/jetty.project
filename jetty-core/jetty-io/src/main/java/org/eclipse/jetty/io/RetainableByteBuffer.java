@@ -78,12 +78,6 @@ public interface RetainableByteBuffer extends Retainable
         return new RetainableByteBuffer()
         {
             @Override
-            public boolean canRetain()
-            {
-                return retainable.canRetain();
-            }
-
-            @Override
             public ByteBuffer getByteBuffer()
             {
                 return byteBuffer;
@@ -96,15 +90,21 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             @Override
-            public boolean release()
+            public boolean canRetain()
             {
-                return retainable.release();
+                return retainable.canRetain();
             }
 
             @Override
             public void retain()
             {
                 retainable.retain();
+            }
+
+            @Override
+            public boolean release()
+            {
+                return retainable.release();
             }
         };
     }
@@ -147,23 +147,6 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * @return the {@code ByteBuffer} capacity
-     */
-    default int capacity()
-    {
-        return getByteBuffer().capacity();
-    }
-
-    /**
-     * Clears the contained byte buffer to be empty in flush mode.
-     * @see BufferUtil#clear(ByteBuffer)
-     */
-    default void clear()
-    {
-        BufferUtil.clear(getByteBuffer());
-    }
-
-    /**
      * Creates a deep copy of this RetainableByteBuffer that is entirely independent
      * @return A copy of this RetainableByteBuffer
      */
@@ -200,14 +183,6 @@ public interface RetainableByteBuffer extends Retainable
      * @return the wrapped, not {@code null}, {@code ByteBuffer}
      */
     ByteBuffer getByteBuffer();
-
-    /**
-     * @return whether the {@code ByteBuffer} has remaining bytes
-     */
-    default boolean hasRemaining()
-    {
-        return getByteBuffer().hasRemaining();
-    }
 
     /**
      * @return whether the {@code ByteBuffer} is direct
@@ -250,6 +225,30 @@ public interface RetainableByteBuffer extends Retainable
     default int remaining()
     {
         return getByteBuffer().remaining();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes
+     */
+    default boolean hasRemaining()
+    {
+        return getByteBuffer().hasRemaining();
+    }
+
+    /**
+     * @return the {@code ByteBuffer} capacity
+     */
+    default int capacity()
+    {
+        return getByteBuffer().capacity();
+    }
+
+    /**
+     * @see BufferUtil#clear(ByteBuffer)
+     */
+    default void clear()
+    {
+        BufferUtil.clear(getByteBuffer());
     }
 
     /**
@@ -309,16 +308,39 @@ public interface RetainableByteBuffer extends Retainable
             super(wrapped);
         }
 
-        @Override
-        public boolean appendTo(ByteBuffer buffer)
+        public RetainableByteBuffer getWrapped()
         {
-            return getWrapped().appendTo(buffer);
+            return (RetainableByteBuffer)super.getWrapped();
         }
 
         @Override
-        public boolean appendTo(RetainableByteBuffer buffer)
+        public boolean isRetained()
         {
-            return getWrapped().appendTo(buffer);
+            return getWrapped().isRetained();
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return getWrapped().getByteBuffer();
+        }
+
+        @Override
+        public boolean isDirect()
+        {
+            return getWrapped().isDirect();
+        }
+
+        @Override
+        public int remaining()
+        {
+            return getWrapped().remaining();
+        }
+
+        @Override
+        public boolean hasRemaining()
+        {
+            return getWrapped().hasRemaining();
         }
 
         @Override
@@ -334,6 +356,42 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public boolean canRetain()
+        {
+            return getWrapped().canRetain();
+        }
+
+        @Override
+        public void retain()
+        {
+            getWrapped().retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return getWrapped().release();
+        }
+
+        @Override
+        public String toString()
+        {
+            return getWrapped().toString();
+        }
+
+        @Override
+        public boolean appendTo(ByteBuffer buffer)
+        {
+            return getWrapped().appendTo(buffer);
+        }
+
+        @Override
+        public boolean appendTo(RetainableByteBuffer buffer)
+        {
+            return getWrapped().appendTo(buffer);
+        }
+
+        @Override
         public RetainableByteBuffer copy()
         {
             return getWrapped().copy();
@@ -343,29 +401,6 @@ public interface RetainableByteBuffer extends Retainable
         public int get(byte[] bytes, int offset, int length)
         {
             return getWrapped().get(bytes, offset, length);
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return getWrapped().getByteBuffer();
-        }
-
-        public RetainableByteBuffer getWrapped()
-        {
-            return (RetainableByteBuffer)super.getWrapped();
-        }
-
-        @Override
-        public boolean hasRemaining()
-        {
-            return getWrapped().hasRemaining();
-        }
-
-        @Override
-        public boolean isDirect()
-        {
-            return getWrapped().isDirect();
         }
 
         @Override
@@ -381,21 +416,9 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean isRetained()
-        {
-            return getWrapped().isRetained();
-        }
-
-        @Override
         public void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
         {
             getWrapped().putTo(toInfillMode);
-        }
-
-        @Override
-        public int remaining()
-        {
-            return getWrapped().remaining();
         }
 
         @Override
