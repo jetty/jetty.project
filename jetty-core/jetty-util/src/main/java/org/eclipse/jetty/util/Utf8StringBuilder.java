@@ -234,7 +234,11 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     protected void bufferReset()
     {
+        // If the buffer is much larger than necessary, trim it to empty
+        boolean trim = _buffer.capacity() > (_buffer.length() * 8);
         _buffer.setLength(0);
+        if (trim)
+            _buffer.trimToSize();
     }
 
     public void appendByte(byte b) throws IOException

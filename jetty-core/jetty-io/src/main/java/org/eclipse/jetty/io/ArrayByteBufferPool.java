@@ -666,9 +666,19 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             super(minCapacity, maxCapacity, maxBucketSize);
         }
 
+        public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
+        {
+            this(minCapacity, factor, maxCapacity, maxBucketSize, 0L, 0L);
+        }
+
         public Tracking(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
-            super(minCapacity, -1, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
+            this(minCapacity, -1, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
+        }
+
+        public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
         }
 
         @Override

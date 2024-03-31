@@ -27,7 +27,9 @@ import org.eclipse.jetty.util.CompletableTask;
 /**
  * An accumulator of {@link Content.Chunk}s used to facilitate minimal copy
  * aggregation of multiple chunks.
+ * @deprecated use {@link Content.Source#asRetainableByteBuffer(Content.Source, ByteBufferPool, boolean, int)} instead.
  */
+@Deprecated
 public class ChunkAccumulator
 {
     private static final ByteBufferPool NON_POOLING = new ByteBufferPool.NonPooling();
@@ -109,7 +111,7 @@ public class ChunkAccumulator
         for (Chunk chunk : _chunks)
         {
             offset += chunk.remaining();
-            BufferUtil.append(buffer.getByteBuffer(), chunk.getByteBuffer());
+            chunk.appendTo(buffer);
             chunk.release();
         }
         assert offset == _length;
