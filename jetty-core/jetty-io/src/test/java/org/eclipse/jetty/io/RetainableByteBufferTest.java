@@ -57,8 +57,8 @@ public class RetainableByteBufferTest
     public static Stream<Arguments> buffers()
     {
         return Stream.of(
-            Arguments.of(_pool.acquire(MIN_CAPACITY, true)),
-            Arguments.of(_pool.acquire(MIN_CAPACITY, false)),
+            Arguments.of(_pool.acquire(MIN_CAPACITY, true).asMutable()),
+            Arguments.of(_pool.acquire(MIN_CAPACITY, false).asMutable()),
             Arguments.of(new RetainableByteBuffer.Aggregator(_pool, true, MIN_CAPACITY, MIN_CAPACITY)),
             Arguments.of(new RetainableByteBuffer.Aggregator(_pool, false, MIN_CAPACITY, MIN_CAPACITY)),
             Arguments.of(new RetainableByteBuffer.Accumulator(_pool, true, MIN_CAPACITY)),
@@ -73,9 +73,9 @@ public class RetainableByteBufferTest
         assertThat(buffer.remaining(), is(0));
         assertFalse(buffer.hasRemaining());
         assertThat(buffer.capacity(), greaterThanOrEqualTo(MIN_CAPACITY));
-        assertFalse(BufferUtil.isFull(buffer.getByteBuffer()));
+        assertFalse(buffer.isFull());
 
-        assertThat(buffer.getByteBuffer().remaining(), is(0));
+        assertThat(buffer.remaining(), is(0));
         assertFalse(buffer.getByteBuffer().hasRemaining());
         buffer.release();
     }
@@ -228,7 +228,7 @@ public class RetainableByteBufferTest
     public void testCopy(RetainableByteBuffer original)
     {
         ByteBuffer bytes = ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8));
-        BufferUtil.append(original.getByteBuffer(), bytes);
+        original.asMutable().append(bytes);
         RetainableByteBuffer copy = original.copy();
 
         assertEquals(0, BufferUtil.space(copy.getByteBuffer()));
@@ -245,9 +245,9 @@ public class RetainableByteBufferTest
     @MethodSource("buffers")
     public void testCopyThenModifyOriginal(RetainableByteBuffer original)
     {
-        BufferUtil.append(original.getByteBuffer(), ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
+        original.asMutable().append(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
         RetainableByteBuffer copy = original.copy();
-        BufferUtil.append(original.getByteBuffer(), ByteBuffer.wrap(" world".getBytes(StandardCharsets.UTF_8)));
+        original.asMutable().append(ByteBuffer.wrap(" world".getBytes(StandardCharsets.UTF_8)));
 
         assertEquals(0, BufferUtil.space(copy.getByteBuffer()));
         assertEquals(5, copy.remaining());

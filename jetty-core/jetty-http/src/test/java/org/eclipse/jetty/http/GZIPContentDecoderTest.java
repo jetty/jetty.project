@@ -50,10 +50,10 @@ public class GZIPContentDecoderTest
         pool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+            public RetainableByteBuffer acquire(int size, boolean direct)
             {
                 counter.incrementAndGet();
-                return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
+                return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct).asMutable())
                 {
                     @Override
                     public boolean release()

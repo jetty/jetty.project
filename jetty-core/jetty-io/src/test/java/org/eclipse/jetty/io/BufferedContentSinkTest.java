@@ -538,7 +538,7 @@ public class BufferedContentSinkTest
                         Callback cb = this;
                         new Thread(() ->
                         {
-                            ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[]{(byte)c});
+                            ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[]{(byte)(0xFF & c)});
                             buffered.write(c == 0, byteBuffer, cb);
                         }).start();
                     }

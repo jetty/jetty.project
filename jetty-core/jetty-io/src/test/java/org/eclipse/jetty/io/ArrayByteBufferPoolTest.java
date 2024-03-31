@@ -45,7 +45,7 @@ public class ArrayByteBufferPoolTest
         List<RetainableByteBuffer.Mutable> buffers = new ArrayList<>();
 
         for (int i = 0; i < 200; i++)
-            buffers.add(pool.acquire(10 + i / 10, true));
+            buffers.add(pool.acquire(10 + i / 10, true).asMutable());
 
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectByteBufferCount(), is(0L));
@@ -62,7 +62,7 @@ public class ArrayByteBufferPoolTest
 
         buffers.clear();
         for (int i = 0; i < 200; i++)
-            buffers.add(pool.acquire(10 + i / 10, true));
+            buffers.add(pool.acquire(10 + i / 10, true).asMutable());
 
         long maxSize = 0;
         for (RetainableByteBuffer buffer : buffers)
@@ -215,10 +215,10 @@ public class ArrayByteBufferPoolTest
 
         List<RetainableByteBuffer.Mutable> all = new ArrayList<>();
 
-        all.add(pool.acquire(1, true));
-        all.add(pool.acquire(1, true));
-        all.add(pool.acquire(11, true));
-        all.add(pool.acquire(11, true));
+        all.add(pool.acquire(1, true).asMutable());
+        all.add(pool.acquire(1, true).asMutable());
+        all.add(pool.acquire(11, true).asMutable());
+        all.add(pool.acquire(11, true).asMutable());
 
         assertThat(pool.getDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectMemory(), is(0L));
@@ -428,7 +428,7 @@ public class ArrayByteBufferPoolTest
         List<RetainableByteBuffer.Mutable> buffers = new ArrayList<>();
         for (int i = 0; i < maxBucketSize; ++i)
         {
-            buffers.add(pool.acquire(maxCapacity, true));
+            buffers.add(pool.acquire(maxCapacity, true).asMutable());
         }
 
         // The last entries acquired are from the queued pool.

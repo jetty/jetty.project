@@ -126,7 +126,7 @@ public class BufferedContentSink implements Content.Sink
     private void aggregate(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
         BufferUtil.append(_aggregator.getByteBuffer(), byteBuffer);
-        boolean full = byteBuffer.hasRemaining() || BufferUtil.isFull(_aggregator.getByteBuffer());
+        boolean full = byteBuffer.hasRemaining() || _aggregator.isFull();
         boolean empty = !byteBuffer.hasRemaining();
         boolean flush = full || byteBuffer == FLUSH_BUFFER;
         boolean complete = last && empty;

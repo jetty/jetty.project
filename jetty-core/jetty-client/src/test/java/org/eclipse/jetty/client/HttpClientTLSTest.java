@@ -773,9 +773,9 @@ public class HttpClientTLSTest
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+            public RetainableByteBuffer acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Mutable.Wrapper buffer = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
+                RetainableByteBuffer.Mutable.Wrapper buffer = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct).asMutable())
                 {
                     @Override
                     public boolean release()
@@ -843,9 +843,9 @@ public class HttpClientTLSTest
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+            public RetainableByteBuffer acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Mutable.Wrapper buffer = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
+                RetainableByteBuffer.Mutable.Wrapper buffer = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct).asMutable())
                 {
                     @Override
                     public boolean release()
@@ -928,9 +928,9 @@ public class HttpClientTLSTest
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+            public RetainableByteBuffer acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Mutable.Wrapper buffer = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
+                RetainableByteBuffer.Mutable.Wrapper buffer = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct).asMutable())
                 {
                     @Override
                     public boolean release()

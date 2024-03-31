@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
@@ -82,9 +83,9 @@ public interface RetainableByteBuffer extends Retainable
         return new RetainableByteBuffer.Mutable()
         {
             @Override
-            public Mutable asMutable()
+            public boolean canRetain()
             {
-                return this;
+                return retainable.canRetain();
             }
 
             @Override
@@ -100,21 +101,15 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             @Override
-            public boolean canRetain()
+            public boolean release()
             {
-                return retainable.canRetain();
+                return retainable.release();
             }
 
             @Override
             public void retain()
             {
                 retainable.retain();
-            }
-
-            @Override
-            public boolean release()
-            {
-                return retainable.release();
             }
         };
     }
@@ -146,48 +141,25 @@ public interface RetainableByteBuffer extends Retainable
         };
     }
 
-    /**
-     * Get the wrapped, not {@code null}, {@code ByteBuffer}.
-     * @return the wrapped, not {@code null}, {@code ByteBuffer}
-     */
-    ByteBuffer getByteBuffer();
-
-    /**
-     * Creates a deep copy of this RetainableByteBuffer that is entirely independent
-     * @return A copy of this RetainableByteBuffer
-     */
-    default RetainableByteBuffer copy()
+    default boolean appendTo(ByteBuffer buffer)
     {
-        return new AbstractRetainableByteBuffer(BufferUtil.copy(getByteBuffer()))
-        {
-            {
-                acquire();
-            }
-        };
+        return remaining() == BufferUtil.append(buffer, getByteBuffer());
+    }
+
+    default boolean appendTo(RetainableByteBuffer buffer)
+    {
+        return buffer.asMutable().append(getByteBuffer());
     }
 
     /**
-     * @return whether the {@code ByteBuffer} is direct
+     * Get a mutable representation of this buffer.
+     * @return A {@link Mutable} version of this buffer, sharing both data and position pointers.
+     * @throws ReadOnlyBufferException if this {@link RetainableByteBuffer}
+     *         implementation does not support the {@link Mutable} API.
      */
-    default boolean isDirect()
+    default Mutable asMutable() throws ReadOnlyBufferException
     {
-        return getByteBuffer().isDirect();
-    }
-
-    /**
-     * @return the number of remaining bytes in the {@code ByteBuffer}
-     */
-    default int remaining()
-    {
-        return getByteBuffer().remaining();
-    }
-
-    /**
-     * @return whether the {@code ByteBuffer} has remaining bytes
-     */
-    default boolean hasRemaining()
-    {
-        return getByteBuffer().hasRemaining();
+        throw new ReadOnlyBufferException();
     }
 
     /**
@@ -205,6 +177,20 @@ public interface RetainableByteBuffer extends Retainable
     default void clear()
     {
         BufferUtil.clear(getByteBuffer());
+    }
+
+    /**
+     * Creates a deep copy of this RetainableByteBuffer that is entirely independent
+     * @return A copy of this RetainableByteBuffer
+     */
+    default RetainableByteBuffer copy()
+    {
+        return new AbstractRetainableByteBuffer(BufferUtil.copy(getByteBuffer()))
+        {
+            {
+                acquire();
+            }
+        };
     }
 
     /**
@@ -226,6 +212,63 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * Get the wrapped, not {@code null}, {@code ByteBuffer}.
+     * @return the wrapped, not {@code null}, {@code ByteBuffer}
+     */
+    ByteBuffer getByteBuffer();
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes
+     */
+    default boolean hasRemaining()
+    {
+        return getByteBuffer().hasRemaining();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} is direct
+     */
+    default boolean isDirect()
+    {
+        return getByteBuffer().isDirect();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes left for reading
+     */
+    default boolean isEmpty()
+    {
+        return !hasRemaining();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes left for appending
+     */
+    default boolean isFull()
+    {
+        return space() == 0;
+    }
+
+    /**
+     * Copies the contents of this retainable byte buffer at the end of the given byte buffer.
+     * @param toInfillMode the destination buffer.
+     * @throws BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
+     * @see ByteBuffer#put(ByteBuffer)
+     */
+    default void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
+    {
+        toInfillMode.put(getByteBuffer());
+    }
+
+    /**
+     * @return the number of remaining bytes in the {@code ByteBuffer}
+     */
+    default int remaining()
+    {
+        return getByteBuffer().remaining();
+    }
+
+    /**
      * <p>Skips, advancing the ByteBuffer position, the given number of bytes.</p>
      *
      * @param length the maximum number of bytes to skip
@@ -242,24 +285,22 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Copies the contents of this retainable byte buffer at the end of the given byte buffer.
-     * @param toInfillMode the destination buffer.
-     * @see ByteBuffer#put(ByteBuffer)
+     * Get a slice of the buffer.
+     * @return A sliced {@link RetainableByteBuffer} sharing this buffers data and reference count, but
+     *         with independent position. The buffer is {@link #retain() retained} by this call.
      */
-    default void putTo(ByteBuffer toInfillMode)
+    default RetainableByteBuffer slice()
     {
-        toInfillMode.put(getByteBuffer());
+        retain();
+        return RetainableByteBuffer.wrap(getByteBuffer().slice(), this);
     }
 
-    default boolean appendTo(ByteBuffer buffer)
+    /**
+     * @return the number of bytes left for appending in the {@code ByteBuffer}
+     */
+    default int space()
     {
-        BufferUtil.append(buffer, getByteBuffer());
-        return !hasRemaining();
-    }
-
-    default boolean appendTo(RetainableByteBuffer buffer)
-    {
-        return buffer.asMutable().append(getByteBuffer());
+        return capacity() - remaining();
     }
 
     /**
@@ -315,7 +356,7 @@ public interface RetainableByteBuffer extends Retainable
 
             if (growBy <= 0)
             {
-                _buffer = _pool.acquire(Math.min(1024, _maxCapacity), _direct);
+                _buffer = _pool.acquire(Math.min(4096, _maxCapacity), _direct).asMutable();
                 _growBy = Math.min(_maxCapacity, _buffer.capacity());
             }
             else
@@ -324,14 +365,8 @@ public interface RetainableByteBuffer extends Retainable
                     throw new IllegalArgumentException("growBy(%d) must be <= maxCapacity(%d)".formatted(growBy, _maxCapacity));
 
                 _growBy = growBy;
-                _buffer = _pool.acquire(_growBy, _direct);
+                _buffer = _pool.acquire(_growBy, _direct).asMutable();
             }
-        }
-
-        @Override
-        public Mutable asMutable()
-        {
-            return this;
         }
 
         @Override
@@ -340,7 +375,7 @@ public interface RetainableByteBuffer extends Retainable
             if (isRetained())
             {
                 _buffer.release();
-                _buffer = _pool.acquire(_growBy, _direct);
+                _buffer = _pool.acquire(_growBy, _direct).asMutable();
             }
             else
             {
@@ -437,16 +472,11 @@ public interface RetainableByteBuffer extends Retainable
                     newCapacity = _maxCapacity;
             }
 
-            RetainableByteBuffer.Mutable ensured = _pool.acquire(newCapacity, _direct);
+            RetainableByteBuffer.Mutable ensured = _pool.acquire(newCapacity, _direct).asMutable();
             ensured.append(_buffer);
             _buffer.release();
             _buffer = ensured;
         }
-    }
-
-    default Mutable asMutable()
-    {
-        throw new UnsupportedOperationException("Cannot be mutated");
     }
 
     /**
@@ -473,12 +503,6 @@ public interface RetainableByteBuffer extends Retainable
             _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
             _direct = direct;
             _maxLength = maxLength < 0 ? Long.MAX_VALUE : maxLength;
-        }
-
-        @Override
-        public Mutable asMutable()
-        {
-            return this;
         }
 
         @Override
@@ -745,6 +769,12 @@ public interface RetainableByteBuffer extends Retainable
 
     interface Mutable extends RetainableByteBuffer
     {
+        @Override
+        default Mutable asMutable() throws ReadOnlyBufferException
+        {
+            return this;
+        }
+
         /**
          * @return the number of bytes left for appending in the {@code ByteBuffer}
          */

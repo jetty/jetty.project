@@ -199,7 +199,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     }
 
     @Override
-    public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+    public RetainableByteBuffer acquire(int size, boolean direct)
     {
         RetainedBucket bucket = bucketFor(size, direct);
 
@@ -682,9 +682,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         @Override
-        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+        public RetainableByteBuffer acquire(int size, boolean direct)
         {
-            RetainableByteBuffer.Mutable buffer = super.acquire(size, direct);
+            RetainableByteBuffer.Mutable buffer = super.acquire(size, direct).asMutable();
             Buffer wrapper = new Buffer(buffer, size);
             if (LOG.isDebugEnabled())
                 LOG.debug("acquired {}", wrapper);

@@ -32,12 +32,6 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
         this.byteBuffer = Objects.requireNonNull(byteBuffer);
     }
 
-    @Override
-    public Mutable asMutable()
-    {
-        return this;
-    }
-
     /**
      * @see ReferenceCounter#acquire()
      */
