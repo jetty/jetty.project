@@ -896,6 +896,19 @@ public class Content
         boolean isLast();
 
         /**
+         * @return an immutable version of this Chunk
+         */
+        @Deprecated(forRemoval = true, since = "12.0.9")
+        default Chunk asReadOnly()
+        {
+            if (getByteBuffer().isReadOnly())
+                return this;
+            if (canRetain())
+                return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            return from(getByteBuffer().asReadOnlyBuffer(), isLast());
+        }
+
+        /**
          * <p>Implementations of this interface may process {@link Chunk}s being copied by the
          * {@link Content#copy(Source, Sink, Processor, Callback)} method, so that
          * {@link Chunk}s of unknown types can be copied.

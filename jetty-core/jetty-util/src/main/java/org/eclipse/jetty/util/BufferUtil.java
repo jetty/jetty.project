@@ -472,7 +472,7 @@ public class BufferUtil
      * @param off offset into byte
      * @param len length to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
-     * @throws ReadOnlyBufferException if the buffer is read only
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
     public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException, ReadOnlyBufferException
     {
@@ -493,7 +493,7 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param b bytes to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
-     * @throws ReadOnlyBufferException if the buffer is read only
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
     public static void append(ByteBuffer to, byte[] b) throws BufferOverflowException, ReadOnlyBufferException
     {
@@ -506,7 +506,7 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param s String to append as UTF8
      * @throws BufferOverflowException if unable to append buffer due to space limits
-     * @throws ReadOnlyBufferException if the buffer is read only
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
     public static void append(ByteBuffer to, String s) throws BufferOverflowException, ReadOnlyBufferException
     {
@@ -520,7 +520,7 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param b byte to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
-     * @throws ReadOnlyBufferException if the buffer is read only
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
     public static void append(ByteBuffer to, byte b) throws BufferOverflowException, ReadOnlyBufferException
     {
@@ -541,7 +541,7 @@ public class BufferUtil
      * @param to Buffer in flush mode, whose position will be incremented by the number of bytes appended
      * @param b buffer to append to in flush mode, whose limit will be incremented by the number of bytes appended.
      * @return The number of bytes appended.
-     * @throws ReadOnlyBufferException if the buffer is read only
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
     public static int append(ByteBuffer to, ByteBuffer b) throws ReadOnlyBufferException
     {
@@ -564,8 +564,9 @@ public class BufferUtil
      * @param off offset into bytes
      * @param len length to fill
      * @return the number of bytes taken from the buffer.
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
-    public static int fill(ByteBuffer to, byte[] b, int off, int len)
+    public static int fill(ByteBuffer to, byte[] b, int off, int len) throws ReadOnlyBufferException
     {
         int pos = flipToFill(to);
         try

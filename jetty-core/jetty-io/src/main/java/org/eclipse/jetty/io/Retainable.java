@@ -156,7 +156,7 @@ public interface Retainable
             this(1);
         }
 
-        protected ReferenceCounter(int initialCount)
+        public ReferenceCounter(int initialCount)
         {
             references = new AtomicInteger(initialCount);
         }
