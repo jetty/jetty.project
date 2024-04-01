@@ -207,7 +207,7 @@
     <build-helper.maven.plugin.version>3.5.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.14.2</checkstyle.version>
+    <checkstyle.version>10.15.0</checkstyle.version>
     <commons-codec.version>1.16.1</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.26.1</commons.compress.version>
