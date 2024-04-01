@@ -63,27 +63,29 @@
   </build>
   <profiles>
     <profile>
+      <!-- If running JDK9 or above, the "javax.xml.ws.Endpoint" and "javax.activation"
+           classed have been removed from the default JVM classlib. -->
       <id>jdk9</id>
       <activation>
         <jdk>[9,)</jdk>
       </activation>
       <dependencies>
         <dependency>
-          <groupId>javax.xml</groupId>
-          <artifactId>jaxws-api</artifactId>
-          <version>2.0EA3</version>
+          <groupId>jakarta.xml.ws</groupId>
+          <artifactId>jakarta.xml.ws-api</artifactId>
+          <version>2.3.3</version>
           <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>com.sun.xml.ws</groupId>
           <artifactId>jaxws-rt</artifactId>
-          <version>4.0.2</version>
+          <version>2.3.7</version>
           <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>javax.activation</groupId>
-          <artifactId>javax.activation-api</artifactId>
-          <version>1.2.0</version>
+          <groupId>jakarta.activation</groupId>
+          <artifactId>jakarta.activation-api</artifactId>
+          <version>1.2.1</version>
           <scope>test</scope>
         </dependency>
       </dependencies>

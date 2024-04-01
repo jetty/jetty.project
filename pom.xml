@@ -289,6 +289,9 @@
                     <exclude>org.eclipse.jetty:jetty-alpn-java-client</exclude>
                     <exclude>org.eclipse.jetty:jetty-alpn-java-server</exclude>
                   </excludes>
+                  <!--<ignoredScopes>
+                    <ignoredScope>test</ignoredScope>
+                  </ignoredScopes>-->
                 </enforceBytecodeVersion>
               </rules>
               <fail>true</fail>
