@@ -285,9 +285,6 @@
               <rules>
                 <enforceBytecodeVersion>
                   <maxJdkVersion>1.8</maxJdkVersion>
-                  <!--<excludes>
-                    <exclude>org.mindrot:jbcrypt</exclude>
-                  </excludes>-->
                 </enforceBytecodeVersion>
               </rules>
               <fail>true</fail>
