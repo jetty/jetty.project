@@ -92,8 +92,9 @@
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.19.7</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
-    <wildfly.elytron.version>2.3.1.Final</wildfly.elytron.version>
-    <wildfly.common.version>1.7.0.Final</wildfly.common.version>
+    <!-- Stay on 2.2.x as 2.3.x is for Java 11 -->
+    <wildfly.elytron.version>2.2.4.Final</wildfly.elytron.version>
+    <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <xmemcached.version>2.4.8</xmemcached.version>
 
     <!-- some maven plugins versions -->
@@ -275,12 +276,34 @@
               </rules>
             </configuration>
           </execution>
+          <execution>
+            <id>max-java8-bytecode</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <enforceBytecodeVersion>
+                  <maxJdkVersion>1.8</maxJdkVersion>
+                  <!--<excludes>
+                    <exclude>org.mindrot:jbcrypt</exclude>
+                  </excludes>-->
+                </enforceBytecodeVersion>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
         </executions>
         <dependencies>
           <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-build-support</artifactId>
             <version>${build-support.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>extra-enforcer-rules</artifactId>
+            <version>1.8.0</version>
           </dependency>
         </dependencies>
       </plugin>
