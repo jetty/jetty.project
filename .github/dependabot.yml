@@ -204,6 +204,9 @@ updates:
         patterns:
           - "*"
     ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
       # Restrict updates in this branch to jetty in the 9.4.x space
       - dependency-name: "org.infinispan:*"
         versions: [ ">=12" ]
