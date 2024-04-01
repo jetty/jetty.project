@@ -285,6 +285,10 @@
               <rules>
                 <enforceBytecodeVersion>
                   <maxJdkVersion>1.8</maxJdkVersion>
+                  <excludes>
+                    <exclude>org.eclipse.jetty:jetty-alpn-java-client</exclude>
+                    <exclude>org.eclipse.jetty:jetty-alpn-java-server</exclude>
+                  </excludes>
                 </enforceBytecodeVersion>
               </rules>
               <fail>true</fail>
