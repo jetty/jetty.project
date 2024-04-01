@@ -200,7 +200,7 @@
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctor.maven.plugin.version>2.2.6</asciidoctor.maven.plugin.version>
     <asciidoctorj-diagram.version>2.3.0</asciidoctorj-diagram.version>
-    <asciidoctorj.version>2.5.11</asciidoctorj.version>
+    <asciidoctorj.version>2.5.12</asciidoctorj.version>
     <asm.version>9.6</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
@@ -302,24 +302,24 @@
     <mariadb.version>3.3.3</mariadb.version>
     <maven-plugin.plugin.version>3.11.0</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
+    <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
     <maven.checkstyle.plugin.version>3.3.1</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.3.2</maven.clean.plugin.version>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
-    <maven.compiler.plugin.version>3.12.1</maven.compiler.plugin.version>
+    <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.6.1</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
     <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.2.0</maven.exec.plugin.version>
-    <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
+    <maven.gpg.plugin.version>3.2.2</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.6.3</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.11.0</maven.plugin-tools.version>
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
-    <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
+    <maven.remote-resources-plugin.version>3.2.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.18</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.5.2</maven.shade.plugin.version>
@@ -348,7 +348,7 @@
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.19.6</testcontainers.version>
+    <testcontainers.version>1.19.7</testcontainers.version>
     <versions.maven.plugin.version>2.16.2</versions.maven.plugin.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.7.0.Final</wildfly.common.version>
