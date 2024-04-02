@@ -15,8 +15,8 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.net.UnknownHostException;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionManager;
@@ -136,14 +136,14 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         MongoClient mongo;
 
         if (!StringUtil.isBlank(getConnectionString()))
-            mongo = new MongoClient(new MongoClientURI(getConnectionString()));
+            mongo = MongoClients.create(getConnectionString());
         else if (!StringUtil.isBlank(getHost()) && getPort() != -1)
-            mongo = new MongoClient(getHost(), getPort());
+            mongo = MongoClients.create(getHost()+":"+getPort());
         else if (!StringUtil.isBlank(getHost()))
-            mongo = new MongoClient(getHost());
+            mongo = MongoClients.create(getHost());
         else
-            mongo = new MongoClient();
-        store.setDBCollection(mongo.getDB(getDbName()).getCollection(getCollectionName()));
+            mongo = MongoClients.create();
+        store.setDBCollection(mongo.getDatabase(getDbName()).getCollection(getCollectionName()));
         return store;
     }
 }

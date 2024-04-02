@@ -277,8 +277,8 @@
     <maven.version>3.9.0</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
     <mina.core.version>2.2.3</mina.core.version>
-    <mongo.docker.version>3.2.20</mongo.docker.version>
-    <mongodb.version>3.12.14</mongodb.version>
+    <mongo.docker.version>6.0.9-ubi8</mongo.docker.version>
+    <mongodb.version>5.0.0</mongodb.version>
     <netty.version>4.1.109.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -1073,6 +1073,11 @@
         <groupId>org.mariadb.jdbc</groupId>
         <artifactId>mariadb-java-client</artifactId>
         <version>${mariadb.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mongodb</groupId>
+        <artifactId>mongodb-driver-sync</artifactId>
+        <version>${mongodb.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jetty.quiche</groupId>

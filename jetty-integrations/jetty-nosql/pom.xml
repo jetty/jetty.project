@@ -23,8 +23,7 @@
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
-      <artifactId>mongo-java-driver</artifactId>
-      <version>${mongodb.version}</version>
+      <artifactId>mongodb-driver-sync</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>

@@ -20,11 +20,13 @@ import java.net.UnknownHostException;
 import java.util.Map;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import org.bson.Document;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStore;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStoreFactory;
 import org.eclipse.jetty.nosql.mongodb.MongoUtils;
@@ -52,34 +54,31 @@ public class MongoTestHelper
 
     static MongoDBContainer mongo;
     static MongoClient mongoClient;
-    static String mongoHost;
-    static int mongoPort;
+    static String mongoConnectionString;
 
     static
     {
-        mongo = new MongoDBContainer(DockerImageName.parse("mongo:" + System.getProperty("mongo.docker.version", "3.2.20")))
+        mongo = new MongoDBContainer(DockerImageName.parse("mongo:" + System.getProperty("mongo.docker.version", "6.0.9-ubi8")))
                 .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
         long start = System.currentTimeMillis();
         mongo.start();
-        mongoHost = mongo.getHost();
-        mongoPort = mongo.getMappedPort(MONGO_PORT);
-        LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
-                System.currentTimeMillis() - start);
-        mongoClient = new MongoClient(mongoHost, mongoPort);
+        mongoConnectionString = mongo.getConnectionString();
+        LOG.info("Mongo container started for {} - {}ms", mongoConnectionString, System.currentTimeMillis() - start);
+        mongoClient = MongoClients.create(mongoConnectionString);
     }
 
     public static MongoClient getMongoClient() throws UnknownHostException
     {
         if (mongoClient == null)
         {
-            mongoClient = new MongoClient(mongoHost, mongoPort);
+            mongoClient = MongoClients.create(mongoConnectionString);
         }
         return mongoClient;
     }
 
     public static void dropCollection(String dbName, String collectionName) throws Exception
     {
-        getMongoClient().getDB(dbName).getCollection(collectionName).drop();
+        getMongoClient().getDatabase(dbName).getCollection(collectionName).drop();
     }
 
     public static void shutdown() throws Exception
@@ -89,12 +88,12 @@ public class MongoTestHelper
 
     public static void createCollection(String dbName, String collectionName) throws UnknownHostException, MongoException
     {
-        getMongoClient().getDB(dbName).createCollection(collectionName, null);
+        getMongoClient().getDatabase(dbName).createCollection(collectionName, null);
     }
 
-    public static DBCollection getCollection(String dbName, String collectionName) throws UnknownHostException, MongoException
+    public static MongoCollection<Document> getCollection(String dbName, String collectionName) throws UnknownHostException, MongoException
     {
-        return getMongoClient().getDB(dbName).getCollection(collectionName);
+        return getMongoClient().getDatabase(dbName).getCollection(collectionName);
     }
 
     public static MongoSessionDataStoreFactory newSessionDataStoreFactory(String dbName, String collectionName)

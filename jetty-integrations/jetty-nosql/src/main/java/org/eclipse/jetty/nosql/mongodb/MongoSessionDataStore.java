@@ -15,22 +15,13 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.MongoException;
-import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
+import com.mongodb.client.MongoCollection;
+import org.bson.Document;
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.session.SessionData;
@@ -155,9 +146,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     /**
      * Access to MongoDB
      */
-    private DBCollection _dbSessions;
+    private MongoCollection<Document> _dbSessions;
 
-    public void setDBCollection(DBCollection collection)
+    public void setDBCollection(MongoCollection collection)
     {
         _dbSessions = collection;
     }
@@ -171,7 +162,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     @Override
     public SessionData doLoad(String id) throws Exception
     {
-        DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
+        Document sessionDocument = _dbSessions.find.findOne(new BasicDBObject(__ID, id));
 
         try
         {
