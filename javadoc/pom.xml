@@ -410,8 +410,7 @@
                 jetty-test-helper,
                 jetty-maven-plugin,
                 jetty-jspc-maven-plugin,
-                jetty-quic-foreign-incubator,
-                jetty-quic-foreign-jna,
+                jetty-quic-quiche,
                 alpn-api,
                 javax.servlet,
                 javax.websocket,
@@ -426,8 +425,7 @@
                 mailapi,
                 javax.security.auth.message,
                 plexus-utils,
-                plexus-interpolation,
-                jetty-quic-quiche-foreign-incubator</excludeArtifactIds>
+                plexus-interpolation</excludeArtifactIds>
               <classifier>sources</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,module-info.java</excludes>
@@ -475,7 +473,7 @@
             <configuration>
               <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
               <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
-              <excludePackageNames>org.eclipse.jetty.http3.client.transport.internal; org.eclipse.jetty.http3.client.internal; org.eclipse.jetty.http3.internal; org.eclipse.jetty.http3.internal.*; org.eclipse.jetty.http3.qpack.internal; org.eclipse.jetty.http3.qpack.internal.*; org.eclipse.jetty.http3.server.internal; org.eclipse.jetty.quic.common.internal; org.eclipse.jetty.quic.quiche; org.eclipse.jetty.quic.quiche.foreign.*; org.eclipse.jetty.quic.quiche.*; org.eclipse.jetty.quic.server.internal;</excludePackageNames>
+              <excludePackageNames>org.eclipse.jetty.http3.client.transport.internal; org.eclipse.jetty.http3.client.internal; org.eclipse.jetty.http3.internal; org.eclipse.jetty.http3.internal.*; org.eclipse.jetty.http3.qpack.internal; org.eclipse.jetty.http3.qpack.internal.*; org.eclipse.jetty.http3.server.internal; org.eclipse.jetty.quic.common.internal; org.eclipse.jetty.quic.quiche; org.eclipse.jetty.quic.quiche.*; org.eclipse.jetty.quic.server.internal;</excludePackageNames>
             </configuration>
           </execution>
         </executions>

@@ -861,17 +861,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-jna</artifactId>
+        <artifactId>jetty-quic-quiche</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

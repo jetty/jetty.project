@@ -22,7 +22,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-common</artifactId>
+      <artifactId>jetty-quic-quiche</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

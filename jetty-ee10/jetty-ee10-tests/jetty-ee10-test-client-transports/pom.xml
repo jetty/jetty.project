@@ -101,25 +101,6 @@
 
   <profiles>
     <profile>
-      <id>enable-incubator-foreign</id>
-      <activation>
-        <jdk>[17,19)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <argLine>@{argLine}
-                ${jetty.surefire.argLine}
-                --add-modules jdk.incubator.foreign
-                --enable-native-access ALL-UNNAMED</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
       <id>enable-preview</id>
       <activation>
         <jdk>[19,21)</jdk>

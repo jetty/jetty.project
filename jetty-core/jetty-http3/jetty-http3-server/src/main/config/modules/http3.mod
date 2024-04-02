@@ -19,9 +19,7 @@ lib/http3/jetty-http3-common-${jetty.version}.jar
 lib/http3/jetty-http3-qpack-${jetty.version}.jar
 lib/http3/jetty-http3-server-${jetty.version}.jar
 lib/http3/jetty-quic-common-${jetty.version}.jar
-lib/http3/jetty-quic-quiche-common-${jetty.version}.jar
-lib/http3/jetty-quic-quiche-foreign-incubator-${jetty.version}.jar
-lib/http3/jetty-quic-quiche-jna-${jetty.version}.jar
+lib/http3/jetty-quic-quiche-${jetty.version}.jar
 lib/http3/jetty-quic-server-${jetty.version}.jar
 
 [xml]
