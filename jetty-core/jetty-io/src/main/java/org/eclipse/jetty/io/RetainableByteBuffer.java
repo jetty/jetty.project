@@ -136,11 +136,23 @@ public interface RetainableByteBuffer extends Retainable
         };
     }
 
+    /**
+     * Appends and consumes the contents of this buffer to the passed buffer, limited by the capacity of the target buffer.
+     * @param buffer The buffer to append bytes to, whose limit will be updated.
+     * @return {@code true} if all bytes in this buffer are able to be appended.
+     * @see #putTo(ByteBuffer)
+     */
     default boolean appendTo(ByteBuffer buffer)
     {
         return remaining() == BufferUtil.append(buffer, getByteBuffer());
     }
 
+    /**
+     * Appends and consumes the contents of this buffer to the passed buffer, limited by the capacity of the target buffer.
+     * @param buffer The buffer to append bytes to, whose limit will be updated.
+     * @return {@code true} if all bytes in this buffer are able to be appended.
+     * @see #putTo(ByteBuffer)
+     */
     default boolean appendTo(RetainableByteBuffer buffer)
     {
         return appendTo(buffer.getByteBuffer());
@@ -161,7 +173,7 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * <p>Copies the bytes from this Chunk to the given byte array.</p>
+     * Consumes and copies the bytes from this RetainableByteBuffer to the given byte array.
      *
      * @param bytes the byte array to copy the bytes into
      * @param offset the offset within the byte array
@@ -209,8 +221,8 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Copies the contents of this retainable byte buffer at the end of the given byte buffer.
-     * @param toInfillMode the destination buffer.
+     * Consumes and puts the contents of this retainable byte buffer at the end of the given byte buffer.
+     * @param toInfillMode the destination buffer, whose position is updated.
      * @throws BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
      * @see ByteBuffer#put(ByteBuffer)
      */
@@ -287,7 +299,7 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Asynchronously copies the contents of this retainable byte buffer into given sink.
+     * Asynchronously writes and consumes the contents of this retainable byte buffer into given sink.
      * @param sink the destination sink.
      * @param last true if this is the last write.
      * @param callback the callback to call upon the write completion.
@@ -376,7 +388,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public String toString()
         {
-            return getWrapped().toString();
+            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getWrapped().toString());
         }
 
         @Override

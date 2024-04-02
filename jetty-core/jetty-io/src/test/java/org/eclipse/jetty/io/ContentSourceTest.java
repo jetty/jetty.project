@@ -736,7 +736,9 @@ public class ContentSourceTest
         };
         Content.Source.asRetainableByteBuffer(source, null, false, -1, promise);
 
-        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter(3);
+        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
+        counter.retain();
+        counter.retain();
 
         Runnable todo = source.takeDemand();
         assertNotNull(todo);
@@ -778,7 +780,7 @@ public class ContentSourceTest
 
         Runnable todo = source.takeDemand();
         assertNotNull(todo);
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, new Retainable.ReferenceCounter(1)));
+        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, new Retainable.ReferenceCounter()));
         todo.run();
         assertTrue(promise.isDone());
 
@@ -802,7 +804,9 @@ public class ContentSourceTest
 
         CompletableFuture<RetainableByteBuffer> completableFuture = Content.Source.asRetainableByteBuffer(source, null, false, -1);
 
-        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter(3);
+        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
+        counter.retain();
+        counter.retain();
 
         Runnable todo = source.takeDemand();
         assertNotNull(todo);
@@ -833,7 +837,9 @@ public class ContentSourceTest
 
         CompletableFuture<byte[]> completableFuture = Content.Source.asByteArrayAsync(source, -1);
 
-        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter(3);
+        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
+        counter.retain();
+        counter.retain();
 
         Runnable todo = source.takeDemand();
         assertNotNull(todo);

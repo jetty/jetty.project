@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.CompletableTask;
 @Deprecated
 public class ChunkAccumulator
 {
-    private static final ByteBufferPool NON_POOLING = new ByteBufferPool.NonPooling();
     private final List<Chunk> _chunks = new ArrayList<>();
     private int _length;
 
@@ -106,7 +105,7 @@ public class ChunkAccumulator
             }
         }
 
-        RetainableByteBuffer buffer = Objects.requireNonNullElse(pool, NON_POOLING).acquire(_length, direct);
+        RetainableByteBuffer buffer = Objects.requireNonNullElse(pool, ByteBufferPool.NON_POOLING).acquire(_length, direct);
         int offset = 0;
         for (Chunk chunk : _chunks)
         {
