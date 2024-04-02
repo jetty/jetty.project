@@ -216,6 +216,8 @@ updates:
         versions: [ ">=4" ]
       - dependency-name: "org.jboss.weld.servlet:*"
         versions: [ ">=4" ]
+      - dependency-name: "org.jboss.threads:jboss-threads"
+        versions: [ ">=3.6" ]
       - dependency-name: "ch.qos.logback:*"
         versions: [ ">=1.3" ]
       - dependency-name: "org.asciidoctor:asciidoctor-maven-plugin"
