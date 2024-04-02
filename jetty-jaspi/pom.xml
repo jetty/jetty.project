@@ -62,7 +62,8 @@
     <dependency>
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
-      <version>4.0.4</version>
+      <!-- Must stay on 3.x as 4.x is for Java 11 -->
+      <version>3.0.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
