@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.bson.Document;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -45,13 +46,13 @@ public class MongoUtils
             final ClassLoadingObjectInputStream objectInputStream = new ClassLoadingObjectInputStream(bais);
             return objectInputStream.readUnshared();
         }
-        else if (valueToDecode instanceof DBObject)
+        else if (valueToDecode instanceof Document)
         {
-            Map<String, Object> map = new HashMap<String, Object>();
-            for (String name : ((DBObject)valueToDecode).keySet())
+            Map<String, Object> map = new HashMap<>();
+            for (String name : ((Document)valueToDecode).keySet())
             {
                 String attr = decodeName(name);
-                map.put(attr, decodeValue(((DBObject)valueToDecode).get(name)));
+                map.put(attr, decodeValue(((Document)valueToDecode).get(name)));
             }
             return map;
         }
@@ -105,19 +106,19 @@ public class MongoUtils
     /**
      * Dig through a given dbObject for the nested value
      *
-     * @param dbObject the mongo object to search
+     * @param sessionDocument the mongo document to search
      * @param nestedKey the field key to find
      * @return the value of the field key
      */
-    public static Object getNestedValue(DBObject dbObject, String nestedKey)
+    public static Object getNestedValue(Document sessionDocument, String nestedKey)
     {
         String[] keyChain = nestedKey.split("\\.");
 
-        DBObject temp = dbObject;
+        Document temp = sessionDocument;
 
         for (int i = 0; i < keyChain.length - 1; ++i)
         {
-            temp = (DBObject)temp.get(keyChain[i]);
+            temp = (Document)temp.get(keyChain[i]);
 
             if (temp == null)
             {
