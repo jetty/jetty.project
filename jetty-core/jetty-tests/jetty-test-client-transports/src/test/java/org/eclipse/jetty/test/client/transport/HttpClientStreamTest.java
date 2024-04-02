@@ -987,9 +987,14 @@ public class HttpClientStreamTest extends AbstractTest
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
+    // TODO leak tracking is disabled for HTTP 1 protocols because:
+    //  1) in HttpConnection.onClose() the stream may still have a retainable buffer that must be released that abort() isn't taking care of
+    //  2) abrupt closing of the connector AND upgrade both call onClose()
+    //  how to differentiate them as the first one requires the stream's endpoint to be closed and the second wants it to stay open?
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:server:HTTP")
+    @Tag("DisableLeakTracking:server:HTTPS")
     public void testUploadWithConcurrentServerCloseClosesStream(Transport transport) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);

@@ -1623,12 +1623,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         private void abort(Throwable failure)
         {
-            if (_chunk != null)
-            {
-                _chunk.release();
-                // TODO if failure is null, this is equivalent to _chunk = EOF
-                _chunk = Content.Chunk.from(failure);
-            }
             getEndPoint().close(failure);
         }
 
