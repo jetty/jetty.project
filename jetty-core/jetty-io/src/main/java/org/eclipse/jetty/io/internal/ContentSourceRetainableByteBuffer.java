@@ -89,7 +89,7 @@ public class ContentSourceRetainableByteBuffer implements Runnable
     {
         // TODO This ultimately should be a new public Accumulator replacing other Accumulators,
         //      however, it is kept private for now until the common Mutable RBB API is decided.
-        private final ReferenceCounter _retainable = new ReferenceCounter(1);
+        private final ReferenceCounter _retainable = new ReferenceCounter();
         private final ByteBufferPool _pool;
         private final boolean _direct;
         private final long _maxLength;
@@ -104,7 +104,7 @@ public class ContentSourceRetainableByteBuffer implements Runnable
          */
         public Accumulator(ByteBufferPool pool, boolean direct, long maxLength)
         {
-            _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
+            _pool = pool == null ? ByteBufferPool.NON_POOLING : pool;
             _direct = direct;
             _maxLength = maxLength < 0 ? Long.MAX_VALUE : maxLength;
         }
