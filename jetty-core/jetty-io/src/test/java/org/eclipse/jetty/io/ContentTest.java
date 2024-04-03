@@ -64,13 +64,15 @@ public class ContentTest
     @Test
     public void testFromEmptyByteBufferWithRetainableReleaser()
     {
-        Retainable.ReferenceCounter referenceCounter1 = new Retainable.ReferenceCounter(2);
+        Retainable.ReferenceCounter referenceCounter1 = new Retainable.ReferenceCounter();
+        referenceCounter1.retain();
         assertThat(referenceCounter1.isRetained(), is(true));
         assertThat(Content.Chunk.asChunk(ByteBuffer.wrap(new byte[0]), true, referenceCounter1), sameInstance(Content.Chunk.EOF));
         assertThat(referenceCounter1.isRetained(), is(false));
         assertThat(referenceCounter1.release(), is(true));
 
-        Retainable.ReferenceCounter referenceCounter2 = new Retainable.ReferenceCounter(2);
+        Retainable.ReferenceCounter referenceCounter2 = new Retainable.ReferenceCounter();
+        referenceCounter2.retain();
         assertThat(referenceCounter2.isRetained(), is(true));
         assertThat(Content.Chunk.asChunk(ByteBuffer.wrap(new byte[0]), false, referenceCounter2), sameInstance(Content.Chunk.EMPTY));
         assertThat(referenceCounter2.isRetained(), is(false));

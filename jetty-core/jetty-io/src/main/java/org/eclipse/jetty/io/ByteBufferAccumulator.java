@@ -44,7 +44,7 @@ public class ByteBufferAccumulator implements AutoCloseable
 
     public ByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct)
     {
-        _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
+        _bufferPool = (bufferPool == null) ? ByteBufferPool.NON_POOLING : bufferPool;
         _direct = direct;
     }
 

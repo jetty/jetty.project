@@ -63,8 +63,8 @@ public interface Retainable
     }
 
     /**
-     * @return whether this instance is retained
-     * @see ReferenceCounter#isRetained()
+     * <p>Returns whether {@link #retain()} has been called at least one more time than {@link #release()}.</p>
+     * @return whether this buffer is retained
      */
     default boolean isRetained()
     {
@@ -156,7 +156,7 @@ public interface Retainable
             this(1);
         }
 
-        public ReferenceCounter(int initialCount)
+        protected ReferenceCounter(int initialCount)
         {
             references = new AtomicInteger(initialCount);
         }
