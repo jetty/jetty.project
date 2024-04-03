@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>tests</artifactId>
+    <version>12.0.7-SNAPSHOT</version>
+  </parent>
+  <groupId>org.eclipse.jetty.tests.ccd</groupId>
+  <artifactId>test-cross-context-dispatch</artifactId>
+  <packaging>pom</packaging>
+  <name>Tests :: Cross Context Dispatch :: Parent</name>
+
+  <modules>
+    <module>ccd-common</module>
+    <module>ccd-ee10-webapp</module>
+    <module>ccd-ee9-webapp</module>
+    <module>ccd-ee8-webapp</module>
+    <module>tests-ccd</module>
+  </modules>
+
+  <properties>
+    <distribution.debug.port>-1</distribution.debug.port>
+  </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <systemPropertyVariables>
+              <mavenRepoPath>${session.repositoryCrossContext.localRepository.basedir.absolutePath}</mavenRepoPath>
+              <jettyVersion>${project.version}</jettyVersion>
+              <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+              <home.start.timeout>${home.start.timeout}</home.start.timeout>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

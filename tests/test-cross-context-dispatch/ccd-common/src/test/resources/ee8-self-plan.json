@@ -1,0 +1,22 @@
+{
+  "class": "org.eclipse.jetty.tests.ccd.common.DispatchPlan",
+  "requestStep": {
+    "class": "org.eclipse.jetty.tests.ccd.common.steps.HttpRequestStep",
+    "method": "GET",
+    "body": null,
+    "requestPath": "/ccd-ee8/redispatch"
+  },
+  "steps": [
+    {
+      "class": "org.eclipse.jetty.tests.ccd.common.steps.ContextRedispatchStep",
+      "dispatchType": "FORWARD",
+      "contextPath": "/ccd-ee8",
+      "dispatchPath": "/dump/ee8"
+    }
+  ],
+  "expectedEvents": [
+    "Initial",
+    "Request Path /foo/redispatch",
+    "Request Path /ccd-ee8/dump/ee8"
+  ]
+}

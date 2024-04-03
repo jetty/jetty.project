@@ -1,0 +1,9 @@
+{
+  "steps": [
+    {
+      "contextPath": "/ccd-ee10",
+      "technique": "CONTEXT_GET_DISPATCHER_FORWARD",
+      "dispatchPath": "/dump/ee10"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "steps": [
+    {
+      "technique": "REQUEST_GET_DISPATCHER_FORWARD",
+      "dispatchPath": "/dump/ee10"
+    }
+  ]
+}
