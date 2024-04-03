@@ -1273,7 +1273,7 @@ public class BufferUtil
         {
             for (int i = 0; i < buffer.position(); i++)
             {
-                appendContentChar(buf, buffer.get(i));
+                appendDebugByte(buf, buffer.get(i));
                 if (i == 8 && buffer.position() > 16)
                 {
                     buf.append("...");
@@ -1283,7 +1283,7 @@ public class BufferUtil
             buf.append("<<<");
             for (int i = buffer.position(); i < buffer.limit(); i++)
             {
-                appendContentChar(buf, buffer.get(i));
+                appendDebugByte(buf, buffer.get(i));
                 if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 48)
                 {
                     buf.append("...");
@@ -1295,7 +1295,7 @@ public class BufferUtil
             buffer.limit(buffer.capacity());
             for (int i = limit; i < buffer.capacity(); i++)
             {
-                appendContentChar(buf, buffer.get(i));
+                appendDebugByte(buf, buffer.get(i));
                 if (i == limit + 8 && buffer.capacity() > limit + 16)
                 {
                     buf.append("...");
@@ -1311,7 +1311,7 @@ public class BufferUtil
         }
     }
 
-    private static void appendContentChar(StringBuilder buf, byte b)
+    public static void appendDebugByte(StringBuilder buf, byte b)
     {
         if (b == '\\')
             buf.append("\\\\");
