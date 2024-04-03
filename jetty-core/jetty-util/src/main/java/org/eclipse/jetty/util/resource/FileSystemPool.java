@@ -120,8 +120,15 @@ public class FileSystemPool implements Dumpable
             catch (FileSystemAlreadyExistsException fsaee)
             {
                 fileSystem = Paths.get(jarURIRoot).getFileSystem();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Using existing FS {}", jarURIRoot);
+                if (!fileSystem.isOpen())
+                {
+                    LOG.warn("FileSystem {} of URI {} already exists but is not open (bug JDK-8291712)", fileSystem, uri);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Using existing FS {}", jarURIRoot);
+                }
             }
             catch (ProviderNotFoundException pnfe)
             {
@@ -144,7 +151,9 @@ public class FileSystemPool implements Dumpable
     {
         String rawURI = uri.toASCIIString();
         int idx = rawURI.indexOf("!/");
-        return URI.create(rawURI.substring(0, idx + 2));
+        if (idx > 0)
+            return URI.create(rawURI.substring(0, idx + 2));
+        return uri;
     }
 
     private void unmount(URI fsUri)
@@ -164,10 +173,32 @@ public class FileSystemPool implements Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Ref counter reached 0, closing pooled FS {}", bucket);
-                IO.close(bucket.fileSystem);
-                pool.remove(fsUri);
-                if (listener != null)
-                    listener.onClose(fsUri);
+                try
+                {
+                    // If the filesystem's backing file was deleted, re-create it temporarily before closing
+                    // the filesystem to try to work around JDK-8291712.
+                    Path rootOfCreatedPath = null;
+                    if (!Files.exists(bucket.path))
+                        rootOfCreatedPath = createEmptyFileWithParents(bucket.path);
+                    try
+                    {
+                        bucket.fileSystem.close();
+                    }
+                    finally
+                    {
+                        IO.delete(rootOfCreatedPath);
+                    }
+                    // Remove the FS from the pool only if the above code did not throw as if it is
+                    // createEmptyFileWithParents() that threw, there is a chance we could re-create
+                    // that file later on.
+                    pool.remove(fsUri);
+                    if (listener != null)
+                        listener.onClose(fsUri);
+                }
+                catch (IOException e)
+                {
+                    LOG.warn("Unable to close FileSystem {} of URI {} (bug JDK-8291712)", bucket.fileSystem, fsUri, e);
+                }
             }
             else
             {
@@ -180,6 +211,33 @@ public class FileSystemPool implements Dumpable
         catch (FileSystemNotFoundException fsnfe)
         {
             // The FS has already been released by a sweep.
+        }
+    }
+
+    private Path createEmptyFileWithParents(Path path) throws IOException
+    {
+        Path createdRootPath = null;
+        if (!Files.exists(path.getParent()))
+            createdRootPath = createDirWithAllParents(path.getParent());
+        Files.createFile(path);
+        if (createdRootPath == null)
+            createdRootPath = path;
+        return createdRootPath;
+    }
+
+    private Path createDirWithAllParents(Path path) throws IOException
+    {
+        Path parentPath = path.getParent();
+        if (!Files.exists(parentPath))
+        {
+            Path createdRootPath = createDirWithAllParents(parentPath);
+            Files.createDirectory(path);
+            return createdRootPath;
+        }
+        else
+        {
+            Files.createDirectory(path);
+            return path;
         }
     }
 

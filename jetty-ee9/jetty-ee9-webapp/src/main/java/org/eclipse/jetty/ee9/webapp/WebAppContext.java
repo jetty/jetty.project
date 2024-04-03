@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PermissionCollection;
@@ -30,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRegistration.Dynamic;
@@ -59,7 +57,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -1242,8 +1239,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
-        List<URI> uris = URIUtil.split(extraClasspath);
-        setExtraClasspath(uris.stream().map(this.getResourceFactory()::newResource).collect(Collectors.toList()));
+        setExtraClasspath(getResourceFactory().split(extraClasspath));
     }
 
     public void setExtraClasspath(List<Resource> extraClasspath)
@@ -1294,14 +1290,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             //resolve the metadata
             _metadata.resolve(this);
-            super.startContext();
+            startWebapp();
         }
     }
 
     @Override
     protected void stopContext() throws Exception
     {
-        super.stopContext();
+        stopWebapp();
         try
         {
             for (int i = _configurations.size(); i-- > 0; )
@@ -1325,6 +1321,24 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             _unavailableException = null;
         }
+    }
+
+    /**
+     * Continue the {@link #startContext()} before calling {@code super.startContext()}.
+     * @throws Exception If there was a problem starting
+     */
+    protected void startWebapp() throws Exception
+    {
+        super.startContext();
+    }
+
+    /**
+     * Continue the {@link #stopContext()} before calling {@code super.stopContext()}.
+     * @throws Exception If there was a problem stopping
+     */
+    protected void stopWebapp() throws Exception
+    {
+        super.stopContext();
     }
 
     @Override
@@ -1429,7 +1443,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             // If a WAR file is mounted, or is extracted to a temp directory,
             // then the first entry of the resource base must be the WAR file.
             Resource resource = WebAppContext.this.getResource(path);
-            if (resource == null)
+            if (Resources.missing(resource))
                 return null;
 
             for (Resource r: resource)

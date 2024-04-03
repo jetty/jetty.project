@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.7-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-home</artifactId>
@@ -13,7 +13,7 @@
 
   <properties>
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
-    <jetty-setuid-version>2.0.2</jetty-setuid-version>
+    <jetty-setuid-version>2.0.3</jetty-setuid-version>
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
@@ -217,6 +217,10 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <!-- jetty deps -->

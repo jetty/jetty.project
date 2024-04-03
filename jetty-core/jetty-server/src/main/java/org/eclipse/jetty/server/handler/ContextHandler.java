@@ -396,8 +396,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     @ManagedAttribute(value = "Virtual hosts accepted by the context", readonly = true)
     public List<String> getVirtualHosts()
     {
-        if (_vhosts == null)
-            return null;
         return _vhosts.stream().map(VHost::getName).collect(Collectors.toList());
     }
 
@@ -773,14 +771,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     protected void doStop() throws Exception
     {
         _context.call(super::doStop, null);
+        cleanupAfterStop();
+        _tempDirectoryCreated = false;
+    }
 
+    protected void cleanupAfterStop() throws Exception
+    {
         File tempDirectory = getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
             IO.delete(tempDirectory);
-
-        _tempDirectoryCreated = false;
     }
 
     public boolean checkVirtualHost(Request request)
@@ -1129,7 +1130,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         b.append(",b=").append(getBaseResource());
         b.append(",a=").append(_availability);
 
-        if (vhosts != null && !vhosts.isEmpty())
+        if (!vhosts.isEmpty())
         {
             b.append(",vh=[");
             b.append(String.join(",", vhosts));
@@ -1306,7 +1307,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         @Override
         public void execute(Runnable runnable)
         {
-            getServer().getContext().execute(() -> run(runnable));
+            execute(runnable, null);
+        }
+
+        public void execute(Runnable runnable, Request request)
+        {
+            getServer().getContext().execute(() -> run(runnable, request));
         }
 
         protected DecoratedObjectFactory getDecoratedObjectFactory()

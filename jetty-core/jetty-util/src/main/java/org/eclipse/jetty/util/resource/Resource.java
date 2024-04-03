@@ -21,16 +21,14 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -240,7 +238,9 @@ public abstract class Resource implements Iterable<Resource>
      *
      * @return a readable {@link java.nio.channels.ByteChannel} to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
+     * @deprecated use {@link #newInputStream()} or {@code IOResources} instead.
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         Path path = getPath();
@@ -268,7 +268,8 @@ public abstract class Resource implements Iterable<Resource>
      * Resolve an existing Resource.
      *
      * @param subUriPath the encoded subUriPath
-     * @return an existing Resource representing the requested subUriPath, or null if resource does not exist.
+     * @return a Resource representing the requested subUriPath, which may not {@link #exists() exist},
+     * or null if the resource cannot exist.
      * @throws IllegalArgumentException if subUriPath is invalid
      */
     public abstract Resource resolve(String subUriPath);
@@ -295,104 +296,107 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Copy the Resource to the new destination file or directory
+     * Copy the Resource to the new destination file or directory.
      *
-     * @param destination the destination file to create or directory to use.
+     * <p>If this Resource is a File:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist then {@link IO#copyFile(Path, Path)} is used.</li>
+     *     <li>And the {@code destination} is a File then {@link IO#copyFile(Path, Path)} is used.</li>
+     *     <li>And the {@code destination} is a Directory then
+     *         a new {@link Path} reference is created in the destination with the same
+     *         filename as this Resource, which is used via {@link IO#copyFile(Path, Path)}.</li>
+     * </ul>
+     *
+     * <p>If this Resource is a Directory:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist then
+     *         the destination is created as a directory via {@link Files#createDirectories(Path, FileAttribute[])}
+     *         before the {@link IO#copyDir(Path, Path)} method is used.</li>
+     *     <li>And the {@code destination} is a File then this results in an {@link IllegalArgumentException}.</li>
+     *     <li>And the {@code destination} is a Directory then all files in this Resource
+     *         directory tree are copied to the {@code destination}, using {@link IO#copyFile(Path, Path)}
+     *         maintaining the same directory structure.</li>
+     * </ul>
+     *
+     * <p>If this Resource is not backed by a {@link Path}, use {@link #newInputStream()}:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist, copy {@link InputStream}
+     *         to the {@code destination} as a new file.</li>
+     *     <li>And the {@code destination} is a File, copy {@link InputStream}
+     *         to the existing {@code destination} file.</li>
+     *     <li>And the {@code destination} is a Directory, copy {@link InputStream}
+     *         to a new {@code destination} file in the destination directory
+     *         based on this the result of {@link #getFileName()} as the filename.</li>
+     * </ul>
+     *
+     * @param destination the destination file or directory to use (created if it does not exist).
      * @throws IOException if unable to copy the resource
      */
     public void copyTo(Path destination)
         throws IOException
     {
+        if (!exists())
+            throw new IOException("Resource does not exist: " + getFileName());
+
         Path src = getPath();
         if (src == null)
         {
-            if (!isDirectory())
+            // this implementation is not backed by a Path.
+
+            // is this a Directory?
+            if (isDirectory())
             {
-                // use old school stream based copy
-                try (InputStream in = newInputStream(); OutputStream out = Files.newOutputStream(destination))
-                {
-                    IO.copy(in, out);
-                }
-                return;
+                // if we reached this point, we have a Resource implementation that needs custom copyTo.
+                throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo: " + this);
             }
-            throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo: " + this);
+
+            // assume that this Resource is a File.
+            String filename = getFileName();
+            if (StringUtil.isBlank(filename))
+            {
+                throw new UnsupportedOperationException("File Resources without a Path must implement getFileName: " + this);
+            }
+
+            Path destFile = destination;
+            if (Files.isDirectory(destFile))
+            {
+                destFile = destFile.resolve(filename);
+            }
+
+            // use old school stream based copy (without a Path)
+            try (InputStream in = newInputStream(); // use non-path newInputStream
+                 OutputStream out = Files.newOutputStream(destFile,
+                     StandardOpenOption.CREATE,
+                     StandardOpenOption.WRITE,
+                     StandardOpenOption.TRUNCATE_EXISTING))
+            {
+                IO.copy(in, out);
+            }
+            return;
         }
 
-        // Do we have to copy a single file?
+        // Is this a File resource?
         if (Files.isRegularFile(src))
         {
-            // Is the destination a directory?
             if (Files.isDirectory(destination))
             {
                 // to a directory, preserve the filename
                 Path destPath = destination.resolve(src.getFileName().toString());
-                Files.copy(src, destPath,
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.COPY_ATTRIBUTES,
-                    StandardCopyOption.REPLACE_EXISTING);
+                IO.copyFile(src, destPath);
             }
             else
             {
                 // to a file, use destination as-is
-                Files.copy(src, destination,
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.COPY_ATTRIBUTES,
-                    StandardCopyOption.REPLACE_EXISTING);
+                IO.copyFile(src, destination);
             }
             return;
         }
 
-        // At this point this PathResource is a directory.
+        // At this point this PathResource is a directory,
+        // wanting to copy to a destination directory (that might not exist yet)
         assert isDirectory();
 
-        BiFunction<Path, Path, Path> resolver = src.getFileSystem().equals(destination.getFileSystem())
-            ? Path::resolve
-            : Resource::resolveDifferentFileSystem;
-
-        try (Stream<Path> entriesStream = Files.walk(src))
-        {
-            for (Iterator<Path> pathIterator = entriesStream.iterator(); pathIterator.hasNext();)
-            {
-                Path path = pathIterator.next();
-                if (src.equals(path))
-                    continue;
-
-                Path relative = src.relativize(path);
-                Path destPath = resolver.apply(destination, relative);
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("CopyTo: {} > {}", path, destPath);
-                if (Files.isDirectory(path))
-                {
-                    ensureDirExists(destPath);
-                }
-                else
-                {
-                    ensureDirExists(destPath.getParent());
-                    Files.copy(path, destPath, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        }
-    }
-
-    static Path resolveDifferentFileSystem(Path path, Path relative)
-    {
-        for (Path segment : relative)
-            path = path.resolve(segment.toString());
-        return path;
-    }
-
-    void ensureDirExists(Path dir) throws IOException
-    {
-        if (Files.exists(dir))
-        {
-            if (!Files.isDirectory(dir))
-            {
-                throw new IOException("Conflict, unable to create directory where file exists: " + dir);
-            }
-            return;
-        }
-        Files.createDirectories(dir);
+        IO.copyDir(src, destination);
     }
 
     /**

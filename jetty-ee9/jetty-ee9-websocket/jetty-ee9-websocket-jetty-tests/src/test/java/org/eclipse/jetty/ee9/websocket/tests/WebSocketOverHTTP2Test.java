@@ -64,6 +64,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -151,6 +152,7 @@ public class WebSocketOverHTTP2Test
     }
 
     @Test
+    @Tag("flaky")
     public void testWebSocketOverDynamicHTTP2() throws Exception
     {
         testWebSocketOverDynamicTransport(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));

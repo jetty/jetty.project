@@ -788,6 +788,11 @@ public class ServletChannel
         _context.execute(task);
     }
 
+    protected void execute(Runnable task, Request request)
+    {
+        _context.execute(task, request);
+    }
+
     /**
      * If a write or similar operation to this channel fails,
      * then this method should be called.

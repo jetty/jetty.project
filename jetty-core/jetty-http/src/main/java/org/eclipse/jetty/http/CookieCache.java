@@ -49,6 +49,12 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
         _parser = CookieParser.newParser(this, compliance, this);
     }
 
+    @Deprecated(forRemoval = true)
+    public CookieCache(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    {
+        this(compliance);
+    }
+
     @Override
     public void onComplianceViolation(ComplianceViolation.Event event)
     {
