@@ -223,55 +223,44 @@ public class ContentSourceRetainableByteBuffer implements Runnable
 
         public boolean append(ByteBuffer bytes)
         {
-            int remaining = bytes.remaining();
-            if (remaining == 0)
+            long length = bytes.remaining();
+            if (length == 0)
                 return true;
 
-            long currentlyRemaining = _maxLength - remainingLong();
-            if (currentlyRemaining >= remaining)
+            ByteBuffer slice = bytes.slice();
+            long space = _maxLength - remainingLong();
+            if (space >= length)
             {
-                RetainableByteBuffer rbb = RetainableByteBuffer.wrap(bytes.slice());
+                _buffers.add(RetainableByteBuffer.wrap(slice));
                 bytes.position(bytes.limit());
-                _buffers.add(rbb);
                 return true;
             }
-            else
-            {
-                ByteBuffer slice = bytes.slice();
-                slice.limit((int)(slice.position() + currentlyRemaining));
-                RetainableByteBuffer rbb = RetainableByteBuffer.wrap(slice);
-                bytes.position((int)(bytes.position() + currentlyRemaining));
-                _buffers.add(rbb);
-                return false;
-            }
+
+            length = space;
+            slice.limit((int)(slice.position() + length));
+            _buffers.add(RetainableByteBuffer.wrap(slice));
+            bytes.position((int)(bytes.position() + length));
+            return false;
         }
 
         public boolean append(RetainableByteBuffer retainableBytes)
         {
-            ByteBuffer bytes = retainableBytes.getByteBuffer();
-            int remaining = bytes.remaining();
-            if (remaining == 0)
+            long length = retainableBytes.remaining();
+            if (length == 0)
                 return true;
 
-            long currentlyRemaining = _maxLength - remainingLong();
-            if (currentlyRemaining >= remaining)
+            long space = _maxLength - remainingLong();
+            if (space >= length)
             {
-                retainableBytes.retain();
-                RetainableByteBuffer rbb = RetainableByteBuffer.wrap(bytes.slice(), retainableBytes);
-                bytes.position(bytes.limit());
-                _buffers.add(rbb);
+                _buffers.add(retainableBytes.slice());
+                retainableBytes.skip(length);
                 return true;
             }
-            else
-            {
-                retainableBytes.retain();
-                ByteBuffer slice = bytes.slice();
-                slice.limit((int)(slice.position() + currentlyRemaining));
-                RetainableByteBuffer rbb = RetainableByteBuffer.wrap(slice, retainableBytes);
-                bytes.position((int)(bytes.position() + currentlyRemaining));
-                _buffers.add(rbb);
-                return false;
-            }
+
+            length = space;
+            _buffers.add(retainableBytes.slice(length));
+            retainableBytes.skip(length);
+            return false;
         }
 
         @Override
