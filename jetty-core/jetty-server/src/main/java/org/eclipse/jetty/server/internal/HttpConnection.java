@@ -611,6 +611,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     }
 
     @Override
+    public void close()
+    {
+        _httpChannel.onFailure(new EofException());
+        super.close();
+    }
+
+    @Override
     public void onOpen()
     {
         super.onOpen();
