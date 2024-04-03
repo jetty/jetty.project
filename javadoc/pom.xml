@@ -34,7 +34,6 @@
   </dependencyManagement>
 
   <dependencies>
-
     <!-- Necessary dependencies -->
     <dependency>
       <groupId>jakarta.mail</groupId>
