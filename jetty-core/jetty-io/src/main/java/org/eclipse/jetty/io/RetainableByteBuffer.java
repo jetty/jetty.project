@@ -269,13 +269,13 @@ public interface RetainableByteBuffer extends Retainable
      * @param length the maximum number of bytes to skip
      * @return the number of bytes actually skipped
      */
-    default int skip(int length)
+    default long skip(long length)
     {
         if (length == 0)
             return 0;
         ByteBuffer byteBuffer = getByteBuffer();
         length = Math.min(byteBuffer.remaining(), length);
-        byteBuffer.position(byteBuffer.position() + length);
+        byteBuffer.position(byteBuffer.position() + Math.toIntExact(length));
         return length;
     }
 
@@ -288,6 +288,20 @@ public interface RetainableByteBuffer extends Retainable
     {
         retain();
         return RetainableByteBuffer.wrap(getByteBuffer().slice(), this);
+    }
+
+    /**
+     * Get a partial slice of the buffer.
+     * @param length The number of bytes to slice.
+     * @return A sliced {@link RetainableByteBuffer} sharing the first {@code length} bytes of this buffers data and
+     * reference count, but with independent position. The buffer is {@link #retain() retained} by this call.
+     */
+    default RetainableByteBuffer slice(long length)
+    {
+        retain();
+        ByteBuffer slice = getByteBuffer().slice();
+        slice.limit(slice.position() + Math.toIntExact(length));
+        return RetainableByteBuffer.wrap(slice, this);
     }
 
     /**
@@ -434,7 +448,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public int skip(int length)
+        public long skip(long length)
         {
             return getWrapped().skip(length);
         }
