@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
@@ -173,6 +174,17 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * Consumes and returns a byte from this RetainableByteBuffer
+     *
+     * @return the byte
+     * @throws BufferUnderflowException if the buffer is empty.
+     */
+    default byte get() throws BufferUnderflowException
+    {
+        return getByteBuffer().get();
+    }
+
+    /**
      * Consumes and copies the bytes from this RetainableByteBuffer to the given byte array.
      *
      * @param bytes the byte array to copy the bytes into
@@ -286,7 +298,8 @@ public interface RetainableByteBuffer extends Retainable
      */
     default RetainableByteBuffer slice()
     {
-        retain();
+        if (canRetain())
+            retain();
         return RetainableByteBuffer.wrap(getByteBuffer().slice(), this);
     }
 
@@ -298,7 +311,8 @@ public interface RetainableByteBuffer extends Retainable
      */
     default RetainableByteBuffer slice(long length)
     {
-        retain();
+        if (canRetain())
+            retain();
         ByteBuffer slice = getByteBuffer().slice();
         slice.limit(slice.position() + Math.toIntExact(length));
         return RetainableByteBuffer.wrap(slice, this);
@@ -322,6 +336,28 @@ public interface RetainableByteBuffer extends Retainable
     default void writeTo(Content.Sink sink, boolean last, Callback callback)
     {
         sink.write(last, getByteBuffer(), callback);
+    }
+
+    /**
+     * Convert Buffer to a detail debug string of pointers and content
+     *
+     * @return A string showing the pointers and content of the buffer
+     */
+    default String toDetailString()
+    {
+        StringBuilder buf = new StringBuilder();
+
+        buf.append(getClass().getSimpleName());
+        buf.append("@");
+        buf.append(Integer.toHexString(System.identityHashCode(this)));
+        buf.append("[c=");
+        buf.append(capacity());
+        buf.append(",r=");
+        buf.append(remaining());
+        buf.append("]={");
+        appendDebugString(buf, this);
+        buf.append("}");
+        return buf.toString();
     }
 
     /**
@@ -469,6 +505,40 @@ public interface RetainableByteBuffer extends Retainable
         public void writeTo(Content.Sink sink, boolean last, Callback callback)
         {
             getWrapped().writeTo(sink, last, callback);
+        }
+    }
+
+    private static void appendDebugString(StringBuilder buf, RetainableByteBuffer buffer)
+    {
+        // Take a slice so we can adjust the limit
+        RetainableByteBuffer slice = buffer.slice();
+        try
+        {
+            buf.append("<<<");
+
+            int size = slice.remaining();
+
+            int skip = Math.max(0, size - 32);
+
+            int bytes = 0;
+            while (slice.remaining() > 0)
+            {
+                BufferUtil.appendDebugByte(buf, slice.get());
+                if (skip > 0 && ++bytes == 16)
+                {
+                    buf.append("...");
+                    slice.skip(skip);
+                }
+            }
+            buf.append(">>>");
+        }
+        catch (Throwable x)
+        {
+            buf.append("!!concurrent mod!!");
+        }
+        finally
+        {
+            slice.release();
         }
     }
 }
