@@ -347,8 +347,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            // in case of error, use Files.size() logic of 0L
-            return 0L;
+            return -1L;
         }
     }
 
