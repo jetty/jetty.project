@@ -898,6 +898,7 @@ public class Content
         /**
          * @return an immutable version of this Chunk
          */
+        @Deprecated(forRemoval = true, since = "12.0.9")
         default Chunk asReadOnly()
         {
             if (getByteBuffer().isReadOnly())
