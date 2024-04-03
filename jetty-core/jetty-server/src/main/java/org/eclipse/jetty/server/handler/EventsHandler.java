@@ -106,7 +106,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         try
         {
-            onRequestRead(wrapped, chunk);
+            onRequestRead(wrapped, chunk.asReadOnly());
         }
         catch (Throwable x)
         {
