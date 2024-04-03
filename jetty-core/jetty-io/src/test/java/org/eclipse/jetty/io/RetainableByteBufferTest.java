@@ -14,6 +14,8 @@
 package org.eclipse.jetty.io;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.AfterAll;
@@ -40,6 +43,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RetainableByteBufferTest
@@ -66,8 +70,6 @@ public class RetainableByteBufferTest
     {
         assertThat("Leaks: " + _pool.dumpLeaks(), _pool.getLeaks().size(), is(0));
     }
-
-    static final List<RetainableByteBuffer> IMMUTABLE_RBBS = new ArrayList<>();
 
     public static Stream<Arguments> buffers()
     {
@@ -162,6 +164,7 @@ public class RetainableByteBufferTest
         assertFalse(buffer.hasRemaining());
         assertThat(buffer.remaining(), is(0));
         assertThat(builder.toCompleteString(), is(TEST_EXPECTED));
+        assertThrows(BufferUnderflowException.class, buffer::get);
         buffer.release();
     }
 
@@ -265,6 +268,106 @@ public class RetainableByteBufferTest
             assertThat(BufferUtil.toString(slice.getByteBuffer()), equalTo(TEST_EXPECTED.substring(i)));
             slice.release();
         }
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testAppendToByteBuffer(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        ByteBuffer byteBuffer = BufferUtil.allocate(1024);
+        BufferUtil.append(byteBuffer, "<<<");
+        assertTrue(buffer.appendTo(byteBuffer));
+        assertTrue(buffer.isEmpty());
+        BufferUtil.append(byteBuffer, ">>>");
+        assertThat(BufferUtil.toString(byteBuffer), equalTo("<<<" + TEST_EXPECTED + ">>>"));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testAppendToByteBufferLimited(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        ByteBuffer byteBuffer = BufferUtil.allocate(8);
+        assertFalse(buffer.appendTo(byteBuffer));
+        assertFalse(buffer.isEmpty());
+        assertThat(BufferUtil.toString(byteBuffer), equalTo(TEST_EXPECTED.substring(0, 8)));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testAppendToRetainableByteBuffer(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        RetainableByteBuffer rbb = RetainableByteBuffer.wrap(BufferUtil.allocate(1024));
+        assertTrue(buffer.appendTo(rbb));
+        assertTrue(buffer.isEmpty());
+        assertThat(BufferUtil.toString(rbb.getByteBuffer()), equalTo(TEST_EXPECTED));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testAppendToRetainableByteBufferLimited(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        RetainableByteBuffer rbb = RetainableByteBuffer.wrap(BufferUtil.allocate(8));
+        assertFalse(buffer.appendTo(rbb));
+        assertFalse(buffer.isEmpty());
+        assertThat(BufferUtil.toString(rbb.getByteBuffer()), equalTo(TEST_EXPECTED.substring(0, 8)));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testPutTo(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        ByteBuffer byteBuffer = BufferUtil.allocate(1024);
+        int p = BufferUtil.flipToFill(byteBuffer);
+        byteBuffer.put("<<<".getBytes(StandardCharsets.UTF_8));
+        buffer.putTo(byteBuffer);
+        assertTrue(buffer.isEmpty());
+        byteBuffer.put(">>>".getBytes(StandardCharsets.UTF_8));
+        BufferUtil.flipToFlush(byteBuffer, p);
+        assertThat(BufferUtil.toString(byteBuffer), equalTo("<<<" + TEST_EXPECTED + ">>>"));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testPutToLimited(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        ByteBuffer byteBuffer = BufferUtil.allocate(11);
+        BufferUtil.flipToFill(byteBuffer);
+        byteBuffer.put("<<<".getBytes(StandardCharsets.UTF_8));
+        assertThrows(BufferOverflowException.class, () -> buffer.putTo(byteBuffer));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testWriteTo(Supplier<RetainableByteBuffer> supplier) throws Exception
+    {
+        RetainableByteBuffer buffer = supplier.get();
+
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        Content.Sink sink = Content.Sink.from(bout);
+        Callback.Completable callback = new Callback.Completable();
+        buffer.writeTo(sink, true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+        assertThat(bout.toString(StandardCharsets.UTF_8), is(TEST_EXPECTED));
+
         buffer.release();
     }
 
