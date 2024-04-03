@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
 import org.eclipse.jetty.util.BufferUtil;
@@ -897,7 +898,7 @@ public class ResourceService
         }
 
         // Perform ranged write
-        try (InputStream input = content.getResource().newInputStream())
+        try (InputStream input = IOResources.asInputStream(content.getResource()))
         {
             input.skipNBytes(start);
             IO.copy(input, out, contentLength);

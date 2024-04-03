@@ -426,12 +426,12 @@ public class CombinedResourceTest
         String config = String.format("%s,%s,%s", dir, foo, bar);
 
         // To use this, we need to split it (and optionally honor globs)
-        List<URI> uris = URIUtil.split(config);
+        List<Resource> resources = resourceFactory.split(config);
         // Now let's create a ResourceCollection from this list of URIs
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        Resource rc = resourceFactory.newResource(uris);
+        Resource rc = ResourceFactory.combine(resources);
         assertThat(getContent(rc, "test.txt"), is("Test"));
     }
 
@@ -452,12 +452,12 @@ public class CombinedResourceTest
         String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
 
         // To use this, we need to split it (and optionally honor globs)
-        List<URI> uris = URIUtil.split(config);
+        List<Resource> resources = resourceFactory.split(config);
         // Now let's create a ResourceCollection from this list of URIs
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        Resource rc = resourceFactory.newResource(uris);
+        Resource rc = ResourceFactory.combine(resources);
         assertThat(getContent(rc, "test.txt"), is("Test inside lib-foo.jar"));
         assertThat(getContent(rc, "testZed.txt"), is("TestZed inside lib-zed.jar"));
     }

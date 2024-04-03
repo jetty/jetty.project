@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.ClosedFileSystemException;
 import java.nio.file.FileSystem;
@@ -92,26 +91,6 @@ public class PathResourceTest
             try (InputStream inputStream = resource.newInputStream())
             {
                 assertThat("InputStream", inputStream, is(not(nullValue())));
-            }
-        }
-    }
-
-    @Test
-    public void testNonDefaultFileSystemGetReadableByteChannel() throws IOException
-    {
-        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            Resource jarFileResource = resourceFactory.newJarFileResource(exampleJar.toUri());
-            Path manifestPath = jarFileResource.getPath().resolve("/META-INF/MANIFEST.MF");
-            assertThat(manifestPath, is(not(nullValue())));
-
-            PathResource resource = (PathResource)resourceFactory.newResource(manifestPath);
-
-            try (ReadableByteChannel channel = resource.newReadableByteChannel())
-            {
-                assertThat("ReadableByteChannel", channel, is(not(nullValue())));
             }
         }
     }

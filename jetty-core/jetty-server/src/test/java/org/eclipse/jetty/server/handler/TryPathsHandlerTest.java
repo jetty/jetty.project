@@ -40,7 +40,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -104,7 +103,7 @@ public class TryPathsHandlerTest
             protected HttpContent.Factory newHttpContentFactory()
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
             }
         };
 
@@ -175,7 +174,7 @@ public class TryPathsHandlerTest
             protected HttpContent.Factory newHttpContentFactory()
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
             }
         };
         resourceHandler.setDirAllowed(false);
@@ -303,7 +302,7 @@ public class TryPathsHandlerTest
             protected HttpContent.Factory newHttpContentFactory()
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
             }
         };
         resourceHandler.setDirAllowed(false);
