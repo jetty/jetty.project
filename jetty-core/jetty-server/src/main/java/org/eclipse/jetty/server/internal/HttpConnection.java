@@ -623,22 +623,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public void onClose(Throwable cause)
     {
-        HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
-        if (stream != null)
-        {
-            // TODO 1) the stream may still have a retainable buffer that must be released that abort() isn't taking care of
-            // TODO 2) abrupt closing of the connector AND upgrade both call onClose()
-            //  how to differentiate them as the first one requires the stream's endpoint to be closed and the second wants it to stay open?
-            stream.abort(cause);
-
-            // TODO this may run concurrently with onFillable()
-            if (_retainableByteBuffer != null)
-            {
-                _retainableByteBuffer.release();
-                _retainableByteBuffer = null;
-            }
-        }
-
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
         //  Revisit whether we still need IteratingCallback.close().
