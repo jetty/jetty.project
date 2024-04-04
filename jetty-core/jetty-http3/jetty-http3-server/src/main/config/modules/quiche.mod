@@ -8,6 +8,9 @@ maven://org.mortbay.jetty.quiche/jetty-quiche-native/${jetty-quiche-native.versi
 [ini]
 jetty-quiche-native.version?=@jetty-quiche-native.version@
 
+[lib]
+lib/http3/jetty-quiche-native-${jetty-quiche-native.version}.jar
+
 [license]
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:

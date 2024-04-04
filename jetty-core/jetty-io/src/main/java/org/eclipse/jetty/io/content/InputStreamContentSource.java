@@ -41,6 +41,7 @@ public class InputStreamContentSource implements Content.Source
     private final InputStream inputStream;
     private final ByteBufferPool bufferPool;
     private int bufferSize = 4096;
+    private boolean useDirectByteBuffers;
     private Runnable demandCallback;
     private Content.Chunk errorChunk;
     private boolean closed;
@@ -66,6 +67,16 @@ public class InputStreamContentSource implements Content.Source
         this.bufferSize = bufferSize;
     }
 
+    public boolean isUseDirectByteBuffers()
+    {
+        return useDirectByteBuffers;
+    }
+
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    {
+        this.useDirectByteBuffers = useDirectByteBuffers;
+    }
+
     @Override
     public Content.Chunk read()
     {
@@ -77,7 +88,7 @@ public class InputStreamContentSource implements Content.Source
                 return Content.Chunk.EOF;
         }
 
-        RetainableByteBuffer streamBuffer = bufferPool.acquire(getBufferSize(), false);
+        RetainableByteBuffer streamBuffer = bufferPool.acquire(getBufferSize(), useDirectByteBuffers);
         try
         {
             ByteBuffer buffer = streamBuffer.getByteBuffer();

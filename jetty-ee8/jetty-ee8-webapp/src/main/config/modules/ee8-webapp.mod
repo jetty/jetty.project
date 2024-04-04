@@ -31,8 +31,8 @@ lib/jetty-ee8-webapp-${jetty.version}.jar
 ##
 ## The +=, operator appends to a CSV list with a comma as needed.
 ##
-#jetty.webapp.addSystemClasses+=,org.example.
-#jetty.webapp.addServerClasses+=,org.example.
+#jetty.webapp.addProtectedClasses+=,org.example.
+#jetty.webapp.addHiddenClasses+=,org.example.
 
 [ini]
 contextHandlerClass=org.eclipse.jetty.ee8.webapp.WebAppContext

@@ -2,7 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Call class="org.eclipse.jetty.ee.WebappClassLoading" name="addProtectedClasses">
+  <Call class="org.eclipse.jetty.ee.WebAppClassLoading" name="addProtectedClasses">
     <Arg><Ref refid="Server"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
@@ -11,7 +11,7 @@
     </Arg>
   </Call>
 
-  <Call class="org.eclipse.jetty.ee.WebappClassLoading" name="addHiddenClasses">
+  <Call class="org.eclipse.jetty.ee.WebAppClassLoading" name="addHiddenClasses">
     <Arg><Ref refid="Server"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
