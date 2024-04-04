@@ -25,6 +25,11 @@ public class ClassMatcher extends org.eclipse.jetty.util.ClassMatcher
         super();
     }
 
+    public ClassMatcher(ClassMatcher patterns)
+    {
+        super(patterns);
+    }
+
     public ClassMatcher(org.eclipse.jetty.util.ClassMatcher patterns)
     {
         super(patterns);

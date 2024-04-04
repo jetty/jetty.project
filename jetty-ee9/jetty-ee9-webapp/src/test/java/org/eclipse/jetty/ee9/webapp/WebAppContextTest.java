@@ -34,6 +34,7 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -117,7 +118,7 @@ public class WebAppContextTest
      * @param name the name of the war
      * @return the Path of the generated war
      *
-     * @throws Exception
+     * @throws Exception if the war cannot be created
      */
     private Path createWar(Path tempDir, String name) throws Exception
     {
@@ -873,7 +874,7 @@ public class WebAppContextTest
         assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
         assertThat("Should have pattern from defaults", serverClasses, hasItem("org.eclipse.jetty."));
         assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
-        for (String defaultServerClass: WebAppContext.__dftServerClasses)
+        for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
             assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
     }
 
@@ -902,7 +903,7 @@ public class WebAppContextTest
         assertThat("Should have pattern from defaults", systemClasses, hasItem("javax."));
         assertThat("Should have pattern from defaults", systemClasses, hasItem("jakarta."));
         assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
-        for (String defaultSystemClass : WebAppContext.__dftSystemClasses)
+        for (String defaultSystemClass : WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
         {
             assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
         }
