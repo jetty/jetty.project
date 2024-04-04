@@ -484,11 +484,11 @@ public class ClassMatcher extends AbstractSet<String>
         }
     }
 
-    private final Map<String, Entry> _entries;
-    private final IncludeExcludeSet<Entry, String> _patterns;
-    private final IncludeExcludeSet<Entry, URI> _locations;
+    protected final Map<String, Entry> _entries;
+    protected final IncludeExcludeSet<Entry, String> _patterns;
+    protected final IncludeExcludeSet<Entry, URI> _locations;
 
-    private ClassMatcher(Map<String, Entry> entries, IncludeExcludeSet<Entry, String> patterns, IncludeExcludeSet<Entry, URI> locations)
+    protected ClassMatcher(Map<String, Entry> entries, IncludeExcludeSet<Entry, String> patterns, IncludeExcludeSet<Entry, URI> locations)
     {
         _entries = entries;
         _patterns = patterns == null ? new IncludeExcludeSet<>(ByPackageOrName.class) : patterns;
