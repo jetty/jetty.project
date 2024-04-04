@@ -60,12 +60,17 @@ public class ContentDocs
                     boolean fatal = chunk.isLast();
                     if (fatal)
                     {
+                        // A fatal failure, such as a network failure.
                         handleFatalFailure(chunk.getFailure());
+                        // No recovery is possible, stop reading
+                        // by returning without demanding.
                         return;
                     }
                     else
                     {
+                        // A transient failure such as a read timeout.
                         handleTransientFailure(chunk.getFailure());
+                        // Recovery is possible, try to read again.
                         continue;
                     }
                 }

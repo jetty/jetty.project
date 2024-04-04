@@ -30,6 +30,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -88,7 +89,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         initServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = sslContextFactory.getKeyStoreResource().newInputStream())
+        try (InputStream stream = IOResources.asInputStream(sslContextFactory.getKeyStoreResource()))
         {
             keystore.load(stream, "storepwd".toCharArray());
         }

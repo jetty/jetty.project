@@ -733,6 +733,9 @@ public class ClassMatcher extends AbstractSet<String>
 
     public boolean match(String name, URL url)
     {
+        if (url == null)
+            return false;
+
         // Strip class suffix for name matching
         if (name.endsWith(".class"))
             name = name.substring(0, name.length() - 6);

@@ -292,10 +292,7 @@ public class PathResource extends Resource
         URI uri = getURI();
         URI resolvedUri = URIUtil.addPath(uri, subUriPath);
         Path path = Paths.get(resolvedUri);
-        if (Files.exists(path))
-            return newResource(path, resolvedUri);
-
-        return null;
+        return newResource(path, resolvedUri);
     }
 
     /**
@@ -350,8 +347,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            // in case of error, use Files.size() logic of 0L
-            return 0L;
+            return -1L;
         }
     }
 

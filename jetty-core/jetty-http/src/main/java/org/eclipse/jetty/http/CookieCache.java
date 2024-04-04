@@ -26,11 +26,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Cookie parser
- * <p>Optimized stateful cookie parser.
- * If the added fields are identical to those last added (as strings), then the
- * cookies are not re-parsed.
- * 
+ * @deprecated Use {@code org.eclipse.jetty.server.CookieCache}
  */
+@Deprecated (forRemoval = true)
 public class CookieCache implements CookieParser.Handler, ComplianceViolation.Listener
 {
     protected static final Logger LOG = LoggerFactory.getLogger(CookieCache.class);
@@ -39,14 +37,22 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
     private final CookieParser _parser;
     private List<ComplianceViolation.Event> _violations;
 
+    @Deprecated
     public CookieCache()
     {
         this(CookieCompliance.RFC6265);
     }
 
+    @Deprecated
     public CookieCache(CookieCompliance compliance)
     {
         _parser = CookieParser.newParser(this, compliance, this);
+    }
+
+    @Deprecated(forRemoval = true)
+    public CookieCache(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    {
+        this(compliance);
     }
 
     @Override

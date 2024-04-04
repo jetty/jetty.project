@@ -277,6 +277,9 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=idi
 
 Note how the reads happen in a loop, consuming the `Content.Source` as soon as it has content available to be read, and therefore no backpressure is applied to the reads.
 
+IMPORTANT: Calling `Content.Chunk.release()` must be done only after the bytes in the `ByteBuffer` returned by `Content.Chunk.getByteBuffer()` have been consumed.
+When the `Content.Chunk` is released, the implementation may reuse the `ByteBuffer` and overwrite the bytes with different bytes; if the application looks at the `ByteBuffer` _after_ having released the `Content.Chunk` is may see other, unrelated, bytes.
+
 An alternative way to read from a `Content.Source`, to use when the chunk is consumed asynchronously, and you don't want to read again until the `Content.Chunk` is consumed, is the following:
 
 [source,java,indent=0]

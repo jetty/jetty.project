@@ -84,8 +84,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     public void deconfigure(WebAppContext context) throws Exception
     {
         //if it wasn't explicitly configured by the user, then unset it
-        Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
-        if (tmpdirConfigured != null && !tmpdirConfigured)
+        if (!(context.getAttribute(TEMPDIR_CONFIGURED) instanceof Boolean tmpdirConfigured && tmpdirConfigured))
             context.setTempDirectory(null);
 
         //reset the base resource back to what it was before we did any unpacking of resources
@@ -221,11 +220,11 @@ public class WebInfConfiguration extends AbstractConfiguration
             Resource originalWarResource = webApp;
 
             // Is the WAR usable directly?
-            if (Resources.isReadableFile(webApp) && FileID.isJavaArchive(webApp.getURI()) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
+            if (Resources.isReadableFile(webApp) && FileID.isArchive(webApp.getURI()) && !webApp.getURI().getScheme().equalsIgnoreCase("jar"))
             {
                 // Turned this into a jar URL.
                 Resource jarWebApp = context.getResourceFactory().newJarFileResource(webApp.getURI());
-                if (Resources.isReadableFile(jarWebApp)) // but only if it is readable
+                if (Resources.isDirectory(jarWebApp))
                     webApp = jarWebApp;
             }
 
@@ -234,7 +233,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 (context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) ||
                     (context.isExtractWAR() && webApp.getPath() == null) ||
-                    !originalWarResource.isDirectory())
+                    !webApp.isDirectory())
             )
             {
                 // Look for sibling directory.

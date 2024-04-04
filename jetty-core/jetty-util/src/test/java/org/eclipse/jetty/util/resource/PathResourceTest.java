@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.ClosedFileSystemException;
 import java.nio.file.FileSystem;
@@ -92,26 +91,6 @@ public class PathResourceTest
             try (InputStream inputStream = resource.newInputStream())
             {
                 assertThat("InputStream", inputStream, is(not(nullValue())));
-            }
-        }
-    }
-
-    @Test
-    public void testNonDefaultFileSystemGetReadableByteChannel() throws IOException
-    {
-        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-
-        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
-        {
-            Resource jarFileResource = resourceFactory.newJarFileResource(exampleJar.toUri());
-            Path manifestPath = jarFileResource.getPath().resolve("/META-INF/MANIFEST.MF");
-            assertThat(manifestPath, is(not(nullValue())));
-
-            PathResource resource = (PathResource)resourceFactory.newResource(manifestPath);
-
-            try (ReadableByteChannel channel = resource.newReadableByteChannel())
-            {
-                assertThat("ReadableByteChannel", channel, is(not(nullValue())));
             }
         }
     }
@@ -406,7 +385,7 @@ public class PathResourceTest
 
             // Resolve to name, but different case
             testText = archiveResource.resolve("/TEST.TXT");
-            assertNull(testText);
+            assertFalse(testText.exists());
 
             // Resolve using path navigation
             testText = archiveResource.resolve("/foo/../test.txt");
@@ -464,9 +443,9 @@ public class PathResourceTest
 
             // Resolve file to name, but different case
             testText = archiveResource.resolve("/dir/TEST.TXT");
-            assertNull(testText);
+            assertFalse(testText.exists());
             testText = archiveResource.resolve("/DIR/test.txt");
-            assertNull(testText);
+            assertFalse(testText.exists());
 
             // Resolve file using path navigation
             testText = archiveResource.resolve("/foo/../dir/test.txt");
@@ -480,7 +459,7 @@ public class PathResourceTest
 
             // Resolve file using extension-less directory
             testText = archiveResource.resolve("/dir./test.txt");
-            assertNull(testText);
+            assertFalse(testText.exists());
 
             // Resolve directory to name, no slash
             Resource dirResource = archiveResource.resolve("/dir");

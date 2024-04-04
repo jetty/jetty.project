@@ -30,6 +30,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -56,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class) 
 public class IOTest
@@ -580,7 +582,18 @@ public class IOTest
         FS.touch(realPath);
 
         Path linkPath = dir.resolve("link");
-        Files.createSymbolicLink(linkPath, realPath);
+        boolean symlinkSupported;
+        try
+        {
+            Files.createSymbolicLink(linkPath, realPath);
+            symlinkSupported = true;
+        }
+        catch (UnsupportedOperationException | FileSystemException e)
+        {
+            symlinkSupported = false;
+        }
+
+        assumeTrue(symlinkSupported, "Symlink not supported");
         Path targPath = linkPath.toRealPath();
 
         System.err.printf("realPath = %s%n", realPath);
@@ -604,7 +617,18 @@ public class IOTest
         Files.createDirectories(realDirPath);
 
         Path linkDirPath = dir.resolve("link");
-        Files.createSymbolicLink(linkDirPath, realDirPath);
+        boolean symlinkSupported;
+        try
+        {
+            Files.createSymbolicLink(linkDirPath, realDirPath);
+            symlinkSupported = true;
+        }
+        catch (UnsupportedOperationException | FileSystemException e)
+        {
+            symlinkSupported = false;
+        }
+
+        assumeTrue(symlinkSupported, "Symlink not supported");
 
         Path realPath = realDirPath.resolve("file");
         FS.touch(realPath);

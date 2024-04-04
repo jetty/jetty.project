@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>jetty-websocket</artifactId>
-    <version>12.0.8-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-websocket-core-tests</artifactId>
   <name>Core :: Websocket :: Tests</name>
@@ -44,6 +44,11 @@
           <artifactId>hamcrest-core</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>

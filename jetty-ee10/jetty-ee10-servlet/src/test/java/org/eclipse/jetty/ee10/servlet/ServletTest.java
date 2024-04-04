@@ -18,8 +18,10 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ServletTest
@@ -192,5 +195,42 @@ public class ServletTest
 
             assertFalse(endPoint.isOpen());
         }
+    }
+
+    @Test
+    public void testHttpServletMapping() throws Exception
+    {
+        _context.addServlet(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                HttpServletMapping mapping = req.getHttpServletMapping();
+                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
+                assertThat(mapping.getMatchValue(), is("get"));
+                assertThat(mapping.getPattern(), is("/get"));
+
+                mapping = ServletPathMapping.from(mapping);
+                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
+                assertThat(mapping.getMatchValue(), is("get"));
+                assertThat(mapping.getPattern(), is("/get"));
+
+                mapping = ServletPathMapping.from(mapping.toString());
+                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
+                assertThat(mapping.getMatchValue(), is("get"));
+                assertThat(mapping.getPattern(), is("/get"));
+
+                resp.getWriter().println("Hello!");
+            }
+        }, "/get");
+
+        _server.start();
+
+        String response = _connector.getResponse("""
+            GET /ctx/get HTTP/1.0
+            
+            """);
+        assertThat(response, containsString(" 200 OK"));
+        assertThat(response, containsString("Hello!"));
     }
 }

@@ -16,12 +16,14 @@ package org.eclipse.jetty.deploy.providers;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -34,6 +36,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Similar in scope to {@link ContextProviderStartupTest}, except is concerned with the modification of existing
@@ -55,6 +61,11 @@ public class ContextProviderRuntimeUpdatesTest
         Path resourceBase = jetty.getJettyBasePath().resolve("resourceBase");
         FS.ensureDirExists(resourceBase);
         jetty.setProperty("test.bar.resourceBase", resourceBase.toUri().toASCIIString());
+
+        Path tmpBase = jetty.getJettyBasePath().resolve("tmp");
+        FS.ensureDirExists(tmpBase);
+        jetty.setProperty("test.tmpBase", tmpBase.toFile().getAbsolutePath());
+        System.err.println(tmpBase.toFile().getAbsolutePath());
 
         Files.writeString(resourceBase.resolve("text.txt"), "This is the resourceBase text");
 
@@ -108,6 +119,42 @@ public class ContextProviderRuntimeUpdatesTest
     {
         int scan = _scans.get() + _providerCount;
         await().atMost(5, TimeUnit.SECONDS).until(() -> _scans.get() > scan);
+    }
+
+    /**
+     * Test that if a war file has a context xml sibling, it will only be redeployed when the
+     * context xml changes, not the war.
+     */
+    @Test
+    public void testSelectiveDeploy(WorkDir workDir) throws Exception
+    {
+        Path testdir = workDir.getEmptyPathDir();
+        createJettyBase(testdir);
+        startJetty();
+
+        Path webappsDir = jetty.getJettyBasePath().resolve("webapps");
+        Files.createFile(webappsDir.resolve("simple.war"));
+        jetty.copyWebapp("simple.xml", "simple.xml");
+        waitForDirectoryScan();
+        jetty.assertContextHandlerExists("/simple");
+        ContextHandler contextHandler = jetty.getContextHandler("/simple");
+        assertNotNull(contextHandler);
+        assertEquals(jetty.getJettyBasePath().resolve("tmp").toFile().getAbsolutePath(), contextHandler.getTempDirectory().getAbsolutePath());
+
+        //touch the context xml and check the context handler was redeployed
+        jetty.copyWebapp("simple.xml", "simple.xml");
+        waitForDirectoryScan();
+        ContextHandler contextHandler2 = jetty.getContextHandler("/simple");
+        assertNotNull(contextHandler2);
+        assertNotSame(contextHandler, contextHandler2);
+
+        //touch the war file and check the context handler was NOT redeployed
+        Thread.sleep(1000L); //ensure at least a millisecond has passed
+        Files.setLastModifiedTime(webappsDir.resolve("simple.war"), FileTime.fromMillis(System.currentTimeMillis()));
+        waitForDirectoryScan();
+        ContextHandler contextHandler3 = jetty.getContextHandler("/simple");
+        assertNotNull(contextHandler3);
+        assertSame(contextHandler2, contextHandler3);
     }
 
     /**
