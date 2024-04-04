@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
+import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -152,7 +153,7 @@ public class QuickStartGenerator
             //ensure handler structure enabled
             ServerSupport.configureHandlers(server, null, null);
 
-            ServerSupport.configureDefaultConfigurationClasses(server);
+            Configurations.setServerDefault(server);
             
             //if our server has a thread pool associated we can do annotation scanning multithreaded,
             //otherwise scanning will be single threaded

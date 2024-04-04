@@ -19,8 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.ee9.webapp.Configurations;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.maven.MavenServerConnector;
+import org.eclipse.jetty.maven.PluginLog;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
@@ -37,12 +37,6 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class ServerSupport
 {
-
-    public static void configureDefaultConfigurationClasses(Server server)
-    {
-        Configurations.setServerDefault(server);
-    }
-
     /**
      * Set up the handler structure to receive a webapp.
      * Also put in a DefaultHandler so we get a nicer page
@@ -144,7 +138,7 @@ public class ServerSupport
      * @param webapp the webapp to add
      * @throws Exception if there is an unspecified problem
      */
-    public static void addWebApplication(Server server, WebAppContext webapp) throws Exception
+    public static void addWebApplication(Server server, ContextHandler webapp) throws Exception
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
