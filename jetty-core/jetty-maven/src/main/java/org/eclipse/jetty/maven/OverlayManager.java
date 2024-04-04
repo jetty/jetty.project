@@ -104,7 +104,7 @@ public class OverlayManager
             if (a != null)
             {   
                 matchedWarArtifacts.add(a);
-                Resource resource = contextHandler.getResourceFactory().newJarFileResource(a.getFile().toPath().toUri());
+                Resource resource = ResourceFactory.of(contextHandler).newJarFileResource(a.getFile().toPath().toUri());
                 SelectiveJarResource r = new SelectiveJarResource(resource);
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
@@ -118,7 +118,7 @@ public class OverlayManager
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Resource resource = contextHandler.getResourceFactory().newJarFileResource(a.getFile().toPath().toUri());
+                Resource resource = ResourceFactory.of(contextHandler).newJarFileResource(a.getFile().toPath().toUri());
                 Overlay overlay = new Overlay(null, resource);
                 overlays.add(overlay);
             }
@@ -161,6 +161,6 @@ public class OverlayManager
         overlay.unpackTo(unpackDir);
         
         //use top level of unpacked content
-        return contextHandler.getResourceFactory().newResource(unpackDir.getCanonicalPath());
+        return ResourceFactory.of(contextHandler).newResource(unpackDir.getCanonicalPath());
     }
 }
