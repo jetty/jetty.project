@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.ee10.servlet.ListenerHolder;
+import org.eclipse.jetty.maven.MavenServerConnector;
+import org.eclipse.jetty.maven.ServerSupport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;

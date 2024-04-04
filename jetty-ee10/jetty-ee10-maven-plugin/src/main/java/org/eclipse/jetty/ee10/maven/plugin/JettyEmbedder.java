@@ -24,6 +24,9 @@ import java.util.Properties;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.webapp.Configurations;
+import org.eclipse.jetty.maven.MavenServerConnector;
+import org.eclipse.jetty.maven.ServerSupport;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -269,7 +272,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         ServerSupport.configureHandlers(server, contextHandlers, requestLog);
 
         //Set up list of default Configurations to apply to a webapp
-        ServerSupport.configureDefaultConfigurationClasses(server);
+        Configurations.setServerDefault(server);
 
         // set up security realms
         ServerSupport.configureLoginServices(server, loginServices);
