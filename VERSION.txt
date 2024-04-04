@@ -1,4 +1,31 @@
-jetty-12.0.8-SNAPSHOT
+jetty-12.0.8 - 29 March 2024
+ + 5857 Deprecate AbstractConnectionPool "callback" methods
+ + 7647 Document org.eclipse.jetty.client.Socks4Proxy "secure" parameter
+ + 10387 Fix or suppress javadoc warnings
+ + 10805 Jetty response with an invalid HTTP2 packet if the client set the
+   hpack table size as 0
+ + 11263 Using `jetty.version` override from jetty-start does not use version
+   for various environment libs.
+ + 11411 Allow non existant resources to be obtained from Resource.resolve()
+ + 11482 The StatisticsHandler doesn't count 2xx codes
+ + 11495 Add UriCompliance rules that follow the HTTP / URI / Servlet specs for
+   illegal & suspicious characters
+ + 11510 Occasional NPE in ClassMatcher.match() from
+   WebAppClassLoader.loadClass() usage
+ + 11513 Perf regression in the HTTP parser caused by long look-ahead
+ + 11527 Reduce ByteBuffer churning in HttpOutput
+ + 11539 `Resource.copyTo(Resource)` has different behavior from Jetty 9/10/11
+ + 11548 java.nio.file.ClosedFileSystemException on hot redeploy
+ + 11553 Restore startWebapp() to WebAppContext
+ + 11558 New tmp directory should be created on every `WebAppContext` start, if
+   not explicitly configured
+ + 11563 HttpClient InputStream.read() hangs intermittently before end of
+   response
+ + 11567 DefaultServlet should resolve its resourceBase relative to the
+   ServletContextHandler resourceBase
+ + 11572 Deploy behaves differently when both WAR and XML exist in
+   ${jetty.base}/webapps/ and you update the XML vs updating the WAR.
+ + 11574 shibboleth idp webapp under jetty 12.0.7
 
 jetty-12.0.7 - 29 February 2024
  + 6140 Report total number of keys in SelectorManager
@@ -29,7 +56,7 @@ jetty-12.0.7 - 29 February 2024
  + 11410 PathMappingsHandler does not start ResourceHandler properly
  + 11414 When producing URI/URL strings follow spec and produce lowercase
    schemes and drop default ports
- + 11424 What is the `jetty.deploy.scanInterval` default?  module, ini, code,
+ + 11424 What is the `jetty.deploy.scanInterval` default?  module, ini, code
    and documentation do not agree.
  + 11432 Review number of acceptor threads
  + 11441 Quote escaping in HTML file
