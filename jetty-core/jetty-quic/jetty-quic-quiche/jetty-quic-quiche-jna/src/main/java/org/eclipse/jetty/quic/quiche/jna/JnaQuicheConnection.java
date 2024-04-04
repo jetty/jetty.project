@@ -631,9 +631,9 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            LibQuiche.quiche_stats stats = new LibQuiche.quiche_stats();
-            LibQuiche.INSTANCE.quiche_conn_stats(quicheConn, stats);
-            return stats.peer_initial_max_streams_bidi.intValue();
+            LibQuiche.quiche_transport_params params = new LibQuiche.quiche_transport_params();
+            LibQuiche.INSTANCE.quiche_conn_peer_transport_params(quicheConn, params);
+            return params.peer_initial_max_streams_bidi.intValue();
         }
     }
 
