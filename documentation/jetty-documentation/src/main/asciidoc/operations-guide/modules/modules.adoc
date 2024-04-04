@@ -128,7 +128,7 @@ Appends the value to the existing value.
 This is useful to append a value to properties that accept a comma separated list of values, for example:
 +
 ----
-jetty.webapp.addServerClasses+=,com.acme
+jetty.webapp.addProtectedClasses+=,com.acme
 ----
 +
 // TODO: check what happens if the property is empty and +=,value is done: is the comma stripped? If so add a sentence about this.
