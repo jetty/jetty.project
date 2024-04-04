@@ -13,6 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.ee10.distribution</bundle-symbolic-name>
+    <junit.jupiter.execution.parallel.config.fixed.parallelism>1</junit.jupiter.execution.parallel.config.fixed.parallelism>
   </properties>
 
   <dependencies>
