@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.8-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-core</artifactId>
   <packaging>pom</packaging>
@@ -82,6 +82,67 @@
                   <formats>
                     <format>html</format>
                   </formats>
+                  <onlyProjectDependencies>true</onlyProjectDependencies>
+                  <onlyUpgradable>true</onlyUpgradable>
+                  <ruleSet>
+                    <rules>
+                      <rule>
+                        <!-- ignore maven alpha/beta releases -->
+                        <groupId>org.apache.maven</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-(alpha|beta).?[0-9]+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore jetty core level version changes -->
+                        <groupId>org.eclipse.jetty</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore jetty nested level version changes -->
+                        <groupId>org.eclipse.jetty.*</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                    </rules>
+                  </ruleSet>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        $ mvn -Pupdate-dependencies-core validate
+        -->
+      <id>update-dependencies-core</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>core-update</id>
+                <goals>
+                  <goal>update-properties</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
                   <onlyProjectDependencies>true</onlyProjectDependencies>
                   <onlyUpgradable>true</onlyUpgradable>
                   <ruleSet>
