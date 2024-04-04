@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.TopologicalSort;
 
 /**
