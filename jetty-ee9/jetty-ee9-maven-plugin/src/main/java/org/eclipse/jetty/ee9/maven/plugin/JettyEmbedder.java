@@ -26,6 +26,7 @@ import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.maven.MavenServerConnector;
+import org.eclipse.jetty.maven.ServerSupport;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;

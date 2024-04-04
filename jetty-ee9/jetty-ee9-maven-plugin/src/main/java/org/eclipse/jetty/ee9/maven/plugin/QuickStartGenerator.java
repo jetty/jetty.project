@@ -19,6 +19,7 @@ import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.ee9.webapp.Configurations;
+import org.eclipse.jetty.maven.ServerSupport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -161,7 +162,7 @@ public class QuickStartGenerator
                 tpool = server.getBean(QueuedThreadPool.class);
 
             //add webapp to our fake server instance
-            ServerSupport.addWebApplication(server, webApp);
+            ServerSupport.addWebApplication(server, webApp.getCoreContextHandler());
 
             //leave everything unpacked for the forked process to use
             webApp.setPersistTempDirectory(true);
