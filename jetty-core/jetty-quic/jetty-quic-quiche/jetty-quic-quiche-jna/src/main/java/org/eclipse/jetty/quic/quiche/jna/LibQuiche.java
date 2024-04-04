@@ -157,43 +157,43 @@ public interface LibQuiche extends Library
     class quiche_transport_params extends Structure
     {
         // The maximum idle timeout.
-        uint64_t peer_max_idle_timeout;
+        public uint64_t peer_max_idle_timeout;
 
         // The maximum UDP payload size.
-        uint64_t peer_max_udp_payload_size;
+        public uint64_t peer_max_udp_payload_size;
 
         // The initial flow control maximum data for the connection.
-        uint64_t peer_initial_max_data;
+        public uint64_t peer_initial_max_data;
 
         // The initial flow control maximum data for local bidirectional streams.
-        uint64_t peer_initial_max_stream_data_bidi_local;
+        public uint64_t peer_initial_max_stream_data_bidi_local;
 
         // The initial flow control maximum data for remote bidirectional streams.
-        uint64_t peer_initial_max_stream_data_bidi_remote;
+        public uint64_t peer_initial_max_stream_data_bidi_remote;
 
         // The initial flow control maximum data for unidirectional streams.
-        uint64_t peer_initial_max_stream_data_uni;
+        public uint64_t peer_initial_max_stream_data_uni;
 
         // The initial maximum bidirectional streams.
-        uint64_t peer_initial_max_streams_bidi;
+        public uint64_t peer_initial_max_streams_bidi;
 
         // The initial maximum unidirectional streams.
-        uint64_t peer_initial_max_streams_uni;
+        public uint64_t peer_initial_max_streams_uni;
 
         // The ACK delay exponent.
-        uint64_t peer_ack_delay_exponent;
+        public uint64_t peer_ack_delay_exponent;
 
         // The max ACK delay.
-        uint64_t peer_max_ack_delay;
+        public uint64_t peer_max_ack_delay;
 
         // Whether active migration is disabled.
-        boolean peer_disable_active_migration;
+        public boolean peer_disable_active_migration;
 
         // The active connection ID limit.
-        uint64_t peer_active_conn_id_limit;
+        public uint64_t peer_active_conn_id_limit;
 
         // DATAGRAM frame extension parameter, if any.
-        ssize_t peer_max_datagram_frame_size;
+        public ssize_t peer_max_datagram_frame_size;
     }
 
     @Structure.FieldOrder({
@@ -203,43 +203,43 @@ public interface LibQuiche extends Library
     class quiche_stats extends Structure
     {
         // The number of QUIC packets received on this connection.
-        size_t recv;
+        public size_t recv;
 
         // The number of QUIC packets sent on this connection.
-        size_t sent;
+        public size_t sent;
 
         // The number of QUIC packets that were lost.
-        size_t lost;
+        public size_t lost;
 
         // The number of sent QUIC packets with retransmitted data.
-        size_t retrans;
+        public size_t retrans;
 
         // The number of sent bytes.
-        uint64_t sent_bytes;
+        public uint64_t sent_bytes;
 
         // The number of received bytes.
-        uint64_t recv_bytes;
+        public uint64_t recv_bytes;
 
         // The number of bytes lost.
-        uint64_t lost_bytes;
+        public uint64_t lost_bytes;
 
         // The number of stream bytes retransmitted.
-        uint64_t stream_retrans_bytes;
+        public uint64_t stream_retrans_bytes;
 
         // The number of known paths for the connection.
-        size_t paths_count;
+        public size_t paths_count;
 
         // The number of streams reset by local.
-        uint64_t reset_stream_count_local;
+        public uint64_t reset_stream_count_local;
 
         // The number of streams stopped by local.
-        uint64_t stopped_stream_count_local;
+        public uint64_t stopped_stream_count_local;
 
         // The number of streams reset by remote.
-        uint64_t reset_stream_count_remote;
+        public uint64_t reset_stream_count_remote;
 
         // The number of streams stopped by remote.
-        uint64_t stopped_stream_count_remote;
+        public uint64_t stopped_stream_count_remote;
     }
 
     @Structure.FieldOrder({
