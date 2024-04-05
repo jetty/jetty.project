@@ -208,6 +208,12 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
     
     protected abstract void redeployWebApp() throws Exception;
 
+    public void redeployWebApp(Properties webaAppProperties) throws Exception
+    {
+         setWebAppProperties(webaAppProperties);
+         redeployWebApp();
+    }
+
     public abstract void stopWebApp() throws Exception;
     
     public void join() throws InterruptedException

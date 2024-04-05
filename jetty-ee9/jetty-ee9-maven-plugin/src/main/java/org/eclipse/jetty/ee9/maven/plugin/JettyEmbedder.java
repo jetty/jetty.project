@@ -48,12 +48,6 @@ public class JettyEmbedder extends AbstractJettyEmbedder
         webApp = app;
     }
 
-    public void redeployWebApp(Properties webaAppProperties) throws Exception
-    {
-         setWebAppProperties(webaAppProperties);
-         redeployWebApp();
-    }
-
     public void redeployWebApp() throws Exception
     {
         stopWebApp();
