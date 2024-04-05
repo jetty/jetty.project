@@ -129,19 +129,8 @@ public class JettyForkedChild extends ContainerLifeCycle
                             try
                             {
                                 scanner.stop();
-                                if (!Objects.isNull(jetty.getWebApp()))
-                                {
-                                    //stop the webapp
-                                    jetty.getWebApp().stop();
-                                    //reload the props
-                                    jetty.setWebAppProperties(loadWebAppProps());
-                                    jetty.setWebApp(jetty.getWebApp());
-                                    //restart the webapp
-                                    jetty.redeployWebApp();
-
-                                    //restart the scanner
-                                    scanner.start();
-                                }
+                                jetty.redeployWebApp(loadWebAppProps());
+                                scanner.start();
                             }
                             catch (Exception e)
                             {

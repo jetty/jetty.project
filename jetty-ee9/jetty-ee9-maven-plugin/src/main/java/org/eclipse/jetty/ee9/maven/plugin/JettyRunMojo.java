@@ -357,7 +357,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                     }
                 }
 
-                embedder.getWebApp().stop();
+                embedder.stopWebApp();
                 configureWebApp();
                 embedder.redeployWebApp();
                 if (scanner != null)

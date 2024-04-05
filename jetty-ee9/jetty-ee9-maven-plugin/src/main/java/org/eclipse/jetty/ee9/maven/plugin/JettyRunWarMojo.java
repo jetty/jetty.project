@@ -236,7 +236,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                     warArtifacts = null;
                     configureScanner();
                 }
-                embedder.getWebApp().stop();
+                embedder.stopWebApp();
                 configureWebApp();
                 embedder.redeployWebApp();
                 scanner.start();
