@@ -121,7 +121,7 @@ public class TestJettyEmbedder
             assertTrue(contexts.contains(webApp));
 
             //stop the webapp and check durable listener retained
-            jetty.getWebApp().stop();
+            jetty.stopWebApp();
             boolean someListener = false;
             for (ListenerHolder h : webApp.getServletHandler().getListeners())
             {

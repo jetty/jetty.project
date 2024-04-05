@@ -13,34 +13,7 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-
-import org.eclipse.jetty.maven.AbstractForker;
 import org.eclipse.jetty.maven.AbstractHomeForker;
-import org.eclipse.jetty.maven.PluginLog;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
  * JettyHomeForker

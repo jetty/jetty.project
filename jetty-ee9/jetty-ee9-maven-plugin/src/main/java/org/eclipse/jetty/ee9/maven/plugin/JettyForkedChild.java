@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
-
 import org.eclipse.jetty.maven.AbstractForkedChild;
 import org.eclipse.jetty.maven.AbstractJettyEmbedder;
-import org.eclipse.jetty.util.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

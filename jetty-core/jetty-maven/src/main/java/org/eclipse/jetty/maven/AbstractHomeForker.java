@@ -213,7 +213,7 @@ public abstract class AbstractHomeForker extends AbstractForker
 
         if (libExtJarFiles != null && !libExtJarFiles.isEmpty() && tmp.indexOf("ext") < 0)
             tmp.append(",ext");
-        tmp.append(",ee9-maven");
+        tmp.append("," + environment + "-maven");
         cmd.add(tmp.toString());
  
         //put any other jetty options onto the command line
@@ -341,7 +341,7 @@ public abstract class AbstractHomeForker extends AbstractForker
         etcPath = Files.createDirectories(targetBasePath.resolve("etc"));
         libPath = Files.createDirectories(targetBasePath.resolve("lib"));
         webappPath = Files.createDirectories(targetBasePath.resolve("webapps"));
-        mavenLibPath = Files.createDirectories(libPath.resolve("maven-ee9"));
+        mavenLibPath = Files.createDirectories(libPath.resolve("maven-" + environment));
 
         //copy in the jetty-maven-plugin jar
         URI thisJar = TypeUtil.getLocationOfClass(this.getClass());
