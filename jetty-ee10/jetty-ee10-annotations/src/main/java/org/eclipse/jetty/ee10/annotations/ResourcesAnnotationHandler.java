@@ -35,7 +35,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
     @Override
     public void doHandle(Class<?> clazz)
     {
-        Resources resources = (Resources)clazz.getAnnotation(Resources.class);
+        Resources resources = clazz.getAnnotation(Resources.class);
         if (resources != null)
         {
             Resource[] resArray = resources.value();
@@ -45,10 +45,10 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
                 return;
             }
 
-            for (int j = 0; j < resArray.length; j++)
+            for (Resource resource : resArray)
             {
-                String name = resArray[j].name();
-                String mappedName = resArray[j].mappedName();
+                String name = resource.name();
+                String mappedName = resource.mappedName();
 
                 if (name == null || name.trim().isEmpty())
                     throw new IllegalStateException("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
@@ -60,7 +60,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
                     if (!NamingEntryUtil.bindToENC(_context, name, mappedName))
                         if (!NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName))
                             LOG.warn("Skipping Resources(Resource) annotation on {} for name {}: no resource bound at {}",
-                                    clazz.getName(), name, (mappedName == null ? name : mappedName));
+                                clazz.getName(), name, (mappedName == null ? name : mappedName));
                 }
                 catch (NamingException e)
                 {

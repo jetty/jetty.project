@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRegistration.Dynamic;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpSessionActivationListener;
@@ -54,6 +56,7 @@ import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -82,8 +85,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault-ee10.xml";
-    public static final String SERVER_SYS_CLASSES = WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE;
-    public static final String SERVER_SRV_CLASSES = WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE;
 
     private static final String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
@@ -1197,7 +1198,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * Set the context white list
-     *
+     * <p>
      * In certain circumstances you want may want to deny access of one webapp from another
      * when you may not fully trust the webapp.  Setting this white list will enable a
      * check when a servlet called <code>ServletContextHandler.Context#getContext(String)</code>,
@@ -1301,14 +1302,89 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _throwUnavailableOnStartupException;
     }
 
+    public void resolveMetaData() throws Exception
+    {
+        LOG.debug("metadata resolve {}", this);
+
+        //Ensure origins is fresh
+        _metadata._origins.clear();
+
+        // Set the ordered lib attribute
+        List<Resource> orderedWebInfJars;
+        if (_metadata.isOrdered())
+        {
+            orderedWebInfJars = _metadata.getWebInfResources(true);
+            List<String> orderedLibs = new ArrayList<>();
+            for (Resource jar: orderedWebInfJars)
+            {
+                URI uri = URIUtil.unwrapContainer(jar.getURI());
+                orderedLibs.add(uri.getPath());
+            }
+            setAttribute(ServletContext.ORDERED_LIBS, Collections.unmodifiableList(orderedLibs));
+        }
+
+        // set the webxml version
+        if (_metadata._webXmlRoot != null)
+        {
+            getContext().getServletContext().setEffectiveMajorVersion(_metadata._webXmlRoot.getMajorVersion());
+            getContext().getServletContext().setEffectiveMinorVersion(_metadata._webXmlRoot.getMinorVersion());
+        }
+
+        //process web-defaults.xml, web.xml and override-web.xmls
+        for (DescriptorProcessor p : _metadata._descriptorProcessors)
+        {
+            p.process(this, _metadata.getDefaultsDescriptor());
+            p.process(this, _metadata.getWebDescriptor());
+            for (WebDescriptor wd : _metadata.getOverrideDescriptors())
+            {
+                LOG.debug("process {} {} {}", this, p, wd);
+                p.process(this, wd);
+            }
+        }
+
+        List<Resource> resources = new ArrayList<>();
+        resources.add(null); //always apply annotations with no resource first
+        resources.addAll(_metadata._orderedContainerResources); //next all annotations from container path
+        resources.addAll(_metadata._webInfClasses); //next everything from web-inf classes
+        resources.addAll(_metadata.getWebInfResources(_metadata.isOrdered())); //finally annotations (in order) from webinf path
+
+        for (Resource r : resources)
+        {
+            //Process the web-fragment.xml before applying annotations from a fragment.
+            //Note that some fragments, or resources that aren't fragments won't have
+            //a descriptor.
+            FragmentDescriptor fd = _metadata._webFragmentResourceMap.get(r);
+            if (fd != null)
+            {
+                for (DescriptorProcessor p : _metadata._descriptorProcessors)
+                {
+                    LOG.debug("process {} {}", this, fd);
+                    p.process(this, fd);
+                }
+            }
+
+            //Then apply the annotations - note that if metadata is complete
+            //either overall or for a fragment, those annotations won't have
+            //been discovered.
+            List<DiscoveredAnnotation> annotations = _metadata._annotations.get(r);
+            if (annotations != null)
+            {
+                for (DiscoveredAnnotation a : annotations)
+                {
+                    LOG.debug("apply {}", a);
+                    a.apply();
+                }
+            }
+        }
+    }
+
     @Override
     protected void startContext()
         throws Exception
     {
         if (configure())
         {
-            //resolve the metadata
-            _metadata.resolve(this);
+            resolveMetaData();
             startWebapp();
         }
     }

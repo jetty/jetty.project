@@ -71,7 +71,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             return;
         }
 
-        WebServlet annotation = (WebServlet)clazz.getAnnotation(WebServlet.class);
+        WebServlet annotation = clazz.getAnnotation(WebServlet.class);
 
         if (annotation.urlPatterns().length > 0 && annotation.value().length > 0)
         {
@@ -90,7 +90,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         }
 
         //canonicalize the patterns
-        ArrayList<String> urlPatternList = new ArrayList<String>();
+        ArrayList<String> urlPatternList = new ArrayList<>();
         for (String p : urlPatterns)
         {
             urlPatternList.add(ServletPathSpec.normalize(p));
@@ -228,7 +228,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 _context.getMetaData().setOrigin(servletName + ".servlet.mapping.url" + p, annotation, clazz);
             }
             allMappings.add(mapping);
-            _context.getServletHandler().setServletMappings(allMappings.toArray(new ServletMapping[allMappings.size()]));
+            _context.getServletHandler().setServletMappings(allMappings.toArray(new ServletMapping[0]));
         }
     }
 
@@ -241,7 +241,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         if (allMappings == null)
             return Collections.emptyList();
 
-        List<ServletMapping> mappings = new ArrayList<ServletMapping>();
+        List<ServletMapping> mappings = new ArrayList<>();
         for (ServletMapping m : allMappings)
         {
             if (m.getServletName() != null && name.equals(m.getServletName()))

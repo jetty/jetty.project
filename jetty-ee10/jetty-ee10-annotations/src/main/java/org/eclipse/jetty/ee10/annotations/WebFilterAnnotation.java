@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee10.annotations;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 
 import jakarta.servlet.DispatcherType;
@@ -106,29 +108,23 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             metaData.setOrigin(name + ".filter.mapping." + Long.toHexString(mapping.hashCode()), filterAnnotation, clazz);
             if (urlPatterns.length > 0)
             {
-                ArrayList<String> paths = new ArrayList<String>();
+                ArrayList<String> paths = new ArrayList<>();
                 for (String s : urlPatterns)
                 {
                     paths.add(ServletPathSpec.normalize(s));
                 }
-                mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+                mapping.setPathSpecs(paths.toArray(new String[0]));
             }
 
             if (filterAnnotation.servletNames().length > 0)
             {
-                ArrayList<String> names = new ArrayList<String>();
-                for (String s : filterAnnotation.servletNames())
-                {
-                    names.add(s);
-                }
-                mapping.setServletNames(names.toArray(new String[names.size()]));
+                ArrayList<String> names = new ArrayList<>();
+                Collections.addAll(names, filterAnnotation.servletNames());
+                mapping.setServletNames(names.toArray(new String[0]));
             }
 
             EnumSet<DispatcherType> dispatcherSet = EnumSet.noneOf(DispatcherType.class);
-            for (DispatcherType d : filterAnnotation.dispatcherTypes())
-            {
-                dispatcherSet.add(d);
-            }
+            dispatcherSet.addAll(Arrays.asList(filterAnnotation.dispatcherTypes()));
             mapping.setDispatcherTypes(dispatcherSet);
             metaData.setOrigin(name + ".filter.mappings", filterAnnotation, clazz);
 
@@ -177,28 +173,22 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 metaData.setOrigin(holder.getName() + ".filter.mapping." + Long.toHexString(mapping.hashCode()), filterAnnotation, clazz);
                 if (urlPatterns.length > 0)
                 {
-                    ArrayList<String> paths = new ArrayList<String>();
+                    ArrayList<String> paths = new ArrayList<>();
                     for (String s : urlPatterns)
                     {
                         paths.add(ServletPathSpec.normalize(s));
                     }
-                    mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
+                    mapping.setPathSpecs(paths.toArray(new String[0]));
                 }
                 if (filterAnnotation.servletNames().length > 0)
                 {
-                    ArrayList<String> names = new ArrayList<String>();
-                    for (String s : filterAnnotation.servletNames())
-                    {
-                        names.add(s);
-                    }
-                    mapping.setServletNames(names.toArray(new String[names.size()]));
+                    ArrayList<String> names = new ArrayList<>();
+                    Collections.addAll(names, filterAnnotation.servletNames());
+                    mapping.setServletNames(names.toArray(new String[0]));
                 }
 
                 EnumSet<DispatcherType> dispatcherSet = EnumSet.noneOf(DispatcherType.class);
-                for (DispatcherType d : filterAnnotation.dispatcherTypes())
-                {
-                    dispatcherSet.add(d);
-                }
+                Collections.addAll(dispatcherSet, filterAnnotation.dispatcherTypes());
                 mapping.setDispatcherTypes(dispatcherSet);
                 _context.getServletHandler().addFilterMapping(mapping);
                 metaData.setOrigin(name + ".filter.mappings", filterAnnotation, clazz);

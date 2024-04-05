@@ -21,8 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ClassInheritanceHandler
- *
  * As asm scans for classes, remember the type hierarchy.
  */
 public class ClassInheritanceHandler extends AnnotationParser.AbstractHandler

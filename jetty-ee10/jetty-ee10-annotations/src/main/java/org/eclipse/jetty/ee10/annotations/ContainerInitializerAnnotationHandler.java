@@ -18,8 +18,6 @@ import java.util.Objects;
 import org.eclipse.jetty.ee10.servlet.ServletContainerInitializerHolder;
 
 /**
- * ContainerInitializerAnnotationHandler
- * <p>
  * Discovers classes that contain the specified annotation, either at class or
  * method level. The specified annotation is derived from an <code>&#064;HandlesTypes</code> on
  * a ServletContainerInitializer class.

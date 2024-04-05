@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.lang.annotation.Annotation;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -31,16 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MetaData
- *
- * All data associated with the configuration and deployment of a web application.
+ *  The metadata associated with the configuration and deployment of a web application, obtained
+ *  from descriptors, annotations and direct configuration.
  */
 public class MetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
 
     public static final String VALIDATE_XML = "org.eclipse.jetty.webapp.validateXml";
-    public static final String ORDERED_LIBS = "jakarta.servlet.context.orderedLibs";
 
     private final AutoLock _lock = new AutoLock();
     protected Map<String, OriginInfo> _origins = new HashMap<>();
@@ -60,11 +55,6 @@ public class MetaData
     protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
-
-    public enum Complete
-    {
-        NotSet, True, False
-    }
 
     /**
      * Metadata regarding where a deployable element was declared:
@@ -256,17 +246,9 @@ public class MetaData
     {
         descriptor.parse(WebDescriptor.getParser(isValidateXml()));
 
-        switch (descriptor.getMetaDataComplete())
-        {
-            case True:
-                _metaDataComplete = true;
-                break;
-            case False:
-                _metaDataComplete = false;
-                break;
-            default:
-                break;
-        }
+        Boolean metaDataComplete = descriptor.getMetaDataComplete();
+        if (metaDataComplete != null)
+            _metaDataComplete = metaDataComplete;
 
         if (descriptor.isOrdered())
         {
@@ -334,26 +316,10 @@ public class MetaData
     }
 
     /**
-     * Annotations such as WebServlet, WebFilter, WebListener that
-     * can be discovered by scanning unloaded classes.
-     *
-     * @param annotations the list of discovered annotations to add
-     */
-    public void addDiscoveredAnnotations(List<DiscoveredAnnotation> annotations)
-    {
-        if (annotations == null)
-            return;
-        for (DiscoveredAnnotation a : annotations)
-        {
-            addDiscoveredAnnotation(a);
-        }
-    }
-
-    /**
      * Add an annotation that has been discovered on a class, method or field within a resource
      * eg a jar or dir. The annotation may also have no associated resource, or that resource
      * may be a system or container resource.
-     *
+     * <p>
      * This method is synchronized as it is anticipated that it may be called by many threads
      * during the annotation scanning phase.
      *
@@ -364,7 +330,7 @@ public class MetaData
         if (annotation == null)
             return;
 
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             //if no resource associated with an annotation map it to empty resource - these
             //annotations will always be processed first
@@ -432,89 +398,6 @@ public class MetaData
         _orderedWebInfResources.clear();
         if (getOrdering() != null)
             _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
-    }
-
-    /**
-     * Resolve all servlet/filter/listener metadata from all sources: descriptors and annotations.
-     *
-     * @param context the context to resolve servlets / filters / listeners metadata from
-     * @throws Exception if unable to resolve metadata
-     */
-    public void resolve(WebAppContext context)
-        throws Exception
-    {
-        LOG.debug("metadata resolve {}", context);
-
-        //Ensure origins is fresh
-        _origins.clear();
-
-        // Set the ordered lib attribute
-        List<Resource> orderedWebInfJars = null;
-        if (isOrdered())
-        {
-            orderedWebInfJars = getWebInfResources(true);
-            List<String> orderedLibs = new ArrayList<>();
-            for (Resource jar: orderedWebInfJars)
-            {
-                URI uri = URIUtil.unwrapContainer(jar.getURI());
-                orderedLibs.add(uri.getPath());
-            }
-            context.setAttribute(ServletContext.ORDERED_LIBS, Collections.unmodifiableList(orderedLibs));
-        }
-
-        // set the webxml version
-        if (_webXmlRoot != null)
-        {
-            context.getContext().getServletContext().setEffectiveMajorVersion(_webXmlRoot.getMajorVersion());
-            context.getContext().getServletContext().setEffectiveMinorVersion(_webXmlRoot.getMinorVersion());
-        }
-
-        //process web-defaults.xml, web.xml and override-web.xmls
-        for (DescriptorProcessor p : _descriptorProcessors)
-        {
-            p.process(context, getDefaultsDescriptor());
-            p.process(context, getWebDescriptor());
-            for (WebDescriptor wd : getOverrideDescriptors())
-            {
-                LOG.debug("process {} {} {}", context, p, wd);
-                p.process(context, wd);
-            }
-        }
-
-        List<Resource> resources = new ArrayList<>();
-        resources.add(null); //always apply annotations with no resource first
-        resources.addAll(_orderedContainerResources); //next all annotations from container path
-        resources.addAll(_webInfClasses); //next everything from web-inf classes
-        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
-
-        for (Resource r : resources)
-        {
-            //Process the web-fragment.xml before applying annotations from a fragment.
-            //Note that some fragments, or resources that aren't fragments won't have
-            //a descriptor.
-            FragmentDescriptor fd = _webFragmentResourceMap.get(r);
-            if (fd != null)
-            {
-                for (DescriptorProcessor p : _descriptorProcessors)
-                {
-                    LOG.debug("process {} {}", context, fd);
-                    p.process(context, fd);
-                }
-            }
-
-            //Then apply the annotations - note that if metadata is complete
-            //either overall or for a fragment, those annotations won't have
-            //been discovered.
-            List<DiscoveredAnnotation> annotations = _annotations.get(r);
-            if (annotations != null)
-            {
-                for (DiscoveredAnnotation a : annotations)
-                {
-                    LOG.debug("apply {}", a);
-                    a.apply();
-                }
-            }
-        }
     }
 
     /**
@@ -648,11 +531,7 @@ public class MetaData
 
     public OriginInfo getOriginInfo(String name)
     {
-        OriginInfo x = _origins.get(name);
-        if (x == null)
-            return null;
-
-        return x;
+        return _origins.get(name);
     }
 
     public Descriptor getOriginDescriptor(String name)

@@ -189,7 +189,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (webApp == null)
         {
             String war = context.getWar();
-            if (war != null && war.length() > 0)
+            if (StringUtil.isNotBlank(war))
                 webApp = context.newResource(war);
             else
                 webApp = context.getBaseResource();
@@ -434,7 +434,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             Resource resource = context.getBaseResource();
             if (resource == null)
             {
-                if (context.getWar() == null || context.getWar().length() == 0)
+                if (StringUtil.isBlank(context.getWar()))
                     throw new IllegalStateException("No resourceBase or war set for context");
 
                 // Set dir or WAR to resource

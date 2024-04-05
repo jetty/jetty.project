@@ -67,7 +67,7 @@ public class AbsoluteOrdering implements Ordering
         //3. if <other> was specified, insert rest of the fragments 
         if (_hasOther)
         {
-            orderedList.addAll((index < 0 ? 0 : index), tmp);
+            orderedList.addAll((Math.max(index, 0)), tmp);
         }
 
         return orderedList;

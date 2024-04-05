@@ -14,11 +14,9 @@
 package org.eclipse.jetty.ee10.annotations;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 
 import jakarta.annotation.PostConstruct;
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.Origin;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
@@ -32,37 +30,23 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
     }
 
     @Override
-    public void doHandle(Class clazz)
+    public void doHandle(Class<?> clazz)
     {
         //Check that the PostConstruct is on a class that we're interested in
         if (supportsPostConstruct(clazz))
         {
             Method[] methods = clazz.getDeclaredMethods();
-            for (int i = 0; i < methods.length; i++)
+            for (Method method : methods)
             {
-                Method m = (Method)methods[i];
-                if (m.isAnnotationPresent(PostConstruct.class))
+                if (method.isAnnotationPresent(PostConstruct.class))
                 {
-                    if (m.getParameterCount() != 0)
-                        throw new IllegalStateException(m + " has parameters");
-                    if (m.getReturnType() != Void.TYPE)
-                        throw new IllegalStateException(m + " is not void");
-                    if (m.getExceptionTypes().length != 0)
-                        throw new IllegalStateException(m + " throws checked exceptions");
-                    if (Modifier.isStatic(m.getModifiers()))
-                        throw new IllegalStateException(m + " is static");
-
-                    //ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
-                    //in fragments must be ignored. Otherwise, they are additive.
-                    MetaData metaData = _context.getMetaData();
-                    Origin origin = metaData.getOrigin("post-construct");
-                    if (origin != null &&
-                        (origin == Origin.WebXml ||
-                            origin == Origin.WebDefaults ||
-                            origin == Origin.WebOverride))
+                    Origin origin = getOrigin(method);
+                    if ((origin == Origin.WebXml ||
+                        origin == Origin.WebDefaults ||
+                        origin == Origin.WebOverride))
                         return;
 
-                    PostConstructCallback callback = new PostConstructCallback(clazz, m.getName());
+                    PostConstructCallback callback = new PostConstructCallback(clazz, method.getName());
                     LifeCycleCallbackCollection lifecycles = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
                     if (lifecycles == null)
                     {
@@ -81,21 +65,8 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
      * @param c the class
      * @return true if the spec permits the class to have PostConstruct, false otherwise
      */
-    public boolean supportsPostConstruct(Class c)
+    public boolean supportsPostConstruct(Class<?> c)
     {
-        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) ||
-            jakarta.servlet.Filter.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
-            return true;
-
-        return false;
+        return isAnnotatableServletClass(c);
     }
 }

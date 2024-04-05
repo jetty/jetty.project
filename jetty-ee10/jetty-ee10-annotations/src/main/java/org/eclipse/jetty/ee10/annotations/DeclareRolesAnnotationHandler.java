@@ -35,7 +35,7 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
     }
 
     @Override
-    public void doHandle(Class clazz)
+    public void doHandle(Class<?> clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return; //only applicable on jakarta.servlet.Servlet derivatives
@@ -46,13 +46,12 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
             return;
         }
 
-        DeclareRoles declareRoles = (DeclareRoles)clazz.getAnnotation(DeclareRoles.class);
+        DeclareRoles declareRoles = clazz.getAnnotation(DeclareRoles.class);
         if (declareRoles == null)
             return;
 
         String[] roles = declareRoles.value();
-
-        if (roles != null && roles.length > 0)
+        if (roles != null)
         {
             for (String r : roles)
             {

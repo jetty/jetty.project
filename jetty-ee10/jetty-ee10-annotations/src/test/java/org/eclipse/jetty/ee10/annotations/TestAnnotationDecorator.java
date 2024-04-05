@@ -18,7 +18,6 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.Source;
-import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
@@ -40,13 +39,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class TestAnnotationDecorator
 {
-
-    public class TestWebDescriptor extends WebDescriptor
+    public static class TestWebDescriptor extends WebDescriptor
     {
-        public TestWebDescriptor(Resource xml, MetaData.Complete metadata)
+        public TestWebDescriptor(Resource xml, Boolean metadataComplete)
         {
             super(xml);
-            _metaDataComplete = metadata;
+            _metaDataComplete = metadataComplete;
         }
 
         @Override
@@ -104,8 +102,8 @@ public class TestAnnotationDecorator
         //reset
         context.removeAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
 
-        //test with BaseHolder metadata, should not introspect with metdata-complete==true
-        context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyResource, MetaData.Complete.True));
+        //test with BaseHolder metadata, should not introspect with metadata-complete==true
+        context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyResource, true));
         assertTrue(context.getMetaData().isMetaDataComplete());
         ServletHolder holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR));
         holder.setHeldClass(ServletE.class);
@@ -121,7 +119,7 @@ public class TestAnnotationDecorator
         context.removeAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
 
         //test with BaseHolder metadata, should introspect with metadata-complete==false
-        context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyResource, MetaData.Complete.False));
+        context.getMetaData().setWebDescriptor(new TestWebDescriptor(dummyResource, false));
         DecoratedObjectFactory.associateInfo(holder);
         decorator = new AnnotationDecorator(context);
         decorator.decorate(servlet);

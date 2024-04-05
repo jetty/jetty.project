@@ -34,12 +34,12 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
     }
 
     @Override
-    public void doHandle(Class clazz)
+    public void doHandle(Class<?> clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
 
-        jakarta.annotation.security.RunAs runAs = (jakarta.annotation.security.RunAs)clazz.getAnnotation(jakarta.annotation.security.RunAs.class);
+        jakarta.annotation.security.RunAs runAs = clazz.getAnnotation(jakarta.annotation.security.RunAs.class);
         if (runAs != null)
         {
             String role = runAs.value();

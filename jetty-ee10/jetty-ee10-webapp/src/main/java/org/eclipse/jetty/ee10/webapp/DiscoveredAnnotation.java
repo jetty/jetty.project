@@ -19,8 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DiscoveredAnnotation
- *
  * Represents an annotation that has been discovered
  * by scanning source code of WEB-INF/classes and WEB-INF/lib jars.
  */

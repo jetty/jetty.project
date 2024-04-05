@@ -29,7 +29,7 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     @Override
     public void handle(AnnotationParser.ClassInfo info, String annotationName)
     {
-        if (annotationName == null || !"jakarta.servlet.annotation.WebListener".equals(annotationName))
+        if (!"jakarta.servlet.annotation.WebListener".equals(annotationName))
             return;
 
         WebListenerAnnotation wlAnnotation = new WebListenerAnnotation(_context, info.getClassName(), info.getContainingResource());
@@ -39,7 +39,7 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     @Override
     public void handle(AnnotationParser.FieldInfo info, String annotationName)
     {
-        if (annotationName == null || !"jakarta.servlet.annotation.WebListener".equals(annotationName))
+        if (!"jakarta.servlet.annotation.WebListener".equals(annotationName))
             return;
         LOG.warn("@WebListener is not applicable to fields: {}.{}", info.getClassInfo().getClassName(), info.getFieldName());
     }
@@ -47,7 +47,7 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     @Override
     public void handle(AnnotationParser.MethodInfo info, String annotationName)
     {
-        if (annotationName == null || !"jakarta.servlet.annotation.WebListener".equals(annotationName))
+        if (!"jakarta.servlet.annotation.WebListener".equals(annotationName))
             return;
         LOG.warn("@WebListener is not applicable to methods: {}.{} {}", info.getClassInfo().getClassName(), info.getMethodName(), info.getSignature());
     }
