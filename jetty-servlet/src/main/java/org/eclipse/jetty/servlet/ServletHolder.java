@@ -675,7 +675,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         File scratch;
         if (getInitParameter("scratchdir") == null)
         {
-            File tmp = (File)getServletHandler().getServletContext().getAttribute(ServletContext.TEMPDIR);
+            File tmp = (File) ch.getAttribute(ServletContext.TEMPDIR);
             scratch = new File(tmp, "jsp");
             setInitParameter("scratchdir", scratch.getAbsolutePath());
         }
