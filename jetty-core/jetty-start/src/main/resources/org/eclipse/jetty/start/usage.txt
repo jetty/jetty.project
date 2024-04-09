@@ -225,6 +225,7 @@ Options:
                    config file, but you want to use that module with an
                    *.xml config file instead.
 
+  --add-base-dir=<path>
   --include-jetty-dir=<path>
                    Includes the specified directory as a configuration source.
                    This directory behaves similarly to ${jetty.base} but sits
