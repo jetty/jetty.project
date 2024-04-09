@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * is available to applications but must be explicitly configured and
  * added.</p>
  */
-public class Socks5Proxy extends Proxy 
+public class Socks5Proxy extends Proxy
 {
     private static final Logger LOG = LoggerFactory.getLogger(Socks5Proxy.class);
 
@@ -91,7 +91,7 @@ public class Socks5Proxy extends Proxy
     }
 
     @Override
-    public ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory) 
+    public ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
         return new Socks5ProxyClientConnectionFactory(connectionFactory);
     }
@@ -270,7 +270,7 @@ public class Socks5Proxy extends Proxy
                         .put(Socks5.ADDRESS_TYPE_IPV4);
                     for (int i = 1; i <= 4; ++i)
                     {
-                        byteBuffer.put(Byte.parseByte(matcher.group(i)));
+                        byteBuffer.put((byte) Integer.parseInt(matcher.group(i)));
                     }
                     byteBuffer.putShort(port)
                         .flip();
