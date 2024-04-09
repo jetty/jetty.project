@@ -109,7 +109,7 @@ public class SizeLimitHandler extends Handler.Wrapper
     {
         private final HttpFields.Mutable _httpFields;
         private long _written = 0;
-        private String failed;
+        private HttpException.RuntimeException _failure;
 
         public SizeLimitResponseWrapper(Request request, Response wrapped)
         {
@@ -120,7 +120,7 @@ public class SizeLimitHandler extends Handler.Wrapper
                 @Override
                 public HttpField onAddField(HttpField field)
                 {
-                    if (HttpHeader.CONTENT_LENGTH.is(field.getName()))
+                    if (field.getHeader() == HttpHeader.CONTENT_LENGTH)
                     {
                         long contentLength = field.getLongValue();
                         if (_responseLimit >= 0 && contentLength > _responseLimit)
@@ -140,9 +140,9 @@ public class SizeLimitHandler extends Handler.Wrapper
         @Override
         public void write(boolean last, ByteBuffer content, Callback callback)
         {
-            if (failed != null)
+            if (_failure != null)
             {
-                callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, failed));
+                callback.failed(_failure);
                 return;
             }
 
@@ -150,8 +150,9 @@ public class SizeLimitHandler extends Handler.Wrapper
             {
                 if (_responseLimit >= 0 && (_written + content.remaining())  > _responseLimit)
                 {
-                    failed = "Response body is too large: %d>%d".formatted(_written + content.remaining(), _responseLimit);
-                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, failed));
+                    _failure = new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500,
+                        "Response body is too large: %d>%d".formatted(_written + content.remaining(), _responseLimit));
+                    callback.failed(_failure);
                     return;
                 }
                 _written += content.remaining();
