@@ -129,7 +129,7 @@ public class Socks5ProxyTest
             assertEquals(ip1, buffer.get());
             assertEquals(ip2, buffer.get());
             assertEquals(ip3, buffer.get());
-            assertEquals((byte) ip4, buffer.get());
+            assertEquals((byte)ip4, buffer.get());
             assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
             // Write connect response.
