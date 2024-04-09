@@ -516,7 +516,7 @@ public class ServletChannel
                             catch (Throwable t)
                             {
                                 ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
-                                throw t;
+                                abort(t);
                             }
                         }
                         finally
