@@ -1277,7 +1277,7 @@ public class StartArgs
         }
 
         // Skip [files] validation on a module
-        if (arg.startsWith("--skip-file-validation="))
+        if (arg.startsWith("--skip-file-validation=") || arg.startsWith("--skip-create-files="))
         {
             List<String> moduleNames = Props.getValues(arg);
             skipFileValidationModules.addAll(moduleNames);

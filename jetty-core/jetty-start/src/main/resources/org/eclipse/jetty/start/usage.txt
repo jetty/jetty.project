@@ -217,6 +217,7 @@ Options:
                    Useful for enabling modules from a script, so that it
                    does not require user interaction.
 
+  --skip-create-files=<moduleName>(,<moduleName>)*
   --skip-file-validation=<moduleName>(,<moduleName>)*
                    Disables the creation of files as specified by the
                    [files] section of the specified modules.
