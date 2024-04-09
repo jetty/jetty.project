@@ -413,7 +413,11 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     public void close()
     {
         if (stream != null)
-            stream.getHttpChannel().onFailure(new EofException());
+        {
+            Runnable task = stream.getHttpChannel().onFailure(new EofException());
+            if (task != null)
+                task.run();
+        }
         super.close();
     }
 }

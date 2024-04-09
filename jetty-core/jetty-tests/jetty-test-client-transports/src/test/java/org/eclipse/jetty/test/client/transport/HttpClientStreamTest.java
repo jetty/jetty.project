@@ -1061,6 +1061,99 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    public void testUploadWithPendingReadConcurrentServerCloseClosesStream(Transport transport) throws Exception
+    {
+        CountDownLatch serverDemandLatch = new CountDownLatch(1);
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        AtomicReference<Content.Chunk> lastChunk = new AtomicReference<>();
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                request.demand(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        Content.Chunk chunk = request.read();
+                        if (chunk != null)
+                            chunk.release();
+                        if (chunk == null || !chunk.isLast())
+                        {
+                            request.demand(this);
+                        }
+                        lastChunk.set(chunk);
+                    }
+                });
+                serverLatch.countDown();
+
+                // Do not complete the callback.
+                return true;
+            }
+        });
+
+        AtomicBoolean commit = new AtomicBoolean();
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        InputStream stream = new InputStream()
+        {
+            @Override
+            public int read() throws IOException
+            {
+                // This method will be called few times before
+                // the request is committed.
+                // We wait for the request to commit, and we
+                // wait for the request to reach the server,
+                // to be sure that the server endPoint has
+                // been created, before stopping the connector.
+
+                if (commit.get())
+                {
+                    try
+                    {
+                        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+                        connector.stop();
+                        serverDemandLatch.countDown();
+                        return 0;
+                    }
+                    catch (Throwable x)
+                    {
+                        throw new IOException(x);
+                    }
+                }
+                else
+                {
+                    return connector.isStopped() ? -1 : 0;
+                }
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                super.close();
+                closeLatch.countDown();
+            }
+        };
+        InputStreamRequestContent content = new InputStreamRequestContent(stream, 1);
+
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest(newURI(transport))
+            .body(content)
+            .onRequestCommit(request -> commit.set(true))
+            .send(result ->
+            {
+                Assertions.assertTrue(result.isFailed());
+                completeLatch.countDown();
+            });
+
+        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(Content.Chunk.isFailure(lastChunk.get(), true));
+        assertInstanceOf(IOException.class, lastChunk.get().getFailure());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
     public void testInputStreamResponseListenerBufferedRead(Transport transport) throws Exception
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();
