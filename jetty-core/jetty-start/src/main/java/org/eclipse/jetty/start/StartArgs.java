@@ -1091,7 +1091,7 @@ public class StartArgs
             return environment;
         }
 
-        if (arg.startsWith("--download="))
+        if (arg.startsWith("--download=") || arg.startsWith("--files="))
         {
             addFile(null, Props.getValue(arg));
             run = false;
