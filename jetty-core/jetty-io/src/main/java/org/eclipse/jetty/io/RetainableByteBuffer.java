@@ -338,7 +338,7 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Get a partial slice of the buffer.
-     * @param length The number of bytes to slice.
+     * @param length The number of bytes to slice, which may contain some byte beyond the limit and less than the capacity
      * @return A sliced {@link RetainableByteBuffer} sharing the first {@code length} bytes of this buffers data and
      * reference count, but with independent position. The buffer is {@link #retain() retained} by this call.
      */
@@ -346,9 +346,27 @@ public interface RetainableByteBuffer extends Retainable
     {
         if (canRetain())
             retain();
-        ByteBuffer slice = getByteBuffer().slice();
-        slice.limit(slice.position() + Math.toIntExact(length));
-        return RetainableByteBuffer.wrap(slice, this);
+
+        int size = remaining();
+        ByteBuffer byteBuffer = getByteBuffer();
+        int limit = byteBuffer.limit();
+
+        if (length <= size)
+        {
+            byteBuffer.limit(byteBuffer.position() + Math.toIntExact(length));
+            ByteBuffer slice = byteBuffer.slice();
+            byteBuffer.limit(limit);
+            return RetainableByteBuffer.wrap(slice, this);
+        }
+        else
+        {
+            length = Math.min(length, capacity());
+            byteBuffer.limit(byteBuffer.position() + Math.toIntExact(length));
+            ByteBuffer slice = byteBuffer.slice();
+            byteBuffer.limit(limit);
+            slice.limit(size);
+            return RetainableByteBuffer.wrap(slice, this);
+        }
     }
 
     /**
@@ -581,7 +599,7 @@ public interface RetainableByteBuffer extends Retainable
          * @param direct true if direct buffers should be used
          * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
          * @param aggregationSize The default size of aggregation buffers; or 0 for no aggregation; or -1 for a default size
-         * @param minRetainSize The minimal size of a {@link RetainableByteBuffer} before it will be retained; or 0 to never retain; or -1 for a default value;
+         * @param minRetainSize The minimal size of a {@link RetainableByteBuffer} before it will be retained; or 0 to always retain; or -1 for a default value;
          */
         public Appendable(ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
         {
