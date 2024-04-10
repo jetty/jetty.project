@@ -53,7 +53,7 @@
     <profile>
       <id>enable-foreign</id>
       <activation>
-        <jdk>22)</jdk>
+        <jdk>[22,)</jdk>
       </activation>
       <!--
       This profile makes sure the Foreign binding is used for tests when running on JDK 22+.
