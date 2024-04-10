@@ -434,7 +434,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
-        if (_encryptedInput != null && !_encryptedInput.hasRemaining())
+        if (_encryptedInput != null && _encryptedInput.isEmpty())
         {
             _encryptedInput.release();
             _encryptedInput = null;
@@ -445,7 +445,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     {
         if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
-        if (_decryptedInput != null && !_decryptedInput.hasRemaining())
+        if (_decryptedInput != null && _decryptedInput.isEmpty())
         {
             _decryptedInput.release();
             _decryptedInput = null;

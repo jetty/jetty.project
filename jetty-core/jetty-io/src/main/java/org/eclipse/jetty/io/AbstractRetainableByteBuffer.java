@@ -14,24 +14,19 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.nio.ReadOnlyBufferException;
-import java.util.Objects;
-
-import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * <p>Abstract implementation of {@link RetainableByteBuffer} with
  * reference counting.</p>
  */
-public abstract class AbstractRetainableByteBuffer implements RetainableByteBuffer.Appendable
+public abstract class AbstractRetainableByteBuffer extends RetainableByteBuffer.Appendable.Fixed
 {
-    private final ReferenceCounter refCount = new ReferenceCounter(0);
-    private final ByteBuffer byteBuffer;
-    private int flipPos = -1;
+    private final ReferenceCounter _refCount;
 
     public AbstractRetainableByteBuffer(ByteBuffer byteBuffer)
     {
-        this.byteBuffer = Objects.requireNonNull(byteBuffer);
+        super(byteBuffer, new ReferenceCounter(0));
+        _refCount = (ReferenceCounter)getRetainable();
     }
 
     /**
@@ -39,98 +34,6 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
      */
     protected void acquire()
     {
-        refCount.acquire();
-    }
-
-    @Override
-    public int remaining()
-    {
-        if (flipPos < 0)
-            return byteBuffer.remaining();
-        return byteBuffer.position() - flipPos;
-    }
-
-    @Override
-    public boolean hasRemaining()
-    {
-        if (flipPos < 0)
-            return byteBuffer.hasRemaining();
-
-        return flipPos > 0 || byteBuffer.position() > 0;
-    }
-
-    @Override
-    public boolean canRetain()
-    {
-        return refCount.canRetain();
-    }
-
-    @Override
-    public void retain()
-    {
-        refCount.retain();
-    }
-
-    @Override
-    public boolean release()
-    {
-        return refCount.release();
-    }
-
-    @Override
-    public boolean isRetained()
-    {
-        return refCount.isRetained();
-    }
-
-    @Override
-    public ByteBuffer getByteBuffer()
-    {
-        if (flipPos >= 0)
-        {
-            BufferUtil.flipToFlush(byteBuffer, flipPos);
-            flipPos = -1;
-        }
-        return byteBuffer;
-    }
-
-    @Override
-    public boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
-    {
-        if (isRetained())
-            throw new ReadOnlyBufferException();
-        if (flipPos < 0)
-            flipPos = BufferUtil.flipToFill(byteBuffer);
-        BufferUtil.put(bytes, byteBuffer);
-        return !bytes.hasRemaining();
-    }
-
-    @Override
-    public String toDetailString()
-    {
-        StringBuilder buf = new StringBuilder();
-        buf.append(getClass().getSimpleName());
-        buf.append("@");
-        buf.append(Integer.toHexString(System.identityHashCode(this)));
-        buf.append("[");
-        buf.append(remaining());
-        buf.append("/");
-        buf.append(capacity());
-        buf.append(",");
-        buf.append(refCount);
-        buf.append("]");
-        if (refCount.canRetain())
-        {
-            buf.append("={");
-            RetainableByteBuffer.appendDebugString(buf, this);
-            buf.append("}");
-        }
-        return buf.toString();
-    }
-
-    @Override
-    public String toString()
-    {
-        return toDetailString();
+        _refCount.acquire();
     }
 }

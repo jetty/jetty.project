@@ -265,7 +265,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         {
             if (inputBuffer.hasRemaining() && force)
                 inputBuffer.clear();
-            if (!inputBuffer.hasRemaining())
+            if (inputBuffer.isEmpty())
             {
                 inputBuffer.release();
                 if (LOG.isDebugEnabled())
