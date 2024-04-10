@@ -52,7 +52,7 @@ public class MessageOutputStreamTest
             public RetainableByteBuffer acquire(int size, boolean direct)
             {
                 leaks.incrementAndGet();
-                return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                return new RetainableByteBuffer.Appendable.Wrapper(super.acquire(size, direct).asAppendable())
                 {
                     @Override
                     public boolean release()

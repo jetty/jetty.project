@@ -1198,7 +1198,7 @@ public interface RetainableByteBuffer extends Retainable
                 // If we are already aggregating, and the content will fit, then just aggregate
                 if (_aggregate != null && _aggregate.space() >= length)
                 {
-                    BufferUtil.append(_aggregate.getByteBuffer(), retainableBytes.getByteBuffer());
+                    _aggregate.append(retainableBytes.getByteBuffer());
                     return true;
                 }
 
