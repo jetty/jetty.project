@@ -737,6 +737,34 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             }
 
             @Override
+            public RetainableByteBuffer slice()
+            {
+                RetainableByteBuffer slice = super.slice();
+                return new RetainableByteBuffer.Wrapper(slice)
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        return Buffer.this.release();
+                    }
+                };
+            }
+
+            @Override
+            public RetainableByteBuffer slice(long length)
+            {
+                RetainableByteBuffer slice = super.slice(length);
+                return new RetainableByteBuffer.Wrapper(slice)
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        return Buffer.this.release();
+                    }
+                };
+            }
+
+            @Override
             public void retain()
             {
                 super.retain();

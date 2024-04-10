@@ -194,7 +194,7 @@ public class Content
          */
         static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
         {
-            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb -> rbb.getByteBuffer().array());
+            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb -> BufferUtil.toArray(rbb.getByteBuffer()));
         }
 
         /**

@@ -183,7 +183,7 @@ public interface Retainable
         @Override
         public boolean canRetain()
         {
-            return true;
+            return get() > 0;
         }
 
         @Override

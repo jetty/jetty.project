@@ -19,13 +19,16 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,7 +39,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -133,7 +138,6 @@ public class RetainableByteBufferTest
         assertFalse(buffer.hasRemaining());
         assertThat(buffer.remaining(), is(0));
         assertThat(builder.toCompleteString(), is(TEST_EXPECTED));
-
         assertThrows(BufferUnderflowException.class, buffer::get);
         buffer.release();
     }
@@ -349,7 +353,227 @@ public class RetainableByteBufferTest
         String detailString = buffer.toDetailString();
         assertThat(detailString, containsString(buffer.getClass().getSimpleName()));
         assertThat(detailString, containsString("<<<" + TEST_EXPECTED + ">>>"));
+        buffer.release();
+    }
 
+    public static Stream<Arguments> mutables()
+    {
+        return Stream.of(
+            Arguments.of(new RetainableByteBuffer.Appendable(_pool, true, MAX_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Appendable(_pool, false, MAX_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Appendable(_pool, true, MAX_CAPACITY, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable(_pool, false, MAX_CAPACITY, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable(_pool, true, MAX_CAPACITY, 0, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable(_pool, false, MAX_CAPACITY, 0, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable(_pool, true, MAX_CAPACITY, 32, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable(_pool, false, MAX_CAPACITY, 32, 0))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testEmptyMutableBuffer(RetainableByteBuffer.Appendable buffer)
+    {
+        assertThat(buffer.remaining(), is(0));
+        assertFalse(buffer.hasRemaining());
+        assertThat(buffer.capacity(), greaterThanOrEqualTo(MIN_CAPACITY));
+        assertFalse(buffer.isFull());
+
+        assertThat(buffer.remaining(), is(0));
+        assertFalse(buffer.getByteBuffer().hasRemaining());
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAppendOneByte(RetainableByteBuffer.Appendable buffer)
+    {
+        byte[] bytes = new byte[] {'-', 'X', '-'};
+        while (!buffer.isFull())
+            assertThat(buffer.append(ByteBuffer.wrap(bytes, 1, 1)), is(true));
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAppendOneByteRetainable(RetainableByteBuffer.Appendable buffer)
+    {
+        RetainableByteBuffer toAppend = _pool.acquire(1, true);
+        BufferUtil.append(toAppend.getByteBuffer(), (byte)'X');
+        assertThat(buffer.append(toAppend), is(true));
+        assertFalse(toAppend.hasRemaining());
+        toAppend.release();
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X"));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAppendMoreBytesThanCapacity(RetainableByteBuffer.Appendable buffer)
+    {
+        byte[] bytes = new byte[MAX_CAPACITY * 2];
+        Arrays.fill(bytes, (byte)'X');
+        ByteBuffer b = ByteBuffer.wrap(bytes);
+
+        if (buffer.append(b))
+        {
+            assertTrue(BufferUtil.isEmpty(b));
+            assertThat(buffer.capacity(), greaterThanOrEqualTo(MAX_CAPACITY * 2));
+        }
+        else
+        {
+            assertFalse(BufferUtil.isEmpty(b));
+            assertThat(b.remaining(), is(MAX_CAPACITY * 2 - buffer.capacity()));
+        }
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        assertTrue(buffer.isFull());
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAppendMoreBytesThanCapacityRetainable(RetainableByteBuffer.Appendable buffer)
+    {
+        RetainableByteBuffer toAppend = _pool.acquire(MAX_CAPACITY * 2, true);
+        int pos = BufferUtil.flipToFill(toAppend.getByteBuffer());
+        byte[] bytes = new byte[MAX_CAPACITY * 2];
+        Arrays.fill(bytes, (byte)'X');
+        toAppend.getByteBuffer().put(bytes);
+        BufferUtil.flipToFlush(toAppend.getByteBuffer(), pos);
+
+        if (buffer.append(toAppend))
+        {
+            assertTrue(BufferUtil.isEmpty(toAppend.getByteBuffer()));
+            assertThat(buffer.capacity(), greaterThanOrEqualTo(MAX_CAPACITY * 2));
+        }
+        else
+        {
+            assertFalse(BufferUtil.isEmpty(toAppend.getByteBuffer()));
+            assertThat(toAppend.remaining(), is(MAX_CAPACITY * 2 - buffer.capacity()));
+        }
+        toAppend.release();
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        assertTrue(buffer.isFull());
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAppendSmallByteBuffer(RetainableByteBuffer.Appendable buffer)
+    {
+        byte[] bytes = new byte[] {'-', 'X', '-'};
+        ByteBuffer from = ByteBuffer.wrap(bytes, 1, 1);
+        while (!buffer.isFull())
+        {
+            ByteBuffer slice = from.slice();
+            buffer.append(slice);
+            assertFalse(slice.hasRemaining());
+        }
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAppendBigByteBuffer(RetainableByteBuffer.Appendable buffer)
+    {
+        ByteBuffer from = BufferUtil.toBuffer("X".repeat(MAX_CAPACITY * 2));
+        assertFalse(buffer.append(from));
+        assertTrue(from.hasRemaining());
+        assertThat(from.remaining(), equalTo(MAX_CAPACITY));
+        assertThat(buffer.remaining(), equalTo(MAX_CAPACITY));
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        assertTrue(buffer.isFull());
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testNonRetainableWriteTo(RetainableByteBuffer.Appendable buffer) throws Exception
+    {
+        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
+        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" ")));
+        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer("World!")));
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FutureCallback callback = new FutureCallback();
+        buffer.writeTo(Content.Sink.from(out), true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+        assertThat(out.toString(StandardCharsets.ISO_8859_1), is("Hello World!"));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testRetainableWriteTo(RetainableByteBuffer.Appendable buffer) throws Exception
+    {
+        CountDownLatch released = new CountDownLatch(3);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffer.append(buffers[0] = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), released::countDown));
+        buffer.append(buffers[1] = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" "), released::countDown));
+        buffer.append(buffers[2] = RetainableByteBuffer.wrap(BufferUtil.toBuffer("World!"), released::countDown));
+        Arrays.asList(buffers).forEach(RetainableByteBuffer::release);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FutureCallback callback = new FutureCallback();
+        buffer.writeTo(Content.Sink.from(out), true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+        assertThat(out.toString(StandardCharsets.ISO_8859_1), is("Hello World!"));
+
+        buffer.release();
+        assertTrue(released.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testCopyMutable(RetainableByteBuffer.Appendable original)
+    {
+        ByteBuffer bytes = ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8));
+        original.append(bytes);
+        RetainableByteBuffer copy = original.copy();
+
+        assertEquals(0, BufferUtil.space(copy.getByteBuffer()));
+        assertEquals(5, copy.remaining());
+        assertEquals(5, original.remaining());
+        assertEquals("hello", StandardCharsets.UTF_8.decode(original.getByteBuffer()).toString());
+        assertEquals("hello", StandardCharsets.UTF_8.decode(copy.getByteBuffer()).toString());
+
+        copy.release();
+        original.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testCopyMutableThenModifyOriginal(RetainableByteBuffer.Appendable original)
+    {
+        original.append(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
+        RetainableByteBuffer copy = original.copy();
+        original.append(ByteBuffer.wrap(" world".getBytes(StandardCharsets.UTF_8)));
+
+        assertEquals(0, BufferUtil.space(copy.getByteBuffer()));
+        assertEquals(5, copy.remaining());
+        assertEquals(11, original.remaining());
+        assertEquals("hello world", StandardCharsets.UTF_8.decode(original.getByteBuffer()).toString());
+        assertEquals("hello", StandardCharsets.UTF_8.decode(copy.getByteBuffer()).toString());
+
+        copy.release();
+        original.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testToLargeDetailString(RetainableByteBuffer.Appendable buffer)
+    {
+        assertTrue(buffer.append(BufferUtil.toBuffer("0123456789ABCDEF")));
+        assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
+        assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
+        assertTrue(buffer.append(BufferUtil.toBuffer("abcdefghijklmnop")));
+        assertThat(buffer.toDetailString(), containsString("<<<0123456789ABCDEF...abcdefghijklmnop>>>"));
         buffer.release();
     }
 }
