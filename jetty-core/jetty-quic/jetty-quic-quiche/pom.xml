@@ -20,7 +20,7 @@
     <profile>
       <id>enable-foreign</id>
       <activation>
-        <jdk>22)</jdk>
+        <jdk>[22,)</jdk>
       </activation>
       <modules>
         <module>jetty-quic-quiche-foreign</module>
