@@ -16,8 +16,6 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.BufferUtil;
-
 /**
  * <p>Abstract implementation of {@link RetainableByteBuffer} with
  * reference counting.</p>
@@ -71,8 +69,31 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
     }
 
     @Override
+    public String toDetailString()
+    {
+        StringBuilder buf = new StringBuilder();
+        buf.append(getClass().getSimpleName());
+        buf.append("@");
+        buf.append(Integer.toHexString(System.identityHashCode(this)));
+        buf.append("[r=");
+        buf.append(remaining());
+        buf.append("/");
+        buf.append(capacity());
+        buf.append(",");
+        buf.append(refCount);
+        buf.append("]");
+        if (refCount.canRetain())
+        {
+            buf.append("={");
+            RetainableByteBuffer.appendDebugString(buf, this);
+            buf.append("}");
+        }
+        return buf.toString();
+    }
+
+    @Override
     public String toString()
     {
-        return "%s@%x[rc=%d,%s]".formatted(getClass().getSimpleName(), hashCode(), refCount.get(), BufferUtil.toDetailString(byteBuffer));
+        return toDetailString();
     }
 }
