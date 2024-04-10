@@ -133,9 +133,9 @@ public class ServletContextHandler extends ContextHandler
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
     public static final Environment ENVIRONMENT = Environment.ensure("ee10");
     /**
-     * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead. will be removed in Jetty 12.1.0.
+     * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
      */
-    @Deprecated(since = "12.0.8", forRemoval = true)
+    @Deprecated(since = "12.0.9", forRemoval = true)
     public static final Environment __environment = ENVIRONMENT;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
         {
