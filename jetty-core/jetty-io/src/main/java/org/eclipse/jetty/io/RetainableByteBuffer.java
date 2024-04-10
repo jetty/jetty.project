@@ -125,7 +125,11 @@ public interface RetainableByteBuffer extends Retainable
         }
     }
 
-    default Appendable asAppendable()
+    /**
+     * @return An {@link Appendable} representation of this buffer with same data and pointers.
+     * @throws ReadOnlyBufferException If the buffer is not {@link Appendable}
+     */
+    default Appendable asAppendable() throws ReadOnlyBufferException
     {
         if (this instanceof Appendable appendable)
             return appendable;
@@ -1197,10 +1201,7 @@ public interface RetainableByteBuffer extends Retainable
 
                 // If we are already aggregating, and the content will fit, then just aggregate
                 if (_aggregate != null && _aggregate.space() >= length)
-                {
-                    _aggregate.append(retainableBytes.getByteBuffer());
-                    return true;
-                }
+                    return _aggregate.append(retainableBytes.getByteBuffer());
 
                 // If the content is a tiny part of the retainable, then better to aggregate rather than accumulate
                 if (length < _minRetainSize)
@@ -1211,8 +1212,7 @@ public interface RetainableByteBuffer extends Retainable
 
                 // Do we have space?
                 long space = _maxSize - size();
-
-                if (space >= length)
+                if (length <= space)
                 {
                     // We have space, so add a retained slice;
                     _buffers.add(retainableBytes.slice());
