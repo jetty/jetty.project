@@ -57,7 +57,7 @@
       </activation>
       <!--
       This profile makes sure the Foreign binding is used for tests when running on JDK 22+.
-      Older and newer JDKs will revert to the JNA binding.
+      Older JDKs will revert to the JNA binding.
       -->
       <dependencies>
         <dependency>
