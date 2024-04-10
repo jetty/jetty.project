@@ -359,14 +359,14 @@ public class RetainableByteBufferTest
     public static Stream<Arguments> mutables()
     {
         return Stream.of(
-            Arguments.of(new RetainableByteBuffer.Appendable(_pool, true, MAX_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Appendable(_pool, false, MAX_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Appendable(_pool, true, MAX_CAPACITY, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable(_pool, false, MAX_CAPACITY, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable(_pool, true, MAX_CAPACITY, 0, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable(_pool, false, MAX_CAPACITY, 0, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable(_pool, true, MAX_CAPACITY, 32, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable(_pool, false, MAX_CAPACITY, 32, 0))
+            Arguments.of(new RetainableByteBuffer.Growable(_pool, true, MAX_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Growable(_pool, false, MAX_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Growable(_pool, true, MAX_CAPACITY, 0)),
+            Arguments.of(new RetainableByteBuffer.Growable(_pool, false, MAX_CAPACITY, 0)),
+            Arguments.of(new RetainableByteBuffer.Growable(_pool, true, MAX_CAPACITY, 0, 0)),
+            Arguments.of(new RetainableByteBuffer.Growable(_pool, false, MAX_CAPACITY, 0, 0)),
+            Arguments.of(new RetainableByteBuffer.Growable(_pool, true, MAX_CAPACITY, 32, 0)),
+            Arguments.of(new RetainableByteBuffer.Growable(_pool, false, MAX_CAPACITY, 32, 0))
         );
     }
 

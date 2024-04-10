@@ -27,7 +27,7 @@ public class ContentSourceRetainableByteBuffer implements Runnable
     public ContentSourceRetainableByteBuffer(Content.Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<RetainableByteBuffer> promise)
     {
         _source = source;
-        _appendable = new RetainableByteBuffer.Appendable(pool, direct, maxSize);
+        _appendable = new RetainableByteBuffer.Growable(pool, direct, maxSize);
         _promise = promise;
     }
 
