@@ -83,7 +83,7 @@ public class CustomRequestLogTest
 
     private void start(String formatString, Handler handler) throws Exception
     {
-        start(formatString, new SimpleHandler(), (log) -> {});
+        start(formatString, handler, (log) -> {});
     }
 
     private void start(String formatString, Handler handler, Consumer<CustomRequestLog> configCustomRequestLog) throws Exception
