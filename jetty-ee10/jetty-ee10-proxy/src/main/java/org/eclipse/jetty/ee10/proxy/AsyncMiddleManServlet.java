@@ -805,7 +805,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 {
                     RetainableByteBuffer decoded = decoder.decode(input);
                     decodeds.add(decoded);
-                    boolean decodeComplete = !input.hasRemaining() && !decoded.hasRemaining();
+                    boolean decodeComplete = !input.hasRemaining() && decoded.isEmpty();
                     boolean complete = finished && decodeComplete;
                     if (logger.isDebugEnabled())
                         logger.debug("Ungzipped {} bytes, complete={}", decoded.remaining(), complete);

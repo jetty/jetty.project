@@ -20,6 +20,7 @@ import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
@@ -81,67 +82,7 @@ public interface RetainableByteBuffer extends Retainable
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
     {
-        return new RetainableByteBuffer()
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return byteBuffer;
-            }
-
-            @Override
-            public boolean isRetained()
-            {
-                return retainable.isRetained();
-            }
-
-            @Override
-            public boolean canRetain()
-            {
-                return retainable.canRetain();
-            }
-
-            @Override
-            public void retain()
-            {
-                retainable.retain();
-            }
-
-            @Override
-            public boolean release()
-            {
-                return retainable.release();
-            }
-
-            @Override
-            public String toDetailString()
-            {
-                StringBuilder buf = new StringBuilder();
-                buf.append(getClass().getSimpleName());
-                buf.append("@");
-                buf.append(Integer.toHexString(System.identityHashCode(this)));
-                buf.append("[r=");
-                buf.append(remaining());
-                buf.append("/");
-                buf.append(capacity());
-                buf.append(",");
-                buf.append(retainable);
-                buf.append("]");
-                if (retainable.canRetain())
-                {
-                    buf.append("={");
-                    appendDebugString(buf, this);
-                    buf.append("}");
-                }
-                return buf.toString();
-            }
-
-            @Override
-            public String toString()
-            {
-                return toDetailString();
-            }
-        };
+        return new Appendable.Fixed(byteBuffer, retainable);
     }
 
     /**
@@ -154,21 +95,41 @@ public interface RetainableByteBuffer extends Retainable
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
     {
-        return new AbstractRetainableByteBuffer(byteBuffer)
+        if (byteBuffer.isReadOnly())
         {
+            return new Fixed(byteBuffer)
             {
-                acquire();
-            }
+                @Override
+                public boolean release()
+                {
+                    boolean released = super.release();
+                    if (released)
+                        releaser.run();
+                    return released;
+                }
+            };
+        }
+        else
+        {
+            return new Appendable.Fixed(byteBuffer)
+            {
+                @Override
+                public boolean release()
+                {
+                    boolean released = super.release();
+                    if (released)
+                        releaser.run();
+                    return released;
+                }
+            };
+        }
+    }
 
-            @Override
-            public boolean release()
-            {
-                boolean released = super.release();
-                if (released)
-                    releaser.run();
-                return released;
-            }
-        };
+    default Appendable asAppendable()
+    {
+        if (this instanceof Appendable appendable)
+            return appendable;
+        throw new ReadOnlyBufferException();
     }
 
     /**
@@ -199,12 +160,9 @@ public interface RetainableByteBuffer extends Retainable
      */
     default RetainableByteBuffer copy()
     {
-        return new AbstractRetainableByteBuffer(BufferUtil.copy(getByteBuffer()))
-        {
-            {
-                acquire();
-            }
-        };
+        ByteBuffer byteBuffer = getByteBuffer();
+        ByteBuffer copy = BufferUtil.copy(byteBuffer);
+        return byteBuffer.isReadOnly() ? new Fixed(copy) : new Appendable.Fixed(copy);
     }
 
     /**
@@ -279,10 +237,20 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * @return the number of remaining bytes in the {@code ByteBuffer}
+     * @see #size()
      */
     default int remaining()
     {
         return getByteBuffer().remaining();
+    }
+
+    /**
+     * @return the number of remaining bytes in the {@code ByteBuffer}
+     * @see #remaining()
+     */
+    default long size()
+    {
+        return remaining();
     }
 
     /**
@@ -294,11 +262,21 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * @return the {@code ByteBuffer} capacity
+     * @return the capacity
+     * @see #maxSize()
      */
     default int capacity()
     {
         return getByteBuffer().capacity();
+    }
+
+    /**
+     * @return the maximum size in bytes.
+     * @see #capacity()
+     */
+    default long maxSize()
+    {
+        return capacity();
     }
 
     /**
@@ -373,7 +351,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * @return the number of bytes left for appending in the {@code ByteBuffer}
      */
-    default int space()
+    default long space()
     {
         return capacity() - remaining();
     }
@@ -548,7 +526,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public int space()
+        public long space()
         {
             return getWrapped().space();
         }
@@ -561,16 +539,118 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * A {@link RetainableByteBuffer} with optimized append methods
+     * An abstract implementation of {@link RetainableByteBuffer} that provides the basic {@link Retainable} functionality
+     */
+    abstract class Abstract implements RetainableByteBuffer
+    {
+        private final Retainable _retainable;
+
+        public Abstract()
+        {
+            this(new ReferenceCounter());
+        }
+
+        public Abstract(Retainable retainable)
+        {
+            _retainable = Objects.requireNonNull(retainable);
+        }
+
+        protected Retainable getRetainable()
+        {
+            return _retainable;
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return _retainable.canRetain();
+        }
+
+        @Override
+        public void retain()
+        {
+            _retainable.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return _retainable.release();
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return _retainable.isRetained();
+        }
+    }
+
+    /**
+     * A fixed capacity {@link RetainableByteBuffer} implementation backed by a single, probably read-only, {@link ByteBuffer}
+     */
+    class Fixed extends Abstract
+    {
+        private final ByteBuffer _byteBuffer;
+
+        public Fixed(ByteBuffer byteBuffer)
+        {
+            this(byteBuffer, new ReferenceCounter());
+        }
+
+        protected Fixed(ByteBuffer byteBuffer, Retainable retainable)
+        {
+            super(retainable);
+            _byteBuffer = Objects.requireNonNull(byteBuffer);
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return _byteBuffer;
+        }
+
+        @Override
+        public String toDetailString()
+        {
+            StringBuilder buf = new StringBuilder();
+            buf.append(getClass().getSimpleName());
+            buf.append("@");
+            buf.append(Integer.toHexString(System.identityHashCode(this)));
+            buf.append("[");
+            buf.append(remaining());
+            buf.append("/");
+            buf.append(capacity());
+            buf.append(",");
+            buf.append(getRetainable());
+            buf.append("]");
+            if (canRetain())
+            {
+                buf.append("={");
+                RetainableByteBuffer.appendDebugString(buf, this);
+                buf.append("}");
+            }
+            return buf.toString();
+        }
+
+        @Override
+        public String toString()
+        {
+            return toDetailString();
+        }
+    }
+
+    /**
+     * Extends the {@link RetainableByteBuffer} API with optimized append methods.
      */
     interface Appendable extends RetainableByteBuffer
     {
         /**
          * Copies the contents of the given byte buffer to the end of this buffer.
+         * Copies can be avoided by {@link RetainableByteBuffer#wrap(ByteBuffer) wrapping} the buffer and
+         * calling {@link #append(RetainableByteBuffer)}
          * @param bytes the byte buffer to copy from, which is consumed.
          * @return true if all bytes of the given buffer were copied, false otherwise.
          * @throws ReadOnlyBufferException if the buffer is read only or {@link #isRetained() is retained}
-         * @see BufferUtil#append(ByteBuffer, ByteBuffer)
          */
         default boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
         {
@@ -586,7 +666,6 @@ public interface RetainableByteBuffer extends Retainable
          * @param bytes the retainable byte buffer to copy from, which is consumed.
          * @return true if all bytes of the given buffer were copied, false otherwise.
          * @throws ReadOnlyBufferException if the buffer is read only or {@link #isRetained() is retained}
-         * @see BufferUtil#append(ByteBuffer, ByteBuffer)
          */
         default boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
         {
@@ -596,7 +675,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         /**
-         * A wrapper for {@link RetainableByteBuffer} instances
+         * A wrapper for {@link RetainableByteBuffer.Appendable} instances
          */
         class Wrapper extends RetainableByteBuffer.Wrapper implements Appendable
         {
@@ -606,614 +685,673 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             @Override
+            public Appendable asAppendable()
+            {
+                return this;
+            }
+
+            @Override
             public boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
             {
-                return ((Appendable)getWrapped()).append(bytes);
+                return getWrapped().asAppendable().append(bytes);
             }
 
             @Override
             public boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
             {
-                return ((Appendable)getWrapped()).append(bytes);
+                return getWrapped().asAppendable().append(bytes);
             }
-        }
-    }
-
-    /**
-     * A {@link RetainableByteBuffer.Appendable} that may grow in capacity by aggregation and/or retention.
-     */
-    class Growable implements RetainableByteBuffer.Appendable
-    {
-        private final Retainable _retainable = new ReferenceCounter();
-        private final ByteBufferPool _pool;
-        private final boolean _direct;
-        private final long _maxSize;
-        private final List<RetainableByteBuffer> _buffers;
-        private final int _aggregationSize;
-        private final int _minRetainSize;
-        private RetainableByteBuffer _aggregate;
-
-        /**
-         * @param pool The pool from which to allocate buffers
-         * @param direct true if direct buffers should be used
-         * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
-         */
-        public Growable(ByteBufferPool pool, boolean direct, long maxSize)
-        {
-            this(pool, direct, maxSize, -1, -1);
         }
 
         /**
-         * @param pool The pool from which to allocate buffers
-         * @param direct true if direct buffers should be used
-         * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
-         * @param aggregationSize The default size of aggregation buffers; or 0 for no aggregation; or -1 for a default size
+         * A fixed capacity {@link Appendable} {@link RetainableByteBuffer} backed by a single
+         * {@link ByteBuffer}.
          */
-        public Growable(ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize)
+        class Fixed extends RetainableByteBuffer.Fixed implements Appendable
         {
-            this(pool, direct, maxSize, aggregationSize, -1);
+            private int _flipPosition = -1;
+
+            public Fixed(ByteBuffer byteBuffer)
+            {
+                this(byteBuffer, new ReferenceCounter());
+            }
+
+            protected Fixed(ByteBuffer byteBuffer, Retainable retainable)
+            {
+                super(byteBuffer, retainable);
+            }
+
+            @Override
+            public Appendable asAppendable()
+            {
+                return this;
+            }
+
+            @Override
+            public int remaining()
+            {
+                if (_flipPosition < 0)
+                    return super.remaining();
+                return super.getByteBuffer().position() - _flipPosition;
+            }
+
+            @Override
+            public boolean hasRemaining()
+            {
+                if (_flipPosition < 0)
+                    return super.hasRemaining();
+
+                return _flipPosition > 0 || super.getByteBuffer().position() > 0;
+            }
+
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                ByteBuffer byteBuffer = super.getByteBuffer();
+                if (_flipPosition >= 0)
+                {
+                    BufferUtil.flipToFlush(byteBuffer, _flipPosition);
+                    _flipPosition = -1;
+                }
+                return byteBuffer;
+            }
+
+            @Override
+            public boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
+            {
+                ByteBuffer byteBuffer = super.getByteBuffer();
+                if (byteBuffer.isReadOnly() || isRetained())
+                    throw new ReadOnlyBufferException();
+                if (_flipPosition < 0)
+                    _flipPosition = BufferUtil.flipToFill(byteBuffer);
+                BufferUtil.put(bytes, byteBuffer);
+                return !bytes.hasRemaining();
+            }
         }
 
         /**
-         * @param pool The pool from which to allocate buffers
-         * @param direct true if direct buffers should be used
-         * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
-         * @param aggregationSize The default size of aggregation buffers; or 0 for no aggregation; or -1 for a default size
-         * @param minRetainSize The minimal size of a {@link RetainableByteBuffer} before it will be retained; or 0 to always retain; or -1 for a default value;
+         * An {@link Appendable} {@link RetainableByteBuffer} that can grow its capacity, backed by a chain of {@link ByteBuffer}, which may grow
+         * in capacity either by aggregation and/or retention.
+         * When retaining, a chain of zero copy buffers are kept.
+         * When aggregating, this class avoid repetitive copies of the same data during growth by aggregating
+         * to a chain of buffers, which are only copied to a single buffer if required.
          */
-        public Growable(ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
+        class Growable extends Abstract implements Appendable
         {
-            this(new ArrayList<>(), pool, direct, maxSize, aggregationSize, minRetainSize);
-        }
+            private final ByteBufferPool _pool;
+            private final boolean _direct;
+            private final long _maxSize;
+            private final List<RetainableByteBuffer> _buffers;
+            private final int _aggregationSize;
+            private final int _minRetainSize;
+            private RetainableByteBuffer.Appendable _aggregate;
 
-        private Growable(List<RetainableByteBuffer> buffers, ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
-        {
-            _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
-            _direct = direct;
-            _maxSize = maxSize < 0 ? Long.MAX_VALUE : maxSize;
-            _buffers = buffers;
-
-            if (aggregationSize < 0)
+            /**
+             * @param pool The pool from which to allocate buffers
+             * @param direct true if direct buffers should be used
+             * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
+             */
+            public Growable(ByteBufferPool pool, boolean direct, long maxSize)
             {
-                _aggregationSize = (int)Math.min(_maxSize, 8192L);
-            }
-            else
-            {
-                if (aggregationSize > _maxSize)
-                    throw new IllegalArgumentException("aggregationSize(%d) must be <= maxCapacity(%d)".formatted(aggregationSize, _maxSize));
-                _aggregationSize = aggregationSize;
-            }
-            _minRetainSize = minRetainSize < 0 ? Math.min(128, _aggregationSize) : minRetainSize;
-            if (_minRetainSize > _maxSize && _aggregationSize == 0)
-                throw new IllegalArgumentException("must always retain if cannot aggregate");
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return switch (_buffers.size())
-            {
-                case 0 -> RetainableByteBuffer.EMPTY.getByteBuffer();
-                case 1 -> _buffers.get(0).getByteBuffer();
-                default ->
-                {
-                    RetainableByteBuffer combined = copy(true);
-                    _buffers.add(combined);
-                    yield combined.getByteBuffer();
-                }
-            };
-        }
-
-        @Override
-        public byte get() throws BufferUnderflowException
-        {
-            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
-            {
-                RetainableByteBuffer buffer = i.next();
-                if (buffer.isEmpty())
-                {
-                    buffer.release();
-                    i.remove();
-                    continue;
-                }
-
-                byte b = buffer.get();
-                if (buffer.isEmpty())
-                {
-                    buffer.release();
-                    i.remove();
-                }
-                return b;
-            }
-            throw new BufferUnderflowException();
-        }
-
-        @Override
-        public int get(byte[] bytes, int offset, int length)
-        {
-            int got = 0;
-            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); length > 0 && i.hasNext();)
-            {
-                RetainableByteBuffer buffer = i.next();
-                int l = buffer.get(bytes, offset, length);
-                got += l;
-                offset += l;
-                length -= l;
-
-                if (buffer.isEmpty())
-                {
-                    buffer.release();
-                    i.remove();
-                }
-            }
-            return got;
-        }
-
-        @Override
-        public boolean isDirect()
-        {
-            return _direct;
-        }
-
-        @Override
-        public boolean hasRemaining()
-        {
-            for (RetainableByteBuffer rbb : _buffers)
-                if (!rbb.isEmpty())
-                    return true;
-            return false;
-        }
-
-        @Override
-        public long skip(long length)
-        {
-            long skipped = 0;
-            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); length > 0 && i.hasNext();)
-            {
-                RetainableByteBuffer buffer = i.next();
-                long skip = buffer.skip(length);
-                skipped += skip;
-                length -= skip;
-
-                if (buffer.isEmpty())
-                {
-                    buffer.release();
-                    i.remove();
-                }
-            }
-            return skipped;
-        }
-
-        @Override
-        public RetainableByteBuffer slice()
-        {
-            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
-            for (RetainableByteBuffer rbb : _buffers)
-                buffers.add(rbb.slice());
-            retain();
-            Appendable parent = this;
-            return new Growable(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize)
-            {
-                @Override
-                public boolean release()
-                {
-                    if (super.release())
-                    {
-                        parent.release();
-                        return true;
-                    }
-                    return false;
-                }
-            };
-        }
-
-        @Override
-        public RetainableByteBuffer slice(long length)
-        {
-            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
-            for (RetainableByteBuffer rbb : _buffers)
-            {
-                int l = rbb.remaining();
-
-                if (l > length)
-                {
-                    buffers.add(rbb.slice(length));
-                    break;
-                }
-
-                buffers.add(rbb.slice());
-                length -= l;
+                this(pool, direct, maxSize, -1, -1);
             }
 
-            retain();
-            Appendable parent = this;
-            return new Growable(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize)
+            /**
+             * @param pool The pool from which to allocate buffers
+             * @param direct true if direct buffers should be used
+             * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
+             * @param aggregationSize The default size of aggregation buffers; or 0 for no aggregation; or -1 for a default size
+             */
+            public Growable(ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize)
             {
-                @Override
-                public boolean release()
-                {
-                    if (super.release())
-                    {
-                        parent.release();
-                        return true;
-                    }
-                    return false;
-                }
-            };
-        }
-
-        @Override
-        public int space()
-        {
-            long space = spaceLong();
-            if (space > Integer.MAX_VALUE)
-                return Integer.MAX_VALUE;
-            return (int)space;
-        }
-
-        public long spaceLong()
-        {
-            return capacityLong() - remainingLong();
-        }
-
-        @Override
-        public boolean isFull()
-        {
-            return spaceLong() <= 0;
-        }
-
-        @Override
-        public RetainableByteBuffer copy()
-        {
-            return copy(false);
-        }
-
-        private RetainableByteBuffer copy(boolean take)
-        {
-            int length = remaining();
-            RetainableByteBuffer combinedBuffer = _pool.acquire(length, _direct);
-            ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
-            BufferUtil.flipToFill(byteBuffer);
-            for (RetainableByteBuffer buffer : _buffers)
-            {
-                byteBuffer.put(buffer.getByteBuffer().slice());
-                if (take)
-                    buffer.release();
+                this(pool, direct, maxSize, aggregationSize, -1);
             }
-            BufferUtil.flipToFlush(byteBuffer, 0);
-            if (take)
-                _buffers.clear();
-            return combinedBuffer;
-        }
 
-        /**
-         * {@inheritDoc}
-         * @return {@link Integer#MAX_VALUE} if the length of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}
-         */
-        @Override
-        public int remaining()
-        {
-            long remainingLong = remainingLong();
-            return remainingLong > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.toIntExact(remainingLong);
-        }
-
-        public long remainingLong()
-        {
-            long length = 0;
-            for (RetainableByteBuffer buffer : _buffers)
-                length += buffer.remaining();
-            return length;
-        }
-
-        /**
-         * {@inheritDoc}
-         * @return {@link Integer#MAX_VALUE} if the maxLength of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}.
-         */
-        @Override
-        public int capacity()
-        {
-            long capacityLong = capacityLong();
-            return capacityLong > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.toIntExact(capacityLong);
-        }
-
-        public long capacityLong()
-        {
-            return _maxSize;
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return _retainable.canRetain();
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return _retainable.isRetained();
-        }
-
-        @Override
-        public void retain()
-        {
-            _retainable.retain();
-        }
-
-        @Override
-        public boolean release()
-        {
-            if (_retainable.release())
+            /**
+             * @param pool The pool from which to allocate buffers
+             * @param direct true if direct buffers should be used
+             * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
+             * @param aggregationSize The default size of aggregation buffers; or 0 for no aggregation; or -1 for a default size
+             * @param minRetainSize The minimal size of a {@link RetainableByteBuffer} before it will be retained; or 0 to always retain; or -1 for a default value;
+             */
+            public Growable(ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
             {
-                for (RetainableByteBuffer buffer : _buffers)
-                    buffer.release();
-                _buffers.clear();
-                _aggregate = null;
-                return true;
+                this(new ArrayList<>(), pool, direct, maxSize, aggregationSize, minRetainSize);
             }
-            return false;
-        }
 
-        @Override
-        public void clear()
-        {
-            if (_buffers.isEmpty())
-                return;
-            _aggregate = null;
-            boolean first = true;
-            for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
+            private Growable(List<RetainableByteBuffer> buffers, ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
             {
-                RetainableByteBuffer rbb = i.next();
-                if (first)
+                super();
+                _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
+                _direct = direct;
+                _maxSize = maxSize < 0 ? Long.MAX_VALUE : maxSize;
+                _buffers = buffers;
+
+                if (aggregationSize < 0)
                 {
-                    rbb.clear();
-                    first = false;
+                    _aggregationSize = (int)Math.min(_maxSize, 8192L);
                 }
                 else
                 {
-                    rbb.release();
+                    if (aggregationSize > _maxSize)
+                        throw new IllegalArgumentException("aggregationSize(%d) must be <= maxCapacity(%d)".formatted(aggregationSize, _maxSize));
+                    _aggregationSize = aggregationSize;
+                }
+                _minRetainSize = minRetainSize < 0 ? Math.min(128, _aggregationSize) : minRetainSize;
+                if (_minRetainSize > _maxSize && _aggregationSize == 0)
+                    throw new IllegalArgumentException("must always retain if cannot aggregate");
+            }
+
+            @Override
+            public Appendable asAppendable()
+            {
+                return this;
+            }
+
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return switch (_buffers.size())
+                {
+                    case 0 -> RetainableByteBuffer.EMPTY.getByteBuffer();
+                    case 1 -> _buffers.get(0).getByteBuffer();
+                    default ->
+                    {
+                        RetainableByteBuffer combined = copy(true);
+                        _buffers.add(combined);
+                        yield combined.getByteBuffer();
+                    }
+                };
+            }
+
+            @Override
+            public byte get() throws BufferUnderflowException
+            {
+                for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+                {
+                    RetainableByteBuffer buffer = i.next();
+                    if (buffer.isEmpty())
+                    {
+                        buffer.release();
+                        i.remove();
+                        continue;
+                    }
+
+                    byte b = buffer.get();
+                    if (buffer.isEmpty())
+                    {
+                        buffer.release();
+                        i.remove();
+                    }
+                    return b;
+                }
+                throw new BufferUnderflowException();
+            }
+
+            @Override
+            public int get(byte[] bytes, int offset, int length)
+            {
+                int got = 0;
+                for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); length > 0 && i.hasNext();)
+                {
+                    RetainableByteBuffer buffer = i.next();
+                    int l = buffer.get(bytes, offset, length);
+                    got += l;
+                    offset += l;
+                    length -= l;
+
+                    if (buffer.isEmpty())
+                    {
+                        buffer.release();
+                        i.remove();
+                    }
+                }
+                return got;
+            }
+
+            @Override
+            public boolean isDirect()
+            {
+                return _direct;
+            }
+
+            @Override
+            public boolean hasRemaining()
+            {
+                for (RetainableByteBuffer rbb : _buffers)
+                    if (!rbb.isEmpty())
+                        return true;
+                return false;
+            }
+
+            @Override
+            public long skip(long length)
+            {
+                long skipped = 0;
+                for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); length > 0 && i.hasNext();)
+                {
+                    RetainableByteBuffer buffer = i.next();
+                    long skip = buffer.skip(length);
+                    skipped += skip;
+                    length -= skip;
+
+                    if (buffer.isEmpty())
+                    {
+                        buffer.release();
+                        i.remove();
+                    }
+                }
+                return skipped;
+            }
+
+            @Override
+            public RetainableByteBuffer slice()
+            {
+                List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
+                for (RetainableByteBuffer rbb : _buffers)
+                    buffers.add(rbb.slice());
+                retain();
+                Appendable parent = this;
+                return new Growable(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize)
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        if (super.release())
+                        {
+                            parent.release();
+                            return true;
+                        }
+                        return false;
+                    }
+                };
+            }
+
+            @Override
+            public RetainableByteBuffer slice(long length)
+            {
+                List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
+                for (RetainableByteBuffer rbb : _buffers)
+                {
+                    int l = rbb.remaining();
+
+                    if (l > length)
+                    {
+                        buffers.add(rbb.slice(length));
+                        break;
+                    }
+
+                    buffers.add(rbb.slice());
+                    length -= l;
+                }
+
+                retain();
+                Appendable parent = this;
+                return new Growable(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize)
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        if (super.release())
+                        {
+                            parent.release();
+                            return true;
+                        }
+                        return false;
+                    }
+                };
+            }
+
+            @Override
+            public long space()
+            {
+                long space = maxSize() - size();
+                if (space > Integer.MAX_VALUE)
+                    return Integer.MAX_VALUE;
+                return space;
+            }
+
+            @Override
+            public boolean isFull()
+            {
+                return size() >= maxSize();
+            }
+
+            @Override
+            public RetainableByteBuffer copy()
+            {
+                return copy(false);
+            }
+
+            private RetainableByteBuffer copy(boolean take)
+            {
+                int length = remaining();
+                RetainableByteBuffer combinedBuffer = _pool.acquire(length, _direct);
+                ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
+                BufferUtil.flipToFill(byteBuffer);
+                for (RetainableByteBuffer buffer : _buffers)
+                {
+                    byteBuffer.put(buffer.getByteBuffer().slice());
+                    if (take)
+                        buffer.release();
+                }
+                BufferUtil.flipToFlush(byteBuffer, 0);
+                if (take)
+                    _buffers.clear();
+                return combinedBuffer;
+            }
+
+            /**
+             * {@inheritDoc}
+             * @return {@link Integer#MAX_VALUE} if the length of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}
+             */
+            @Override
+            public int remaining()
+            {
+                long size = size();
+                return size > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.toIntExact(size);
+            }
+
+            @Override
+            public long size()
+            {
+                long length = 0;
+                for (RetainableByteBuffer buffer : _buffers)
+                    length += buffer.remaining();
+                return length;
+            }
+
+            /**
+             * {@inheritDoc}
+             * @return {@link Integer#MAX_VALUE} if the maxLength of this {@code Accumulator} is greater than {@link Integer#MAX_VALUE}.
+             */
+            @Override
+            public int capacity()
+            {
+                long maxSize = maxSize();
+                return maxSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.toIntExact(maxSize);
+            }
+
+            @Override
+            public long maxSize()
+            {
+                return _maxSize;
+            }
+
+            @Override
+            public boolean release()
+            {
+                if (super.release())
+                {
+                    for (RetainableByteBuffer buffer : _buffers)
+                        buffer.release();
+                    _buffers.clear();
+                    _aggregate = null;
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public void clear()
+            {
+                if (_buffers.isEmpty())
+                    return;
+                _aggregate = null;
+                boolean first = true;
+                for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
+                {
+                    RetainableByteBuffer rbb = i.next();
+                    if (first)
+                    {
+                        rbb.clear();
+                        first = false;
+                    }
+                    else
+                    {
+                        rbb.release();
+                        i.remove();
+                    }
+                }
+            }
+
+            @Override
+            public boolean append(ByteBuffer bytes)
+            {
+                // Cannot mutate contents if retained
+                if (isRetained())
+                    throw new ReadOnlyBufferException();
+
+                // handle empty appends
+                if (bytes == null)
+                    return true;
+                int length = bytes.remaining();
+                if (length == 0)
+                    return true;
+
+                // Try appending to the existing aggregation buffer
+                boolean existing = _aggregate != null;
+                if (existing)
+                {
+                    if (BufferUtil.append(_aggregate.getByteBuffer(), bytes) == length)
+                        return true;
+
+                    // we were limited by the capacity of the buffer, fall through to trying to allocate another
+                    _aggregate = null;
+                }
+
+                // are we full?
+                long size = size();
+                long space = _maxSize - size;
+                if (space <= 0)
+                    return false;
+
+                // Can we use the last buffer as aggregate
+                if (!existing && !_buffers.isEmpty())
+                {
+                    RetainableByteBuffer buffer = _buffers.get(_buffers.size() - 1);
+                    if (buffer instanceof Appendable appendable && !buffer.isRetained() && buffer.space() >= length)
+                        _aggregate = appendable;
+                }
+
+                // acquire a new aggregate buffer if necessary
+                if (_aggregate == null)
+                {
+                    int aggregateSize = _aggregationSize;
+
+                    // If we cannot grow, allow a single allocation only if we have not already retained.
+                    if (aggregateSize == 0 && _buffers.isEmpty() && _maxSize < Integer.MAX_VALUE)
+                        aggregateSize = (int)_maxSize;
+                    _aggregate = _pool.acquire(Math.max(length, aggregateSize), _direct).asAppendable();
+                }
+
+                // If we were given a buffer larger than the space available, then adjust the capacity
+                if (_aggregate.capacity() > space)
+                {
+                    ByteBuffer byteBuffer = _aggregate.getByteBuffer();
+                    int limit = byteBuffer.limit();
+                    byteBuffer.limit(limit + Math.toIntExact(space));
+                    byteBuffer = byteBuffer.slice();
+                    byteBuffer.limit(limit);
+                    _aggregate = RetainableByteBuffer.wrap(byteBuffer, _aggregate).asAppendable();
+                }
+
+                _buffers.add(_aggregate);
+
+                return _aggregate.append(bytes);
+            }
+
+            @Override
+            public boolean append(RetainableByteBuffer retainableBytes)
+            {
+                // Cannot mutate contents if retained
+                if (isRetained())
+                    throw new ReadOnlyBufferException();
+
+                // handle empty appends
+                if (retainableBytes == null)
+                    return true;
+                long length = retainableBytes.remaining();
+                if (length == 0)
+                    return true;
+
+                // If we are already aggregating, and the content will fit, then just aggregate
+                if (_aggregate != null && _aggregate.space() >= length)
+                {
+                    BufferUtil.append(_aggregate.getByteBuffer(), retainableBytes.getByteBuffer());
+                    return true;
+                }
+
+                // If the content is a tiny part of the retainable, then better to aggregate rather than accumulate
+                if (length < _minRetainSize)
+                    return append(retainableBytes.getByteBuffer());
+
+                // We will accumulate, so stop any further aggregation without allocating a new aggregate buffer;
+                _aggregate = null;
+
+                // Do we have space?
+                long space = _maxSize - size();
+
+                if (space >= length)
+                {
+                    // We have space, so add a retained slice;
+                    _buffers.add(retainableBytes.slice());
+                    retainableBytes.skip(length);
+                    return true;
+                }
+
+                // Are we full?
+                if (space == 0)
+                    return false;
+
+                // Add a space limited retained slice of the buffer
+                length = space;
+                _buffers.add(retainableBytes.slice(length));
+                retainableBytes.skip(length);
+                return false;
+            }
+
+            @Override
+            public void putTo(ByteBuffer toInfillMode)
+            {
+                for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+                {
+                    RetainableByteBuffer buffer = i.next();
+                    buffer.putTo(toInfillMode);
+                    buffer.release();
                     i.remove();
                 }
             }
-        }
 
-        public boolean append(ByteBuffer bytes)
-        {
-            // handle empty appends
-            if (bytes == null)
-                return true;
-            int length = bytes.remaining();
-            if (length == 0)
-                return true;
-
-            // Cannot mutate contents if retained
-            if (isRetained())
-                throw new ReadOnlyBufferException();
-
-            // Try appending to the existing aggregation buffer
-            boolean existing = _aggregate != null;
-            if (existing)
+            @Override
+            public boolean appendTo(ByteBuffer to)
             {
-                if (BufferUtil.append(_aggregate.getByteBuffer(), bytes) == length)
-                    return true;
-
-                // we were limited by the capacity of the buffer, fall through to trying to allocate another
-                _aggregate = null;
-            }
-
-            // are we full?
-            long size = remainingLong();
-            long space = _maxSize - size;
-            if (space <= 0)
-                return false;
-
-            // Can we use the last buffer as aggregate
-            if (!existing && !_buffers.isEmpty())
-            {
-                RetainableByteBuffer buffer = _buffers.get(_buffers.size() - 1);
-                if (!buffer.isRetained() && buffer.space() >= length)
-                    _aggregate = buffer;
-            }
-
-            // acquire a new aggregate buffer if necessary
-            if (_aggregate == null)
-            {
-                int aggregateSize = _aggregationSize;
-
-                // If we cannot grow, allow a single allocation only if we have not already retained.
-                if (aggregateSize == 0 && _buffers.isEmpty() && _maxSize < Integer.MAX_VALUE)
-                    aggregateSize = (int)_maxSize;
-                _aggregate = _pool.acquire(Math.max(length, aggregateSize), _direct);
-            }
-
-            // If we were given a buffer larger than the space available, then adjust the capacity
-            if (_aggregate.capacity() > space)
-            {
-                ByteBuffer byteBuffer = _aggregate.getByteBuffer();
-                int limit = byteBuffer.limit();
-                byteBuffer.limit(limit + Math.toIntExact(space));
-                byteBuffer = byteBuffer.slice();
-                byteBuffer.limit(limit);
-                _aggregate = RetainableByteBuffer.wrap(byteBuffer, _aggregate);
-            }
-
-            _buffers.add(_aggregate);
-
-            // TODO avoid this cast if possible
-            if (_aggregate instanceof Appendable appendable)
-                return appendable.append(bytes);
-
-            return BufferUtil.append(_aggregate.getByteBuffer(), bytes) == length;
-        }
-
-        public boolean append(RetainableByteBuffer retainableBytes)
-        {
-            // handle empty appends
-            if (retainableBytes == null)
-                return true;
-            long length = retainableBytes.remaining();
-            if (length == 0)
-                return true;
-
-            // Cannot mutate contents if retained
-            if (isRetained())
-                throw new ReadOnlyBufferException();
-
-            // If we are already aggregating, and the content will fit, then just aggregate
-            if (_aggregate != null && _aggregate.space() >= length)
-            {
-                BufferUtil.append(_aggregate.getByteBuffer(), retainableBytes.getByteBuffer());
-                return true;
-            }
-
-            // If the content is a tiny part of the retainable, then better to aggregate rather than accumulate
-            if (length < _minRetainSize)
-                return append(retainableBytes.getByteBuffer());
-
-            // We will accumulate, so stop any further aggregation without allocating a new aggregate buffer;
-            _aggregate = null;
-
-            // Do we have space?
-            long space = _maxSize - remainingLong();
-
-            if (space >= length)
-            {
-                // We have space, so add a retained slice;
-                _buffers.add(retainableBytes.slice());
-                retainableBytes.skip(length);
-                return true;
-            }
-
-            // Are we full?
-            if (space == 0)
-                return false;
-
-            // Add a space limited retained slice of the buffer
-            length = space;
-            _buffers.add(retainableBytes.slice(length));
-            retainableBytes.skip(length);
-            return false;
-        }
-
-        @Override
-        public void putTo(ByteBuffer toInfillMode)
-        {
-            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
-            {
-                RetainableByteBuffer buffer = i.next();
-                buffer.putTo(toInfillMode);
-                buffer.release();
-                i.remove();
-            }
-        }
-
-        @Override
-        public boolean appendTo(ByteBuffer to)
-        {
-            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
-            {
-                RetainableByteBuffer buffer = i.next();
-                if (!buffer.appendTo(to))
-                    return false;
-                buffer.release();
-                i.remove();
-            }
-            return true;
-        }
-
-        @Override
-        public boolean appendTo(RetainableByteBuffer to)
-        {
-            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
-            {
-                RetainableByteBuffer buffer = i.next();
-                if (!buffer.appendTo(to))
-                    return false;
-                buffer.release();
-                i.remove();
-            }
-            return true;
-        }
-
-        @Override
-        public void writeTo(Content.Sink sink, boolean last, Callback callback)
-        {
-            switch (_buffers.size())
-            {
-                case 0 -> callback.succeeded();
-                case 1 ->
+                for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
                 {
-                    RetainableByteBuffer buffer = _buffers.get(0);
-                    buffer.writeTo(sink, last, Callback.from(() ->
-                    {
-                        if (!buffer.hasRemaining())
-                        {
-                            buffer.release();
-                            _buffers.clear();
-                        }
-                    }, callback));
+                    RetainableByteBuffer buffer = i.next();
+                    if (!buffer.appendTo(to))
+                        return false;
+                    buffer.release();
+                    i.remove();
                 }
-                default -> new IteratingNestedCallback(callback)
-                {
-                    boolean _lastWritten;
+                return true;
+            }
 
-                    @Override
-                    protected Action process()
+            @Override
+            public boolean appendTo(RetainableByteBuffer to)
+            {
+                for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+                {
+                    RetainableByteBuffer buffer = i.next();
+                    if (!buffer.appendTo(to))
+                        return false;
+                    buffer.release();
+                    i.remove();
+                }
+                return true;
+            }
+
+            @Override
+            public void writeTo(Content.Sink sink, boolean last, Callback callback)
+            {
+                switch (_buffers.size())
+                {
+                    case 0 -> callback.succeeded();
+                    case 1 ->
                     {
-                        while (true)
+                        RetainableByteBuffer buffer = _buffers.get(0);
+                        buffer.writeTo(sink, last, Callback.from(() ->
                         {
-                            if (_buffers.isEmpty())
+                            if (!buffer.hasRemaining())
                             {
-                                if (last && !_lastWritten)
+                                buffer.release();
+                                _buffers.clear();
+                            }
+                        }, callback));
+                    }
+                    default -> new IteratingNestedCallback(callback)
+                    {
+                        boolean _lastWritten;
+
+                        @Override
+                        protected Action process()
+                        {
+                            while (true)
+                            {
+                                if (_buffers.isEmpty())
                                 {
-                                    _lastWritten = true;
-                                    sink.write(true, BufferUtil.EMPTY_BUFFER, this);
+                                    if (last && !_lastWritten)
+                                    {
+                                        _lastWritten = true;
+                                        sink.write(true, BufferUtil.EMPTY_BUFFER, this);
+                                        return Action.SCHEDULED;
+                                    }
+                                    return Action.SUCCEEDED;
+                                }
+
+                                RetainableByteBuffer buffer = _buffers.get(0);
+                                if (buffer.hasRemaining())
+                                {
+                                    _lastWritten = last && _buffers.size() == 1;
+                                    buffer.writeTo(sink, _lastWritten, this);
                                     return Action.SCHEDULED;
                                 }
-                                return Action.SUCCEEDED;
-                            }
 
-                            RetainableByteBuffer buffer = _buffers.get(0);
-                            if (buffer.hasRemaining())
-                            {
-                                _lastWritten = last && _buffers.size() == 1;
-                                buffer.writeTo(sink, _lastWritten, this);
-                                return Action.SCHEDULED;
+                                buffer.release();
+                                _buffers.remove(0);
                             }
-
-                            buffer.release();
-                            _buffers.remove(0);
                         }
-                    }
-                }.iterate();
+                    }.iterate();
+                }
             }
-        }
 
-        @Override
-        public String toString()
-        {
-            StringBuilder buf = new StringBuilder();
-
-            buf.append(getClass().getSimpleName());
-            buf.append("@");
-            buf.append(Integer.toHexString(System.identityHashCode(this)));
-            buf.append("[");
-            buf.append(remainingLong());
-            buf.append("/");
-            buf.append(capacityLong());
-            buf.append(",gb=");
-            buf.append(_aggregationSize);
-            buf.append(",ma=");
-            buf.append(_minRetainSize);
-            buf.append(",");
-            buf.append(_retainable);
-            buf.append("]");
-            if (_retainable.canRetain())
+            @Override
+            public String toString()
             {
-                buf.append("={");
-                appendDebugString(buf, this);
-                buf.append("}");
+                StringBuilder buf = new StringBuilder();
+
+                buf.append(getClass().getSimpleName());
+                buf.append("@");
+                buf.append(Integer.toHexString(System.identityHashCode(this)));
+                buf.append("[");
+                buf.append(size());
+                buf.append("/");
+                buf.append(maxSize());
+                buf.append(",gb=");
+                buf.append(_aggregationSize);
+                buf.append(",ma=");
+                buf.append(_minRetainSize);
+                buf.append(",");
+                buf.append(getRetainable());
+                buf.append("]");
+                if (canRetain())
+                {
+                    buf.append("={");
+                    appendDebugString(buf, this);
+                    buf.append("}");
+                }
+                return buf.toString();
             }
-            return buf.toString();
         }
     }
 
