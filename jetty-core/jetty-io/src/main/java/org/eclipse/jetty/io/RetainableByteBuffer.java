@@ -562,7 +562,6 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * A {@link RetainableByteBuffer} with optimized append methods
-     * TODO create a fixed size version that keeps its buffer in fill mode during append loops
      */
     interface Appendable extends RetainableByteBuffer
     {
@@ -1039,8 +1038,10 @@ public interface RetainableByteBuffer extends Retainable
 
             _buffers.add(_aggregate);
 
+            // TODO avoid this cast if possible
+            if (_aggregate instanceof Appendable appendable)
+                return appendable.append(bytes);
 
-            // TODO keep the _aggregate buffer in fill mode so that flipping can be avoided
             return BufferUtil.append(_aggregate.getByteBuffer(), bytes) == length;
         }
 

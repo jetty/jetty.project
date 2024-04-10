@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -704,7 +705,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 .collect(Collectors.joining(System.lineSeparator()));
         }
 
-        public class Buffer extends RetainableByteBuffer.Wrapper
+        public class Buffer extends RetainableByteBuffer.Wrapper implements RetainableByteBuffer.Appendable
         {
             private final int size;
             private final Instant acquireInstant;
@@ -792,6 +793,22 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     overReleaseStacks.add(new Throwable());
                     throw e;
                 }
+            }
+
+            @Override
+            public boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
+            {
+                if (getWrapped() instanceof Appendable appendable)
+                    return appendable.append(bytes);
+                return Appendable.super.append(bytes);
+            }
+
+            @Override
+            public boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
+            {
+                if (getWrapped() instanceof Appendable appendable)
+                    return appendable.append(bytes);
+                return Appendable.super.append(bytes);
             }
 
             public String dump()

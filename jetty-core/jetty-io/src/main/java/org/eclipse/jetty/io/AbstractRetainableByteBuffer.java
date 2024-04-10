@@ -14,16 +14,20 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.util.Objects;
+
+import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * <p>Abstract implementation of {@link RetainableByteBuffer} with
  * reference counting.</p>
  */
-public abstract class AbstractRetainableByteBuffer implements RetainableByteBuffer
+public abstract class AbstractRetainableByteBuffer implements RetainableByteBuffer.Appendable
 {
     private final ReferenceCounter refCount = new ReferenceCounter(0);
     private final ByteBuffer byteBuffer;
+    private int flipPos = -1;
 
     public AbstractRetainableByteBuffer(ByteBuffer byteBuffer)
     {
@@ -36,6 +40,23 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
     protected void acquire()
     {
         refCount.acquire();
+    }
+
+    @Override
+    public int remaining()
+    {
+        if (flipPos < 0)
+            return byteBuffer.remaining();
+        return byteBuffer.position() - flipPos;
+    }
+
+    @Override
+    public boolean hasRemaining()
+    {
+        if (flipPos < 0)
+            return byteBuffer.hasRemaining();
+
+        return flipPos > 0 || byteBuffer.position() > 0;
     }
 
     @Override
@@ -65,7 +86,23 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
     @Override
     public ByteBuffer getByteBuffer()
     {
+        if (flipPos >= 0)
+        {
+            BufferUtil.flipToFlush(byteBuffer, flipPos);
+            flipPos = -1;
+        }
         return byteBuffer;
+    }
+
+    @Override
+    public boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
+    {
+        if (isRetained())
+            throw new ReadOnlyBufferException();
+        if (flipPos < 0)
+            flipPos = BufferUtil.flipToFill(byteBuffer);
+        BufferUtil.put(bytes, byteBuffer);
+        return !bytes.hasRemaining();
     }
 
     @Override
