@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -158,16 +157,8 @@ public class MessageOutputStream extends OutputStream
             if (closed)
                 throw new IOException("Stream is closed");
 
-            while (data.hasRemaining())
-            {
-                int bufferRemainingSpace = bufferSize - buffer.remaining();
-                int copied = Math.min(bufferRemainingSpace, data.remaining());
-                BufferUtil.append(buffer.getByteBuffer(), data.array(), data.arrayOffset() + data.position(), copied);
-                data.position(data.position() + copied);
-
-                if (data.hasRemaining())
-                    flush(false);
-            }
+            while (!buffer.asAppendable().append(data))
+                flush(false);
         }
     }
 
