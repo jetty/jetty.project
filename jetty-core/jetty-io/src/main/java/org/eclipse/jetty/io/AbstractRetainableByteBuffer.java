@@ -75,7 +75,7 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
         buf.append(getClass().getSimpleName());
         buf.append("@");
         buf.append(Integer.toHexString(System.identityHashCode(this)));
-        buf.append("[r=");
+        buf.append("[");
         buf.append(remaining());
         buf.append("/");
         buf.append(capacity());
