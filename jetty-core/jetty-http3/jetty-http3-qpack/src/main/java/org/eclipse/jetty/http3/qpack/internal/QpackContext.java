@@ -84,7 +84,6 @@ public class QpackContext
     {
         if (entry.isStatic())
             return entry.getIndex();
-
-        return _dynamicTable.index(entry);
+        return _dynamicTable.relativeIndexOf(entry);
     }
 }

@@ -115,17 +115,9 @@ public class DynamicTable implements Iterable<Entry>, Dumpable
      * @param entry the entry to find the relative index of.
      * @return the relative index of this entry.
      */
-    public int index(Entry entry)
+    public int relativeIndexOf(Entry entry)
     {
-        if (_entries.isEmpty())
-            throw new IllegalArgumentException("Invalid Index");
-
-        Entry firstEntry = _entries.get(0);
-        int index = entry.getIndex() - firstEntry.getIndex();
-        if (index >= _entries.size())
-            throw new IllegalArgumentException("Invalid Index");
-
-        return index;
+        return _absoluteIndex - 1 - entry.getIndex();
     }
 
     /**
