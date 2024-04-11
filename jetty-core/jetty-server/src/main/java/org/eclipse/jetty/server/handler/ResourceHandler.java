@@ -112,10 +112,10 @@ public class ResourceHandler extends Handler.Wrapper
     private ByteBufferPool getByteBufferPool(Context context)
     {
         if (context == null)
-            return ByteBufferPool.NON_POOLING;
+            return new ByteBufferPool.NonPooling();
         Server server = getServer();
         if (server == null)
-            return ByteBufferPool.NON_POOLING;
+            return new ByteBufferPool.NonPooling();
         return server.getByteBufferPool();
     }
 

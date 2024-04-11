@@ -114,10 +114,10 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
     private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return ByteBufferPool.NON_POOLING;
+            return new ByteBufferPool.NonPooling();
         Server server = contextHandler.getServer();
         if (server == null)
-            return ByteBufferPool.NON_POOLING;
+            return new ByteBufferPool.NonPooling();
         return server.getByteBufferPool();
     }
 
