@@ -775,7 +775,7 @@ public class HttpClientTLSTest
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Appendable.Wrapper(super.acquire(size, direct))
                 {
                     @Override
                     public boolean release()
@@ -845,7 +845,7 @@ public class HttpClientTLSTest
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Appendable.Wrapper(super.acquire(size, direct))
                 {
                     @Override
                     public boolean release()
@@ -930,7 +930,7 @@ public class HttpClientTLSTest
             @Override
             public RetainableByteBuffer acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Appendable.Wrapper(super.acquire(size, direct))
                 {
                     @Override
                     public boolean release()
