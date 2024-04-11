@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public class NonRetainableByteBuffer implements RetainableByteBuffer
+public class NonRetainableByteBuffer implements RetainableByteBuffer.Appendable
 {
     private final ByteBuffer byteBuffer;
 
