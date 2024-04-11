@@ -146,7 +146,7 @@ public class DynamicTable implements Iterable<Entry>, Dumpable
         if (index < 0 || index >= _entries.size())
             throw new IllegalArgumentException("Invalid Index " + index);
 
-        return _entries.get(index);
+        return get(index);
     }
 
     public Entry get(int index)
@@ -164,9 +164,24 @@ public class DynamicTable implements Iterable<Entry>, Dumpable
         return _fieldMap.get(field);
     }
 
+    public Entry getRelative(int index)
+    {
+        return getRelative(index, getInsertCount());
+    }
+
+    public Entry getRelative(int index, int base)
+    {
+        return getAbsolute(base - 1 - index);
+    }
+
+    public Entry getPostBase(int index, int base)
+    {
+        return getAbsolute(base + index);
+    }
+
     public int getBase()
     {
-        if (_entries.size() == 0)
+        if (_entries.isEmpty())
             return _absoluteIndex;
         return _entries.get(0).getIndex();
     }

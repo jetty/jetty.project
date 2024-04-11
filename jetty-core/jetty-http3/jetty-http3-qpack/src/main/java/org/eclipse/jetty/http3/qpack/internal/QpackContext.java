@@ -66,6 +66,7 @@ public class QpackContext
         return _dynamicTable.get(StringUtil.asciiToLowerCase(name));
     }
 
+    @Deprecated
     public Entry get(int index)
     {
         if (index <= StaticTable.STATIC_SIZE)
