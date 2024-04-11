@@ -245,7 +245,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             while (true)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Parsing {} in {}", BufferUtil.toDetailString(networkBuffer.getByteBuffer()), this);
+                    LOG.debug("Parsing {} in {}", networkBuffer.toDetailString(), this);
                 // Always parse even empty buffers to advance the parser.
                 if (parse())
                 {
