@@ -63,7 +63,7 @@ public class PathContentSource implements Content.Source
                 throw new AccessDeniedException(path.toString());
             this.path = path;
             this.length = Files.size(path);
-            this.byteBufferPool = byteBufferPool != null ? byteBufferPool : ByteBufferPool.NON_POOLING;
+            this.byteBufferPool = byteBufferPool != null ? byteBufferPool : new ByteBufferPool.NonPooling();
         }
         catch (IOException x)
         {

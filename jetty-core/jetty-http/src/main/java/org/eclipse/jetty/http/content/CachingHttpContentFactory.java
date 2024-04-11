@@ -77,7 +77,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool bufferPool)
     {
         _authority = authority;
-        _bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.NON_POOLING;
+        _bufferPool = bufferPool != null ? bufferPool : new ByteBufferPool.NonPooling();
     }
 
     protected ConcurrentMap<String, CachingHttpContent> getCache()

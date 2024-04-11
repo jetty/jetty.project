@@ -54,7 +54,7 @@ public class InputStreamContentSource implements Content.Source
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
     {
         this.inputStream = Objects.requireNonNull(inputStream);
-        this.bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.NON_POOLING;
+        this.bufferPool = bufferPool != null ? bufferPool : new ByteBufferPool.NonPooling();
     }
 
     public int getBufferSize()
