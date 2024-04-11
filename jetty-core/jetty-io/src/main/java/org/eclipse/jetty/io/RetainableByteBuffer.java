@@ -683,6 +683,11 @@ public interface RetainableByteBuffer extends Retainable
          */
         class Wrapper extends RetainableByteBuffer.Wrapper implements Appendable
         {
+            public Wrapper(RetainableByteBuffer wrapped)
+            {
+                super(wrapped.asAppendable());
+            }
+
             public Wrapper(RetainableByteBuffer.Appendable wrapped)
             {
                 super(wrapped);
