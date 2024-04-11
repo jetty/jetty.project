@@ -795,6 +795,11 @@ public interface RetainableByteBuffer extends Retainable
             private final int _minRetainSize;
             private RetainableByteBuffer.Appendable _aggregate;
 
+            public Growable()
+            {
+                this(null, false, -1, 0, 0);
+            }
+
             /**
              * @param pool The pool from which to allocate buffers
              * @param direct true if direct buffers should be used
