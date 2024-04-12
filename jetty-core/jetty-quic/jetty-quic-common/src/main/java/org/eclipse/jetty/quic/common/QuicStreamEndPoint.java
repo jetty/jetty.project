@@ -22,6 +22,7 @@ import java.util.stream.IntStream;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
@@ -244,6 +245,15 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         // TODO: an alternative way of avoid the race would be to emulate an NIO style
         //  notification, where onReadable() gets called only if there is interest.
 //        getQuicSession().setFillInterested(getStreamId(), false);
+
+        QuicStreamEndPoint streamEndPoint = getQuicSession().getStreamEndPoint(streamId);
+        if (streamEndPoint.isStreamFinished())
+        {
+            EofException e = new EofException();
+            streamEndPoint.getFillInterest().onFail(e);
+            streamEndPoint.getQuicSession().onFailure(e);
+            return false;
+        }
 
         boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())

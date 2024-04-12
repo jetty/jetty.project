@@ -15,11 +15,14 @@ package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
@@ -32,14 +35,18 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.EofException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class RequestReaderTest extends AbstractTest
 {
@@ -114,6 +121,88 @@ public class RequestReaderTest extends AbstractTest
         await().pollDelay(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
         Result result = resultRef.get();
         assertThat(result.getResponse().getStatus(), is(567));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testResetArrivingOnServer(Transport transport) throws Exception
+    {
+        assumeTrue(transport.isMultiplexed());
+
+        CountDownLatch servletDoneLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> serverError = new AtomicReference<>();
+        CountDownLatch errorDoneLatch = new CountDownLatch(1);
+        start(transport, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.addListener(new AsyncListener() {
+                    @Override
+                    public void onComplete(AsyncEvent event)
+                    {
+                    }
+
+                    @Override
+                    public void onTimeout(AsyncEvent event)
+                    {
+                    }
+
+                    @Override
+                    public void onError(AsyncEvent event) throws IOException
+                    {
+                        serverError.set(event.getThrowable());
+                        errorDoneLatch.countDown();
+                        response.sendError(567);
+                        asyncContext.complete();
+                    }
+
+                    @Override
+                    public void onStartAsync(AsyncEvent event)
+                    {
+                    }
+                });
+
+                ServletInputStream inputStream = request.getInputStream();
+                inputStream.setReadListener(new ReadListener() {
+                    @Override
+                    public void onDataAvailable()
+                    {
+                        servletDoneLatch.countDown();
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                    }
+                });
+            }
+        });
+
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+        try (AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(16)))
+        {
+            Request request = client.newRequest(newURI(transport))
+                .method("POST")
+                .timeout(5, TimeUnit.SECONDS)
+                .body(content);
+            request.send(resultRef::set);
+            servletDoneLatch.await();
+            request.abort(new ArithmeticException());
+        }
+
+        assertTrue(errorDoneLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverError.get(), instanceOf(EofException.class));
+
+        await().pollDelay(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
+        Result result = resultRef.get();
+        assertThat(result.getFailure(), instanceOf(ArithmeticException.class));
     }
 
     @ParameterizedTest
