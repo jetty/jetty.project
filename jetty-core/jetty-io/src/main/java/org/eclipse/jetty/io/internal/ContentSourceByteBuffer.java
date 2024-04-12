@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.Promise;
 
 public class ContentSourceByteBuffer implements Runnable
 {
-    private final RetainableByteBuffer.Appendable.DynamicCapacity accumulator = new RetainableByteBuffer.Appendable.DynamicCapacity();
+    private final RetainableByteBuffer.Appendable.DynamicCapacity dynamic = new RetainableByteBuffer.Appendable.DynamicCapacity();
     private final Content.Source source;
     private final Promise<ByteBuffer> promise;
 
@@ -52,14 +52,14 @@ public class ContentSourceByteBuffer implements Runnable
                 return;
             }
 
-            accumulator.append(chunk);
+            dynamic.append(chunk.getByteBuffer().slice());
             chunk.release();
 
             if (chunk.isLast())
             {
-                ByteBuffer byteBuffer = accumulator.getByteBuffer();
-                accumulator.release();
-                promise.succeeded(byteBuffer);
+                ByteBuffer dynamicResult = dynamic.getByteBuffer();
+                dynamic.release();
+                promise.succeeded(dynamicResult);
                 return;
             }
         }
