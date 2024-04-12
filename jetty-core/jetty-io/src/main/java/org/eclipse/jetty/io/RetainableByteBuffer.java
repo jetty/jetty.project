@@ -133,7 +133,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         if (this instanceof Appendable appendable)
             return appendable;
-        throw new ReadOnlyBufferException();
+        return new Appendable.Fixed(getByteBuffer(), this);
     }
 
     /**
