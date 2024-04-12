@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -2026,6 +2027,8 @@ public class ResourceHandlerTest
     {
         FS.ensureEmpty(docRoot);
 
+        _contextHandler.addAliasCheck(new AllowedResourceAliasChecker(_contextHandler));
+
         // Create file with UTF-8 NFC format
         String filename = "swedish-" + new String(StringUtil.fromHexString("C3A5"), UTF_8) + ".txt";
         Files.writeString(docRoot.resolve(filename), "hi a-with-circle", UTF_8);
@@ -2072,6 +2075,8 @@ public class ResourceHandlerTest
     public void testGetUtf8NfdFile() throws Exception
     {
         FS.ensureEmpty(docRoot);
+
+        _contextHandler.addAliasCheck(new AllowedResourceAliasChecker(_contextHandler));
 
         // Create file with UTF-8 NFD format
         String filename = "swedish-a" + new String(StringUtil.fromHexString("CC8A"), UTF_8) + ".txt";
