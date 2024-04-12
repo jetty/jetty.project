@@ -246,20 +246,23 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         //  notification, where onReadable() gets called only if there is interest.
 //        getQuicSession().setFillInterested(getStreamId(), false);
 
-        QuicStreamEndPoint streamEndPoint = getQuicSession().getStreamEndPoint(streamId);
-        if (streamEndPoint.isStreamFinished())
-        {
-            EofException e = new EofException();
-            streamEndPoint.getFillInterest().onFail(e);
-            streamEndPoint.getQuicSession().onFailure(e);
-            return false;
-        }
-
         boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} is readable, processing: {}", streamId, interested);
         if (interested)
+        {
             getFillInterest().fillable();
+        }
+        else
+        {
+            QuicStreamEndPoint streamEndPoint = getQuicSession().getStreamEndPoint(streamId);
+            if (streamEndPoint.isStreamFinished())
+            {
+                EofException e = new EofException();
+                streamEndPoint.getFillInterest().onFail(e);
+                streamEndPoint.getQuicSession().onFailure(e);
+            }
+        }
         return interested;
     }
 
