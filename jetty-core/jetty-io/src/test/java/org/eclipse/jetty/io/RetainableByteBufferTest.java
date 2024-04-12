@@ -38,6 +38,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -104,6 +105,37 @@ public class RetainableByteBufferTest
             return rbb;
         });
 
+        list.add(() ->
+        {
+            RetainableByteBuffer.DynamicCapacity dynamic = new RetainableByteBuffer.DynamicCapacity(_pool, false, 1024);
+            dynamic.append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH));
+            return dynamic;
+        });
+
+        list.add(() ->
+        {
+            RetainableByteBuffer.DynamicCapacity dynamic = new RetainableByteBuffer.DynamicCapacity(_pool, false, 1024, 1024, 0);
+
+            RetainableByteBuffer.Appendable rbb = _pool.acquire(1024, true).asAppendable();
+            rbb.append(BufferUtil.toBuffer("xxxT"));
+            rbb.skip(TEST_OFFSET);
+            dynamic.append(rbb);
+            rbb.release();
+
+            rbb = _pool.acquire(1024, true).asAppendable();
+            rbb.append(BufferUtil.toBuffer(TEST_TEXT_BYTES));
+            ByteBuffer byteBuffer = rbb.getByteBuffer();
+            byteBuffer.position(byteBuffer.position() + TEST_OFFSET + 1);
+            byteBuffer.limit(byteBuffer.limit() - 3);
+            dynamic.append(rbb);
+            rbb.release();
+
+            rbb = RetainableByteBuffer.wrap(BufferUtil.toBuffer("123")).asAppendable();
+            dynamic.append(rbb);
+            rbb.release();
+            return dynamic;
+        });
+
         return list.stream().map(Arguments::of);
     }
 
@@ -114,6 +146,7 @@ public class RetainableByteBufferTest
         RetainableByteBuffer buffer = supplier.get();
         assertFalse(buffer.isEmpty());
         assertTrue(buffer.hasRemaining());
+        assertThat(buffer.size(), is((long)TEST_EXPECTED_BYTES.length));
         assertThat(buffer.remaining(), is(TEST_EXPECTED_BYTES.length));
         buffer.release();
     }
@@ -138,10 +171,13 @@ public class RetainableByteBufferTest
     {
         RetainableByteBuffer buffer = supplier.get();
         Utf8StringBuilder builder = new Utf8StringBuilder();
-        for (int i = buffer.remaining(); i-- > 0;)
+        for (int i = buffer.remaining(); i-- > 0; )
+        {
             builder.append(buffer.get());
+        }
         assertTrue(buffer.isEmpty());
         assertFalse(buffer.hasRemaining());
+        assertThat(buffer.size(), is(0L));
         assertThat(buffer.remaining(), is(0));
         assertThat(builder.toCompleteString(), is(TEST_EXPECTED));
         assertThrows(BufferUnderflowException.class, buffer::get);
@@ -183,12 +219,26 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
+    public void testClear(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        buffer.clear();
+        assertTrue(buffer.isEmpty());
+        assertFalse(buffer.hasRemaining());
+        assertThat(buffer.size(), is(0L));
+        assertThat(buffer.remaining(), is(0));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
     public void testSkipLength(Supplier<RetainableByteBuffer> supplier)
     {
         RetainableByteBuffer buffer = supplier.get();
         buffer.skip(buffer.remaining());
         assertTrue(buffer.isEmpty());
         assertFalse(buffer.hasRemaining());
+        assertThat(buffer.size(), is(0L));
         assertThat(buffer.remaining(), is(0));
         buffer.release();
     }
@@ -198,13 +248,15 @@ public class RetainableByteBufferTest
     public void testSkip1by1(Supplier<RetainableByteBuffer> supplier)
     {
         RetainableByteBuffer buffer = supplier.get();
-        for (int i = buffer.remaining(); i-- > 0;)
+        for (int i = buffer.remaining(); i-- > 0; )
         {
             buffer.skip(1);
+            assertThat(buffer.size(), is((long)i));
             assertThat(buffer.remaining(), is(i));
         }
         assertTrue(buffer.isEmpty());
         assertFalse(buffer.hasRemaining());
+        assertThat(buffer.size(), is(0L));
         assertThat(buffer.remaining(), is(0));
         buffer.release();
     }
@@ -224,6 +276,42 @@ public class RetainableByteBufferTest
     {
         RetainableByteBuffer buffer = supplier.get();
         RetainableByteBuffer slice = buffer.slice();
+
+        byte[] testing = new byte[1024];
+        assertThat(slice.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
+        assertThat(BufferUtil.toString(BufferUtil.toBuffer(testing, 0, TEST_EXPECTED_BYTES.length)), equalTo(TEST_EXPECTED));
+        slice.release();
+
+        testing = new byte[1024];
+        assertThat(buffer.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
+        assertThat(BufferUtil.toString(BufferUtil.toBuffer(testing, 0, TEST_EXPECTED_BYTES.length)), equalTo(TEST_EXPECTED));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testSliceLess(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        RetainableByteBuffer slice = buffer.slice(buffer.size() - 2);
+
+        byte[] testing = new byte[1024];
+        assertThat(slice.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length - 2));
+        assertThat(BufferUtil.toString(BufferUtil.toBuffer(testing, 0, TEST_EXPECTED_BYTES.length - 2)), equalTo(TEST_EXPECTED.substring(0, TEST_EXPECTED.length() - 2)));
+        slice.release();
+
+        testing = new byte[1024];
+        assertThat(buffer.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
+        assertThat(BufferUtil.toString(BufferUtil.toBuffer(testing, 0, TEST_EXPECTED_BYTES.length)), equalTo(TEST_EXPECTED));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testSliceMore(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        RetainableByteBuffer slice = buffer.slice(buffer.size() + 2);
 
         byte[] testing = new byte[1024];
         assertThat(slice.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
@@ -358,17 +446,20 @@ public class RetainableByteBufferTest
         RetainableByteBuffer buffer = supplier.get();
         String detailString = buffer.toString();
         assertThat(detailString, containsString(buffer.getClass().getSimpleName()));
-        assertThat(detailString, containsString("<<<" + TEST_EXPECTED + ">>>"));
+        assertThat(detailString, anyOf(
+            containsString("<<<" + TEST_EXPECTED + ">>>"),
+            containsString("<<<T>>><<<esting >>><<<123>>>")
+        ));
         buffer.release();
     }
 
     public static Stream<Arguments> appendable()
     {
         return Stream.of(
-            Arguments.of(new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocate(MAX_CAPACITY))),
-            Arguments.of(new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocateDirect(MAX_CAPACITY))),
-            Arguments.of(new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocate(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
-            Arguments.of(new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocateDirect(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
+            Arguments.of(new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(MAX_CAPACITY))),
+            Arguments.of(new RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(MAX_CAPACITY))),
+            Arguments.of(new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
+            Arguments.of(new RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
             Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY)),
             Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY)),
             Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0)),
@@ -384,11 +475,13 @@ public class RetainableByteBufferTest
     @MethodSource("appendable")
     public void testEmptyMutableBuffer(RetainableByteBuffer.Appendable buffer)
     {
+        assertThat(buffer.size(), is(0L));
         assertThat(buffer.remaining(), is(0));
         assertFalse(buffer.hasRemaining());
         assertThat(buffer.capacity(), greaterThanOrEqualTo(MIN_CAPACITY));
         assertFalse(buffer.isFull());
 
+        assertThat(buffer.size(), is(0L));
         assertThat(buffer.remaining(), is(0));
         assertFalse(buffer.getByteBuffer().hasRemaining());
         buffer.release();
@@ -398,11 +491,26 @@ public class RetainableByteBufferTest
     @MethodSource("appendable")
     public void testAppendOneByte(RetainableByteBuffer.Appendable buffer)
     {
-        byte[] bytes = new byte[] {'-', 'X', '-'};
+        byte[] bytes = new byte[]{'-', 'X', '-'};
         while (!buffer.isFull())
+        {
             assertThat(buffer.append(ByteBuffer.wrap(bytes, 1, 1)), is(true));
+        }
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("appendable")
+    public void testSpace(RetainableByteBuffer.Appendable buffer)
+    {
+        assertThat(buffer.space(), equalTo(buffer.maxSize()));
+        assertThat(buffer.space(), equalTo((long)buffer.capacity()));
+        byte[] bytes = new byte[]{'-', 'X', '-'};
+        assertThat(buffer.append(ByteBuffer.wrap(bytes, 1, 1)), is(true));
+        assertThat(buffer.space(), equalTo(buffer.maxSize() - 1L));
+        assertThat((int)buffer.space(), equalTo(buffer.capacity() - 1));
         buffer.release();
     }
 
@@ -475,7 +583,7 @@ public class RetainableByteBufferTest
     @MethodSource("appendable")
     public void testAppendSmallByteBuffer(RetainableByteBuffer.Appendable buffer)
     {
-        byte[] bytes = new byte[] {'-', 'X', '-'};
+        byte[] bytes = new byte[]{'-', 'X', '-'};
         ByteBuffer from = ByteBuffer.wrap(bytes, 1, 1);
         while (!buffer.isFull())
         {
