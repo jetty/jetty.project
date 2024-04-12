@@ -63,7 +63,8 @@ public class RequestReaderTest extends AbstractTest
                 AsyncContext asyncContext = request.startAsync();
 
                 ServletInputStream inputStream = request.getInputStream();
-                inputStream.setReadListener(new ReadListener() {
+                inputStream.setReadListener(new ReadListener()
+                {
                     @Override
                     public void onDataAvailable() throws IOException
                     {
@@ -138,7 +139,8 @@ public class RequestReaderTest extends AbstractTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 AsyncContext asyncContext = request.startAsync();
-                asyncContext.addListener(new AsyncListener() {
+                asyncContext.addListener(new AsyncListener()
+                {
                     @Override
                     public void onComplete(AsyncEvent event)
                     {
@@ -165,7 +167,8 @@ public class RequestReaderTest extends AbstractTest
                 });
 
                 ServletInputStream inputStream = request.getInputStream();
-                inputStream.setReadListener(new ReadListener() {
+                inputStream.setReadListener(new ReadListener()
+                {
                     @Override
                     public void onDataAvailable()
                     {
