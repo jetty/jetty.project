@@ -15,13 +15,13 @@ package org.eclipse.jetty.io.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Promise;
 
 public class ContentSourceByteBuffer implements Runnable
 {
-    private final ByteBufferAccumulator accumulator = new ByteBufferAccumulator();
+    private final RetainableByteBuffer.Appendable.DynamicCapacity accumulator = new RetainableByteBuffer.Appendable.DynamicCapacity();
     private final Content.Source source;
     private final Promise<ByteBuffer> promise;
 
@@ -52,13 +52,14 @@ public class ContentSourceByteBuffer implements Runnable
                 return;
             }
 
-            // TODO avoid this copy with a retain
-            accumulator.copyBuffer(chunk.getByteBuffer());
+            accumulator.append(chunk);
             chunk.release();
 
             if (chunk.isLast())
             {
-                promise.succeeded(accumulator.takeByteBuffer());
+                ByteBuffer byteBuffer = accumulator.getByteBuffer();
+                accumulator.release();
+                promise.succeeded(byteBuffer);
                 return;
             }
         }

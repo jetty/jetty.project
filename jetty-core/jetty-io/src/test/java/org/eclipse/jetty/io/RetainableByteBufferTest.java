@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -80,10 +81,10 @@ public class RetainableByteBufferTest
         list.add(() -> RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).asReadOnlyBuffer()));
         list.add(() -> RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).duplicate()));
 
-        list.add(() -> new RetainableByteBuffer.Fixed(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH)));
-        list.add(() -> new RetainableByteBuffer.Fixed(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).slice()));
-        list.add(() -> new RetainableByteBuffer.Fixed(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).asReadOnlyBuffer()));
-        list.add(() -> new RetainableByteBuffer.Fixed(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).duplicate()));
+        list.add(() -> new RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH)));
+        list.add(() -> new RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).slice()));
+        list.add(() -> new RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).asReadOnlyBuffer()));
+        list.add(() -> new RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).duplicate()));
 
         list.add(() ->
         {
@@ -355,7 +356,7 @@ public class RetainableByteBufferTest
     public void testToDetailString(Supplier<RetainableByteBuffer> supplier)
     {
         RetainableByteBuffer buffer = supplier.get();
-        String detailString = buffer.toDetailString();
+        String detailString = buffer.toString();
         assertThat(detailString, containsString(buffer.getClass().getSimpleName()));
         assertThat(detailString, containsString("<<<" + TEST_EXPECTED + ">>>"));
         buffer.release();
@@ -364,18 +365,18 @@ public class RetainableByteBufferTest
     public static Stream<Arguments> appendable()
     {
         return Stream.of(
-            Arguments.of(new RetainableByteBuffer.Appendable.Fixed(BufferUtil.allocate(MAX_CAPACITY))),
-            Arguments.of(new RetainableByteBuffer.Appendable.Fixed(BufferUtil.allocateDirect(MAX_CAPACITY))),
-            Arguments.of(new RetainableByteBuffer.Appendable.Fixed(BufferUtil.allocate(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
-            Arguments.of(new RetainableByteBuffer.Appendable.Fixed(BufferUtil.allocateDirect(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
-            Arguments.of(new RetainableByteBuffer.Appendable.Growable(_pool, true, MAX_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Appendable.Growable(_pool, false, MAX_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Appendable.Growable(_pool, true, MAX_CAPACITY, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.Growable(_pool, false, MAX_CAPACITY, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.Growable(_pool, true, MAX_CAPACITY, 0, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.Growable(_pool, false, MAX_CAPACITY, 0, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.Growable(_pool, true, MAX_CAPACITY, 32, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.Growable(_pool, false, MAX_CAPACITY, 32, 0))
+            Arguments.of(new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocate(MAX_CAPACITY))),
+            Arguments.of(new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocateDirect(MAX_CAPACITY))),
+            Arguments.of(new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocate(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
+            Arguments.of(new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocateDirect(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
+            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY)),
+            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, 0)),
+            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, 0))
         );
     }
 
@@ -576,13 +577,16 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("appendable")
-    public void testToLargeDetailString(RetainableByteBuffer.Appendable buffer)
+    public void testToString(RetainableByteBuffer.Appendable buffer)
     {
         assertTrue(buffer.append(BufferUtil.toBuffer("0123456789ABCDEF")));
         assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
         assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
         assertTrue(buffer.append(BufferUtil.toBuffer("abcdefghijklmnop")));
-        assertThat(buffer.toDetailString(), containsString("<<<0123456789ABCDEF...abcdefghijklmnop>>>"));
+        assertThat(buffer.toString(), containsString("<<<0123456789ABCDEF"));
+        assertThat(buffer.toString(), Matchers.anyOf(containsString(">>><<<"), containsString("...")));
+        assertThat(buffer.toString(), containsString("abcdefghijklmnop>>>"));
+
         buffer.release();
     }
 }
