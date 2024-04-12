@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.8-SNAPSHOT</version>
+  <version>12.0.9-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -1374,26 +1374,6 @@
               <localRepo>${localRepoPath}</localRepo>
             </filterProperties>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.groovy</groupId>
-              <artifactId>groovy</artifactId>
-              <version>4.0.20</version>
-              <scope>runtime</scope>
-            </dependency>
-            <dependency>
-              <groupId>org.apache.groovy</groupId>
-              <artifactId>groovy-json</artifactId>
-              <version>4.0.20</version>
-              <scope>runtime</scope>
-            </dependency>
-            <dependency>
-              <groupId>org.apache.groovy</groupId>
-              <artifactId>groovy-xml</artifactId>
-              <version>4.0.20</version>
-              <scope>runtime</scope>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
