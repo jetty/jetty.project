@@ -138,8 +138,7 @@
           </execution>
         </executions>
       </plugin>
-      <!-- TODO -->
-      <!--plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <executions>
@@ -165,7 +164,7 @@
             <goal>clean</goal>
           </goals>
         </configuration>
-      </plugin-->
+      </plugin>
     </plugins>
   </build>
 </project>
