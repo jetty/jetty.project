@@ -86,7 +86,7 @@ public interface RetainableByteBuffer extends Retainable
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
     {
-        return new Appendable.FixedCapacity(byteBuffer, retainable);
+        return new FixedCapacity(byteBuffer, retainable);
     }
 
     /**
@@ -99,7 +99,7 @@ public interface RetainableByteBuffer extends Retainable
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
     {
-        return new Appendable.FixedCapacity(byteBuffer)
+        return new FixedCapacity(byteBuffer)
         {
             @Override
             public boolean release()
@@ -121,7 +121,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         if (this instanceof Appendable appendable)
             return appendable;
-        return new Appendable.FixedCapacity(getByteBuffer(), this);
+        return new FixedCapacity(getByteBuffer(), this);
     }
 
     /**
@@ -154,7 +154,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         ByteBuffer byteBuffer = getByteBuffer();
         ByteBuffer copy = BufferUtil.copy(byteBuffer);
-        return new Appendable.FixedCapacity(copy);
+        return new FixedCapacity(copy);
     }
 
     /**
@@ -189,8 +189,9 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * Get the wrapped, not {@code null}, {@code ByteBuffer}.
      * @return the wrapped, not {@code null}, {@code ByteBuffer}
+     * @throws BufferOverflowException if the contents is too large for a single {@link ByteBuffer}
      */
-    ByteBuffer getByteBuffer();
+    ByteBuffer getByteBuffer() throws BufferOverflowException;
 
     /**
      * @return whether the {@code ByteBuffer} is direct
@@ -198,33 +199,6 @@ public interface RetainableByteBuffer extends Retainable
     default boolean isDirect()
     {
         return getByteBuffer().isDirect();
-    }
-
-    /**
-     * @return whether the {@code ByteBuffer} has remaining bytes left for reading
-     */
-    default boolean isEmpty()
-    {
-        return !hasRemaining();
-    }
-
-    /**
-     * @return whether the {@code ByteBuffer} has remaining bytes left for appending
-     */
-    default boolean isFull()
-    {
-        return space() == 0;
-    }
-
-    /**
-     * Consumes and puts the contents of this retainable byte buffer at the end of the given byte buffer.
-     * @param toInfillMode the destination buffer, whose position is updated.
-     * @throws BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
-     * @see ByteBuffer#put(ByteBuffer)
-     */
-    default void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
-    {
-        toInfillMode.put(getByteBuffer());
     }
 
     /**
@@ -237,6 +211,22 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * @return whether the {@code ByteBuffer} has remaining bytes
+     */
+    default boolean hasRemaining()
+    {
+        return getByteBuffer().hasRemaining();
+    }
+
+    /**
+     * @return whether the {@code ByteBuffer} has remaining bytes left for reading
+     */
+    default boolean isEmpty()
+    {
+        return !hasRemaining();
+    }
+
+    /**
      * @return the number of remaining bytes in the {@code ByteBuffer}
      * @see #remaining()
      */
@@ -246,11 +236,12 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * @return whether the {@code ByteBuffer} has remaining bytes
+     * @return the maximum size in bytes.
+     * @see #size()
      */
-    default boolean hasRemaining()
+    default long maxSize()
     {
-        return getByteBuffer().hasRemaining();
+        return capacity();
     }
 
     /**
@@ -260,15 +251,6 @@ public interface RetainableByteBuffer extends Retainable
     default int capacity()
     {
         return getByteBuffer().capacity();
-    }
-
-    /**
-     * @return the maximum size in bytes.
-     * @see #capacity()
-     */
-    default long maxSize()
-    {
-        return capacity();
     }
 
     /**
@@ -331,7 +313,7 @@ public interface RetainableByteBuffer extends Retainable
         }
         else
         {
-            length = Math.min(length, capacity());
+            length = Math.min(length, byteBuffer.capacity() - byteBuffer.position());
             byteBuffer.limit(byteBuffer.position() + Math.toIntExact(length));
             ByteBuffer slice = byteBuffer.slice();
             byteBuffer.limit(limit);
@@ -341,11 +323,14 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * @return the number of bytes left for appending in the {@code ByteBuffer}
+     * Consumes and puts the contents of this retainable byte buffer at the end of the given byte buffer.
+     * @param toInfillMode the destination buffer, whose position is updated.
+     * @throws BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
+     * @see ByteBuffer#put(ByteBuffer)
      */
-    default long space()
+    default void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
     {
-        return capacity() - remaining();
+        toInfillMode.put(getByteBuffer());
     }
 
     /**
@@ -365,6 +350,22 @@ public interface RetainableByteBuffer extends Retainable
      */
     interface Appendable extends RetainableByteBuffer
     {
+        /**
+         * @return the number of bytes left for appending in the {@code ByteBuffer}
+         */
+        default long space()
+        {
+            return capacity() - remaining();
+        }
+
+        /**
+         * @return whether the {@code ByteBuffer} has remaining bytes left for appending
+         */
+        default boolean isFull()
+        {
+            return space() == 0;
+        }
+
         /**
          * Copies the contents of the given byte buffer to the end of this buffer.
          * Copies can be avoided by {@link RetainableByteBuffer#wrap(ByteBuffer) wrapping} the buffer and
@@ -454,24 +455,6 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean canRetain()
-        {
-            return getWrapped().canRetain();
-        }
-
-        @Override
-        public void retain()
-        {
-            getWrapped().retain();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return getWrapped().release();
-        }
-
-        @Override
         public String toString()
         {
             return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getWrapped().toString());
@@ -508,12 +491,6 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean isFull()
-        {
-            return getWrapped().isFull();
-        }
-
-        @Override
         public void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
         {
             getWrapped().putTo(toInfillMode);
@@ -532,12 +509,6 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public long space()
-        {
-            return getWrapped().space();
-        }
-
-        @Override
         public void writeTo(Content.Sink sink, boolean last, Callback callback)
         {
             getWrapped().writeTo(sink, last, callback);
@@ -547,6 +518,18 @@ public interface RetainableByteBuffer extends Retainable
         public Appendable asAppendable()
         {
             return this;
+        }
+
+        @Override
+        public boolean isFull()
+        {
+            return getWrapped().asAppendable().isFull();
+        }
+
+        @Override
+        public long space()
+        {
+            return getWrapped().asAppendable().space();
         }
 
         @Override
@@ -845,7 +828,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public ByteBuffer getByteBuffer()
+        public ByteBuffer getByteBuffer() throws BufferOverflowException
         {
             return switch (_buffers.size())
             {
@@ -853,7 +836,21 @@ public interface RetainableByteBuffer extends Retainable
                 case 1 -> _buffers.get(0).getByteBuffer();
                 default ->
                 {
-                    RetainableByteBuffer combined = copy(true);
+                    long size = size();
+                    if (size > Integer.MAX_VALUE)
+                        throw new BufferOverflowException();
+
+                    int length = (int)size;
+                    RetainableByteBuffer combined = _pool.acquire(length, _direct);
+                    ByteBuffer byteBuffer = combined.getByteBuffer();
+                    BufferUtil.flipToFill(byteBuffer);
+                    for (RetainableByteBuffer buffer : _buffers)
+                    {
+                        byteBuffer.put(buffer.getByteBuffer().slice());
+                        buffer.release();
+                    }
+                    BufferUtil.flipToFlush(byteBuffer, 0);
+                    _buffers.clear();
                     _buffers.add(combined);
                     yield combined.getByteBuffer();
                 }
@@ -941,46 +938,39 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public RetainableByteBuffer slice()
+        public RetainableByteBuffer.Appendable slice()
         {
             List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             for (RetainableByteBuffer rbb : _buffers)
                 buffers.add(rbb.slice());
-            retain();
-            Appendable parent = this;
-            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize)
-            {
-                @Override
-                public boolean release()
-                {
-                    if (super.release())
-                    {
-                        parent.release();
-                        return true;
-                    }
-                    return false;
-                }
-            };
+            return newSlice(buffers);
         }
 
         @Override
-        public RetainableByteBuffer slice(long length)
+        public RetainableByteBuffer.Appendable slice(long length)
         {
             List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
-            for (RetainableByteBuffer rbb : _buffers)
+            for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
             {
-                int l = rbb.remaining();
+                RetainableByteBuffer buffer = i.next();
+                long size = buffer.size();
 
-                if (l > length)
+                // If length is exceeded or this is the last buffer
+                if (size > length || !i.hasNext())
                 {
-                    buffers.add(rbb.slice(length));
+                    // slice with length
+                    buffers.add(buffer.slice(length));
                     break;
                 }
 
-                buffers.add(rbb.slice());
-                length -= l;
+                buffers.add(buffer.slice());
+                length -= size;
             }
+            return newSlice(buffers);
+        }
 
+        private RetainableByteBuffer.Appendable newSlice(List<RetainableByteBuffer> buffers)
+        {
             retain();
             Appendable parent = this;
             return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize)
@@ -1016,25 +1006,11 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public RetainableByteBuffer copy()
         {
-            return copy(false);
-        }
+            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
+            for (RetainableByteBuffer rbb : _buffers)
+                buffers.add(rbb.copy());
 
-        private RetainableByteBuffer copy(boolean take)
-        {
-            int length = remaining();
-            RetainableByteBuffer combinedBuffer = _pool.acquire(length, _direct);
-            ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
-            BufferUtil.flipToFill(byteBuffer);
-            for (RetainableByteBuffer buffer : _buffers)
-            {
-                byteBuffer.put(buffer.getByteBuffer().slice());
-                if (take)
-                    buffer.release();
-            }
-            BufferUtil.flipToFlush(byteBuffer, 0);
-            if (take)
-                _buffers.clear();
-            return combinedBuffer;
+            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
         }
 
         /**
@@ -1146,7 +1122,7 @@ public interface RetainableByteBuffer extends Retainable
             if (!existing && !_buffers.isEmpty())
             {
                 RetainableByteBuffer buffer = _buffers.get(_buffers.size() - 1);
-                if (buffer instanceof Appendable appendable && !buffer.isRetained() && buffer.space() >= length)
+                if (buffer instanceof Appendable appendable && appendable.space() >= length && !appendable.isRetained())
                     _aggregate = appendable;
             }
 
@@ -1224,18 +1200,6 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public void putTo(ByteBuffer toInfillMode)
-        {
-            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
-            {
-                RetainableByteBuffer buffer = i.next();
-                buffer.putTo(toInfillMode);
-                buffer.release();
-                i.remove();
-            }
-        }
-
-        @Override
         public boolean appendTo(ByteBuffer to)
         {
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
@@ -1261,6 +1225,18 @@ public interface RetainableByteBuffer extends Retainable
                 i.remove();
             }
             return true;
+        }
+
+        @Override
+        public void putTo(ByteBuffer toInfillMode)
+        {
+            for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+            {
+                RetainableByteBuffer buffer = i.next();
+                buffer.putTo(toInfillMode);
+                buffer.release();
+                i.remove();
+            }
         }
 
         @Override
@@ -1321,9 +1297,9 @@ public interface RetainableByteBuffer extends Retainable
         protected void addDetail(StringBuilder stringBuilder)
         {
             super.addDetail(stringBuilder);
-            stringBuilder.append(",gb=");
+            stringBuilder.append(",as=");
             stringBuilder.append(_aggregationSize);
-            stringBuilder.append(",ma=");
+            stringBuilder.append(",mr=");
             stringBuilder.append(_minRetainSize);
         }
 
