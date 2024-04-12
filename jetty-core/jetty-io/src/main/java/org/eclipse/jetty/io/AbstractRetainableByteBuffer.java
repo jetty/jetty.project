@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
  * <p>Abstract implementation of {@link RetainableByteBuffer} with
  * reference counting.</p>
  */
-public abstract class AbstractRetainableByteBuffer extends RetainableByteBuffer.Appendable.Fixed
+public abstract class AbstractRetainableByteBuffer extends RetainableByteBuffer.Appendable.FixedCapacity
 {
     private final ReferenceCounter _refCount;
 

@@ -48,6 +48,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public interface Retainable
 {
+    Retainable NON_RETAINABLE = new Retainable()
+    {
+    };
+
     /**
      * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
      * and {@link #release()}.</p>

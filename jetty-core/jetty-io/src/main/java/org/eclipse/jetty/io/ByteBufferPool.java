@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * For this reason there is no {@code release(RetainableByteBuffer)} method.</p>
  * <p>Therefore, in order to track acquire/release counts both the pool and the
  * buffer returned by {@link #acquire(int, boolean)} must be wrapped, see
- * {@link RetainableByteBuffer.Wrapper}</p>
+ * {@link RetainableByteBuffer.WrapperReadOnly}</p>
  */
 public interface ByteBufferPool
 {
@@ -107,7 +107,7 @@ public interface ByteBufferPool
         @Override
         public RetainableByteBuffer acquire(int size, boolean direct)
         {
-            return new RetainableByteBuffer.Appendable.Fixed(BufferUtil.allocate(size, direct));
+            return new RetainableByteBuffer.Appendable.FixedCapacity(BufferUtil.allocate(size, direct));
         }
 
         @Override

@@ -17,24 +17,17 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public class NonRetainableByteBuffer implements RetainableByteBuffer.Appendable
+public class NonRetainableByteBuffer extends RetainableByteBuffer.FixedCapacity
 {
-    private final ByteBuffer byteBuffer;
-
     public NonRetainableByteBuffer(ByteBuffer byteBuffer)
     {
-        this.byteBuffer = byteBuffer;
+        super(byteBuffer, NON_RETAINABLE);
     }
 
-    @Override
-    public boolean isRetained()
+    protected void addValue(StringBuilder stringBuilder)
     {
-        return false;
-    }
-
-    @Override
-    public ByteBuffer getByteBuffer()
-    {
-        return byteBuffer;
+        stringBuilder.append("={");
+        addValue(stringBuilder, this);
+        stringBuilder.append("}");
     }
 }
