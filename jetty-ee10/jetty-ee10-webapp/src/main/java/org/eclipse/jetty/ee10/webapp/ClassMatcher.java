@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import java.net.URI;
+import java.util.Map;
+
+import org.eclipse.jetty.util.IncludeExcludeSet;
+
 /**
  * @deprecated Use org.eclipse.jetty.util.ClassMatcher
  */
@@ -23,6 +28,11 @@ public class ClassMatcher extends org.eclipse.jetty.util.ClassMatcher
     public ClassMatcher()
     {
         super();
+    }
+
+    public ClassMatcher(ClassMatcher patterns)
+    {
+        super(patterns);
     }
 
     public ClassMatcher(org.eclipse.jetty.util.ClassMatcher patterns)
@@ -38,5 +48,18 @@ public class ClassMatcher extends org.eclipse.jetty.util.ClassMatcher
     public ClassMatcher(String pattern)
     {
         super(pattern);
+    }
+
+    protected ClassMatcher(Map<String, Entry> entries, IncludeExcludeSet<Entry, String> patterns, IncludeExcludeSet<Entry, URI> locations)
+    {
+        super(entries, patterns, locations);
+    }
+
+    @Override
+    public ClassMatcher asImmutable()
+    {
+        return new ClassMatcher(Map.copyOf(_entries),
+            _patterns.asImmutable(),
+            _locations.asImmutable());
     }
 }

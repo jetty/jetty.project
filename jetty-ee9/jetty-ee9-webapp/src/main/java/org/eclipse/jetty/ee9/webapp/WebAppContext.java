@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -88,7 +89,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee9/webapp/webdefault-ee9.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
+    /**
+     * @deprecated use {@link WebAppClassLoading#PROTECTED_CLASSES_ATTRIBUTE} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.0.9")
     public static final String SERVER_SYS_CLASSES = WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE;
+    /**
+     * @deprecated use {@link WebAppClassLoading#HIDDEN_CLASSES_ATTRIBUTE} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.0.9")
     public static final String SERVER_SRV_CLASSES = WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE;
 
     private static final String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
@@ -96,14 +105,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @deprecated use {@link WebAppClassLoading#DEFAULT_PROTECTED_CLASSES}
      */
-    @Deprecated
-    public static final ClassMatcher __dftSystemClasses = WebAppClassLoading.DEFAULT_PROTECTED_CLASSES;
+    @Deprecated(forRemoval = true, since = "12.0.9")
+    public static final org.eclipse.jetty.ee9.webapp.ClassMatcher __dftSystemClasses =
+        new org.eclipse.jetty.ee9.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_PROTECTED_CLASSES);
 
     /**
      * @deprecated use {@link WebAppClassLoading#DEFAULT_HIDDEN_CLASSES}
      */
-    @Deprecated
-    public static final ClassMatcher __dftServerClasses = WebAppClassLoading.DEFAULT_HIDDEN_CLASSES;
+    @Deprecated(forRemoval = true, since = "12.0.9")
+    public static final org.eclipse.jetty.ee9.webapp.ClassMatcher __dftServerClasses =
+        new org.eclipse.jetty.ee9.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_HIDDEN_CLASSES);
 
     private final ClassMatcher _systemClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
     private final ClassMatcher _serverClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
@@ -1467,29 +1478,29 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * Add a Server Class pattern to use for all ee9 WebAppContexts.
-     * @param server The {@link Server} instance to add classes to
+     * @param attributes The {@link Server} instance to add classes to
      * @param patterns the patterns to use
      * @see #getServerClassMatcher()
      * @see #getServerClasses()
      * @deprecated use {@link WebAppClassLoading#addProtectedClasses(Server, String...)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
-    public static void addServerClasses(Server server, String... patterns)
+    public static void addServerClasses(Attributes attributes, String... patterns)
     {
-        WebAppClassLoading.addHiddenClasses(server, patterns);
+        WebAppClassLoading.addHiddenClasses(attributes, patterns);
     }
 
     /**
      * Add a System Class pattern to use for all ee9 WebAppContexts.
-     * @param server The {@link Server} instance to add classes to
+     * @param attributes The {@link Server} instance to add classes to
      * @param patterns the patterns to use
      * @see #getSystemClassMatcher()
      * @see #getSystemClasses()
      * @deprecated use {@link WebAppClassLoading#addHiddenClasses(Server, String...)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
-    public static void addSystemClasses(Server server, String... patterns)
+    public static void addSystemClasses(Attributes attributes, String... patterns)
     {
-        WebAppClassLoading.addProtectedClasses(server, patterns);
+        WebAppClassLoading.addProtectedClasses(attributes, patterns);
     }
 }

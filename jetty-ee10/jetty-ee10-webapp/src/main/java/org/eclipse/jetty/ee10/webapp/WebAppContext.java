@@ -82,7 +82,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee10/webapp/webdefault-ee10.xml";
+    /**
+     * @deprecated use {@link WebAppClassLoading#PROTECTED_CLASSES_ATTRIBUTE} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.0.9")
     public static final String SERVER_SYS_CLASSES = WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE;
+    /**
+     * @deprecated use {@link WebAppClassLoading#HIDDEN_CLASSES_ATTRIBUTE} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.0.9")
     public static final String SERVER_SRV_CLASSES = WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE;
 
     private static final String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
@@ -90,14 +98,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @deprecated use {@link WebAppClassLoading#DEFAULT_PROTECTED_CLASSES}
      */
-    @Deprecated
-    public static final ClassMatcher __dftSystemClasses = WebAppClassLoading.DEFAULT_PROTECTED_CLASSES;
+    @Deprecated (forRemoval = true, since = "12.0.9")
+    public static final org.eclipse.jetty.ee10.webapp.ClassMatcher __dftSystemClasses =
+        new org.eclipse.jetty.ee10.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_PROTECTED_CLASSES);
 
     /**
      * @deprecated use {@link WebAppClassLoading#DEFAULT_HIDDEN_CLASSES}
      */
-    @Deprecated
-    public static final ClassMatcher __dftServerClasses = WebAppClassLoading.DEFAULT_HIDDEN_CLASSES;
+    @Deprecated (forRemoval = true, since = "12.0.9")
+    public static final org.eclipse.jetty.ee10.webapp.ClassMatcher __dftServerClasses =
+        new org.eclipse.jetty.ee10.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_HIDDEN_CLASSES);
 
     private final ClassMatcher _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
     private final ClassMatcher _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));

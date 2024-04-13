@@ -104,6 +104,17 @@ public class WebAppClassLoading
 
     /**
      * Add a protected (system) Class pattern to use for all WebAppContexts of a given {@link Server}.
+     * @param attributes The {@link Attributes} instance to add classes to
+     * @param patterns the patterns to use
+     */
+    public static void addProtectedClasses(Attributes attributes, String... patterns)
+    {
+        if (patterns != null && patterns.length > 0)
+            getClassMatcher(attributes, PROTECTED_CLASSES_ATTRIBUTE, null).add(patterns);
+    }
+
+    /**
+     * Add a protected (system) Class pattern to use for all WebAppContexts of a given {@link Server}.
      * @param server The {@link Server} instance to add classes to
      * @param patterns the patterns to use
      */
@@ -152,6 +163,18 @@ public class WebAppClassLoading
     public static void addHiddenClasses(String... patterns)
     {
         DEFAULT_HIDDEN_CLASSES.add(patterns);
+    }
+
+    /**
+     * Add a hidden (server) Class pattern to use for all WebAppContexts of a given {@link Server}.
+     * @param attributes The {@link Attributes} instance to add classes to
+     * @param patterns the patterns to use
+     */
+    @Deprecated (forRemoval = true)
+    public static void addHiddenClasses(Attributes attributes, String... patterns)
+    {
+        if (patterns != null && patterns.length > 0)
+            getClassMatcher(attributes, HIDDEN_CLASSES_ATTRIBUTE, null).add(patterns);
     }
 
     /**
