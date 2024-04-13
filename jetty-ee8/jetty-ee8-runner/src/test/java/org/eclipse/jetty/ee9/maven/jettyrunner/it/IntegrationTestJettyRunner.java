@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.maven.jettyrunner.it;
+package org.eclipse.jetty.ee9.maven.jettyrunner.it;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +38,7 @@ public class IntegrationTestJettyRunner
             httpClient.start();
             ContentResponse response = httpClient.newRequest(serverUri).send();
             String res = response.getContentAsString();
-            assertThat(res, Matchers.containsString("Hello World EE10!"));
+            assertThat(res, Matchers.containsString("Hello World EE8!"));
         }
         finally
         {
@@ -62,5 +62,4 @@ public class IntegrationTestJettyRunner
 
         throw new Exception("cannot find started Jetty");
     }
-
 }

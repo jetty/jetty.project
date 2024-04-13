@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.eclipse.jetty.its</groupId>
-  <artifactId>jetty-runner-ee9-it-test</artifactId>
+  <artifactId>jetty-runner-ee8-it-test</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>war</packaging>
 
@@ -15,8 +15,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-runner</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-runner</artifactId>
       <version>@project.version@</version>
     </dependency>
   </dependencies>
@@ -38,8 +38,8 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.ee9</groupId>
-                  <artifactId>jetty-ee9-runner</artifactId>
+                  <groupId>org.eclipse.jetty.ee8</groupId>
+                  <artifactId>jetty-ee8-runner</artifactId>
                   <version>@project.version@</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>

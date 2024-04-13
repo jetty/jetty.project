@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.eclipse.jetty.its</groupId>
-  <artifactId>jetty-runner-ee9-it-test-demo-simple-webapp</artifactId>
+  <artifactId>jetty-runner-ee8-it-test-demo-simple-webapp</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>war</packaging>
 
@@ -15,21 +15,21 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-runner</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-runner</artifactId>
       <version>@project.version@</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-runner</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-runner</artifactId>
       <version>@project.version@</version>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee8.demos</groupId>
+      <artifactId>jetty-ee8-demo-simple-webapp</artifactId>
       <version>@project.version@</version>
       <type>war</type>
     </dependency>
@@ -64,8 +64,8 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.ee9</groupId>
-                  <artifactId>jetty-ee9-runner</artifactId>
+                  <groupId>org.eclipse.jetty.ee8</groupId>
+                  <artifactId>jetty-ee8-runner</artifactId>
                   <version>@project.version@</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
@@ -73,8 +73,8 @@
                   <destFileName>jetty-runner.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.ee9.demos</groupId>
-                  <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
+                  <groupId>org.eclipse.jetty.ee8.demos</groupId>
+                  <artifactId>jetty-ee8-demo-simple-webapp</artifactId>
                   <version>@project.version@</version>
                   <type>war</type>
                   <overWrite>false</overWrite>
@@ -130,7 +130,7 @@
           <systemPropertyVariables>
           </systemPropertyVariables>
           <dependenciesToScan>
-            <dependency>org.eclipse.jetty.ee9:jetty-ee9-runner</dependency>
+            <dependency>org.eclipse.jetty.ee8:jetty-ee8-runner</dependency>
           </dependenciesToScan>
         </configuration>
       </plugin>
