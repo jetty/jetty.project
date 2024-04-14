@@ -66,7 +66,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndIdleTimeoutListener")
-    @Tag("Flaky")
+    @Tag("flaky")
     public void testIdleTimeout(Transport transport, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
@@ -96,7 +96,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndIdleTimeoutListener")
-    @Tag("Flaky")
+    @Tag("flaky")
     public void testIdleTimeoutWithDemand(Transport transport, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();

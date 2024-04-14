@@ -1187,6 +1187,11 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>org.wildfly.common</groupId>
+        <artifactId>wildfly-common</artifactId>
+        <version>1.7.0.Final</version>
+      </dependency>
+      <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-digest</artifactId>
         <version>2.3.1.Final</version>
