@@ -27,6 +27,7 @@ import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -34,6 +35,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Isolated
 public class DisableUrlCacheTest extends AbstractJettyHomeTest
 {
     @Test
@@ -112,7 +114,6 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
 
     private void touch(Path path) throws IOException
     {
-        System.err.println("touch: " + path);
         FileTime now = FileTime.fromMillis(System.currentTimeMillis() + 2000);
         Files.setLastModifiedTime(path, now);
     }
