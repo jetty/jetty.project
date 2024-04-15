@@ -33,7 +33,7 @@ public class EvictionTest
     private QpackDecoder _decoder;
     private final TestDecoderHandler _decoderHandler = new TestDecoderHandler();
     private final TestEncoderHandler _encoderHandler = new TestEncoderHandler();
-    private final Random random = new Random(10);
+    private final Random random = new Random();
 
     @BeforeEach
     public void before()

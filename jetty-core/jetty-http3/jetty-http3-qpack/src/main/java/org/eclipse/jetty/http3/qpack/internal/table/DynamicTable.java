@@ -158,15 +158,15 @@ public class DynamicTable implements Iterable<Entry>, Dumpable
 
     public Entry getRelative(int index)
     {
-        return getRelative(index, getInsertCount());
+        return getRelative(getInsertCount(), index);
     }
 
-    public Entry getRelative(int index, int base)
+    public Entry getRelative(int base, int index)
     {
         return getAbsolute(base - 1 - index);
     }
 
-    public Entry getPostBase(int index, int base)
+    public Entry getPostBase(int base, int index)
     {
         return getAbsolute(base + index);
     }
