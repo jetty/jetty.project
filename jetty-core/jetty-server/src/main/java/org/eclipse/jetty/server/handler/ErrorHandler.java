@@ -196,8 +196,7 @@ public class ErrorHandler implements Request.Handler
                 return false;
         }
 
-        int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        bufferSize = Math.min(8192, bufferSize); // TODO ?
+        int bufferSize = getBufferSize(request);
         RetainableByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
 
         try
@@ -260,6 +259,13 @@ public class ErrorHandler implements Request.Handler
             buffer.release();
             throw x;
         }
+    }
+
+    protected int getBufferSize(Request request)
+    {
+        int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+        bufferSize = Math.min(8192, bufferSize); // TODO ?
+        return bufferSize;
     }
 
     protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks) throws IOException
