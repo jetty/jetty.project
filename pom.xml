@@ -191,9 +191,9 @@
     <hazelcast.version>5.3.6</hazelcast.version>
     <hibernate.search.version>7.1.0.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
-    <infinispan.docker.image.version>15.0.0.CR1-1</infinispan.docker.image.version>
-    <infinispan.protostream.version>5.0.0.CR2</infinispan.protostream.version>
-    <infinispan.version>15.0.0.CR1</infinispan.version>
+    <infinispan.docker.image.version>15.0.1.Final-1</infinispan.docker.image.version>
+    <infinispan.protostream.version>5.0.2.Final</infinispan.protostream.version>
+    <infinispan.version>15.0.1.Final</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
