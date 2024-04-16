@@ -931,19 +931,6 @@ public interface HttpCookie
     }
 
     /**
-     * <p>Parses the {@code Expires} attribute value
-     * (in RFC 1123 format) into an {@link Instant}.</p>
-     *
-     * @param expires an instant in the RFC 1123 string format
-     * @return an {@link Instant} parsed from the given string
-     */
-    static Instant parseExpiresOld(String expires)
-    {
-        // TODO: RFC 1123 format only for now, see https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1.
-        return ZonedDateTime.parse(expires, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
-    }
-
-    /**
      * <p>Parses the {@code Expires} attribute value using algorithm
      * specified in <a href="https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.1">RFC6265: Section 5.1.1: Date</a>
      * in into an {@link Instant}.</p>

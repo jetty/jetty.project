@@ -68,7 +68,7 @@ public class HttpCookieParseExpireBenchmark
     public Instant testParseOld()
     {
         int entry = ThreadLocalRandom.current().nextInt(size);
-        return HttpCookie.parseExpiresOld(expires[entry]);
+        return ZonedDateTime.parse(expires[entry], DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
     }
 
     @Benchmark
