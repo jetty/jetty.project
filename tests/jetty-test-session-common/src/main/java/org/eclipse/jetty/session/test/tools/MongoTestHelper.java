@@ -25,6 +25,7 @@ import com.mongodb.MongoException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.CreateCollectionOptions;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStore;
@@ -58,7 +59,7 @@ public class MongoTestHelper
 
     static
     {
-        mongo = new MongoDBContainer(DockerImageName.parse("mongo:" + System.getProperty("mongo.docker.version", "6.0.9-ubi8")))
+        mongo = new MongoDBContainer(DockerImageName.parse("mongo:" + System.getProperty("mongo.docker.version", "5.0.26")))
                 .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
         long start = System.currentTimeMillis();
         mongo.start();
@@ -88,7 +89,7 @@ public class MongoTestHelper
 
     public static void createCollection(String dbName, String collectionName) throws UnknownHostException, MongoException
     {
-        getMongoClient().getDatabase(dbName).createCollection(collectionName, null);
+        getMongoClient().getDatabase(dbName).createCollection(collectionName, new CreateCollectionOptions());
     }
 
     public static MongoCollection<Document> getCollection(String dbName, String collectionName) throws UnknownHostException, MongoException
