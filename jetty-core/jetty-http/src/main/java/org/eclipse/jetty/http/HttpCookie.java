@@ -14,16 +14,20 @@
 package org.eclipse.jetty.http;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>Implementation of RFC6265 HTTP Cookies (with fallback support for RFC2965).</p>
@@ -933,10 +937,159 @@ public interface HttpCookie
      * @param expires an instant in the RFC 1123 string format
      * @return an {@link Instant} parsed from the given string
      */
-    static Instant parseExpires(String expires)
+    static Instant parseExpiresOld(String expires)
     {
         // TODO: RFC 1123 format only for now, see https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1.
         return ZonedDateTime.parse(expires, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+    }
+
+    /**
+     * <p>Parses the {@code Expires} attribute value using algorithm
+     * specified in <a href="https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.1">RFC6265: Section 5.1.1: Date</a>
+     * in into an {@link Instant}.</p>
+     *
+     * @param expires an instant in the string format supported by RFC6265 HTTP State Management
+     * @return an {@link Instant} parsed from the given string
+     */
+    static Instant parseExpires(String expires)
+    {
+        Objects.requireNonNull(expires, "Expires string cannot be null");
+
+        int year = -1;
+        int month = -1;
+        int day = -1;
+        int hour = -1;
+        int minute = -1;
+        int second = -1;
+
+        // delimiter       = %x09 / %x20-2F / %x3B-40 / %x5B-60 / %x7B-7E
+        // Note: That leaves "0-9" + "A-Z" + "a-z" + ":"
+        QuotedStringTokenizer dateTokenizer = QuotedStringTokenizer.builder()
+            .delimiters("\t" + // %x09
+                " !#$%&'()*+,-./" + " + " + // %x20-2F
+                ";<=>?@" + // %x3B-40
+                "[\\]^_`" + // %x5B-60
+                "{|}~" // %x7B-7E
+            )
+            .build();
+
+        // System.out.println("expires=[" + expires + "]");
+        Iterator<String> dateIter = dateTokenizer.tokenize(expires);
+        while (dateIter.hasNext())
+        {
+            String part = dateIter.next();
+            // System.out.println("      p=[" + part + "]");
+
+            // RFC 6265 - Section 5.1.1 - Step 2.1 - time (00:00:00)
+            if (hour == (-1) && part.length() == 8 && part.charAt(2) == ':' && part.charAt(5) == ':')
+            {
+                try
+                {
+                    hour = StringUtil.toInt(part, 0);
+                    minute = StringUtil.toInt(part, 3);
+                    second = StringUtil.toInt(part, 6);
+                    continue;
+                }
+                catch (IllegalArgumentException e)
+                {
+                    // bad time syntax
+                }
+            }
+
+            // RFC 6265 - Section 5.1.1 - Step 2.2
+            if (day == (-1) && part.length() <= 2)
+            {
+                day = StringUtil.toInt(part, 0);
+                continue;
+            }
+
+            // RFC 6265 - Section 5.1.1 - Step 2.3
+            if (month == (-1) && part.length() == 3)
+            {
+                int m = switch (part.toLowerCase(Locale.ENGLISH))
+                {
+                    case "jan" -> 1;
+                    case "feb" -> 2;
+                    case "mar" -> 3;
+                    case "apr" -> 4;
+                    case "may" -> 5;
+                    case "jun" -> 6;
+                    case "jul" -> 7;
+                    case "aug" -> 8;
+                    case "sep" -> 9;
+                    case "oct" -> 10;
+                    case "nov" -> 11;
+                    case "dec" -> 12;
+                    default -> -1;
+                };
+                if (m > 0)
+                {
+                    month = m;
+                    continue;
+                }
+            }
+
+            // RFC 6265 - Section 5.1.1 - Step 2.4
+            if (year == (-1))
+            {
+                if (part.length() <= 2)
+                {
+                    year = StringUtil.toInt(part, 0);
+                }
+                else if (part.length() == 4)
+                {
+                    year = StringUtil.toInt(part, 0);
+                }
+            }
+        }
+
+        // RFC 6265 - Section 5.1.1 - Step 3
+        if ((year > 70) && (year <= 99))
+            year += 1900;
+        // RFC 6265 - Section 5.1.1 - Step 4
+        if ((year >= 0) && (year <= 69))
+            year += 2000;
+
+        // RFC 6265 - Section 5.1.1 - Step 5
+        if (day == (-1))
+            throw new DateTimeSyntaxException("Missing [day]: " + expires);
+        if (month == (-1))
+            throw new DateTimeSyntaxException("Missing [month]: " + expires);
+        if (year == (-1))
+            throw new DateTimeSyntaxException("Missing [year]: " + expires);
+        if (hour == (-1))
+            throw new DateTimeSyntaxException("Missing [time]: " + expires);
+        if (day < 1 || day > 31)
+            throw new DateTimeSyntaxException("Invalid [day]: " + expires);
+        if (month < 1 || month > 31)
+            throw new DateTimeSyntaxException("Invalid [month]: " + expires);
+        if (hour > 23)
+            throw new DateTimeSyntaxException("Invalid [hour]: " + expires);
+        if (minute > 59)
+            throw new DateTimeSyntaxException("Invalid [minute]: " + expires);
+        if (second > 59)
+            throw new DateTimeSyntaxException("Invalid [second]: " + expires);
+
+        // RFC 6265 - Section 5.1.1 - Step 6
+        ZonedDateTime dateTime = ZonedDateTime.of(year,
+            month, day, hour, minute, second, 0,
+            ZoneId.of("GMT"));
+
+        // RFC 6265 - Section 5.1.1 - Step 7
+        return dateTime.toInstant();
+    }
+
+    public static class DateTimeSyntaxException extends RuntimeException
+    {
+        public DateTimeSyntaxException(String msg)
+        {
+            super(msg);
+        }
+
+        public DateTimeSyntaxException(String msg, Throwable cause)
+        {
+            super(msg, cause);
+        }
     }
 
     private static Map<String, String> lazyAttributePut(Map<String, String> attributes, String key, String value)
