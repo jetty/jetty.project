@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -96,7 +95,7 @@ public class HttpCookieTest
     public static List<Arguments> invalidAttributes()
     {
         return List.of(
-            Arguments.of("Expires", "blah", DateTimeParseException.class),
+            Arguments.of("Expires", "blah", HttpCookie.DateTimeSyntaxException.class),
             Arguments.of("HttpOnly", "blah", IllegalArgumentException.class),
             Arguments.of("Max-Age", "blah", NumberFormatException.class),
             Arguments.of("SameSite", "blah", IllegalArgumentException.class),

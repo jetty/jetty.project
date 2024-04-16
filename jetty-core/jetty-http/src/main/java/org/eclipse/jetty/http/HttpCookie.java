@@ -988,18 +988,26 @@ public interface HttpCookie
                     hour = StringUtil.toInt(part, 0);
                     minute = StringUtil.toInt(part, 3);
                     second = StringUtil.toInt(part, 6);
-                    continue;
                 }
                 catch (IllegalArgumentException e)
                 {
                     // bad time syntax
+                    throw new DateTimeSyntaxException("Invalid [time]: " + expires);
                 }
+                continue;
             }
 
             // RFC 6265 - Section 5.1.1 - Step 2.2
             if (day == (-1) && part.length() <= 2)
             {
-                day = StringUtil.toInt(part, 0);
+                try
+                {
+                    day = StringUtil.toInt(part, 0);
+                }
+                catch (IllegalArgumentException e)
+                {
+                    throw new DateTimeSyntaxException("Invalid [day]: " + expires);
+                }
                 continue;
             }
 
@@ -1032,14 +1040,22 @@ public interface HttpCookie
             // RFC 6265 - Section 5.1.1 - Step 2.4
             if (year == (-1))
             {
-                if (part.length() <= 2)
+                try
                 {
-                    year = StringUtil.toInt(part, 0);
+                    if (part.length() <= 2)
+                    {
+                        year = StringUtil.toInt(part, 0);
+                    }
+                    else if (part.length() == 4)
+                    {
+                        year = StringUtil.toInt(part, 0);
+                    }
                 }
-                else if (part.length() == 4)
+                catch (IllegalArgumentException e)
                 {
-                    year = StringUtil.toInt(part, 0);
+                    throw new DateTimeSyntaxException("Invalid [year]: " + expires);
                 }
+                continue;
             }
         }
 
