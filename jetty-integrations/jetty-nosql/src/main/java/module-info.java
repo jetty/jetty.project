@@ -13,6 +13,7 @@
 
 module org.eclipse.jetty.nosql
 {
+    requires transitive org.mongodb.driver.core;
     requires transitive org.mongodb.driver.sync.client;
     requires transitive org.mongodb.bson;
     requires transitive org.eclipse.jetty.session;

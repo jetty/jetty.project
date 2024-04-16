@@ -22,10 +22,10 @@ import java.util.Map;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStore;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStoreFactory;
@@ -99,8 +99,7 @@ public class MongoTestHelper
     public static MongoSessionDataStoreFactory newSessionDataStoreFactory(String dbName, String collectionName)
     {
         MongoSessionDataStoreFactory storeFactory = new MongoSessionDataStoreFactory();
-        storeFactory.setHost(mongoHost);
-        storeFactory.setPort(mongoPort);
+        storeFactory.setConnectionString(mongoConnectionString);
         storeFactory.setCollectionName(collectionName);
         storeFactory.setDbName(dbName);
         return storeFactory;
@@ -109,28 +108,22 @@ public class MongoTestHelper
     public static boolean checkSessionExists(String id, String dbName, String collectionName)
         throws Exception
     {
-        DBCollection collection = getMongoClient().getDB(dbName).getCollection(collectionName);
+        MongoCollection<Document> collection = getMongoClient().getDatabase(dbName).getCollection(collectionName);
 
         DBObject fields = new BasicDBObject();
         fields.put(MongoSessionDataStore.__EXPIRY, 1);
         fields.put(MongoSessionDataStore.__VALID, 1);
 
-        DBObject sessionDocument = collection.findOne(new BasicDBObject(MongoSessionDataStore.__ID, id), fields);
-
-        if (sessionDocument == null)
-            return false; //doesn't exist
-
-        return true;
+        Document sessionDocument = collection.find(Filters.eq(MongoSessionDataStore.__ID, id)).first();
+        return sessionDocument != null;
     }
 
     public static boolean checkSessionPersisted(SessionData data, String dbName, String collectionName)
         throws Exception
     {
-        DBCollection collection = getMongoClient().getDB(dbName).getCollection(collectionName);
+        MongoCollection<Document> collection = getMongoClient().getDatabase(dbName).getCollection(collectionName);
 
-        DBObject fields = new BasicDBObject();
-
-        DBObject sessionDocument = collection.findOne(new BasicDBObject(MongoSessionDataStore.__ID, data.getId()), fields);
+        Document sessionDocument = collection.find(Filters.eq(MongoSessionDataStore.__ID, data.getId())).first();
         if (sessionDocument == null)
             return false; //doesn't exist
 
@@ -201,10 +194,7 @@ public class MongoTestHelper
                                                String collectionName)
         throws Exception
     {
-        DBCollection collection = getMongoClient().getDB(dbName).getCollection(collectionName);
-
-        // Form query for upsert
-        BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
+        MongoCollection<Document> collection = getMongoClient().getDatabase(dbName).getCollection(collectionName);
 
         // Form updates
         BasicDBObject update = new BasicDBObject();
@@ -240,7 +230,7 @@ public class MongoTestHelper
         }
 
         update.put("$set", sets);
-        collection.update(key, update, upsert, false, WriteConcern.SAFE);
+        collection.updateOne(Filters.eq(MongoSessionDataStore.__ID, id), update);
     }
 
     public static void createSession(String id, String contextPath, String vhost,
@@ -251,10 +241,7 @@ public class MongoTestHelper
         throws Exception
     {
 
-        DBCollection collection = getMongoClient().getDB(dbName).getCollection(collectionName);
-
-        // Form query for upsert
-        BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
+        MongoCollection<Document> collection = getMongoClient().getDatabase(dbName).getCollection(collectionName);
 
         // Form updates
         BasicDBObject update = new BasicDBObject();
@@ -287,7 +274,7 @@ public class MongoTestHelper
         }
 
         update.put("$set", sets);
-        collection.update(key, update, upsert, false, WriteConcern.SAFE);
+        collection.updateOne(Filters.eq(MongoSessionDataStore.__ID, id), update);
     }
 
     public static void createLegacySession(String id, String contextPath, String vhost,
@@ -298,14 +285,11 @@ public class MongoTestHelper
         throws Exception
     {
         //make old-style session to test if we can retrieve it
-        DBCollection collection = getMongoClient().getDB(dbName).getCollection(collectionName);
-
-        // Form query for upsert
-        BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
+        MongoCollection<Document> collection = getMongoClient().getDatabase(dbName).getCollection(collectionName);
 
         // Form updates
         BasicDBObject update = new BasicDBObject();
-        boolean upsert = false;
+        boolean upsert;
         BasicDBObject sets = new BasicDBObject();
 
         Object version = 1L;
@@ -332,6 +316,6 @@ public class MongoTestHelper
             }
         }
         update.put("$set", sets);
-        collection.update(key, update, upsert, false, WriteConcern.SAFE);
+        collection.updateOne(Filters.eq(MongoSessionDataStore.__ID, id), update);
     }
 }
