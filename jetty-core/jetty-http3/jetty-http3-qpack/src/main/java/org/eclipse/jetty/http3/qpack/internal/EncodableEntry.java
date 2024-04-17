@@ -68,14 +68,14 @@ public abstract class EncodableEntry
             {
                 // Indexed Field Line with Static Reference.
                 buffer.put((byte)(0x80 | 0x40));
-                int relativeIndex = _entry.getIndex();
-                NBitIntegerEncoder.encode(buffer, 6, relativeIndex);
+                int index = _entry.getIndex();
+                NBitIntegerEncoder.encode(buffer, 6, index);
             }
             else if (_entry.getIndex() < base)
             {
                 // Indexed Field Line with Dynamic Reference.
                 buffer.put((byte)0x80);
-                int relativeIndex = base - (_entry.getIndex() + 1);
+                int relativeIndex = (base - 1) - _entry.getIndex();
                 NBitIntegerEncoder.encode(buffer, 6, relativeIndex);
             }
             else
@@ -100,7 +100,7 @@ public abstract class EncodableEntry
             else if (_entry.getIndex() < base)
             {
                 // Indexed Field Line with Dynamic Reference.
-                int relativeIndex =  base - (_entry.getIndex() + 1);
+                int relativeIndex =  (base - 1) - _entry.getIndex();
                 return NBitIntegerEncoder.octetsNeeded(6, relativeIndex);
             }
             else
@@ -150,7 +150,7 @@ public abstract class EncodableEntry
             {
                 // Literal Field Line with Dynamic Name Reference.
                 buffer.put((byte)(0x40 | (allowIntermediary ? 0x20 : 0x00)));
-                int relativeIndex = base - (_nameEntry.getIndex() + 1);
+                int relativeIndex = (base - 1) - _nameEntry.getIndex();
                 NBitIntegerEncoder.encode(buffer, 4, relativeIndex);
             }
             else

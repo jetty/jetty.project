@@ -51,31 +51,29 @@
 
   <profiles>
     <profile>
-      <id>jdk17</id>
+      <id>enable-foreign</id>
       <activation>
-        <jdk>17</jdk>
+        <jdk>[22,)</jdk>
       </activation>
       <!--
-      This profile makes sure the Foreign binding is used for tests when running exactly on JDK 17.
-      Older and newer JDKs will revert to the JNA binding.
+      This profile makes sure the Foreign binding is used for tests when running on JDK 22+.
+      Older JDKs will revert to the JNA binding.
       -->
       <dependencies>
         <dependency>
           <groupId>org.eclipse.jetty.quic</groupId>
-          <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
+          <artifactId>jetty-quic-quiche-foreign</artifactId>
         </dependency>
       </dependencies>
       <build>
         <plugins>
-          <!-- Make sure to use the Foreign binding by adding and opening the jdk.incubator.foreign module. -->
+          <!-- Make sure to use the Foreign binding by allowing native access to the foreign module. -->
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <argLine>@{argLine}
                 ${jetty.surefire.argLine}
-                --add-modules=jdk.incubator.foreign
-                --add-opens jdk.incubator.foreign/jdk.incubator.foreign=ALL-UNNAMED
-                --enable-native-access ALL-UNNAMED</argLine>
+                --enable-native-access org.eclipse.jetty.quic.quiche.foreign</argLine>
             </configuration>
           </plugin>
         </plugins>

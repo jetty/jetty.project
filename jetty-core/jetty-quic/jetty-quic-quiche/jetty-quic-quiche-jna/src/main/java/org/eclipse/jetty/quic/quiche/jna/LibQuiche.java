@@ -148,43 +148,14 @@ public interface LibQuiche extends Library
     }
 
     @Structure.FieldOrder({
-        "recv", "sent", "lost", "retrans", "sent_bytes", "recv_bytes", "lost_bytes",
-        "stream_retrans_bytes", "paths_count", "peer_max_idle_timeout",
-        "peer_max_udp_payload_size", "peer_initial_max_data", "peer_initial_max_stream_data_bidi_local",
-        "peer_initial_max_stream_data_bidi_remote", "peer_initial_max_stream_data_uni",
-        "peer_initial_max_streams_bidi", "peer_initial_max_streams_uni", "peer_ack_delay_exponent",
-        "peer_max_ack_delay", "peer_disable_active_migration", "peer_active_conn_id_limit",
+        "peer_max_idle_timeout", "peer_max_udp_payload_size", "peer_initial_max_data",
+        "peer_initial_max_stream_data_bidi_local", "peer_initial_max_stream_data_bidi_remote",
+        "peer_initial_max_stream_data_uni", "peer_initial_max_streams_bidi", "peer_initial_max_streams_uni",
+        "peer_ack_delay_exponent", "peer_max_ack_delay", "peer_disable_active_migration", "peer_active_conn_id_limit",
         "peer_max_datagram_frame_size"
     })
-    class quiche_stats extends Structure
+    class quiche_transport_params extends Structure
     {
-        // The number of QUIC packets received on this connection.
-        public size_t recv;
-
-        // The number of QUIC packets sent on this connection.
-        public size_t sent;
-
-        // The number of QUIC packets that were lost.
-        public size_t lost;
-
-        // The number of sent QUIC packets with retranmitted data.
-        public size_t retrans;
-
-        // The number of sent bytes.
-        public uint64_t sent_bytes;
-
-        // The number of received bytes.
-        public uint64_t recv_bytes;
-
-        // The number of bytes lost.
-        public uint64_t lost_bytes;
-
-        // The number of stream bytes retransmitted.
-        public uint64_t stream_retrans_bytes;
-
-        // The number of known paths for the connection.
-        public size_t paths_count;
-
         // The maximum idle timeout.
         public uint64_t peer_max_idle_timeout;
 
@@ -223,6 +194,52 @@ public interface LibQuiche extends Library
 
         // DATAGRAM frame extension parameter, if any.
         public ssize_t peer_max_datagram_frame_size;
+    }
+
+    @Structure.FieldOrder({
+        "recv", "sent", "lost", "retrans", "sent_bytes", "recv_bytes", "lost_bytes", "stream_retrans_bytes", "paths_count",
+        "reset_stream_count_local", "stopped_stream_count_local", "reset_stream_count_remote", "stopped_stream_count_remote"
+    })
+    class quiche_stats extends Structure
+    {
+        // The number of QUIC packets received on this connection.
+        public size_t recv;
+
+        // The number of QUIC packets sent on this connection.
+        public size_t sent;
+
+        // The number of QUIC packets that were lost.
+        public size_t lost;
+
+        // The number of sent QUIC packets with retransmitted data.
+        public size_t retrans;
+
+        // The number of sent bytes.
+        public uint64_t sent_bytes;
+
+        // The number of received bytes.
+        public uint64_t recv_bytes;
+
+        // The number of bytes lost.
+        public uint64_t lost_bytes;
+
+        // The number of stream bytes retransmitted.
+        public uint64_t stream_retrans_bytes;
+
+        // The number of known paths for the connection.
+        public size_t paths_count;
+
+        // The number of streams reset by local.
+        public uint64_t reset_stream_count_local;
+
+        // The number of streams stopped by local.
+        public uint64_t stopped_stream_count_local;
+
+        // The number of streams reset by remote.
+        public uint64_t reset_stream_count_remote;
+
+        // The number of streams stopped by remote.
+        public uint64_t stopped_stream_count_remote;
     }
 
     @Structure.FieldOrder({
@@ -372,6 +389,10 @@ public interface LibQuiche extends Library
     // The `idx` argument represent the path's index (also see the `paths_count`
     // field of `quiche_stats`).
     int quiche_conn_path_stats(quiche_conn conn, size_t idx, quiche_path_stats out);
+
+    // Returns the peer's transport parameters in |out|. Returns false if we have
+    // not yet processed the peer's transport parameters.
+    boolean quiche_conn_peer_transport_params(quiche_conn conn, quiche_transport_params out);
 
     // Returns whether or not this is a server-side connection.
     boolean quiche_conn_is_server(quiche_conn conn);
