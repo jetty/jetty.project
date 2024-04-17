@@ -54,7 +54,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
     private ResourceScope scope;
     private MemorySegment sendInfo;
     private MemorySegment recvInfo;
-    private MemorySegment stats;
+    private MemorySegment transportParams;
     private MemorySegment pathStats;
 
     private ForeignIncubatorQuicheConnection(MemoryAddress quicheConn, MemoryAddress quicheConfig, ResourceScope scope)
@@ -64,7 +64,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         this.scope = scope;
         this.sendInfo = quiche_send_info.allocate(scope);
         this.recvInfo = quiche_recv_info.allocate(scope);
-        this.stats = quiche_stats.allocate(scope);
+        this.transportParams = quiche_transport_params.allocate(scope);
         this.pathStats = quiche_path_stats.allocate(scope);
     }
 
@@ -757,7 +757,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             scope = null;
             sendInfo = null;
             recvInfo = null;
-            stats = null;
+            transportParams = null;
             pathStats = null;
         }
     }
@@ -780,8 +780,8 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            quiche_h.quiche_conn_stats(quicheConn, stats.address());
-            return (int)quiche_stats.get_peer_initial_max_streams_bidi(stats);
+            quiche_h.quiche_conn_peer_transport_params(quicheConn, transportParams.address());
+            return (int)quiche_transport_params.get_peer_initial_max_streams_bidi(transportParams);
         }
     }
 
