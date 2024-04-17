@@ -1228,11 +1228,21 @@ public class HttpParser
 
         for (int i = 0; i < length; i++)
         {
-            char c = valueString.charAt(i);
-            if (c < '0' || c > '9')
-                throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
+            char ch = valueString.charAt(i);
+            HttpTokens.Token t = HttpTokens.getToken(ch);
 
-            value = Math.addExact(Math.multiplyExact(value, 10), c - '0');
+            switch (t.getType())
+            {
+                case SPACE:
+                case HTAB:
+                    // ignore OWS
+                    continue;
+                case DIGIT:
+                    value = Math.addExact(Math.multiplyExact(value, 10), ch - '0');
+                    break;
+                default:
+                    throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
+            }
         }
         return value;
     }
