@@ -1455,7 +1455,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // We are being tough on handler implementations and expect them
                 // to not have pending operations when calling succeeded or failed.
                 if (httpChannelState._onContentAvailable != null)
-                    failure = new IllegalStateException("demand pending");
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 if (response.lockedIsWriting())
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("write pending"));
 

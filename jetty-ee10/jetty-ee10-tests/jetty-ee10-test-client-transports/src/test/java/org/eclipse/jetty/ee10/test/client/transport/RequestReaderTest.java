@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
@@ -36,6 +37,9 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -60,7 +64,7 @@ public class RequestReaderTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                AsyncContext asyncContext = request.startAsync();
+                request.startAsync();
 
                 ServletInputStream inputStream = request.getInputStream();
                 inputStream.setReadListener(new ReadListener()
@@ -106,6 +110,34 @@ public class RequestReaderTest extends AbstractTest
                 }).start();
             }
         });
+        AtomicBoolean callbackCompleted = new AtomicBoolean();
+        AtomicReference<Throwable> callbackFailure = new AtomicReference<>();
+        server.stop();
+        server.insertHandler(new Handler.Wrapper()
+        {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            {
+                return super.handle(request, response, new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        callbackCompleted.set(true);
+                        callback.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        callbackCompleted.set(true);
+                        callbackFailure.set(x);
+                        callback.failed(x);
+                    }
+                });
+            }
+        });
+        server.start();
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
         try (AsyncRequestContent content = new AsyncRequestContent())
@@ -115,13 +147,14 @@ public class RequestReaderTest extends AbstractTest
                 .timeout(5, TimeUnit.SECONDS)
                 .body(content);
             request.send(resultRef::set);
-            servletDoneLatch.await();
-            request.abort(new ArithmeticException());
+            assertTrue(servletDoneLatch.await(5, TimeUnit.SECONDS));
         }
 
-        await().pollDelay(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
+        await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
         Result result = resultRef.get();
         assertThat(result.getResponse().getStatus(), is(567));
+        assertThat(callbackCompleted.get(), is(true));
+        assertThat(callbackFailure.get(), is(nullValue()));
     }
 
     @ParameterizedTest
@@ -130,7 +163,7 @@ public class RequestReaderTest extends AbstractTest
     {
         assumeTrue(transport.isMultiplexed());
 
-        CountDownLatch servletDoneLatch = new CountDownLatch(1);
+        CountDownLatch servletOnDataAvailableLatch = new CountDownLatch(1);
         AtomicReference<Throwable> serverError = new AtomicReference<>();
         CountDownLatch errorDoneLatch = new CountDownLatch(1);
         start(transport, new HttpServlet()
@@ -155,9 +188,9 @@ public class RequestReaderTest extends AbstractTest
                     public void onError(AsyncEvent event) throws IOException
                     {
                         serverError.set(event.getThrowable());
-                        errorDoneLatch.countDown();
                         response.sendError(567);
                         asyncContext.complete();
+                        errorDoneLatch.countDown();
                     }
 
                     @Override
@@ -172,7 +205,7 @@ public class RequestReaderTest extends AbstractTest
                     @Override
                     public void onDataAvailable()
                     {
-                        servletDoneLatch.countDown();
+                        servletOnDataAvailableLatch.countDown();
                     }
 
                     @Override
@@ -196,16 +229,18 @@ public class RequestReaderTest extends AbstractTest
                 .timeout(5, TimeUnit.SECONDS)
                 .body(content);
             request.send(resultRef::set);
-            servletDoneLatch.await();
+            assertTrue(servletOnDataAvailableLatch.await(5, TimeUnit.SECONDS));
             request.abort(new ArithmeticException());
         }
 
         assertTrue(errorDoneLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverError.get(), instanceOf(EofException.class));
 
-        await().pollDelay(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
+        await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
         Result result = resultRef.get();
-        assertThat(result.getFailure(), instanceOf(ArithmeticException.class));
+        assertThat(result.getRequestFailure(), instanceOf(ArithmeticException.class));
+        assertThat(result.getResponseFailure(), instanceOf(ArithmeticException.class));
+        assertThat(result.getResponse().getStatus(), is(0));
     }
 
     @ParameterizedTest
