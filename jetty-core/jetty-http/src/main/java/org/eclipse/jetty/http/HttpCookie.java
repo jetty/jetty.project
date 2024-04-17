@@ -960,12 +960,10 @@ public interface HttpCookie
             )
             .build();
 
-        // System.out.println("expires=[" + expires + "]");
         Iterator<String> dateIter = dateTokenizer.tokenize(expires);
         while (dateIter.hasNext())
         {
             String part = dateIter.next();
-            // System.out.println("      p=[" + part + "]");
 
             // RFC 6265 - Section 5.1.1 - Step 2.1 - time (00:00:00)
             if (hour == (-1) && part.length() == 8 && part.charAt(2) == ':' && part.charAt(5) == ':')
