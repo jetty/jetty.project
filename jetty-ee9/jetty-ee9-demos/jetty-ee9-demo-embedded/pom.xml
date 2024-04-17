@@ -114,7 +114,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
-      <version>${project.version}</version>
       <type>war</type>
     </dependency>
     <dependency>

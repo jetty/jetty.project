@@ -13,7 +13,18 @@
 
   <modules>
     <module>jetty-quic-quiche-common</module>
-    <module>jetty-quic-quiche-foreign-incubator</module>
     <module>jetty-quic-quiche-jna</module>
   </modules>
+
+  <profiles>
+    <profile>
+      <id>enable-foreign</id>
+      <activation>
+        <jdk>[22,)</jdk>
+      </activation>
+      <modules>
+        <module>jetty-quic-quiche-foreign</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

@@ -229,7 +229,7 @@ public class EncodedFieldSection
         public HttpField decode(QpackContext context)
         {
             if (_dynamicTable)
-                return context.getDynamicTable().getAbsolute(_base - (_index + 1)).getHttpField();
+                return context.getDynamicTable().getRelative(_base, _index).getHttpField();
             else
                 return QpackContext.getStaticTable().get(_index).getHttpField();
         }
@@ -247,7 +247,7 @@ public class EncodedFieldSection
         @Override
         public HttpField decode(QpackContext context)
         {
-            return context.getDynamicTable().getAbsolute(_base + _index).getHttpField();
+            return context.getDynamicTable().getPostBase(_base, _index).getHttpField();
         }
     }
 
@@ -272,7 +272,7 @@ public class EncodedFieldSection
         {
             HttpField field;
             if (_dynamicTable)
-                field = context.getDynamicTable().getAbsolute(_base - (_nameIndex + 1)).getHttpField();
+                field = context.getDynamicTable().getRelative(_base, _nameIndex).getHttpField();
             else
                 field = QpackContext.getStaticTable().get(_nameIndex).getHttpField();
 
@@ -296,7 +296,7 @@ public class EncodedFieldSection
         @Override
         public HttpField decode(QpackContext context)
         {
-            HttpField field = context.getDynamicTable().getAbsolute(_base + _nameIndex).getHttpField();
+            HttpField field = context.getDynamicTable().getPostBase(_base, _nameIndex).getHttpField();
             return new HttpField(field.getHeader(), field.getName(), _value);
         }
     }

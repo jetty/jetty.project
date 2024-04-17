@@ -40,14 +40,14 @@
 
   <profiles>
     <profile>
-      <id>jdk17</id>
+      <id>enable-foreign</id>
       <activation>
-        <jdk>17</jdk>
+        <jdk>[22,)</jdk>
       </activation>
       <dependencies>
         <dependency>
           <groupId>org.eclipse.jetty.quic</groupId>
-          <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
+          <artifactId>jetty-quic-quiche-foreign</artifactId>
         </dependency>
       </dependencies>
     </profile>

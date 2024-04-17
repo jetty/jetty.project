@@ -29,6 +29,7 @@
     <module>jetty-ee8-plus</module>
     <module>jetty-ee8-proxy</module>
     <module>jetty-ee8-quickstart</module>
+    <module>jetty-ee8-runner</module>
     <module>jetty-ee8-security</module>
     <module>jetty-ee8-servlet</module>
     <module>jetty-ee8-servlets</module>
@@ -157,6 +158,12 @@
         <groupId>org.eclipse.jetty.ee8.demos</groupId>
         <artifactId>jetty-ee8-demo-mock-resources</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.demos</groupId>
+        <artifactId>jetty-ee8-demo-simple-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee8.demos</groupId>

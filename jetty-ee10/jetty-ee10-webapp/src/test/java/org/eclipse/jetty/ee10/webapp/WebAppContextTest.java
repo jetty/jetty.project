@@ -36,6 +36,7 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -80,6 +81,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -128,7 +130,7 @@ public class WebAppContextTest
      * @param name the name of the war
      * @return the Path of the generated war
      *
-     * @throws Exception
+     * @throws Exception if the war could not be created
      */
     private Path createWar(Path tempDir, String name) throws Exception
     {
@@ -935,5 +937,63 @@ public class WebAppContextTest
         server.setHandler(new Handler.Sequence(context, handler));
 
         assertThat(handler.getServer(), sameInstance(server));
+    }
+
+    @Test
+    public void testAddServerClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
+
+        WebAppContext.addServerClasses(server, testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+
+        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+        Path warPath = createWar(testPath, "test.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> serverClasses = List.of(context.getHiddenClasses());
+        assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
+        assertThat("Should have pattern from defaults", serverClasses, hasItem("org.eclipse.jetty."));
+        assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
+        for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
+            assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
+    }
+
+    @Test
+    public void testAddSystemClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
+
+        WebAppContext.addSystemClasses(server, testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+        Path warPath = createWar(testPath, "test.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> systemClasses = List.of(context.getProtectedClasses());
+        assertThat("Should have environment specific test pattern", systemClasses, hasItem(testPattern));
+        assertThat("Should have pattern from defaults", systemClasses, hasItem("javax."));
+        assertThat("Should have pattern from defaults", systemClasses, hasItem("jakarta."));
+        assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
+        for (String defaultSystemClass: WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
+            assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
     }
 }
