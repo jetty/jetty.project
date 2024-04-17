@@ -1084,6 +1084,7 @@ public class HttpClientStreamTest extends AbstractTest
                             request.demand(this);
                         }
                         lastChunk.set(chunk);
+                        serverDemandLatch.countDown();
                     }
                 });
                 serverLatch.countDown();
@@ -1113,7 +1114,6 @@ public class HttpClientStreamTest extends AbstractTest
                     {
                         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
                         connector.stop();
-                        serverDemandLatch.countDown();
                         return 0;
                     }
                     catch (Throwable x)
@@ -1148,6 +1148,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverDemandLatch.await(5, TimeUnit.SECONDS));
         assertTrue(Content.Chunk.isFailure(lastChunk.get(), true));
         assertInstanceOf(IOException.class, lastChunk.get().getFailure());
     }
