@@ -27,6 +27,7 @@ import com.mongodb.MongoException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -528,7 +529,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         if (!sets.isEmpty())
             update.put("$set", sets);
 
-        UpdateResult res = _dbSessions.updateOne(key, update);
+        UpdateResult res = _dbSessions.updateOne(key, update, new UpdateOptions().upsert(true));
         if (LOG.isDebugEnabled())
             LOG.debug("Save:db.sessions.update( {}, {},{} )", key, update, res);
     }

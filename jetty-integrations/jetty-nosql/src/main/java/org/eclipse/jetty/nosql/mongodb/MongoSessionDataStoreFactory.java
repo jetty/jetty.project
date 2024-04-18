@@ -140,7 +140,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         else if (!StringUtil.isBlank(getHost()) && getPort() != -1)
             mongo = MongoClients.create("mongodb://" + getHost() + ":" + getPort());
         else if (!StringUtil.isBlank(getHost()))
-            mongo = MongoClients.create(getHost());
+            mongo = MongoClients.create("mongodb://" + getHost());
         else
             mongo = MongoClients.create();
         store.setDBCollection(mongo.getDatabase(getDbName()).getCollection(getCollectionName()));
