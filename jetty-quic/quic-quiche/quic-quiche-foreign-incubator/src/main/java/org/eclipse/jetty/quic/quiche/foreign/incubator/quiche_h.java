@@ -33,7 +33,7 @@ public class quiche_h
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    private static final String EXPECTED_QUICHE_VERSION = "0.20.1";
+    private static final String EXPECTED_QUICHE_VERSION = "0.21.0";
 
     public static final byte C_FALSE = 0;
     public static final byte C_TRUE = 1;
@@ -278,6 +278,12 @@ public class quiche_h
         "quiche_conn_stats",
         "(Ljdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;)V",
         FunctionDescriptor.ofVoid(C_POINTER, C_POINTER)
+    );
+
+    private static final MethodHandle quiche_conn_peer_transport_params$MH = downcallHandle(
+        "quiche_conn_peer_transport_params",
+        "(Ljdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;)B",
+        FunctionDescriptor.of(C_CHAR, C_POINTER, C_POINTER)
     );
 
     private static final MethodHandle quiche_conn_path_stats$MH = downcallHandle(
@@ -825,6 +831,18 @@ public class quiche_h
         try
         {
             quiche_conn_stats$MH.invokeExact(conn, stats);
+        }
+        catch (Throwable ex)
+        {
+            throw new AssertionError("should not reach here", ex);
+        }
+    }
+
+    public static byte quiche_conn_peer_transport_params(MemoryAddress conn, MemoryAddress transportParams)
+    {
+        try
+        {
+            return (byte)quiche_conn_peer_transport_params$MH.invokeExact(conn, transportParams);
         }
         catch (Throwable ex)
         {
