@@ -65,7 +65,7 @@ public class DirConfigSource implements ConfigSource
         BANNED_ARGS.add("--write-module-graph");
         BANNED_ARGS.add("--version");
         BANNED_ARGS.add("-v");
-        BANNED_ARGS.add("--file");
+        BANNED_ARGS.add("--files");
         BANNED_ARGS.add("--download");
         BANNED_ARGS.add("--create-files");
         BANNED_ARGS.add("--skip-create-files");
