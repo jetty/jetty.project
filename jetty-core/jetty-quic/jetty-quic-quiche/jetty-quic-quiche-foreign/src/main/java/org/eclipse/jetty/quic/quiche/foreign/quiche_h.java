@@ -30,7 +30,7 @@ import static org.eclipse.jetty.quic.quiche.foreign.NativeHelper.C_POINTER;
 
 public class quiche_h
 {
-    private static final String EXPECTED_QUICHE_VERSION = "0.20.1";
+    private static final String EXPECTED_QUICHE_VERSION = "0.21.0";
     private static final Logger LOG = LoggerFactory.getLogger(quiche_h.class);
 
     private static class LoggingCallback
