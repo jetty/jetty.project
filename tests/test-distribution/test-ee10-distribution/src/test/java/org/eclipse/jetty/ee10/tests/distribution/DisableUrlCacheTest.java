@@ -101,12 +101,14 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 touch(warXmlPath);
 
                 // Wait for reload
+                // Started oeje10w.WebAppContext@3fec304{test,/test,b=file:///h
                 assertTrue(run2.awaitConsoleLogsFor("Started oeje10w.WebAppContext@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("{test,/test,", START_TIMEOUT, TimeUnit.SECONDS));
 
                 // Is webapp still there?
                 response = client.GET("http://localhost:" + port + "/test/log/");
-                assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 content = response.getContentAsString();
+                assertThat(content, response.getStatus(), is(HttpStatus.OK_200));
                 assertThat(content, containsString("GET at LogServlet"));
             }
         }
