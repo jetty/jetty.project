@@ -1452,8 +1452,7 @@ public class HttpChannelState implements HttpChannel, Components
                 response = httpChannelState._response;
                 stream = httpChannelState._stream;
 
-                // We are being tough on handler implementations and expect them
-                // to not have pending operations when calling succeeded or failed.
+                // We convert a call to succeeded with pending demand/write into a call to failure.
                 if (httpChannelState._onContentAvailable != null)
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 if (response.lockedIsWriting())
