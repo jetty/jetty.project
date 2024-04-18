@@ -65,7 +65,7 @@ public class HttpCookieParseExpireBenchmark
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public Instant testParseOld()
+    public Instant testParseExpiresOld()
     {
         int entry = ThreadLocalRandom.current().nextInt(size);
         return ZonedDateTime.parse(expires[entry], DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
@@ -76,7 +76,7 @@ public class HttpCookieParseExpireBenchmark
     public Instant testParse()
     {
         int entry = ThreadLocalRandom.current().nextInt(size);
-        return HttpCookie.parseExpires(expires[entry]);
+        return HttpCookie.parseCookieDate(expires[entry]);
     }
 
     public static void main(String[] args) throws RunnerException

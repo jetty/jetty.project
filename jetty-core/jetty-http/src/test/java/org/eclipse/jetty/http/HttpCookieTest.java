@@ -111,7 +111,7 @@ public class HttpCookieTest
             .attribute(name, value));
     }
 
-    public static Stream<Arguments> expiresDatesValid()
+    public static Stream<Arguments> cookieDatesValid()
     {
         List<Arguments> args = new ArrayList<>();
 
@@ -158,16 +158,16 @@ public class HttpCookieTest
     }
 
     @ParameterizedTest
-    @MethodSource("expiresDatesValid")
-    public void testParseExpires(String input, String expected)
+    @MethodSource("cookieDatesValid")
+    public void testParseCookieDate(String input, String expected)
     {
-        Instant actual = HttpCookie.parseExpires(input);
+        Instant actual = HttpCookie.parseCookieDate(input);
         DateTimeFormatterBuilder formatter = new DateTimeFormatterBuilder();
         String actualStr = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss O").format(actual.atZone(ZoneId.of("GMT")));
         assertEquals(expected, actualStr);
     }
 
-    public static Stream<Arguments> expiresDatesInvalid()
+    public static Stream<Arguments> cookieDatesInvalid()
     {
         List<Arguments> args = new ArrayList<>();
 
@@ -200,8 +200,8 @@ public class HttpCookieTest
         args.add(Arguments.of("Mon, 05-May-2014 GMT", "Missing [time]"));
         // - bad time (no seconds)
         args.add(Arguments.of("Thu, 02-May-2013 13:14 GMT", "Missing [time]"));
-        // - bad time (am/pm)
-        args.add(Arguments.of("Thu, 02-May-2013 13:14 PM GMT", "Missing [time]"));
+        // - bad time (am/pm) - will not understand the AM/PM
+        args.add(Arguments.of("Thu, 02-May-2013 13:14 PM GMT", "Unable to parse date"));
 
         // Obsolete ANSI C's asctime() format
         // - invalid year
@@ -211,12 +211,12 @@ public class HttpCookieTest
     }
 
     @ParameterizedTest
-    @MethodSource("expiresDatesInvalid")
-    public void testParseExpiresInvalid(String input, String expectedMsg)
+    @MethodSource("cookieDatesInvalid")
+    public void testParseCookieDateInvalid(String input, String expectedMsg)
     {
         HttpCookie.DateTimeSyntaxException syntaxException = assertThrows(
             HttpCookie.DateTimeSyntaxException.class, () ->
-            HttpCookie.parseExpires(input)
+            HttpCookie.parseCookieDate(input)
         );
         assertThat(syntaxException.getMessage(), containsString(expectedMsg));
     }

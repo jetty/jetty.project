@@ -18,6 +18,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Locale;
@@ -304,6 +305,31 @@ public interface HttpCookie
      */
     class Immutable implements HttpCookie
     {
+        static final QuotedStringTokenizer DATE_TOKENIZER = QuotedStringTokenizer.builder()
+            .delimiters("\t" + // %x09
+                " !#$%&'()*+,-./" + " + " + // %x20-2F
+                ";<=>?@" + // %x3B-40
+                "[\\]^_`" + // %x5B-60
+                "{|}~" // %x7B-7E
+            )
+            .build();
+        static final Index<Integer> MONTH_CACHE = new Index.Builder<Integer>()
+            .caseSensitive(false)
+            // Note: Calendar.Month fields are zero based.
+            .with("Jan", Calendar.JANUARY + 1)
+            .with("Feb", Calendar.FEBRUARY + 1)
+            .with("Mar", Calendar.MARCH + 1)
+            .with("Apr", Calendar.APRIL + 1)
+            .with("May", Calendar.MAY + 1)
+            .with("Jun", Calendar.JUNE + 1)
+            .with("Jul", Calendar.JULY + 1)
+            .with("Aug", Calendar.AUGUST + 1)
+            .with("Sep", Calendar.SEPTEMBER + 1)
+            .with("Oct", Calendar.OCTOBER + 1)
+            .with("Nov", Calendar.NOVEMBER + 1)
+            .with("Dec", Calendar.DECEMBER + 1)
+            .build();
+
         private final String _name;
         private final String _value;
         private final int _version;
@@ -931,16 +957,30 @@ public interface HttpCookie
     }
 
     /**
-     * <p>Parses the {@code Expires} attribute value using algorithm
+     * @deprecated use {@link #parseCookieDate(String)} instead
+     */
+    @Deprecated(since = "12.0.9", forRemoval = true)
+    static Instant parseExpires(String expires)
+    {
+        return parseCookieDate(expires);
+    }
+
+    static Instant parseExpiresOld(String date)
+    {
+        return ZonedDateTime.parse(date, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+    }
+
+    /**
+     * <p>Parses a Cookie Date value (such as the {@code Expires} attribute) using algorithm
      * specified in <a href="https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.1">RFC6265: Section 5.1.1: Date</a>
      * in into an {@link Instant}.</p>
      *
-     * @param expires an instant in the string format supported by RFC6265 HTTP State Management
+     * @param date an instant in the string format supported by RFC6265 HTTP State Management
      * @return an {@link Instant} parsed from the given string
      */
-    static Instant parseExpires(String expires)
+    static Instant parseCookieDate(String date)
     {
-        Objects.requireNonNull(expires, "Expires string cannot be null");
+        Objects.requireNonNull(date, "Expires string cannot be null");
 
         int year = -1;
         int month = -1;
@@ -949,99 +989,69 @@ public interface HttpCookie
         int minute = -1;
         int second = -1;
 
-        // delimiter       = %x09 / %x20-2F / %x3B-40 / %x5B-60 / %x7B-7E
-        // Note: That leaves "0-9" + "A-Z" + "a-z" + ":"
-        QuotedStringTokenizer dateTokenizer = QuotedStringTokenizer.builder()
-            .delimiters("\t" + // %x09
-                " !#$%&'()*+,-./" + " + " + // %x20-2F
-                ";<=>?@" + // %x3B-40
-                "[\\]^_`" + // %x5B-60
-                "{|}~" // %x7B-7E
-            )
-            .build();
-
-        Iterator<String> dateIter = dateTokenizer.tokenize(expires);
-        while (dateIter.hasNext())
+        try
         {
-            String part = dateIter.next();
-
-            // RFC 6265 - Section 5.1.1 - Step 2.1 - time (00:00:00)
-            if (hour == (-1) && part.length() == 8 && part.charAt(2) == ':' && part.charAt(5) == ':')
+            int tokenCount = 0;
+            Iterator<String> tokenIter = Immutable.DATE_TOKENIZER.tokenize(date);
+            while (tokenIter.hasNext())
             {
-                try
+                String token = tokenIter.next();
+                // ensure we don't exceed the number of expected tokens.
+                if (++tokenCount > 6)
                 {
-                    hour = StringUtil.toInt(part, 0);
-                    minute = StringUtil.toInt(part, 3);
-                    second = StringUtil.toInt(part, 6);
+                    // This is a horribly bad syntax / format
+                    throw new IllegalStateException("Too many delimiters for a Date format");
                 }
-                catch (IllegalArgumentException e)
-                {
-                    // bad time syntax
-                    throw new DateTimeSyntaxException("Invalid [time]: " + expires);
-                }
-                continue;
-            }
 
-            // RFC 6265 - Section 5.1.1 - Step 2.2
-            if (day == (-1) && part.length() <= 2)
-            {
-                try
-                {
-                    day = StringUtil.toInt(part, 0);
-                }
-                catch (IllegalArgumentException e)
-                {
-                    throw new DateTimeSyntaxException("Invalid [day]: " + expires);
-                }
-                continue;
-            }
+                if (token.isBlank())
+                    continue; // skip blank tokens
 
-            // RFC 6265 - Section 5.1.1 - Step 2.3
-            if (month == (-1) && part.length() == 3)
-            {
-                int m = switch (part.toLowerCase(Locale.ENGLISH))
+                // RFC 6265 - Section 5.1.1 - Step 2.1 - time (00:00:00)
+                // if (hour == (-1) && Immutable.PATTERN_TIME.matcher(token).matches())
+                if (hour == (-1) && token.length() == 8 && token.charAt(2) == ':' && token.charAt(5) == ':')
                 {
-                    case "jan" -> 1;
-                    case "feb" -> 2;
-                    case "mar" -> 3;
-                    case "apr" -> 4;
-                    case "may" -> 5;
-                    case "jun" -> 6;
-                    case "jul" -> 7;
-                    case "aug" -> 8;
-                    case "sep" -> 9;
-                    case "oct" -> 10;
-                    case "nov" -> 11;
-                    case "dec" -> 12;
-                    default -> -1;
-                };
-                if (m > 0)
+                    hour = StringUtil.toInt(token, 0);
+                    minute = StringUtil.toInt(token, 3);
+                    second = StringUtil.toInt(token, 6);
+                    continue;
+                }
+
+                // RFC 6265 - Section 5.1.1 - Step 2.2
+                if (day == (-1) && token.length() <= 2)
                 {
-                    month = m;
+                    day = StringUtil.toInt(token, 0);
+                    continue;
+                }
+
+                // RFC 6265 - Section 5.1.1 - Step 2.3
+                if (month == (-1) && token.length() == 3)
+                {
+                    Integer m = Immutable.MONTH_CACHE.getBest(token);
+                    if (m != null)
+                    {
+                        month = m;
+                        continue;
+                    }
+                }
+
+                // RFC 6265 - Section 5.1.1 - Step 2.4
+                if (year == (-1))
+                {
+                    if (token.length() <= 2)
+                    {
+                        year = StringUtil.toInt(token, 0);
+                    }
+                    else if (token.length() == 4)
+                    {
+                        year = StringUtil.toInt(token, 0);
+                    }
                     continue;
                 }
             }
-
-            // RFC 6265 - Section 5.1.1 - Step 2.4
-            if (year == (-1))
-            {
-                try
-                {
-                    if (part.length() <= 2)
-                    {
-                        year = StringUtil.toInt(part, 0);
-                    }
-                    else if (part.length() == 4)
-                    {
-                        year = StringUtil.toInt(part, 0);
-                    }
-                }
-                catch (IllegalArgumentException e)
-                {
-                    throw new DateTimeSyntaxException("Invalid [year]: " + expires);
-                }
-                continue;
-            }
+        }
+        catch (Throwable t)
+        {
+            throw new DateTimeSyntaxException("Unable to parse date: " + date, t);
         }
 
         // RFC 6265 - Section 5.1.1 - Step 3
@@ -1053,23 +1063,23 @@ public interface HttpCookie
 
         // RFC 6265 - Section 5.1.1 - Step 5
         if (day == (-1))
-            throw new DateTimeSyntaxException("Missing [day]: " + expires);
+            throw new DateTimeSyntaxException("Missing [day]: " + date);
         if (month == (-1))
-            throw new DateTimeSyntaxException("Missing [month]: " + expires);
+            throw new DateTimeSyntaxException("Missing [month]: " + date);
         if (year == (-1))
-            throw new DateTimeSyntaxException("Missing [year]: " + expires);
+            throw new DateTimeSyntaxException("Missing [year]: " + date);
         if (hour == (-1))
-            throw new DateTimeSyntaxException("Missing [time]: " + expires);
+            throw new DateTimeSyntaxException("Missing [time]: " + date);
         if (day < 1 || day > 31)
-            throw new DateTimeSyntaxException("Invalid [day]: " + expires);
+            throw new DateTimeSyntaxException("Invalid [day]: " + date);
         if (month < 1 || month > 31)
-            throw new DateTimeSyntaxException("Invalid [month]: " + expires);
+            throw new DateTimeSyntaxException("Invalid [month]: " + date);
         if (hour > 23)
-            throw new DateTimeSyntaxException("Invalid [hour]: " + expires);
+            throw new DateTimeSyntaxException("Invalid [hour]: " + date);
         if (minute > 59)
-            throw new DateTimeSyntaxException("Invalid [minute]: " + expires);
+            throw new DateTimeSyntaxException("Invalid [minute]: " + date);
         if (second > 59)
-            throw new DateTimeSyntaxException("Invalid [second]: " + expires);
+            throw new DateTimeSyntaxException("Invalid [second]: " + date);
 
         // RFC 6265 - Section 5.1.1 - Step 6
         ZonedDateTime dateTime = ZonedDateTime.of(year,
