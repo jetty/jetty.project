@@ -239,7 +239,7 @@ public class MultiPartByteRanges
             super(null, null, headers);
             this.resource = resource;
             this.byteRange = byteRange;
-            this.bufferPool = bufferPool == null ? new ByteBufferPool.NonPooling() : bufferPool;
+            this.bufferPool = bufferPool == null ? ByteBufferPool.NON_POOLING : bufferPool;
         }
 
         @Override
