@@ -24,7 +24,7 @@ A Jetty module is defined in a `<name>.mod` file, where `<name>` is the module n
 Jetty module files are read from the typical xref:og-start-configure[configuration source directories], under the `modules/` subdirectory; from higher priority to lower priority:
 
 * The `$JETTY_BASE/modules/` directory.
-* If a directory is specified with the `--include-jetty-dir` option, its `modules/` subdirectory.
+* If a directory is specified with the `--add-config-dir` option, its `modules/` subdirectory.
 * The `$JETTY_HOME/modules/` directory.
 
 The standard Jetty modules that Jetty provides out-of-the-box are under `$JETTY_HOME/modules/`.
@@ -74,7 +74,7 @@ The Jetty XML file of a Jetty module may instantiate and assemble together its o
 The Jetty module's XML files are read from the typical xref:og-start-configure[configuration source directories], under the `etc/` subdirectory; from higher priority to lower priority:
 
 * The `$JETTY_BASE/etc/` directory.
-* If a directory is specified with the `--include-jetty-dir` option, its `etc/` subdirectory.
+* If a directory is specified with the `--add-config-dir` option, its `etc/` subdirectory.
 * The `$JETTY_HOME/etc/` directory.
 
 The standard Jetty modules XML files that Jetty provides out-of-the-box are under `$JETTY_HOME/etc/`.
