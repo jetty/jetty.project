@@ -412,7 +412,9 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     @Override
     public void close()
     {
-        if (stream != null)
+        // If there is a request pending, fail the channel. This can only happen if
+        // the connection gets closed while there is a request in-flight.
+        if (stream != null && stream.getHttpChannel().getRequest() != null)
         {
             Runnable task = stream.getHttpChannel().onFailure(new EofException());
             if (task != null)

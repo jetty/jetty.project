@@ -613,9 +613,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public void close()
     {
-        Runnable task = _httpChannel.onFailure(new EofException());
-        if (task != null)
-            task.run();
+        // If there is a request pending, fail the channel. This can only happen if
+        // the connection gets closed while there is a request in-flight.
+        if (_httpChannel.getRequest() != null)
+        {
+            Runnable task = _httpChannel.onFailure(new EofException());
+            if (task != null)
+                task.run();
+        }
         super.close();
     }
 
