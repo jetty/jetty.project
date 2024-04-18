@@ -31,6 +31,7 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.Binary;
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.session.SessionData;
@@ -191,7 +192,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
             Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTSAVED));
             String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTNODE));
-            byte[] attributes = (byte[])MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__ATTRIBUTES));
+            Binary binary = ((Binary)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__ATTRIBUTES)));
+            byte[] attributes = binary == null ? new byte[0] : binary.getData();
 
             Long created = (Long)sessionDocument.get(__CREATED);
             Long accessed = (Long)sessionDocument.get(__ACCESSED);
@@ -202,7 +204,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             NoSqlSessionData data = null;
 
             // get the session for the context
-            DBObject sessionSubDocumentForContext = (DBObject)MongoUtils.getNestedValue(sessionDocument, getContextField());
+            Document sessionSubDocumentForContext = (Document)MongoUtils.getNestedValue(sessionDocument, getContextField());
 
             if (LOG.isDebugEnabled())
                 LOG.debug("attrs {}", sessionSubDocumentForContext);
@@ -275,7 +277,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         if (sessionDocument != null)
         {
-            DBObject c = (DBObject)MongoUtils.getNestedValue(sessionDocument, __CONTEXT);
+            Document c = (Document)MongoUtils.getNestedValue(sessionDocument, __CONTEXT);
             if (c == null)
             {
                 //delete whole doc
@@ -522,14 +524,15 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();)
         {
             serializeAttributes(data, baos);
-            sets.put(getContextSubfield(__ATTRIBUTES), baos.toByteArray());
+            Binary binary = new Binary(baos.toByteArray());
+            sets.put(getContextSubfield(__ATTRIBUTES), binary);
         }
 
         // Do the upsert
         if (!sets.isEmpty())
             update.put("$set", sets);
 
-        UpdateResult res = _dbSessions.updateOne(key, update, new UpdateOptions().upsert(true));
+        UpdateResult res = _dbSessions.updateOne(key, update, new UpdateOptions().upsert(upsert));
         if (LOG.isDebugEnabled())
             LOG.debug("Save:db.sessions.update( {}, {},{} )", key, update, res);
     }
