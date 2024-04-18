@@ -95,6 +95,7 @@ public class HttpParser
     public static final Logger LOG = LoggerFactory.getLogger(HttpParser.class);
     public static final int INITIAL_URI_LENGTH = 256;
     private static final int MAX_CHUNK_LENGTH = Integer.MAX_VALUE / 16 - 16;
+    private static final String UNMATCHED_VALUE = "\u0000";
 
     /**
      * Cache of common {@link HttpField}s including: <UL>
@@ -165,7 +166,7 @@ public class HttpParser
             Map<String, HttpField> map = new LinkedHashMap<>();
             for (HttpHeader h : HttpHeader.values())
             {
-                HttpField httpField = new HttpField(h, (String)null);
+                HttpField httpField = new HttpField(h, UNMATCHED_VALUE);
                 map.put(httpField.toString(), httpField);
             }
             return map;
@@ -1228,21 +1229,11 @@ public class HttpParser
 
         for (int i = 0; i < length; i++)
         {
-            char ch = valueString.charAt(i);
-            HttpTokens.Token t = HttpTokens.getToken(ch);
+            char c = valueString.charAt(i);
+            if (c < '0' || c > '9')
+                throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
 
-            switch (t.getType())
-            {
-                case SPACE:
-                case HTAB:
-                    // ignore OWS
-                    continue;
-                case DIGIT:
-                    value = Math.addExact(Math.multiplyExact(value, 10), ch - '0');
-                    break;
-                default:
-                    throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
-            }
+            value = Math.addExact(Math.multiplyExact(value, 10), c - '0');
         }
         return value;
     }
@@ -1387,25 +1378,28 @@ public class HttpParser
                                     String n = cachedField.getName();
                                     String v = cachedField.getValue();
 
-                                    if (CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode))
+                                    if (v != UNMATCHED_VALUE)
                                     {
-                                        // Have to get the fields exactly from the buffer to match case
-                                        String en = BufferUtil.toString(buffer, buffer.position() - 1, n.length(), StandardCharsets.US_ASCII);
-                                        if (!n.equals(en))
+                                        if (CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode))
                                         {
-                                            reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, en);
-                                            n = en;
-                                            cachedField = new HttpField(cachedField.getHeader(), n, v);
+                                            // Have to get the fields exactly from the buffer to match case
+                                            String en = BufferUtil.toString(buffer, buffer.position() - 1, n.length(), StandardCharsets.US_ASCII);
+                                            if (!n.equals(en))
+                                            {
+                                                reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, en);
+                                                n = en;
+                                                cachedField = new HttpField(cachedField.getHeader(), n, v);
+                                            }
                                         }
-                                    }
 
-                                    if (v != null && isHeaderCacheCaseSensitive())
-                                    {
-                                        String ev = BufferUtil.toString(buffer, buffer.position() + n.length() + 1, v.length(), StandardCharsets.ISO_8859_1);
-                                        if (!v.equals(ev))
+                                        if (isHeaderCacheCaseSensitive())
                                         {
-                                            v = ev;
-                                            cachedField = new HttpField(cachedField.getHeader(), n, v);
+                                            String ev = BufferUtil.toString(buffer, buffer.position() + n.length() + 1, v.length(), StandardCharsets.ISO_8859_1);
+                                            if (!v.equals(ev))
+                                            {
+                                                v = ev;
+                                                cachedField = new HttpField(cachedField.getHeader(), n, v);
+                                            }
                                         }
                                     }
 
@@ -1414,7 +1408,7 @@ public class HttpParser
 
                                     int posAfterName = buffer.position() + n.length() + 1;
 
-                                    if (v == null || (posAfterName + v.length()) >= buffer.limit())
+                                    if (v == UNMATCHED_VALUE || (posAfterName + v.length()) >= buffer.limit())
                                     {
                                         // Header only
                                         setState(FieldState.VALUE);
