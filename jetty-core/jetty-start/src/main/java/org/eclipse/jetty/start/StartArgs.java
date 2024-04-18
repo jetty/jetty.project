@@ -1078,7 +1078,7 @@ public class StartArgs
             return environment;
         }
 
-        if (arg.startsWith("--include-jetty-dir=") || arg.startsWith("--add-base-dir="))
+        if (arg.startsWith("--include-jetty-dir=") || arg.startsWith("--add-config-dir="))
         {
             // valid, but handled in ConfigSources instead
             return environment;
