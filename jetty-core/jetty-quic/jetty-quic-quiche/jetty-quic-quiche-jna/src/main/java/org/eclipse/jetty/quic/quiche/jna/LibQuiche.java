@@ -31,7 +31,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.20.1";
+    String EXPECTED_QUICHE_VERSION = "0.21.0";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
@@ -402,8 +402,8 @@ public interface LibQuiche extends Library
 
     // Schedule an ack-eliciting packet on the specified path.
     ssize_t quiche_conn_send_ack_eliciting_on_path(quiche_conn conn,
-                           sockaddr local, size_t local_len,
-                           sockaddr peer, size_t peer_len);
+                                                   sockaddr local, size_t local_len,
+                                                   sockaddr peer, size_t peer_len);
 
     @Structure.FieldOrder({"from", "from_len", "to", "to_len", "at"})
     class quiche_send_info extends Structure
