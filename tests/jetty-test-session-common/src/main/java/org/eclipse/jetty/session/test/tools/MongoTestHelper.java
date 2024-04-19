@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -84,7 +85,7 @@ public class MongoTestHelper
 
     public static void dropCollection(String dbName, String collectionName) throws Exception
     {
-        getMongoClient().getDatabase(dbName).getCollection(collectionName).drop();
+        getMongoClient().getDatabase(dbName).getCollection(collectionName).withWriteConcern(WriteConcern.JOURNALED).drop();
     }
 
     public static void shutdown() throws Exception
@@ -94,7 +95,9 @@ public class MongoTestHelper
 
     public static void createCollection(String dbName, String collectionName) throws UnknownHostException, MongoException
     {
-        getMongoClient().getDatabase(dbName).createCollection(collectionName, new CreateCollectionOptions());
+        if (StreamSupport.stream(getMongoClient().getDatabase(dbName).listCollectionNames().spliterator(), false)
+                .filter(collectionName::equals).findAny().isEmpty())
+            getMongoClient().getDatabase(dbName).withWriteConcern(WriteConcern.JOURNALED).createCollection(collectionName, new CreateCollectionOptions());
     }
 
     public static MongoCollection<Document> getCollection(String dbName, String collectionName) throws UnknownHostException, MongoException
