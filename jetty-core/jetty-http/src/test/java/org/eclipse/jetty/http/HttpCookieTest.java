@@ -142,6 +142,10 @@ public class HttpCookieTest
         args.add(Arguments.of("Tue Apr 16 09:59:47 00", "2000/04/16 09:59:47 GMT"));
 
         // Unusual formats seen elsewhere
+        // RFC 1123 syntax with single digit day
+        args.add(Arguments.of("Wed, 9 Jun 2021 10:18:14 GMT", "2021/06/09 10:18:14 GMT"));
+        // RFC 850 with single digit day
+        args.add(Arguments.of("Sun, 3-May-20 18:54:31 GMT", "2020/05/03 18:54:31 GMT"));
         // unix epoch (and zero time)
         args.add(Arguments.of("Thu, 01 Jan 1970 00:00:00 GMT", "1970/01/01 00:00:00 GMT"));
         // seemingly invalid day (looks negative, but it isn't, as '-' is a delimiter per spec)
@@ -182,6 +186,8 @@ public class HttpCookieTest
         args.add(Arguments.of("Tue, 00 Apr 2024 17:28:27 GMT", "Invalid [day]"));
         // - no day
         args.add(Arguments.of("Thu, Nov 2017 13:37:22 GMT", "Missing [day]"));
+        // - single digit hour
+        args.add(Arguments.of("Wed, 09 Jun 2021 2:18:14 GMT", "Missing [time]"));
 
         // - no time
         args.add(Arguments.of("Thu, 01 Jan 1970 GMT", "Missing [time]"));
@@ -193,15 +199,18 @@ public class HttpCookieTest
         args.add(Arguments.of("Tue, 16-Apr- 17:28:27 GMT", "Missing [year]"));
         // - invalid day
         args.add(Arguments.of("Sunday, 00-Nov-94 08:49:37 GMT", "Invalid [day]"));
-        // - no day (the '94' is parsed as day)
+        // - single digit hour
+        args.add(Arguments.of("Sunday, 01-Nov-94 8:49:37 GMT", "Missing [time]"));
+
+        // - no day (the '94' is parsed as day as its the first 2 digit number in the string)
         args.add(Arguments.of("Sun, Nov-94 08:49:37 GMT", "Missing [year]"));
 
         // - no time
         args.add(Arguments.of("Mon, 05-May-2014 GMT", "Missing [time]"));
-        // - bad time (no seconds)
+        // - bad time (no seconds) - will not find time
         args.add(Arguments.of("Thu, 02-May-2013 13:14 GMT", "Missing [time]"));
-        // - bad time (am/pm) - will not understand the AM/PM
-        args.add(Arguments.of("Thu, 02-May-2013 13:14 PM GMT", "Unable to parse date"));
+        // - bad time (am/pm) - will not find time, and will not understand the AM/PM
+        args.add(Arguments.of("Thu, 02-May-2013 13:14 PM GMT", "Missing [time]"));
 
         // Obsolete ANSI C's asctime() format
         // - invalid year

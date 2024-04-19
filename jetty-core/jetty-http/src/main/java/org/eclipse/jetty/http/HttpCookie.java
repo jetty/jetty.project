@@ -29,6 +29,8 @@ import java.util.TreeMap;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Implementation of RFC6265 HTTP Cookies (with fallback support for RFC2965).</p>
@@ -965,11 +967,6 @@ public interface HttpCookie
         return parseCookieDate(expires);
     }
 
-    static Instant parseExpiresOld(String date)
-    {
-        return ZonedDateTime.parse(date, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
-    }
-
     /**
      * <p>Parses a Cookie Date value (such as the {@code Expires} attribute) using algorithm
      * specified in <a href="https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.1">RFC6265: Section 5.1.1: Date</a>
@@ -1010,9 +1007,9 @@ public interface HttpCookie
                 // if (hour == (-1) && Immutable.PATTERN_TIME.matcher(token).matches())
                 if (hour == (-1) && token.length() == 8 && token.charAt(2) == ':' && token.charAt(5) == ':')
                 {
-                    hour = StringUtil.toInt(token, 0);
-                    minute = StringUtil.toInt(token, 3);
                     second = StringUtil.toInt(token, 6);
+                    minute = StringUtil.toInt(token, 3);
+                    hour = StringUtil.toInt(token, 0);
                     continue;
                 }
 
@@ -1049,9 +1046,11 @@ public interface HttpCookie
                 }
             }
         }
-        catch (Throwable t)
+        catch (Throwable x)
         {
-            throw new DateTimeSyntaxException("Unable to parse date: " + date, t);
+            Logger log = LoggerFactory.getLogger(HttpCookie.class);
+            if (log.isDebugEnabled())
+                log.debug("Ignore: Unable to parse Cookie Date", x);
         }
 
         // RFC 6265 - Section 5.1.1 - Step 3
