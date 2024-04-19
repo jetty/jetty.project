@@ -20,14 +20,13 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.util.Index;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -307,14 +306,6 @@ public interface HttpCookie
      */
     class Immutable implements HttpCookie
     {
-        static final QuotedStringTokenizer DATE_TOKENIZER = QuotedStringTokenizer.builder()
-            .delimiters("\t" + // %x09
-                " !#$%&'()*+,-./" + " + " + // %x20-2F
-                ";<=>?@" + // %x3B-40
-                "[\\]^_`" + // %x5B-60
-                "{|}~" // %x7B-7E
-            )
-            .build();
         static final Index<Integer> MONTH_CACHE = new Index.Builder<Integer>()
             .caseSensitive(false)
             // Note: Calendar.Month fields are zero based.
@@ -343,6 +334,16 @@ public interface HttpCookie
             _value = value;
             _version = version;
             _attributes = attributes == null || attributes.isEmpty() ? Collections.emptyMap() : attributes;
+        }
+
+        protected static StringTokenizer newDateStringTokenizer(String input)
+        {
+            return new StringTokenizer(input, "\t" + // %x09
+                " !\"#$%&'()*+,-./" + " + " + // %x20-2F
+                ";<=>?@" + // %x3B-40
+                "[\\]^_`" + // %x5B-60
+                "{|}~" // %x7B-7E
+            );
         }
 
         @Override
@@ -989,10 +990,10 @@ public interface HttpCookie
         try
         {
             int tokenCount = 0;
-            Iterator<String> tokenIter = Immutable.DATE_TOKENIZER.tokenize(date);
-            while (tokenIter.hasNext())
+            StringTokenizer tokenizer = Immutable.newDateStringTokenizer(date);
+            while (tokenizer.hasMoreTokens())
             {
-                String token = tokenIter.next();
+                String token = tokenizer.nextToken();
                 // ensure we don't exceed the number of expected tokens.
                 if (++tokenCount > 6)
                 {
