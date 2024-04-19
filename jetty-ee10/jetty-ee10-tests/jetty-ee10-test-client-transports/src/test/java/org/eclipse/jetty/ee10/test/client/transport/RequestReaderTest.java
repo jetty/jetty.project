@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
@@ -110,7 +109,7 @@ public class RequestReaderTest extends AbstractTest
                 }).start();
             }
         });
-        AtomicBoolean callbackCompleted = new AtomicBoolean();
+        CountDownLatch callbackCompletedLatch = new CountDownLatch(1);
         AtomicReference<Throwable> callbackFailure = new AtomicReference<>();
         server.stop();
         server.insertHandler(new Handler.Wrapper()
@@ -123,16 +122,16 @@ public class RequestReaderTest extends AbstractTest
                     @Override
                     public void succeeded()
                     {
-                        callbackCompleted.set(true);
                         callback.succeeded();
+                        callbackCompletedLatch.countDown();
                     }
 
                     @Override
                     public void failed(Throwable x)
                     {
-                        callbackCompleted.set(true);
-                        callbackFailure.set(x);
                         callback.failed(x);
+                        callbackFailure.set(x);
+                        callbackCompletedLatch.countDown();
                     }
                 });
             }
@@ -153,7 +152,7 @@ public class RequestReaderTest extends AbstractTest
         await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
         Result result = resultRef.get();
         assertThat(result.getResponse().getStatus(), is(567));
-        assertThat(callbackCompleted.get(), is(true));
+        assertThat(callbackCompletedLatch.await(5, TimeUnit.SECONDS), is(true));
         assertThat(callbackFailure.get(), is(nullValue()));
     }
 
