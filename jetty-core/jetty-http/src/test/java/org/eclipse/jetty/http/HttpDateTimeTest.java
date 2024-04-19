@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -70,6 +71,8 @@ public class HttpDateTimeTest
         args.add(Arguments.of("Sun, 3-May-20 18:54:31 GMT", "2020/05/03 18:54:31 GMT"));
         // unix epoch (and zero time)
         args.add(Arguments.of("Thu, 01 Jan 1970 00:00:00 GMT", "1970/01/01 00:00:00 GMT"));
+        // extra spaces
+        args.add(Arguments.of(" Wed,  22  Aug  1984  13:14:15  GMT", "1984/08/22 13:14:15 GMT"));
         // seemingly invalid day (looks negative, but it isn't, as '-' is a delimiter per spec)
         args.add(Arguments.of("Thu, -2 Nov 2017 13:37:22 GMT", "2017/11/02 13:37:22 GMT"));
         // year zero (which is a valid year, assumed to be the year 2000 per spec)
@@ -79,6 +82,8 @@ public class HttpDateTimeTest
         args.add(Arguments.of("Sun, 06 Nov 1994 08:49:37 PST", "1994/11/06 08:49:37 GMT"));
         // long weekday (weekday is ignored per spec)
         args.add(Arguments.of("Wednesday, 09 Jun 2021 10:18:14 GMT", "2021/06/09 10:18:14 GMT"));
+        // date time before unix epoch
+        args.add(Arguments.of("Fri, 13 Mar 1964 11:22:33 GMT", "1964/03/13 11:22:33 GMT"));
 
         return args.stream();
     }
@@ -106,6 +111,8 @@ public class HttpDateTimeTest
 
         // - invalid day
         args.add(Arguments.of("Tue, 00 Apr 2024 17:28:27 GMT", "Invalid [day]"));
+        // - long form month
+        args.add(Arguments.of("Wed, 22 August 1984 01:02:03 GMT", "Missing [month]"));
         // - no day
         args.add(Arguments.of("Thu, Nov 2017 13:37:22 GMT", "Missing [day]"));
         // - single digit hour
@@ -113,6 +120,12 @@ public class HttpDateTimeTest
 
         // - no time
         args.add(Arguments.of("Thu, 01 Jan 1970 GMT", "Missing [time]"));
+        // - invalid time (negative hour)
+        args.add(Arguments.of("Thu,  2 Nov 2017 -3:14:15 GMT", "Missing [time]"));
+        // - invalid time (negative minute)
+        args.add(Arguments.of("Thu,  2 Nov 2017 13:-4:15 GMT", "Missing [time]"));
+        // - invalid time (negative second)
+        args.add(Arguments.of("Thu,  2 Nov 2017 13:14:-5 GMT", "Missing [time]"));
 
         // Obsolete RFC 850 syntax
         // - invalid year
@@ -121,6 +134,8 @@ public class HttpDateTimeTest
         args.add(Arguments.of("Tue, 16-Apr- 17:28:27 GMT", "Missing [year]"));
         // - invalid day
         args.add(Arguments.of("Sunday, 00-Nov-94 08:49:37 GMT", "Invalid [day]"));
+        // - long form month
+        args.add(Arguments.of("Wednesday, 22-August-84 01:02:03 GMT", "Missing [month]"));
         // - single digit hour
         args.add(Arguments.of("Sunday, 01-Nov-94 8:49:37 GMT", "Missing [time]"));
 
@@ -129,6 +144,12 @@ public class HttpDateTimeTest
 
         // - no time
         args.add(Arguments.of("Mon, 05-May-2014 GMT", "Missing [time]"));
+        // - bad time (negative hour)
+        args.add(Arguments.of("Thu, 02-May-2013 -3:14:15 GMT", "Missing [time]"));
+        // - bad time (negative minute)
+        args.add(Arguments.of("Thu, 02-May-2013 13:-4:15 GMT", "Missing [time]"));
+        // - bad time (negative second)
+        args.add(Arguments.of("Thu, 02-May-2013 13:14:-5 GMT", "Missing [time]"));
         // - bad time (no seconds) - will not find time
         args.add(Arguments.of("Thu, 02-May-2013 13:14 GMT", "Missing [time]"));
         // - bad time (am/pm) - will not find time, and will not understand the AM/PM
@@ -160,5 +181,12 @@ public class HttpDateTimeTest
     public void testParseToEpochInvalid(String input, String expectedMsg)
     {
         assertThat(HttpDateTime.parseToEpoch(input), is(-1L));
+    }
+
+    @Test
+    public void testParseToEpochBeforeEpoch()
+    {
+        long epoch = HttpDateTime.parseToEpoch("Fri, 13 Mar 1964 11:22:33 GMT");
+        assertThat(epoch, is(-183127047000L));
     }
 }
