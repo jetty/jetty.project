@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
-public class IncludeJettyDirTest
+public class AddConfigDirTests
 {
     private static class MainResult
     {
@@ -131,7 +131,7 @@ public class IncludeJettyDirTest
         // Simple command line reference to include-jetty-dir
         MainResult result = runMain(base, home,
             // direct reference via path
-            "--include-jetty-dir=" + common.toString());
+            "--add-config-dir=" + common.toString());
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -167,7 +167,7 @@ public class IncludeJettyDirTest
             // property
             "my.common=" + common.toString(),
             // reference via property
-            "--include-jetty-dir=${my.common}");
+            "--add-config-dir=${my.common}");
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -209,7 +209,7 @@ public class IncludeJettyDirTest
             // property to 'opt' dir
             "my.opt=" + opt.toString(),
             // reference via property prefix
-            "--include-jetty-dir=" + dirRef);
+            "--add-config-dir=" + dirRef);
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -253,7 +253,7 @@ public class IncludeJettyDirTest
             // property to commmon dir name
             "my.dir=common",
             // reference via property prefix
-            "--include-jetty-dir=" + dirRef);
+            "--add-config-dir=" + dirRef);
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -283,7 +283,7 @@ public class IncludeJettyDirTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base, "start.ini",
             "jetty.http.host=127.0.0.1",
-            "--include-jetty-dir=" + common.toString());
+            "--add-config-dir=" + common.toString());
 
         MainResult result = runMain(base, home);
 
@@ -319,8 +319,8 @@ public class IncludeJettyDirTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base, "start.ini",
             "jetty.http.host=127.0.0.1",
-            "--include-jetty-dir=" + common.toString(),
-            "--include-jetty-dir=" + corp.toString());
+            "--add-config-dir=" + common.toString(),
+            "--add-config-dir=" + corp.toString());
 
         MainResult result = runMain(base, home);
 
@@ -352,7 +352,7 @@ public class IncludeJettyDirTest
         Path common = testdir.getPathFile("common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common, "start.ini",
-            "--include-jetty-dir=" + corp.toString(),
+            "--add-config-dir=" + corp.toString(),
             "jetty.http.port=8080");
 
         // Create base
@@ -360,7 +360,7 @@ public class IncludeJettyDirTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base, "start.ini",
             "jetty.http.host=127.0.0.1",
-            "--include-jetty-dir=" + common.toString());
+            "--add-config-dir=" + common.toString());
 
         MainResult result = runMain(base, home);
 
@@ -394,7 +394,7 @@ public class IncludeJettyDirTest
         FS.ensureEmpty(common);
         TestEnv.makeFile(common, "start.ini",
             "my.corp=" + corp.toString(),
-            "--include-jetty-dir=${my.corp}",
+            "--add-config-dir=${my.corp}",
             "jetty.http.port=8080");
 
         // Create base
@@ -403,7 +403,7 @@ public class IncludeJettyDirTest
         TestEnv.makeFile(base, "start.ini",
             "jetty.http.host=127.0.0.1",
             "my.common=" + common.toString(),
-            "--include-jetty-dir=${my.common}");
+            "--add-config-dir=${my.common}");
 
         MainResult result = runMain(base, home);
 
@@ -443,7 +443,7 @@ public class IncludeJettyDirTest
         Path common = testdir.getPathFile("common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common, "start.ini",
-            "--include-jetty-dir=" + corp.toString(),
+            "--add-config-dir=" + corp.toString(),
             "jetty.http.port=8080");
 
         // Create base
@@ -451,11 +451,11 @@ public class IncludeJettyDirTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base, "start.ini",
             "jetty.http.host=127.0.0.1",
-            "--include-jetty-dir=" + common.toString());
+            "--add-config-dir=" + common.toString());
 
         MainResult result = runMain(base, home,
             // command line provided include-jetty-dir ref
-            "--include-jetty-dir=" + devops.toString());
+            "--add-config-dir=" + devops.toString());
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -487,7 +487,7 @@ public class IncludeJettyDirTest
         Path common = testdir.getPathFile("common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common, "start.ini",
-            "--include-jetty-dir=" + corp.toString(),
+            "--add-config-dir=" + corp.toString(),
             "jetty.http.port=8080");
 
         // Create base
@@ -495,7 +495,7 @@ public class IncludeJettyDirTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base, "start.ini",
             "jetty.http.host=127.0.0.1",
-            "--include-jetty-dir=" + common.toString());
+            "--add-config-dir=" + common.toString());
 
         MainResult result = runMain(base, home,
             // command line property should override all others
@@ -531,21 +531,21 @@ public class IncludeJettyDirTest
             // standard property
             "jetty.http.port=9090",
             // INTENTIONAL BAD Reference (duplicate)
-            "--include-jetty-dir=" + common.toString());
+            "--add-config-dir=" + common.toString());
 
         // Populate common
         TestEnv.makeFile(common, "start.ini",
             // standard property
             "jetty.http.port=8080",
             // reference to corp
-            "--include-jetty-dir=" + corp.toString());
+            "--add-config-dir=" + corp.toString());
 
         // Create base
         Path base = testdir.getPathFile("base");
         FS.ensureEmpty(base);
         TestEnv.makeFile(base, "start.ini",
             "jetty.http.host=127.0.0.1",
-            "--include-jetty-dir=" + common.toString());
+            "--add-config-dir=" + common.toString());
 
         UsageException e = assertThrows(UsageException.class, () -> runMain(base, home));
         assertThat("UsageException", e.getMessage(), containsString("Duplicate"));

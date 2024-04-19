@@ -19,7 +19,7 @@ Enabling the `session-store-mongo` module configures Jetty to store session data
 Because MongoDB is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case) during the install.
 Jars needed by MongoDB are downloaded and stored into a directory named `$JETTY_BASE/lib/nosql/`.
 
-IMPORTANT: If you want to use updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+IMPORTANT: If you want to use updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
 
 ===== Configuration
 

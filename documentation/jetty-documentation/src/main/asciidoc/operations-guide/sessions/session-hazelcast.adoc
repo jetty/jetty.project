@@ -27,7 +27,7 @@ Because Hazelcast is not a technology provided by the Eclipse Foundation, you wi
 
 Hazelcast-specific jar files will be downloaded and saved to a directory named `$JETTY_BASE/lib/hazelcast/`.
 
-NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
 
 ====== Configuration
 
