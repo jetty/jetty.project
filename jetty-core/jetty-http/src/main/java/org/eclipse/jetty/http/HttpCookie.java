@@ -20,13 +20,14 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -306,7 +307,14 @@ public interface HttpCookie
      */
     class Immutable implements HttpCookie
     {
-        static final Pattern DATE_DELIMITERS = Pattern.compile("[^\\p{Alpha}\\p{Digit}:]");
+        static final QuotedStringTokenizer DATE_TOKENIZER = QuotedStringTokenizer.builder()
+            .delimiters("\t" + // %x09
+                " !#$%&'()*+,-./" + " + " + // %x20-2F
+                ";<=>?@" + // %x3B-40
+                "[\\]^_`" + // %x5B-60
+                "{|}~" // %x7B-7E
+            )
+            .build();
         static final Index<Integer> MONTH_CACHE = new Index.Builder<Integer>()
             .caseSensitive(false)
             // Note: Calendar.Month fields are zero based.
@@ -981,11 +989,12 @@ public interface HttpCookie
         try
         {
             int tokenCount = 0;
-            String[] tokens = Immutable.DATE_DELIMITERS.split(date);
-            for (String token: tokens)
+            Iterator<String> tokenIter = Immutable.DATE_TOKENIZER.tokenize(date);
+            while (tokenIter.hasNext())
             {
+                String token = tokenIter.next();
                 // ensure we don't exceed the number of expected tokens.
-                if (++tokenCount > 10)
+                if (++tokenCount > 6)
                 {
                     // This is a horribly bad syntax / format
                     throw new IllegalStateException("Too many delimiters for a Date format");
