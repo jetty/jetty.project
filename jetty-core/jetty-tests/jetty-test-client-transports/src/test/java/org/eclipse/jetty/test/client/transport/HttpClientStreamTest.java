@@ -1082,6 +1082,7 @@ public class HttpClientStreamTest extends AbstractTest
                         if (chunk == null || !chunk.isLast())
                         {
                             request.demand(this);
+                            return;
                         }
                         lastChunk.set(chunk);
                         serverDemandLatch.countDown();
