@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -412,11 +411,9 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     @Override
     public void close()
     {
-        // If there is a request pending, fail the channel. This can only happen if
-        // the connection gets closed while there is a request in-flight.
-        if (stream != null && stream.getHttpChannel().getRequest() != null)
+        if (stream != null)
         {
-            Runnable task = stream.getHttpChannel().onFailure(new EofException());
+            Runnable task = stream.getHttpChannel().onClose();
             if (task != null)
                 task.run();
         }
