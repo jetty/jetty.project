@@ -29,6 +29,7 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.CreateCollectionOptions;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStore;
@@ -246,7 +247,7 @@ public class MongoTestHelper
         }
 
         update.put("$set", sets);
-        collection.updateOne(Filters.eq(MongoSessionDataStore.__ID, id), update);
+        collection.updateOne(Filters.eq(MongoSessionDataStore.__ID, id), update, new UpdateOptions().upsert(true));
     }
 
     public static void createSession(String id, String contextPath, String vhost,
@@ -293,7 +294,7 @@ public class MongoTestHelper
         }
 
         update.put("$set", sets);
-        collection.updateOne(key, update);
+        collection.updateOne(key, update, new UpdateOptions().upsert(true));
     }
 
     public static void createLegacySession(String id, String contextPath, String vhost,
@@ -338,6 +339,6 @@ public class MongoTestHelper
             }
         }
         update.put("$set", sets);
-        collection.updateOne(key, update);
+        collection.updateOne(key, update, new UpdateOptions().upsert(true));
     }
 }
