@@ -162,8 +162,8 @@ public class MongoTestHelper
                 MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() + "." + MongoSessionDataStore.__LASTSAVED);
         String lastNode = (String)MongoUtils.getNestedValue(sessionDocument,
                 MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() + "." + MongoSessionDataStore.__LASTNODE);
-        byte[] attributes = (byte[])MongoUtils.getNestedValue(sessionDocument,
-                MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() + "." + MongoSessionDataStore.__ATTRIBUTES);
+        byte[] attributes = ((Binary)MongoUtils.getNestedValue(sessionDocument,
+                MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() + "." + MongoSessionDataStore.__ATTRIBUTES)).getData();
 
         assertEquals(data.getCreated(), created.longValue());
         assertEquals(data.getAccessed(), accessed.longValue());
@@ -175,8 +175,8 @@ public class MongoTestHelper
         assertNotNull(lastSaved);
 
         // get the session for the context
-        DBObject sessionSubDocumentForContext =
-                (DBObject)MongoUtils.getNestedValue(sessionDocument,
+        Document sessionSubDocumentForContext =
+                (Document)MongoUtils.getNestedValue(sessionDocument,
                         MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath());
 
         assertNotNull(sessionSubDocumentForContext);
@@ -212,9 +212,6 @@ public class MongoTestHelper
     {
         MongoCollection<Document> collection = getMongoClient().getDatabase(dbName).getCollection(collectionName);
 
-        // Form query for upsert
-        BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
-
         // Form updates
         BasicDBObject update = new BasicDBObject();
         boolean upsert = false;
@@ -249,7 +246,7 @@ public class MongoTestHelper
         }
 
         update.put("$set", sets);
-        collection.updateOne(key, update);
+        collection.updateOne(Filters.eq(MongoSessionDataStore.__ID, id), update);
     }
 
     public static void createSession(String id, String contextPath, String vhost,
