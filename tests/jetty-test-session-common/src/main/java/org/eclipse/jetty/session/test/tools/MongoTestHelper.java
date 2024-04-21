@@ -146,9 +146,9 @@ public class MongoTestHelper
 
         LOG.debug("{}", sessionDocument);
 
-        Boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.__VALID);
+        boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.__VALID);
 
-        if (valid == null || !valid)
+        if (!valid)
             return false;
 
         Long created = (Long)sessionDocument.get(MongoSessionDataStore.__CREATED);

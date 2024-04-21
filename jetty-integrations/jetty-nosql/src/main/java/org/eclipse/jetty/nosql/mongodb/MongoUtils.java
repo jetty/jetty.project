@@ -23,6 +23,7 @@ import java.util.Map;
 
 import com.mongodb.BasicDBObject;
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -39,6 +40,13 @@ public class MongoUtils
         if (valueToDecode == null || valueToDecode instanceof Number || valueToDecode instanceof String || valueToDecode instanceof Boolean || valueToDecode instanceof Date)
         {
             return valueToDecode;
+        }
+        else if (valueToDecode instanceof Binary)
+        {
+            final byte[] decodeObject = ((Binary)valueToDecode).getData();
+            final ByteArrayInputStream bais = new ByteArrayInputStream(decodeObject);
+            final ClassLoadingObjectInputStream objectInputStream = new ClassLoadingObjectInputStream(bais);
+            return objectInputStream.readUnshared();
         }
         else if (valueToDecode instanceof byte[])
         {

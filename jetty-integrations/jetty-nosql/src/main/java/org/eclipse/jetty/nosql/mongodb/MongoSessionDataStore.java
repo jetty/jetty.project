@@ -182,18 +182,18 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             if (sessionDocument == null)
                 return null;
 
-            Boolean valid = (Boolean)sessionDocument.get(__VALID);
+            boolean valid = (Boolean)sessionDocument.get(__VALID);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("id={} valid={}", id, valid);
-            if (valid == null || !valid)
+            if (!valid)
                 return null;
 
             Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
             Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTSAVED));
             String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTNODE));
             Binary binary = ((Binary)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__ATTRIBUTES)));
-            byte[] attributes = binary == null ? new byte[0] : binary.getData();
+            byte[] attributes = binary == null ? null : binary.getData();
 
             Long created = (Long)sessionDocument.get(__CREATED);
             Long accessed = (Long)sessionDocument.get(__ACCESSED);
@@ -241,7 +241,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                 else
                 {
                     //attributes have special serialized format
-                    try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);)
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes))
                     {
                         deserializeAttributes(data, bais);
                     }
