@@ -495,7 +495,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             version = ((Number)version).longValue() + 1L;
             ((NoSqlSessionData)data).setVersion(version);
-            update.put("$inc", _version1);
+            //update.put("$inc", _version1);
             //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc
             BasicDBObject fields = new BasicDBObject();
             fields.append(__MAX_IDLE, true);
