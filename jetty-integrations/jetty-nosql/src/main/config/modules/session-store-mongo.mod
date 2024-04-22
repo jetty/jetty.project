@@ -15,10 +15,12 @@ sessions/mongo/${connection-type}
 
 [files]
 maven://org.mongodb/mongodb-driver-sync/${mongodb.version}|lib/nosql/mongodb-driver-sync-${mongodb.version}.jar
+maven://org.mongodb/bson/${mongodb.version}|lib/nosql/bson-${mongodb.version}.jar
 
 [lib]
 lib/jetty-nosql-${jetty.version}.jar
 lib/nosql/mongodb-driver-sync-${mongodb.version}.jar
+lib/nosql/bson-${mongodb.version}.jar
 
 [license]
 The java driver for the MongoDB document-based database system is hosted on GitHub and released under the Apache 2.0 license.
