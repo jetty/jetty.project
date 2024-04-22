@@ -111,7 +111,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           } else {
             // when not using cache
             echo "Not using build cache"
-            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.enabled=false "
+            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true "
           }
           if (env.BRANCH_NAME ==~ /PR-\d+/) {
             if (pullRequest.labels.contains("build-all-tests")) {
