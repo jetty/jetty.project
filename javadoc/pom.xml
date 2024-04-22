@@ -410,8 +410,8 @@
                 jetty-test-helper,
                 jetty-maven-plugin,
                 jetty-jspc-maven-plugin,
-                jetty-quic-foreign-incubator,
-                jetty-quic-foreign-jna,
+                jetty-quic-quiche-foreign,
+                jetty-quic-quiche-jna,
                 alpn-api,
                 javax.servlet,
                 javax.websocket,
@@ -426,8 +426,7 @@
                 mailapi,
                 javax.security.auth.message,
                 plexus-utils,
-                plexus-interpolation,
-                jetty-quic-quiche-foreign-incubator</excludeArtifactIds>
+                plexus-interpolation</excludeArtifactIds>
               <classifier>sources</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,module-info.java</excludes>

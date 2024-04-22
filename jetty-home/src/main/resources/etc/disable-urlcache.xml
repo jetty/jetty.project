@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Call class="java.net.URLConnection" name="setDefaultUseCaches">
+    <Arg>jar</Arg>
+    <Arg type="boolean">false</Arg>
+  </Call>
+</Configure>

@@ -1971,7 +1971,8 @@ public class HttpParserTest
         "+10",
         "1.0",
         "1,0",
-        "10,"
+        "10,",
+        "10A"
     })
     public void testBadContentLengths(String contentLength)
     {
@@ -1992,6 +1993,116 @@ public class HttpParserTest
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED, parser.getState());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        " 10 ",
+        "10 ",
+        " 10",
+        "\t10",
+        "\t10\t",
+        "10\t",
+        " \t \t \t 10"
+    })
+    public void testContentLengthWithOWS(String contentLength)
+    {
+        String rawRequest = """
+            GET /test HTTP/1.1\r
+            Host: localhost\r
+            Content-Length: @LEN@\r
+            \r
+            1234567890
+            """.replace("@LEN@", contentLength);
+        ByteBuffer buffer = BufferUtil.toBuffer(rawRequest);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/test", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+
+        assertEquals(_content.length(), 10);
+        assertEquals(parser.getContentLength(), 10);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        " chunked ",
+        "chunked ",
+        " chunked",
+        "\tchunked",
+        "\tchunked\t",
+        "chunked\t",
+        " \t \t \t chunked"
+    })
+    public void testTransferEncodingWithOWS(String transferEncoding)
+    {
+        String rawRequest = """
+            GET /test HTTP/1.1\r
+            Host: localhost\r
+            Transfer-Encoding: @TE@\r
+            \r
+            1\r
+            X\r
+            0\r
+            \r
+            """.replace("@TE@", transferEncoding);
+        ByteBuffer buffer = BufferUtil.toBuffer(rawRequest);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/test", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Transfer-Encoding", _hdr[1]);
+        assertEquals("chunked", _val[1]);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        " testhost ",
+        "testhost ",
+        " testhost",
+        "\ttesthost",
+        "\ttesthost\t",
+        "testhost\t",
+        " \t \t \t testhost"
+    })
+    public void testHostWithOWS(String host)
+    {
+        String rawRequest = """
+            GET /test HTTP/1.1\r
+            Host: @HOST@\r
+            \r
+            """.replace("@HOST@", host);
+        ByteBuffer buffer = BufferUtil.toBuffer(rawRequest);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/test", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("testhost", _val[0]);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
     @ParameterizedTest

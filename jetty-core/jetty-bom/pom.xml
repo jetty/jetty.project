@@ -247,7 +247,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
+        <artifactId>jetty-quic-quiche-foreign</artifactId>
         <version>12.0.9-SNAPSHOT</version>
       </dependency>
       <dependency>

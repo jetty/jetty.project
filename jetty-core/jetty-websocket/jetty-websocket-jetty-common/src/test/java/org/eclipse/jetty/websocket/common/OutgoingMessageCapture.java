@@ -42,7 +42,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     public BlockingQueue<ByteBuffer> binaryMessages = new LinkedBlockingDeque<>();
     public BlockingQueue<String> events = new LinkedBlockingDeque<>();
 
-    private final ByteBufferPool bufferPool = new ByteBufferPool.NonPooling();
+    private final ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
     private final MethodHandle wholeTextHandle;
     private final MethodHandle wholeBinaryHandle;
     private MessageSink messageSink;
