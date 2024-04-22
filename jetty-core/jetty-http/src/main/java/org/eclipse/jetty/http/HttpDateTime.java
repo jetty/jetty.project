@@ -13,14 +13,15 @@
 
 package org.eclipse.jetty.http;
 
-import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.Calendar;
 import java.util.Objects;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -30,14 +31,21 @@ import org.slf4j.LoggerFactory;
 /**
  * HTTP Date/Time parsing and formatting.
  *
- * <p>
- *     Also covers RFC6265 Cookie Date parsing and formatting.
+ * <p>Supports the following Date/Time formats found in both
+ *  <a href="https://datatracker.ietf.org/doc/html/rfc9110#name-date-time-formats">RFC 9110 (HTTP Semantics)</a> and
+ *  <a href="https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.1">RFC 6265 (HTTP State Management Mechanism)</a>
  * </p>
+ *
+ * <ul>
+ *     <li>{@code Sun, 06 Nov 1994 08:49:37 GMT} - RFC 1123 (preferred)</li>
+ *     <li>{@code Sunday, 06-Nov-94 08:49:37 GMT} - RFC 850 (obsolete)</li>
+ *     <li>{@code Sun Nov  6 08:49:37 1994} - ANSI C's {@code asctime()} format (obsolete)</li>
+ * </ul>
  */
 public class HttpDateTime
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpDateTime.class);
-
+    private static final ZoneId GMT = ZoneId.of("GMT");
     private static final Index<Integer> MONTH_CACHE = new Index.Builder<Integer>()
         .caseSensitive(false)
         // Note: Calendar.Month fields are zero based.
@@ -54,6 +62,17 @@ public class HttpDateTime
         .with("Nov", Calendar.NOVEMBER + 1)
         .with("Dec", Calendar.DECEMBER + 1)
         .build();
+    /**
+     * Delimiters for parsing as found in <a href="https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.1">RFC6265: Date/Time Delimiters</a>
+     */
+    private static final String DELIMITERS = new String(
+        StringUtil.fromHexString(
+            "09" + // %x09
+            "202122232425262728292a2b2c2d2e2f" + // %x20-2F
+            "3b3c3d3e3f40" + // %x3B-40
+            "5b5c5d5e5f60" + // %x5B-60
+            "7b7c7d7e" // %x7B-7E
+        ), StandardCharsets.US_ASCII);
 
     private HttpDateTime()
     {
@@ -69,8 +88,8 @@ public class HttpDateTime
     {
         try
         {
-            Instant instant = parse(datetime);
-            return instant.toEpochMilli();
+            ZonedDateTime dateTime = parse(datetime);
+            return TimeUnit.SECONDS.toMillis(dateTime.toEpochSecond());
         }
         catch (IllegalArgumentException e)
         {
@@ -83,27 +102,16 @@ public class HttpDateTime
     /**
      * <p>Parses a Date/Time value</p>
      *
-     * <p>Supports the following Date/Time formats found in both
-     *  <a href="https://datatracker.ietf.org/doc/html/rfc9110#name-date-time-formats">RFC 9110 (HTTP Semantics)</a> and
-     *  <a href="https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.1">RFC 6265 (HTTP State Management Mechanism)</a>
-     * </p>
-     *
-     * <ul>
-     *     <li>{@code Sun, 06 Nov 1994 08:49:37 GMT} - RFC 1123 (preferred)</li>
-     *     <li>{@code Sunday, 06-Nov-94 08:49:37 GMT} - RFC 850 (obsolete)</li>
-     *     <li>{@code Sun Nov  6 08:49:37 1994} - ANSI C's {@code asctime()} format</li>
-     * </ul>
-     *
      * <p>
      *  Parsing is done according to the algorithm specified in
      *  <a href="https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.1">RFC6265: Section 5.1.1: Date</a>
      * </p>
      *
      * @param datetime a Date/Time string in a supported format
-     * @return an {@link Instant} parsed from the given string
+     * @return an {@link ZonedDateTime} parsed from the given string
      * @throws IllegalArgumentException if unable to parse date/time
      */
-    public static Instant parse(String datetime)
+    public static ZonedDateTime parse(String datetime)
     {
         Objects.requireNonNull(datetime, "Date/Time string cannot be null");
 
@@ -117,12 +125,7 @@ public class HttpDateTime
         try
         {
             int tokenCount = 0;
-            StringTokenizer tokenizer = new StringTokenizer(datetime, "\t" + // %x09
-                " !\"#$%&'()*+,-./" + " + " + // %x20-2F
-                ";<=>?@" + // %x3B-40
-                "[\\]^_`" + // %x5B-60
-                "{|}~" // %x7B-7E
-            );
+            StringTokenizer tokenizer = new StringTokenizer(datetime, DELIMITERS);
             while (tokenizer.hasMoreTokens())
             {
                 String token = tokenizer.nextToken();
@@ -137,7 +140,7 @@ public class HttpDateTime
                     continue; // skip blank tokens
 
                 // RFC 6265 - Section 5.1.1 - Step 2.1 - time (00:00:00)
-                if (hour == (-1) && token.length() == 8 && token.charAt(2) == ':' && token.charAt(5) == ':')
+                if (hour == -1 && token.length() == 8 && token.charAt(2) == ':' && token.charAt(5) == ':')
                 {
                     second = StringUtil.toInt(token, 6);
                     minute = StringUtil.toInt(token, 3);
@@ -146,14 +149,14 @@ public class HttpDateTime
                 }
 
                 // RFC 6265 - Section 5.1.1 - Step 2.2
-                if (day == (-1) && token.length() <= 2)
+                if (day == -1 && token.length() <= 2)
                 {
                     day = StringUtil.toInt(token, 0);
                     continue;
                 }
 
                 // RFC 6265 - Section 5.1.1 - Step 2.3
-                if (month == (-1) && token.length() == 3)
+                if (month == -1 && token.length() == 3)
                 {
                     Integer m = MONTH_CACHE.getBest(token);
                     if (m != null)
@@ -164,7 +167,7 @@ public class HttpDateTime
                 }
 
                 // RFC 6265 - Section 5.1.1 - Step 2.4
-                if (year == (-1))
+                if (year == -1)
                 {
                     if (token.length() <= 2)
                     {
@@ -192,17 +195,19 @@ public class HttpDateTime
             year += 2000;
 
         // RFC 6265 - Section 5.1.1 - Step 5
-        if (day == (-1))
+        if (day == -1)
             throw new IllegalArgumentException("Missing [day]: " + datetime);
-        if (month == (-1))
+        if (month == -1)
             throw new IllegalArgumentException("Missing [month]: " + datetime);
-        if (year == (-1))
+        if (year == -1)
             throw new IllegalArgumentException("Missing [year]: " + datetime);
-        if (hour == (-1))
+        if (year < 1601)
+            throw new IllegalArgumentException("Too far in past [year]: " + datetime);
+        if (hour == -1)
             throw new IllegalArgumentException("Missing [time]: " + datetime);
         if (day < 1 || day > 31)
             throw new IllegalArgumentException("Invalid [day]: " + datetime);
-        if (month < 1 || month > 31)
+        if (month < 1 || month > 12)
             throw new IllegalArgumentException("Invalid [month]: " + datetime);
         if (hour > 23)
             throw new IllegalArgumentException("Invalid [hour]: " + datetime);
@@ -213,17 +218,23 @@ public class HttpDateTime
 
         // RFC 6265 - Section 5.1.1 - Step 6
         ZonedDateTime dateTime = ZonedDateTime.of(year,
-            month, day, hour, minute, second, 0,
-            ZoneId.of("GMT"));
+            month, day, hour, minute, second, 0, GMT);
 
         // RFC 6265 - Section 5.1.1 - Step 7
-        return dateTime.toInstant();
+        return dateTime;
     }
 
-    public static String format(Instant instant)
+    /**
+     * Formats provided Date/Time to a String following preferred RFC 1123 syntax from
+     * both HTTP and Cookie specs.
+     *
+     * @param datetime the date/time to format
+     * @return the String representation of the date/time
+     */
+    public static String format(TemporalAccessor datetime)
     {
         return DateTimeFormatter.RFC_1123_DATE_TIME
-            .withZone(ZoneOffset.UTC)
-            .format(instant);
+            .withZone(GMT)
+            .format(datetime);
     }
 }

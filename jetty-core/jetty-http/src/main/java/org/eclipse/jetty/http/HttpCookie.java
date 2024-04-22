@@ -930,7 +930,7 @@ public interface HttpCookie
      */
     static Instant parseExpires(String expires)
     {
-        return HttpDateTime.parse(expires);
+        return HttpDateTime.parse(expires).toInstant();
     }
 
     private static Map<String, String> lazyAttributePut(Map<String, String> attributes, String key, String value)

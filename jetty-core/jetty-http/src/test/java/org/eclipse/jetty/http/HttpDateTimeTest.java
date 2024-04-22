@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.http;
 
-import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
@@ -92,9 +91,9 @@ public class HttpDateTimeTest
     @MethodSource("dateTimeValid")
     public void testParseValid(String input, String expected)
     {
-        Instant actual = HttpDateTime.parse(input);
+        ZonedDateTime actual = HttpDateTime.parse(input);
         DateTimeFormatterBuilder formatter = new DateTimeFormatterBuilder();
-        String actualStr = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss O").format(actual.atZone(ZoneId.of("GMT")));
+        String actualStr = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss O").format(actual);
         assertEquals(expected, actualStr);
     }
 
@@ -105,6 +104,7 @@ public class HttpDateTimeTest
         // Preferred RFC 1123 syntax
         // - invalid Year
         args.add(Arguments.of("Sun, 06 Nov 65535 08:49:37 GMT", "Missing [year]"));
+        args.add(Arguments.of("Thu, 14 Oct 1535 01:02:00 GMT", "Too far in past [year]"));
         args.add(Arguments.of("Wed, 09 Jun -123 10:18:14 GMT", "Missing [year]"));
         // - no year
         args.add(Arguments.of("Wed, 09 Jun 10:18:14 GMT", "Missing [year]"));

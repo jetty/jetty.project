@@ -74,7 +74,7 @@ public class HttpDateTimeParseBenchmark
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public Instant testParseNew()
+    public ZonedDateTime testParseNew()
     {
         int entry = ThreadLocalRandom.current().nextInt(size);
         return HttpDateTime.parse(expires[entry]);
