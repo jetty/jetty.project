@@ -397,7 +397,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         public void onFailure(int request, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Request {} failure on {}: {}", request, stream, failure);
+                LOG.debug("Request {} failure on {}", request, stream, failure);
             if (stream != null)
             {
                 Runnable runnable = stream.getHttpChannel().onFailure(new BadMessageException(null, failure));
@@ -406,5 +406,17 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             }
             stream = null;
         }
+    }
+
+    @Override
+    public void close()
+    {
+        if (stream != null)
+        {
+            Runnable task = stream.getHttpChannel().onClose();
+            if (task != null)
+                task.run();
+        }
+        super.close();
     }
 }
