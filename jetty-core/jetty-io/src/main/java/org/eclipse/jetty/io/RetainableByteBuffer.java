@@ -790,7 +790,7 @@ public interface RetainableByteBuffer extends Retainable
          * @param aggregationSize The default size of aggregation buffers; or 0 for no aggregation growth; or -1 for a default size.
          *                        If the {@code aggregationSize} is 0 and the {@code maxSize} is less that {@link Integer#MAX_VALUE},
          *                        then a single aggregation buffer may be allocated and the class will behave similarly to {@link FixedCapacity}.
-         * @param minRetainSize The minimal size of a {@link RetainableByteBuffer} before it will be retained; or 0 to always retain; or -1 for a default value;
+         * @param minRetainSize The minimal size of a {@link RetainableByteBuffer} before it will be retained; or 0 to always retain; or -1 for a heuristic;
          */
         public DynamicCapacity(ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
         {
@@ -815,9 +815,9 @@ public interface RetainableByteBuffer extends Retainable
                     throw new IllegalArgumentException("aggregationSize(%d) must be <= maxCapacity(%d)".formatted(aggregationSize, _maxSize));
                 _aggregationSize = aggregationSize;
             }
-            _minRetainSize = minRetainSize < 0 ? Math.min(128, _aggregationSize) : minRetainSize;
+            _minRetainSize = minRetainSize;
 
-            if (_aggregationSize == 0 && _maxSize >= Integer.MAX_VALUE && _minRetainSize > 0)
+            if (_aggregationSize == 0 && _maxSize >= Integer.MAX_VALUE && _minRetainSize != 0)
                 throw new IllegalArgumentException("must always retain if cannot aggregate");
         }
 
@@ -1172,9 +1172,14 @@ public interface RetainableByteBuffer extends Retainable
                 return _aggregate.append(retainableBytes.getByteBuffer());
 
             // If the content is a tiny part of the retainable, then better to aggregate rather than accumulate
-            if (length < _minRetainSize)
-                return append(retainableBytes.getByteBuffer());
-
+            if (_minRetainSize != 0)
+            {
+                // default heuristic is either a fixed size for unknown buffer types or fraction of the capacity for fixed buffers
+                int minRetainSize = _minRetainSize > 0 ? _minRetainSize
+                    : retainableBytes instanceof FixedCapacity fixed ? fixed.capacity() / 64 : 128;
+                if (length < minRetainSize)
+                    return append(retainableBytes.getByteBuffer());
+            }
             // We will accumulate, so stop any further aggregation without allocating a new aggregate buffer;
             _aggregate = null;
 
