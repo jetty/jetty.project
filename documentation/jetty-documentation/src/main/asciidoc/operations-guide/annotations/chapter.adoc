@@ -63,6 +63,7 @@ This may be very time-consuming if you have many jars.
 
 Jetty can reduce the time taken by limiting the jars that are scanned.
 
+[[og-container-include-jar-pattern]]
 ===== The container classpath
 
 By default, Jetty will _not_ scan any classes that are on the container's classpath.
@@ -92,6 +93,7 @@ Here's an example from a context XML file that includes any jar whose name start
 
 Note that the order of the patterns defines the ordering of the scanning of the jars or class directories.
 
+[[og-web-inf-include-jar-pattern]]
 ===== The webapp classpath
 
 By default, Jetty will scan __all__ classes from `WEB-INF/classes` and _all_ jars from `WEB-INF/lib` according to the order, if any, established by absolute or relative ordering clauses in `web.xml`.
