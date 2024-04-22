@@ -29,6 +29,12 @@
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
+      <artifactId>mongodb-driver-core</artifactId>
+      <version>${mongodb.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId>
       <artifactId>mongodb-driver-sync</artifactId>
       <scope>compile</scope>
     </dependency>

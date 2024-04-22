@@ -15,11 +15,13 @@ sessions/mongo/${connection-type}
 
 [files]
 maven://org.mongodb/mongodb-driver-sync/${mongodb.version}|lib/nosql/mongodb-driver-sync-${mongodb.version}.jar
+maven://org.mongodb/mongodb-driver-core/${mongodb.version}|lib/nosql/mongodb-driver-core-${mongodb.version}.jar
 maven://org.mongodb/bson/${mongodb.version}|lib/nosql/bson-${mongodb.version}.jar
 
 [lib]
 lib/jetty-nosql-${jetty.version}.jar
 lib/nosql/mongodb-driver-sync-${mongodb.version}.jar
+lib/nosql/mongodb-driver-core-${mongodb.version}.jar
 lib/nosql/bson-${mongodb.version}.jar
 
 [license]
