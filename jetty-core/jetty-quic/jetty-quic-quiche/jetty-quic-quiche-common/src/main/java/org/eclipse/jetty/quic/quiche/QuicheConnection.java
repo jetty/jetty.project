@@ -34,6 +34,8 @@ public abstract class QuicheConnection
 
     static
     {
+        // This code is safe even if trying to load a QuicheBinding instance throws an error,
+        // as in that case a warning would be logged and the binding ignored.
         if (LOG.isDebugEnabled())
         {
             List<QuicheBinding> bindings = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))

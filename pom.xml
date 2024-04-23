@@ -169,7 +169,7 @@
     <commons-codec.version>1.16.1</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.26.1</commons.compress.version>
-    <commons.io.version>2.15.1</commons.io.version>
+    <commons.io.version>2.16.0</commons.io.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
@@ -189,9 +189,11 @@
     <h2spec.maven.plugin.version>1.0.11</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hazelcast.version>5.3.6</hazelcast.version>
-    <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
-    <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.19.Final</infinispan.version>
+    <hibernate.search.version>7.1.0.Final</hibernate.search.version>
+    <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
+    <infinispan.docker.image.version>15.0.1.Final-1</infinispan.docker.image.version>
+    <infinispan.protostream.version>5.0.2.Final</infinispan.protostream.version>
+    <infinispan.version>15.0.1.Final</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
@@ -204,7 +206,7 @@
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.3.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.20.1</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.21.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -234,6 +236,7 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.23.1</log4j2.version>
     <logback.version>1.5.3</logback.version>
+    <lucene.version>9.9.2</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.3.3</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
@@ -270,7 +273,7 @@
     <mina.core.version>2.2.3</mina.core.version>
     <mongo.docker.version>3.2.20</mongo.docker.version>
     <mongodb.version>3.12.14</mongodb.version>
-    <netty.version>4.1.100.Final</netty.version>
+    <netty.version>4.1.107.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -318,6 +321,13 @@
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.hibernate.search</groupId>
+        <artifactId>hibernate-search-bom</artifactId>
+        <version>${hibernate.search.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -535,6 +545,11 @@
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-settings</artifactId>
         <version>${maven.deps.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${maven.plugin-tools.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven.plugin-tools</groupId>
@@ -866,7 +881,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
+        <artifactId>jetty-quic-quiche-foreign</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -903,6 +918,11 @@
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
         <version>${jetty.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-xhtml-schemas</artifactId>
+        <version>${jetty.xhtml.schemas-version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
@@ -1096,6 +1116,16 @@
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.measurement</artifactId>
+        <version>${osgi-util-measurement-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.position</artifactId>
+        <version>${osgi-util-position-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
         <artifactId>org.osgi.util.promise</artifactId>
         <version>${org.osgi.util.promise.version}</version>
       </dependency>
@@ -1103,6 +1133,11 @@
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.util.tracker</artifactId>
         <version>${osgi-util-tracker-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.xml</artifactId>
+        <version>${osgi-util-xml-version}</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
@@ -1152,76 +1187,44 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven.plugin-tools</groupId>
-        <artifactId>maven-plugin-annotations</artifactId>
-        <version>${maven.plugin-tools.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-xhtml-schemas</artifactId>
-        <version>${jetty.xhtml.schemas-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.measurement</artifactId>
-        <version>${osgi-util-measurement-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.position</artifactId>
-        <version>${osgi-util-position-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.xml</artifactId>
-        <version>${osgi-util-xml-version}</version>
-        <scope>test</scope>
+        <groupId>org.wildfly.common</groupId>
+        <artifactId>wildfly-common</artifactId>
+        <version>1.7.0.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-digest</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-external</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-gs2</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-gssapi</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-oauth2</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-plain</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-scram</artifactId>
-        <version>2.2.2.Final</version>
-        <scope>test</scope>
+        <version>2.3.1.Final</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -1901,6 +1904,11 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.basepom.maven</groupId>
+        <artifactId>duplicate-finder-maven-plugin</artifactId>
+        <version>2.0.0</version>
+      </plugin>
       <!-- Build helper maven plugin sets the parsedVersion.osgiVersion property -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -2194,8 +2202,8 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[21,)</version>
-                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 21 or newer</message>
+                      <version>[22,)</version>
+                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 22 or newer</message>
                     </requireJavaVersion>
                   </rules>
                 </configuration>
@@ -2326,7 +2334,6 @@
           <plugin>
             <groupId>org.basepom.maven</groupId>
             <artifactId>duplicate-finder-maven-plugin</artifactId>
-            <version>2.0.0</version>
             <executions>
               <execution>
                 <id>default</id>

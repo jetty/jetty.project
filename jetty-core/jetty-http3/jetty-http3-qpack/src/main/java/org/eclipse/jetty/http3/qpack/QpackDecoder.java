@@ -379,7 +379,7 @@ public class QpackDecoder implements Dumpable
                 LOG.debug("Duplicate: index={}", index);
 
             DynamicTable dynamicTable = _context.getDynamicTable();
-            Entry referencedEntry = dynamicTable.get(index);
+            Entry referencedEntry = dynamicTable.getRelative(index);
 
             // Add the new Entry to the DynamicTable.
             Entry entry = new Entry(referencedEntry.getHttpField());
@@ -396,7 +396,7 @@ public class QpackDecoder implements Dumpable
 
             StaticTable staticTable = QpackContext.getStaticTable();
             DynamicTable dynamicTable = _context.getDynamicTable();
-            Entry referencedEntry = isDynamicTableIndex ? dynamicTable.get(nameIndex) : staticTable.get(nameIndex);
+            Entry referencedEntry = isDynamicTableIndex ? dynamicTable.getRelative(nameIndex) : staticTable.get(nameIndex);
 
             // Add the new Entry to the DynamicTable.
             Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));

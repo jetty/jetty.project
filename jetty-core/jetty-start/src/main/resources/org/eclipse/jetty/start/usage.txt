@@ -147,12 +147,27 @@ Options:
                    Adds the specified class-path entries to the the server
                    class-path (or module-path).
 
-  --download=<http-uri>|<location>
-                   Downloads a file from the given HTTP URI, if it does
+  --files=<uri>|<location>
+  --download=<uri>|<location>
+                   Downloads a file from the given URI, if it does
                    not already exist at the given location.
                    Note: the location is always relative to ${jetty.base}.
                    You might need to escape the pipe "\|" to use it in
                    some shell environments.
+                   Supported schemes:
+                     http:     download from http (unsecure) website
+                     https:    download from https (secure) website
+                     maven:    download from maven repository system
+                               first checking local repository
+                               see `maven.local.repo` field below
+                               then global repository
+                               see `maven.repo.uri` field below
+
+                     basehome: download relative path from active
+                               configured jetty dirs (eg: `${jetty.base}`
+                               and any `--include-jetty-dir` and finally
+                               checking the `${jetty.home}`)
+
 
   --exec
                    Executes the generated command line in a forked JVM
@@ -202,6 +217,7 @@ Options:
                    Useful for enabling modules from a script, so that it
                    does not require user interaction.
 
+  --skip-create-files=<moduleName>(,<moduleName>)*
   --skip-file-validation=<moduleName>(,<moduleName>)*
                    Disables the creation of files as specified by the
                    [files] section of the specified modules.
@@ -209,6 +225,7 @@ Options:
                    config file, but you want to use that module with an
                    *.xml config file instead.
 
+  --add-config-dir=<path>
   --include-jetty-dir=<path>
                    Includes the specified directory as a configuration source.
                    This directory behaves similarly to ${jetty.base} but sits
@@ -245,9 +262,17 @@ Options:
                    running Jetty server has stopped.
                    If not specified, the stopper will not wait.
 
+  maven.local.repo=<dir>
+                   The maven local repository directory to find
+                   and store maven artifacts.
+                   Defaults to:
+                     1. Environment variable `JETTY_MAVEN_LOCAL_REPO`
+                     2. Environment variable `MAVEN_LOCAL_REPO`
+                     3. Directory ${home}/.m2/repository
+
   maven.repo.uri=<url>
-                  The base URL to use to download Maven dependencies.
-                  Defaults to: https://repo1.maven.org/maven2/.
+                   The base URL to use to download Maven dependencies.
+                   Defaults to: https://repo1.maven.org/maven2/.
 
   <name>=<value>
                   Specifies a property value that overrides the same

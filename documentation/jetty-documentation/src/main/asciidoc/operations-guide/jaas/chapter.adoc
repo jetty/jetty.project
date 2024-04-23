@@ -159,6 +159,7 @@ Refer to the link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/
 * link:{javadoc-url}/org/eclipse/jetty/security/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.security.jaas.spi.DataSourceLoginModule`]
 * link:{javadoc-url}/org/eclipse/jetty/security/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.security.jaas.ldap.LdapLoginModule`]
 
+[[og-password]]
 [NOTE]
 ====
 Passwords can be obfuscated using the xref:og-tools-password[Jetty Password tool].

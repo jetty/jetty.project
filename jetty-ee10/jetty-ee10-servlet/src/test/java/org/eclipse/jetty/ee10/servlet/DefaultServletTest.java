@@ -3516,7 +3516,7 @@ public class DefaultServletTest
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()
@@ -3570,7 +3570,7 @@ public class DefaultServletTest
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()

@@ -658,12 +658,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         public Tracking()
         {
-            this(0, -1, Integer.MAX_VALUE);
+            super();
         }
 
         public Tracking(int minCapacity, int maxCapacity, int maxBucketSize)
         {
-            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+            super(minCapacity, maxCapacity, maxBucketSize);
         }
 
         public Tracking(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
