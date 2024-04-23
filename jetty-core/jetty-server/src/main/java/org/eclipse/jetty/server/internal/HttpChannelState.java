@@ -1468,12 +1468,11 @@ public class HttpChannelState implements HttpChannel, Components
                 response = httpChannelState._response;
                 stream = httpChannelState._stream;
 
-                // We are being tough on handler implementations and expect them
-                // to not have pending operations when calling succeeded or failed.
+                // We convert a call to succeeded with pending demand/write into a call to failed.
                 if (httpChannelState._onContentAvailable != null)
-                    throw new IllegalStateException("demand pending");
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 if (response.lockedIsWriting())
-                    throw new IllegalStateException("write pending");
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("write pending"));
 
                 if (lockedCompleteCallback())
                     return;
@@ -1492,7 +1491,7 @@ public class HttpChannelState implements HttpChannel, Components
                 long committedContentLength = httpChannelState._committedContentLength;
 
                 if (committedContentLength >= 0 && committedContentLength != totalWritten && !(totalWritten == 0 && HttpMethod.HEAD.is(_request.getMethod())))
-                    failure = new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten));
+                    failure = ExceptionUtil.combine(failure, new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten)));
 
                 // Is the request fully consumed?
                 Throwable unconsumed = stream.consumeAvailable();
