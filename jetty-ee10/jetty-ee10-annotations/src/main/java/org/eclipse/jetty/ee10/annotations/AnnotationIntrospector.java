@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +21,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.ee10.servlet.BaseHolder;
 import org.eclipse.jetty.ee10.servlet.Source.Origin;
-import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.util.resource.Resource;
@@ -53,7 +50,7 @@ public class AnnotationIntrospector
     }
 
     /**
-     * Base class for handlers that introspect a class to find a particular annotation.
+      * Base class for handlers that introspect a class to find a particular annotation.
      * A handler can optionally introspect the parent hierarchy of a class.
      */
     public abstract static class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
@@ -67,23 +64,6 @@ public class AnnotationIntrospector
         {
             _context = Objects.requireNonNull(context);
             _introspectAncestors = introspectAncestors;
-        }
-
-        protected org.eclipse.jetty.ee10.webapp.Origin getOrigin(Method method)
-        {
-            if (method.getParameterCount() != 0)
-                throw new IllegalStateException(method + " has parameters");
-            if (method.getReturnType() != Void.TYPE)
-                throw new IllegalStateException(method + " is not void");
-            if (method.getExceptionTypes().length != 0)
-                throw new IllegalStateException(method + " throws checked exceptions");
-            if (Modifier.isStatic(method.getModifiers()))
-                throw new IllegalStateException(method + " is static");
-
-            //ServletSpec 3.0 p80 If web.xml declares even one predestroy then all predestroys
-            //in fragments must be ignored. Otherwise, they are additive.
-            MetaData metaData = _context.getMetaData();
-            return metaData.getOrigin("pre-destroy");
         }
 
         /**

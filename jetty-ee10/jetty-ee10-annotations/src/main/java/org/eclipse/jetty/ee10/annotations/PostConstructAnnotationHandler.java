@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.annotations;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import jakarta.annotation.PostConstruct;
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
@@ -40,7 +41,18 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
             {
                 if (method.isAnnotationPresent(PostConstruct.class))
                 {
-                    Origin origin = getOrigin(method);
+                    if (method.getParameterCount() != 0)
+                        throw new IllegalStateException(method + " has parameters");
+                    if (method.getReturnType() != Void.TYPE)
+                        throw new IllegalStateException(method + " is not void");
+                    if (method.getExceptionTypes().length != 0)
+                        throw new IllegalStateException(method + " throws checked exceptions");
+                    if (Modifier.isStatic(method.getModifiers()))
+                        throw new IllegalStateException(method + " is static");
+
+                    //ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
+                    //in fragments must be ignored. Otherwise, they are additive.
+                    Origin origin = _context.getMetaData().getOrigin("post-construct");
                     if ((origin == Origin.WebXml ||
                         origin == Origin.WebDefaults ||
                         origin == Origin.WebOverride))

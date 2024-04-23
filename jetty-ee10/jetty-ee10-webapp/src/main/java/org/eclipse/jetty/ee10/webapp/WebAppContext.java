@@ -675,7 +675,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @deprecated use {@link #getProtectedClassMatcher()}
+     * @return The ClassMatcher used to match System (protected) classes
      */
     public ClassMatcher getProtectedClassMatcher()
     {
