@@ -14,7 +14,7 @@
 [[pg-server-http-request-customizers]]
 ==== Request Customizers
 
-A request customizer is an instance of `HttpConfiguration.Customizer` and allows to customize the HTTP request and/or the HTTP response headers _before_ the `Handler` chain is invoked.
+A request customizer is an instance of `HttpConfiguration.Customizer`, that can customize the HTTP request and/or the HTTP response headers _before_ the `Handler` chain is invoked.
 
 Request customizers are added to a particular `HttpConfiguration` instance, and therefore are specific to a `Connector` instance: you can have two different ``Connector``s configured with different request customizers.
 
@@ -22,11 +22,11 @@ For example, it is common to configure a secure `Connector` with the `SecureRequ
 
 A request customizer may:
 
-* Process HTTP request headers, for example those injected by a proxy, and then wrap the `Request` and/or the associated `ConnectionMetaData` to transparently provide the data to applications, as if the proxy was not present.
-* Synthesize HTTP request headers from other information, for example see xref:pg-server-http-request-customizer-host[this section].
-* Wrap the `Request` object to make it secure or authenticated, if that information has been communicated via HTTP request headers, or even via out-of-band mechanisms.
+* Inspect the received HTTP request method, URI, version and headers.
+* Wrap the `Request` object to allow any method to be overridden and customized. Typically this is done to synthesize additional HTTP request headers, or to change the return value of overridden methods.
+* Add or modify the HTTP response headers.
 
-The out-of-the-box request customizers are:
+The out-of-the-box request customizers include:
 
 * `ForwardedRequestCustomizer` -- to interpret the `Forwarded` (or the the obsolete ``+X-Forwarded-*+``) HTTP header added by a reverse proxy; see xref:pg-server-http-request-customizer-forwarded[this section].
 * `HostHeaderCustomizer` -- to customize, or synthesize it when original absent, the HTTP `Host` header; see xref:pg-server-http-request-customizer-host[this section].
@@ -34,7 +34,7 @@ The out-of-the-box request customizers are:
 * `RewriteCustomizer` -- to rewrite the request URI; see xref:pg-server-http-request-customizer-rewrite[this section].
 * `SecureRequestCustomizer` -- to expose TLS data via `Request` attributes; see xref:pg-server-http-request-customizer-secure[this section].
 
-You can also write your own request customizer and add it to `HttpConfiguration` instance along existing request customizers.
+You can also write your own request customizers and add them to the `HttpConfiguration` instance along existing request customizers.
 Multiple request customizers will be invoked in the order they have been added.
 
 Below you can find an example of how to add a request customizer:

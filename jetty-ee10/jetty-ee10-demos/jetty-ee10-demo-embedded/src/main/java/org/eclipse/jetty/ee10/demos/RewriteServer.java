@@ -15,11 +15,10 @@ package org.eclipse.jetty.ee10.demos;
 
 import java.util.Arrays;
 
-import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.rewrite.RewriteCustomizer;
-import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
+import org.eclipse.jetty.rewrite.handler.CompactPathRule;
+import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 
@@ -30,9 +29,8 @@ public class RewriteServer
         Server server = new Server(port);
 
         RewriteCustomizer rewrite = new RewriteCustomizer();
-        rewrite.addRule(new RedirectRegexRule(".*", "/redirect"));
-//        rewrite.addRule(new CompactPathRule());
-//        rewrite.addRule(new RewriteRegexRule("(.*)foo(.*)", "$1FOO$2"));
+        rewrite.addRule(new CompactPathRule());
+        rewrite.addRule(new RewriteRegexRule("(.*)foo(.*)", "$1FOO$2"));
 
         Arrays.stream(server.getConnectors())
             .forEach((connector) -> connector.getConnectionFactory(HttpConnectionFactory.class)
@@ -54,12 +52,6 @@ public class RewriteServer
         Server server = createServer(port);
 
         server.start();
-//        server.join();
-
-        HttpClient httpClient = new HttpClient();
-        httpClient.start();
-
-        ContentResponse response = httpClient.GET("http://localhost:8080/");
-        System.err.println("response = " + response);
+        server.join();
     }
 }
