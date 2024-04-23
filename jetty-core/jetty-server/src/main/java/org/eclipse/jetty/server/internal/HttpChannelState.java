@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -461,6 +462,21 @@ public class HttpChannelState implements HttpChannel, Components
             LOG.debug("consuming content during error {}", unconsumed.toString());
 
         return task;
+    }
+
+    @Override
+    public Runnable onClose()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onClose {} stream={}", this, _stream);
+
+            // If the channel doesn't have a stream, then no action is needed.
+            if (_stream == null)
+                return null;
+        }
+        return onFailure(new EofException());
     }
 
     public void addHttpStreamWrapper(Function<HttpStream, HttpStream> onStreamEvent)
