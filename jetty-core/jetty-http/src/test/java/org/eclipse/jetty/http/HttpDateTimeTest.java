@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -189,5 +191,24 @@ public class HttpDateTimeTest
     {
         long epoch = HttpDateTime.parseToEpoch("Fri, 13 Mar 1964 11:22:33 GMT");
         assertThat(epoch, is(-183127047000L));
+    }
+
+    @Test
+    public void testFormatZonedDateTime()
+    {
+        // When "Back to the Future" released
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(1984, 7, 3, 8, 10, 30, 0, ZoneId.of("US/Pacific"));
+        String actual = HttpDateTime.format(zonedDateTime);
+        assertThat(actual, is("Tue, 3 Jul 1984 15:10:30 GMT"));
+    }
+
+    @Test
+    public void testFormatInstant()
+    {
+        // When "Tron" released
+        long epochMillis = 395054120000L;
+        Instant instant = Instant.ofEpochMilli(epochMillis);
+        String actual = HttpDateTime.format(instant);
+        assertThat(actual, is("Fri, 9 Jul 1982 09:15:20 GMT"));
     }
 }
