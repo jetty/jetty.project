@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -517,10 +518,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         if (val == null)
             return -1;
 
-        final long date = DateParser.parseDate(val);
-        if (date == -1)
-            throw new IllegalArgumentException("Cannot convert date: " + val);
-        return date;
+        return TimeUnit.SECONDS.toMillis(HttpDateTime.parse(val).toEpochSecond());
     }
 
     /**
