@@ -111,6 +111,7 @@ public class HttpDateTimeTest
 
         // - invalid day
         args.add(Arguments.of("Tue, 00 Apr 2024 17:28:27 GMT", "Invalid [day]"));
+        args.add(Arguments.of("Tue, 31 Feb 2020 17:28:27 GMT", "Invalid date/time"));
         // - long form month
         args.add(Arguments.of("Wed, 22 August 1984 01:02:03 GMT", "Missing [month]"));
         // - no day

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.charset.StandardCharsets;
+import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -219,11 +220,18 @@ public class HttpDateTime
             throw new IllegalArgumentException("Invalid [second]: " + datetime);
 
         // RFC 6265 - Section 5.1.1 - Step 6
-        ZonedDateTime dateTime = ZonedDateTime.of(year,
-            month, day, hour, minute, second, 0, UTC);
+        try
+        {
+            ZonedDateTime dateTime = ZonedDateTime.of(year,
+                month, day, hour, minute, second, 0, UTC);
 
-        // RFC 6265 - Section 5.1.1 - Step 7
-        return dateTime;
+            // RFC 6265 - Section 5.1.1 - Step 7
+            return dateTime;
+        }
+        catch (DateTimeException e)
+        {
+            throw new IllegalArgumentException("Invalid date/time: " + datetime, e);
+        }
     }
 
     /**
