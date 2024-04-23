@@ -16,12 +16,16 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import jakarta.servlet.AsyncContext;
@@ -47,11 +51,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReadListenerTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ReadListenerTest.class);
     private Server server;
     private HttpClient client;
 
@@ -60,6 +67,7 @@ public class ReadListenerTest
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
+        connector.setIdleTimeout(2000);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
         server.addConnector(connector);
 
@@ -85,6 +93,81 @@ public class ReadListenerTest
     {
         LifeCycle.stop(client);
         LifeCycle.stop(server);
+    }
+
+    @Test
+    public void testEOF() throws Exception
+    {
+        AtomicReference<AsyncContext> asyncContextAtomicReference = new AtomicReference<>();
+
+        startServer((context) ->
+        {
+            HttpServlet httpServlet = new HttpServlet()
+            {
+                @Override
+                protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+                {
+                    final AsyncContext asyncContext = req.startAsync();
+                    asyncContextAtomicReference.set(asyncContext);
+
+                    req.getInputStream().setReadListener(new ReadListener()
+                    {
+                        @Override
+                        public void onDataAvailable() throws IOException
+                        {
+                            LOG.info("onDataAvailable()");
+                            asyncContext.complete();
+                        }
+
+                        @Override
+                        public void onAllDataRead() throws IOException
+                        {
+                            LOG.info("onAllDataRead()");
+                        }
+
+                        @Override
+                        public void onError(Throwable t)
+                        {
+                            LOG.info("onError()", t);
+                        }
+                    });
+                }
+            };
+            context.addServlet(httpServlet, "/test/*");
+        });
+
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+        CountDownLatch timerDone = new CountDownLatch(1);
+
+        byte[] buf = new byte[1024];
+        Arrays.fill(buf, (byte)0xFF);
+
+        scheduledExecutorService.schedule(() ->
+        {
+            LOG.info("Scheduled Task Executing");
+            try
+            {
+                AsyncContext asyncContext = asyncContextAtomicReference.get();
+                asyncContext.complete();
+                timerDone.countDown();
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Opps", t);
+            }
+        }, 5, TimeUnit.SECONDS);
+
+        LOG.info("Sending request");
+        ContentResponse contentResponse = client.newRequest(server.getURI())
+            .method(HttpMethod.POST)
+            .path("/test/foo")
+            .body(new BytesRequestContent(buf))
+            .send();
+        assertThat(contentResponse.getStatus(), is(200));
+        LOG.info("Client Response Received");
+        LOG.info("{}", contentResponse);
+
+        assertTrue(timerDone.await(10, TimeUnit.SECONDS));
     }
 
     @Test
