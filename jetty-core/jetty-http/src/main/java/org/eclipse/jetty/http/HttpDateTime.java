@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
@@ -46,6 +47,7 @@ public class HttpDateTime
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpDateTime.class);
     private static final ZoneId GMT = ZoneId.of("GMT");
+    private static final ZoneId UTC = ZoneOffset.UTC;
     private static final Index<Integer> MONTH_CACHE = new Index.Builder<Integer>()
         .caseSensitive(false)
         // Note: Calendar.Month fields are zero based.
@@ -218,7 +220,7 @@ public class HttpDateTime
 
         // RFC 6265 - Section 5.1.1 - Step 6
         ZonedDateTime dateTime = ZonedDateTime.of(year,
-            month, day, hour, minute, second, 0, GMT);
+            month, day, hour, minute, second, 0, UTC);
 
         // RFC 6265 - Section 5.1.1 - Step 7
         return dateTime;
