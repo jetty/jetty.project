@@ -347,7 +347,7 @@ public class HttpClientTest extends AbstractTest
 
         // Use a SslContextFactory.Client that verifies server certificates,
         // requests should fail because the server certificate is unknown.
-        SslContextFactory.Client clientTLS = newSslContextFactoryClient();
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client();
         clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
         client.stop();
         client.setSslContextFactory(clientTLS);
@@ -671,7 +671,6 @@ public class HttpClientTest extends AbstractTest
     public void testIPv6Host(Transport transport) throws Exception
     {
         assumeTrue(Net.isIpv6InterfaceAvailable());
-        assumeTrue(transport != Transport.UNIX_DOMAIN);
         assumeTrue(transport != Transport.H3);
 
         start(transport, new Handler.Abstract()
@@ -726,8 +725,6 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestWithDifferentDestination(Transport transport) throws Exception
     {
-        assumeTrue(transport != Transport.UNIX_DOMAIN);
-
         String requestScheme = newURI(transport).getScheme();
         String requestHost = "otherHost.com";
         int requestPort = 8888;
@@ -1016,6 +1013,23 @@ public class HttpClientTest extends AbstractTest
 
         assertThat(listener.result.isFailed(), is(true));
         assertThat(listener.result.getFailure().getMessage(), is("Synthetic Failure"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestConnection(Transport transport) throws Exception
+    {
+        start(transport, new EmptyServerHandler());
+
+        ContentResponse response = client.newRequest(newURI(transport))
+            .onRequestBegin(r ->
+            {
+                if (r.getConnection() == null)
+                    r.abort(new IllegalStateException());
+            })
+            .send();
+
+        assertEquals(200, response.getStatus());
     }
 
     private static void sleep(long time) throws IOException

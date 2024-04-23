@@ -140,6 +140,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 if (chunk.isLast())
                 {
                     terminate();
+                    // Reactive Stream specification rule 2.9 allows Publishers to call onComplete()
+                    // even without demand, and Subscribers must be prepared to handle this case.
                     subscriber.onComplete();
                     return;
                 }

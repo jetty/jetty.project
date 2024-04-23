@@ -332,16 +332,21 @@ public class QpackDecoder implements Dumpable
 
     private void notifyInstructionHandler()
     {
-        if (!_instructions.isEmpty())
-            _handler.onInstructions(_instructions);
+        if (_instructions.isEmpty())
+            return;
+        // Copy the list to avoid re-entrance.
+        List<Instruction> instructions = List.copyOf(_instructions);
         _instructions.clear();
+        _handler.onInstructions(instructions);
     }
 
     private void notifyMetaDataHandler(boolean wasBlocked)
     {
+        if (_metaDataNotifications.isEmpty())
+            return;
         // Copy the list to avoid re-entrance, where the call to
         // notifyHandler() may end up calling again this method.
-        List<MetaDataNotification> notifications = new ArrayList<>(_metaDataNotifications);
+        List<MetaDataNotification> notifications = List.copyOf(_metaDataNotifications);
         _metaDataNotifications.clear();
         for (MetaDataNotification notification : notifications)
         {
@@ -374,7 +379,7 @@ public class QpackDecoder implements Dumpable
                 LOG.debug("Duplicate: index={}", index);
 
             DynamicTable dynamicTable = _context.getDynamicTable();
-            Entry referencedEntry = dynamicTable.get(index);
+            Entry referencedEntry = dynamicTable.getRelative(index);
 
             // Add the new Entry to the DynamicTable.
             Entry entry = new Entry(referencedEntry.getHttpField());
@@ -391,7 +396,7 @@ public class QpackDecoder implements Dumpable
 
             StaticTable staticTable = QpackContext.getStaticTable();
             DynamicTable dynamicTable = _context.getDynamicTable();
-            Entry referencedEntry = isDynamicTableIndex ? dynamicTable.get(nameIndex) : staticTable.get(nameIndex);
+            Entry referencedEntry = isDynamicTableIndex ? dynamicTable.getRelative(nameIndex) : staticTable.get(nameIndex);
 
             // Add the new Entry to the DynamicTable.
             Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));

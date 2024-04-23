@@ -766,6 +766,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public void close()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Close for {}", this);
         CloseState oldState = closeState.getAndSet(CloseState.CLOSED);
         if (oldState != CloseState.CLOSED)
         {

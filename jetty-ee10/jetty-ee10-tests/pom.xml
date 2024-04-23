@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-ee10-tests</artifactId>
@@ -21,8 +21,10 @@
     <module>jetty-ee10-test-felix-webapp</module>
     <module>jetty-ee10-test-http2-webapp</module>
     <module>jetty-ee10-test-integration</module>
+    <module>jetty-ee10-test-jersey</module>
     <module>jetty-ee10-test-jmx</module>
     <module>jetty-ee10-test-jndi</module>
+    <module>jetty-ee10-test-log4j2-webapp</module>
     <module>jetty-ee10-test-loginservice</module>
     <module>jetty-ee10-test-openid-webapp</module>
     <module>jetty-ee10-test-owb-cdi-webapp</module>

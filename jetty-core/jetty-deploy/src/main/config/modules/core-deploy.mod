@@ -29,7 +29,7 @@ contextHandlerClass?=org.eclipse.jetty.server.handler.ResourceHandler$ResourceCo
 # jetty.deploy.deferInitialScan=false
 
 ## Monitored directory scan period (seconds)
-# jetty.deploy.scanInterval=1
+# jetty.deploy.scanInterval=0
 
 ## Default ContextHandler class for core deployments
 # contextHandlerClass=org.eclipse.jetty.server.handler.ResourceHandler$ResourceContext

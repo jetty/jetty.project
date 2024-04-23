@@ -6,7 +6,7 @@
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Call name="addServerClassMatcher">
     <Arg>
-      <New class="org.eclipse.jetty.ee9.webapp.ClassMatcher">
+      <New class="org.eclipse.jetty.util.ClassMatcher">
         <Arg>
          <Array type="java.lang.String">
            <Item>-org.eclipse.jetty.util.Decorator</Item>

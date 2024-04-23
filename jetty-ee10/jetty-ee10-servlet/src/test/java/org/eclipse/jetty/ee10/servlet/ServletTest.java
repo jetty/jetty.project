@@ -18,8 +18,10 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ServletTest
@@ -83,6 +86,7 @@ public class ServletTest
     @Test
     public void testSimpleIdleIgnored() throws Exception
     {
+        long idleTimeout = 1000;
         _context.addServlet(new HttpServlet()
         {
             @Override
@@ -90,7 +94,7 @@ public class ServletTest
             {
                 try
                 {
-                    Thread.sleep(1000);
+                    Thread.sleep(2 * idleTimeout);
                 }
                 catch (InterruptedException e)
                 {
@@ -100,13 +104,13 @@ public class ServletTest
             }
         }, "/get");
 
-        _connector.setIdleTimeout(250);
+        _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
         String response = _connector.getResponse("""
             GET /ctx/get HTTP/1.0
             
-            """, 5, TimeUnit.SECONDS);
+            """, 5 * idleTimeout, TimeUnit.MILLISECONDS);
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Hello!"));
     }
@@ -114,6 +118,7 @@ public class ServletTest
     @Test
     public void testSimpleIdleRead() throws Exception
     {
+        long idleTimeout = 1000;
         _context.addServlet(new HttpServlet()
         {
             @Override
@@ -124,7 +129,7 @@ public class ServletTest
             }
         }, "/post");
 
-        _connector.setIdleTimeout(250);
+        _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
@@ -148,7 +153,7 @@ public class ServletTest
             assertThat(response, containsString("Hello 1234567890"));
 
             endPoint.addInputAndExecute(request);
-            response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
+            response = endPoint.getResponse(false, 2 * idleTimeout, TimeUnit.MILLISECONDS);
             assertThat(response, containsString(" 500 "));
             assertThat(response, containsString("Connection: close"));
         }
@@ -166,7 +171,8 @@ public class ServletTest
             }
         }, "/get");
 
-        _connector.setIdleTimeout(250);
+        long idleTimeout = 1000;
+        _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
@@ -177,17 +183,54 @@ public class ServletTest
                      
                 """;
             endPoint.addInput(request);
-            String response = endPoint.getResponse();
+            String response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("Hello!"));
             endPoint.addInput(request);
-            response = endPoint.getResponse();
+            response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("Hello!"));
 
-            Thread.sleep(500);
+            Thread.sleep(2 * idleTimeout);
 
             assertFalse(endPoint.isOpen());
         }
+    }
+
+    @Test
+    public void testHttpServletMapping() throws Exception
+    {
+        _context.addServlet(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                HttpServletMapping mapping = req.getHttpServletMapping();
+                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
+                assertThat(mapping.getMatchValue(), is("get"));
+                assertThat(mapping.getPattern(), is("/get"));
+
+                mapping = ServletPathMapping.from(mapping);
+                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
+                assertThat(mapping.getMatchValue(), is("get"));
+                assertThat(mapping.getPattern(), is("/get"));
+
+                mapping = ServletPathMapping.from(mapping.toString());
+                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
+                assertThat(mapping.getMatchValue(), is("get"));
+                assertThat(mapping.getPattern(), is("/get"));
+
+                resp.getWriter().println("Hello!");
+            }
+        }, "/get");
+
+        _server.start();
+
+        String response = _connector.getResponse("""
+            GET /ctx/get HTTP/1.0
+            
+            """);
+        assertThat(response, containsString(" 200 OK"));
+        assertThat(response, containsString("Hello!"));
     }
 }

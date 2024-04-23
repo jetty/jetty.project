@@ -23,6 +23,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -113,6 +114,74 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
+    public void testExpect100ContinueWithMultipleContentsRespond100ContinueBlocking(Transport transport) throws Exception
+    {
+        byte[][] contents = new byte[][]{
+            "data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8)
+        };
+        AtomicReference<Thread> readerThreadRef = new AtomicReference<>();
+        start(transport, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                readerThreadRef.set(Thread.currentThread());
+                // Send 100-Continue and copy the content back
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        ContentResponse response;
+        try (AsyncRequestContent content = new AsyncRequestContent())
+        {
+            new Thread(() ->
+            {
+                for (byte[] b : contents)
+                {
+                    try
+                    {
+                        // ensure that the reader will block/pause even after sending 100.
+                        await().atMost(5, TimeUnit.SECONDS).until(() ->
+                        {
+                            Thread thread = readerThreadRef.get();
+                            if (thread == null)
+                                return false;
+                            return thread.getState() == Thread.State.WAITING;
+                        });
+                        Callback.Completable callback = new Callback.Completable();
+                        content.write(b == contents[contents.length - 1], ByteBuffer.wrap(b), callback);
+                        callback.get();
+                    }
+                    catch (Throwable t)
+                    {
+                        t.printStackTrace();
+                    }
+                }
+            }).start();
+            response = client.newRequest(newURI(transport))
+                .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
+                .body(content)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        }
+
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+
+        int index = 0;
+        byte[] responseContent = response.getContent();
+        for (byte[] content : contents)
+        {
+            for (byte b : content)
+            {
+                assertEquals(b, responseContent[index++]);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithChunkedContentRespond100Continue(Transport transport) throws Exception
     {
         start(transport, new HttpServlet()
@@ -145,6 +214,8 @@ public class HttpClientContinueTest extends AbstractTest
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
+        if (EnumSet.of(Transport.HTTP, Transport.HTTPS).contains(transport))
+            assertTrue(response.getHeaders().contains(HttpHeader.TRANSFER_ENCODING, "chunked"));
 
         int index = 0;
         byte[] responseContent = response.getContent();
@@ -792,7 +863,6 @@ public class HttpClientContinueTest extends AbstractTest
         try (ServerSocket server = new ServerSocket())
         {
             server.bind(new InetSocketAddress("localhost", 0));
-            System.err.println("server listening on localhost:" + server.getLocalPort());
 
             byte[] bytes = new byte[1024];
             new Random().nextBytes(bytes);
@@ -837,7 +907,6 @@ public class HttpClientContinueTest extends AbstractTest
         try (ServerSocket server = new ServerSocket())
         {
             server.bind(new InetSocketAddress("localhost", 0));
-            System.err.println("server listening on localhost:" + server.getLocalPort());
 
             // No Expect header, no content.
             CountDownLatch latch = new CountDownLatch(1);

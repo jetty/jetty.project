@@ -29,7 +29,7 @@ import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.IncludeProcessor;
 import org.asciidoctor.extension.PreprocessorReader;
 import org.asciidoctor.jruby.extension.spi.ExtensionRegistry;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
 
 /**
  * <p>Asciidoctor <em>include</em> extension that includes into

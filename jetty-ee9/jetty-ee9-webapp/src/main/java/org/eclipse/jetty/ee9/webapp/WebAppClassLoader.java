@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
@@ -59,8 +60,8 @@ import org.slf4j.LoggerFactory;
  * parent loader.  Java2 compliant loading, where the parent loader
  * always has priority, can be selected with the
  * {@link WebAppContext#setParentLoaderPriority(boolean)}
- * method and influenced with {@link WebAppContext#isServerClass(Class)} and
- * {@link WebAppContext#isSystemClass(Class)}.
+ * method and influenced with {@link WebAppContext#isHiddenClass(Class)} and
+ * {@link WebAppContext#isProtectedClass(Class)}.
  * <p>
  * If no parent class loader is provided, then the current thread
  * context classloader will be used.  If that is null then the
@@ -257,9 +258,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (classPathList == null)
             return;
 
-        URIUtil.split(classPathList).stream()
-            .map(_resourceFactory::newResource)
-            .forEach(this::addClassPath);
+        _resourceFactory.split(classPathList).forEach(this::addClassPath);
     }
 
     /**
@@ -287,26 +286,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (!Resources.isReadableDirectory(libs))
             return;
 
-        for (Resource libDir: libs)
-        {
-            Path dir = libDir.getPath();
-
-            try (Stream<Path> streamEntries = Files.list(dir))
-            {
-                streamEntries
-                    .filter(Files::isRegularFile)
-                    .filter(this::isFileSupported)
-                    .sorted(Comparator.naturalOrder())
-                    .map(Path::toUri)
-                    .map(URIUtil::toJarFileUri)
-                    .map(_resourceFactory::newResource)
-                    .forEach(this::addClassPath);
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to load WEB-INF/lib JARs: {}", dir, e);
-            }
-        }
+        libs.list().stream().filter(r -> isFileSupported(r.getName())).sorted(ResourceCollators.byName(true)).forEach(this::addClassPath);
     }
 
     @Override
@@ -449,7 +429,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                         throw new ClassNotFoundException("Bad ClassLoader: returned null for loadClass(" + name + ")");
 
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenClass(parentClass))
                     {
                         return parentClass;
                     }
@@ -497,7 +477,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 {
                     parentClass = _parent.loadClass(name);
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parentClass))
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenClass(parentClass))
                     {
                         return parentClass;
                     }
@@ -629,14 +609,14 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     @Override
-    public boolean isSystemClass(Class<?> clazz)
+    public boolean isProtectedClass(Class<?> clazz)
     {
-        return _context.isSystemClass(clazz);
+        return _context.isProtectedClass(clazz);
     }
 
     @Override
-    public boolean isServerClass(Class<?> clazz)
+    public boolean isHiddenClass(Class<?> clazz)
     {
-        return _context.isServerClass(clazz);
+        return _context.isHiddenClass(clazz);
     }
 }

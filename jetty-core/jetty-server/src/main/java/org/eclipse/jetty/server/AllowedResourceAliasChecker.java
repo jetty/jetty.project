@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +45,12 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
 
     private final ContextHandler _contextHandler;
     private final Supplier<Resource> _resourceBaseSupplier;
-    private final List<Path> _protected = new ArrayList<>();
+    private final List<String> _protected = new ArrayList<>();
     private final AllowedResourceAliasCheckListener _listener = new AllowedResourceAliasCheckListener();
     private boolean _initialized;
+    protected Resource _baseResource;
+
+    @Deprecated
     protected Path _base;
 
     /**
@@ -80,25 +84,20 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
 
     private void extractBaseResourceFromContext()
     {
-        _base = getPath(_resourceBaseSupplier.get());
-        if (_base == null)
+        _baseResource = _resourceBaseSupplier.get();
+        if (_baseResource == null)
             return;
 
         try
         {
-            if (Files.exists(_base, NO_FOLLOW_LINKS))
-                _base = _base.toRealPath(FOLLOW_LINKS);
             String[] protectedTargets = getProtectedTargets();
             if (protectedTargets != null)
-            {
-                for (String s : protectedTargets)
-                    _protected.add(_base.getFileSystem().getPath(_base.toString(), s));
-            }
+                _protected.addAll(Arrays.asList(protectedTargets));
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _base, e);
-            _base = null;
+            LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _baseResource, t);
+            _baseResource = null;
         }
     }
 
@@ -123,7 +122,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     protected void doStop() throws Exception
     {
         _contextHandler.removeEventListener(_listener);
-        _base = null;
+        _baseResource = null;
         _protected.clear();
     }
 
@@ -132,7 +131,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     {
         if (!_initialized)
             extractBaseResourceFromContext();
-        if (_base == null)
+        if (_baseResource == null)
             return false;
 
         try
@@ -141,11 +140,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
             if (!resource.exists())
                 return false;
 
-            Path path = getPath(resource);
-            if (path == null)
-                return false;
-
-            return check(pathInContext, path);
+            return check(pathInContext, resource);
         }
         catch (Throwable t)
         {
@@ -162,6 +157,24 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         return isAllowed(getRealPath(path));
     }
 
+    protected boolean check(String pathInContext, Resource resource)
+    {
+        // If there is a single Path available, check it
+        Path path = resource.getPath();
+        if (path != null && Files.exists(path))
+            return check(pathInContext, path);
+
+        // Allow any aliases (symlinks, 8.3, casing, etc.) so long as
+        // the resulting real file is allowed.
+        for (Resource r : resource)
+        {
+            if (!check(pathInContext, r.getPath()))
+                return false;
+        }
+
+        return true;
+    }
+
     protected boolean isAllowed(Path path)
     {
         // If the resource doesn't exist we cannot determine whether it is protected, so we assume it is.
@@ -172,14 +185,20 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
             {
                 // If the path is the same file as the base, then it is contained in the base and
                 // is not protected.
-                if (isSameFile(path, _base))
+                if (_baseResource.isSameFile(path))
                     return true;
 
                 // If the path is the same file as any protected resources, then it is protected.
-                for (Path p : _protected)
+                for (String protectedTarget : _protected)
                 {
-                    if (isSameFile(path, p))
-                        return false;
+                    Resource p = _baseResource.resolve(protectedTarget);
+                    if (Resources.missing(p))
+                        continue;
+                    for (Resource r : p)
+                    {
+                        if (r.isSameFile(path))
+                            return false;
+                    }
                 }
 
                 // Walks up the aliased path name, not the real path name.
@@ -192,6 +211,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         return false;
     }
 
+    @Deprecated
     protected boolean isSameFile(Path path1, Path path2)
     {
         if (Objects.equals(path1, path2))
@@ -227,17 +247,10 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         return null;
     }
 
+    @Deprecated
     protected Path getPath(Resource resource)
     {
-        try
-        {
-            return (resource == null) ? null : resource.getPath();
-        }
-        catch (Throwable t)
-        {
-            LOG.trace("getPath() failed", t);
-            return null;
-        }
+        return null;
     }
 
     private class AllowedResourceAliasCheckListener implements LifeCycle.Listener
@@ -256,7 +269,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         return String.format("%s@%x{base=%s,protected=%s}",
             this.getClass().getSimpleName(),
             hashCode(),
-            _base,
+            _baseResource,
             (protectedTargets == null) ? null : Arrays.asList(protectedTargets));
     }
 }

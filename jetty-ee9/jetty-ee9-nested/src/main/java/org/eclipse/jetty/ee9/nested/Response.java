@@ -155,6 +155,19 @@ public class Response implements HttpServletResponse
     private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.DEFAULT, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
     private static final EnumSet<EncodingFrom> __explicitCharset = EnumSet.of(EncodingFrom.SET_LOCALE, EncodingFrom.SET_CHARACTER_ENCODING, EncodingFrom.SET_CONTENT_TYPE);
 
+    public static Response getBaseResponse(ServletResponse servletResponse)
+    {
+        while (true)
+        {
+            if (servletResponse instanceof Response response)
+                return response;
+            if (servletResponse instanceof ServletResponseWrapper wrapper)
+                servletResponse = wrapper.getResponse();
+            else
+                return null;
+        }
+    }
+
     public Response(HttpChannel channel, HttpOutput out)
     {
         _channel = channel;
@@ -347,7 +360,7 @@ public class Response implements HttpServletResponse
             path = (path == null ? "" : path);
             int port = uri.getPort();
             if (port < 0)
-                port = HttpScheme.getDefaultPort(uri.getScheme());
+                port = URIUtil.getDefaultPortForScheme(uri.getScheme());
 
             // Is it the same server?
             if (!request.getServerName().equalsIgnoreCase(uri.getHost()))

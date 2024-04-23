@@ -18,23 +18,24 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.Security;
 import java.time.Duration;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
-import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
-import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.servlets.CrossOriginFilter;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
@@ -49,18 +50,24 @@ import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
-import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.MemoryConnector;
+import org.eclipse.jetty.server.MemoryTransport;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLogWriter;
@@ -72,6 +79,7 @@ import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
@@ -89,6 +97,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
+import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -222,8 +231,10 @@ public class HTTPServerDocs
         sslContextFactory.setKeyStorePath("/path/to/keystore");
         sslContextFactory.setKeyStorePassword("secret");
 
-        // Create an HTTP3ServerConnector instance.
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory());
+        // Create a QuicServerConnector instance.
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
 
         // The port to listen to.
         connector.setPort(8080);
@@ -233,6 +244,31 @@ public class HTTPServerDocs
         server.addConnector(connector);
         server.start();
         // end::configureConnectorQuic[]
+    }
+
+    public void memoryConnector() throws Exception
+    {
+        // tag::memoryConnector[]
+        Server server = new Server();
+
+        // Create a MemoryConnector instance that speaks HTTP/1.1.
+        MemoryConnector connector = new MemoryConnector(server, new HttpConnectionFactory());
+
+        server.addConnector(connector);
+        server.start();
+
+        // The code above is the server-side.
+        // ----
+        // The code below is the client-side.
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        ContentResponse response = httpClient.newRequest("http://localhost/")
+            // Use the memory Transport to communicate with the server-side.
+            .transport(new MemoryTransport(connector))
+            .send();
+        // end::memoryConnector[]
     }
 
     public void configureConnectors() throws Exception
@@ -255,6 +291,94 @@ public class HTTPServerDocs
 
         server.start();
         // end::configureConnectors[]
+    }
+
+    public void sameRandomPort() throws Exception
+    {
+        // tag::sameRandomPort[]
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        Server server = new Server();
+
+        // The plain HTTP configuration.
+        HttpConfiguration plainConfig = new HttpConfiguration();
+
+        // The secure HTTP configuration.
+        HttpConfiguration secureConfig = new HttpConfiguration(plainConfig);
+        secureConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // First, create the secure connector for HTTPS and HTTP/2.
+        HttpConnectionFactory https = new HttpConnectionFactory(secureConfig);
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(secureConfig);
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(https.getProtocol());
+        ConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, https.getProtocol());
+        ServerConnector secureConnector = new ServerConnector(server, 1, 1, ssl, alpn, http2, https);
+        server.addConnector(secureConnector);
+
+        // Second, create the plain connector for HTTP.
+        HttpConnectionFactory http = new HttpConnectionFactory(plainConfig);
+        ServerConnector plainConnector = new ServerConnector(server, 1, 1, http);
+        server.addConnector(plainConnector);
+
+        // Third, create the connector for HTTP/3.
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector http3Connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
+        server.addConnector(http3Connector);
+
+        // Set up a listener so that when the secure connector starts,
+        // it configures the other connectors that have not started yet.
+        secureConnector.addEventListener(new NetworkConnector.Listener()
+        {
+            @Override
+            public void onOpen(NetworkConnector connector)
+            {
+                int port = connector.getLocalPort();
+
+                // Configure the plain connector for secure redirects from http to https.
+                plainConfig.setSecurePort(port);
+
+                // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
+                http3Connector.setPort(port);
+            }
+        });
+
+        server.start();
+        // end::sameRandomPort[]
+    }
+
+    public void sslHandshakeListener() throws Exception
+    {
+        // tag::sslHandshakeListener[]
+        // Create a SslHandshakeListener.
+        SslHandshakeListener listener = new SslHandshakeListener()
+        {
+            @Override
+            public void handshakeSucceeded(Event event) throws SSLException
+            {
+                SSLEngine sslEngine = event.getSSLEngine();
+                System.getLogger("tls").log(INFO, "TLS handshake successful to %s", sslEngine.getPeerHost());
+            }
+
+            @Override
+            public void handshakeFailed(Event event, Throwable failure)
+            {
+                SSLEngine sslEngine = event.getSSLEngine();
+                System.getLogger("tls").log(ERROR, "TLS handshake failure to %s", sslEngine.getPeerHost(), failure);
+            }
+        };
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Add the SslHandshakeListener as bean to ServerConnector.
+        // The listener will be notified of TLS handshakes success and failure.
+        connector.addBean(listener);
+        // end::sslHandshakeListener[]
     }
 
     public void http11() throws Exception
@@ -433,11 +557,11 @@ public class HTTPServerDocs
         httpConfig.addCustomizer(new SecureRequestCustomizer());
 
         // Create and configure the HTTP/3 connector.
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(httpConfig));
+        // It is mandatory to configure the PEM directory.
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         connector.setPort(843);
-
-        // It is mandatory to set the PEM directory.
-        connector.getQuicConfiguration().setPemWorkDirectory(Path.of("/path/to/pem/dir"));
 
         server.addConnector(connector);
 
@@ -1004,21 +1128,22 @@ public class HTTPServerDocs
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
+        // Add the CrossOriginHandler to protect from CSRF attacks.
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://domain.com"));
+        crossOriginHandler.setAllowCredentials(true);
+        server.setHandler(crossOriginHandler);
+
         // Create a ServletContextHandler with contextPath.
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/shop");
         // Link the context to the server.
-        server.setHandler(context);
+        crossOriginHandler.setHandler(context);
 
         // Add the Servlet implementing the cart functionality to the context.
         ServletHolder servletHolder = context.addServlet(ShopCartServlet.class, "/cart/*");
         // Configure the Servlet with init-parameters.
         servletHolder.setInitParameter("maxItems", "128");
-
-        // Add the CrossOriginFilter to protect from CSRF attacks.
-        FilterHolder filterHolder = context.addFilter(CrossOriginFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-        // Configure the filter.
-        filterHolder.setAsyncSupported(true);
 
         server.start();
         // end::servletContextHandler-setup[]
@@ -1257,14 +1382,14 @@ public class HTTPServerDocs
             }
 
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 // Retrieve the before handling nanoTime.
                 long beforeHandlingNanoTime = (long)request.getAttribute("beforeHandlingNanoTime");
 
-                // Record the request processing time.
+                // Record the request processing time and the status that was sent back to the client.
                 long processingTime = NanoTime.millisSince(beforeHandlingNanoTime);
-                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms", request, processingTime);
+                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms and ended with status code %d", request, processingTime, status);
             }
         }
 
@@ -1399,6 +1524,15 @@ public class HTTPServerDocs
 
         server.start();
         // end::securedHandler[]
+    }
+
+    public void crossOriginAllowedOrigins()
+    {
+        // tag::crossOriginAllowedOrigins[]
+        CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        // The allowed origins are regex patterns.
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://domain\\.com"));
+        // end::crossOriginAllowedOrigins[]
     }
 
     public void defaultHandler() throws Exception

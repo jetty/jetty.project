@@ -164,11 +164,7 @@ public class MultiPartServletTest
         }
         content.close();
 
-        assert400orEof(listener, responseContent ->
-        {
-            assertThat(responseContent, containsString("400: bad"));
-            assertThat(responseContent, containsString("Form is larger than max length"));
-        });
+        assert400orEof(listener, responseContent -> assertThat(responseContent, containsString("400")));
     }
 
     @ParameterizedTest
@@ -203,11 +199,7 @@ public class MultiPartServletTest
             .body(multiPart)
             .send(listener);
 
-        assert400orEof(listener, responseContent ->
-        {
-        assertThat(responseContent, containsString("400: bad"));
-        assertThat(responseContent, containsString("Form with too many keys"));
-        });
+        assert400orEof(listener, responseContent -> assertThat(responseContent, containsString("400")));
     }
 
     @ParameterizedTest
@@ -363,12 +355,63 @@ public class MultiPartServletTest
                 .send();
 
             assertEquals(400, response.getStatus());
-            assertThat(response.getContentAsString(), containsString("max file size exceeded"));
         }
 
         String[] fileList = tmpDir.toFile().list();
         assertNotNull(fileList);
         assertThat(fileList.length, is(0));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testDefaultTempDirectory(boolean eager) throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response1) throws ServletException, IOException
+            {
+                Collection<Part> parts = request.getParts();
+                assertNotNull(parts);
+                assertEquals(1, parts.size());
+                Part part = parts.iterator().next();
+                assertEquals("part1", part.getName());
+                Collection<String> headerNames = part.getHeaderNames();
+                assertNotNull(headerNames);
+                assertEquals(2, headerNames.size());
+                String content1 = IO.toString(part.getInputStream(), UTF_8);
+                assertEquals("content1", content1);
+            }
+        }, new MultipartConfigElement(null, MAX_FILE_SIZE, -1, 0), eager);
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String content = """
+                --A1B2C3
+                Content-Disposition: form-data; name="part1"
+                Content-Type: text/plain; charset="UTF-8"
+                                
+                content1
+                --A1B2C3--
+                """;
+            String header = """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Type: multipart/form-data; boundary="A1B2C3"
+                Content-Length: $L
+                                
+                """.replace("$L", String.valueOf(content.length()));
+
+            output.write(header.getBytes(UTF_8));
+            output.write(content.getBytes(UTF_8));
+            output.flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
     }
 
     @ParameterizedTest

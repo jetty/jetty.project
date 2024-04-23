@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -168,7 +169,7 @@ public class XmlBasedJettyServer
 
     public void setScheme(String scheme)
     {
-        this._scheme = scheme;
+        this._scheme = URIUtil.normalizeScheme(scheme);
     }
 
     public void start() throws Exception
@@ -196,11 +197,7 @@ public class XmlBasedJettyServer
 
     public URI getServerURI()
     {
-        StringBuffer uri = new StringBuffer();
-        uri.append(this._scheme).append("://");
-        uri.append(InetAddress.getLoopbackAddress().getHostAddress());
-        uri.append(":").append(this._serverPort);
-        return URI.create(uri.toString());
+        return URI.create(URIUtil.newURI(_scheme, InetAddress.getLoopbackAddress().getHostAddress(), _serverPort));
     }
 
     public Server getServer()

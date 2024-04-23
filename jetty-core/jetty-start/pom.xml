@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-start</artifactId>
   <name>Core :: Start</name>
@@ -43,6 +43,29 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
+          <execution>
+            <id>build.properties</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-util</artifactId>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <includes>**/build.properties</includes>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FlattenFileMapper"></fileMapper>
+                  </fileMappers>
+                  <outputDirectory>${project.build.outputDirectory}/org/eclipse/jetty/start/</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
           <execution>
             <id>unpack</id>
             <goals>
@@ -105,23 +128,6 @@
                   <shadedPattern>org.eclipse.jetty.start.shaded.util</shadedPattern>
                 </relocation>
               </relocations>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>buildnumber-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-buildnumber</id>
-            <goals>
-              <goal>create</goal>
-            </goals>
-            <configuration>
-              <doCheck>false</doCheck>
-              <doUpdate>false</doUpdate>
-              <revisionOnScmFailure>${nonCanonicalRevision}</revisionOnScmFailure>
             </configuration>
           </execution>
         </executions>

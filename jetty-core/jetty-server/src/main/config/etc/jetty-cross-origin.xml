@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="CrossOriginHandler" class="org.eclipse.jetty.server.handler.CrossOriginHandler">
+        <Set name="allowCredentials" property="jetty.crossorigin.allowCredentials" />
+        <Call name="setAllowedHeaders">
+          <Arg type="Set">
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg>
+                <Property name="jetty.crossorigin.allowedHeaders" default="Content-Type" />
+              </Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="setAllowedMethods">
+          <Arg type="Set">
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg>
+                <Property name="jetty.crossorigin.allowedMethods" default="GET,POST,HEAD" />
+              </Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="setAllowedOriginPatterns">
+          <Arg type="Set">
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg>
+                <Property name="jetty.crossorigin.allowedOriginPatterns" default="" />
+              </Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="setAllowedTimingOriginPatterns">
+          <Arg type="Set">
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg>
+                <Property name="jetty.crossorigin.allowedTimingOriginPatterns" default="" />
+              </Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Set name="deliverPreflightRequests" property="jetty.crossorigin.deliverPreflightRequests" />
+        <Set name="deliverNonAllowedOriginRequests" property="jetty.crossorigin.deliverNonAllowedOriginRequests" />
+        <Set name="deliverNonAllowedOriginWebSocketUpgradeRequests" property="jetty.crossorigin.deliverNonAllowedOriginWebSocketUpgradeRequests" />
+        <Call name="setExposedHeaders">
+          <Arg type="Set">
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg>
+                <Property name="jetty.crossorigin.exposedHeaders" default="" />
+              </Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="setPreflightMaxAge">
+          <Arg>
+            <Call class="java.time.Duration" name="ofSeconds">
+              <Arg type="long">
+                <Property name="jetty.crossorigin.preflightMaxAge" default="60" />
+              </Arg>
+            </Call>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

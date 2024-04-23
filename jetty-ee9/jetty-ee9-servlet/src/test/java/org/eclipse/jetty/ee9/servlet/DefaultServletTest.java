@@ -46,10 +46,13 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
@@ -57,7 +60,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -94,7 +96,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletTest
 {
-
     public Path docRoot;
 
     // The name of the odd-jar used for testing "jar:file://" based resource access.
@@ -1974,6 +1975,7 @@ public class DefaultServletTest
     @Test
     public void testControlCharacter() throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         FS.ensureDirExists(docRoot);
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
@@ -2229,7 +2231,7 @@ public class DefaultServletTest
             abcde
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         Files.writeString(file, "How now brown cow", UTF_8);
 
@@ -2242,7 +2244,8 @@ public class DefaultServletTest
             abcde
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is("How now brown cow"));
     }
 
     @Test
@@ -2279,7 +2282,7 @@ public class DefaultServletTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.get(HttpHeader.ALLOW), is("GET, HEAD, OPTIONS"));
+        assertThat(response.get(HttpHeader.ALLOW), is("GET,HEAD,POST,OPTIONS"));
     }
 
     @Test
@@ -2336,7 +2339,7 @@ public class DefaultServletTest
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()
@@ -2367,7 +2370,7 @@ public class DefaultServletTest
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()

@@ -17,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -92,16 +93,51 @@ public interface HttpChannel extends Invocable
      *
      * @param failure the failure cause.
      * @return a {@code Runnable} that performs the failure action, or {@code null}
-     * if no failure action need be performed by the calling thread
+     * if no failure action needs be performed by the calling thread
      * @see Request#addFailureListener(Consumer)
      */
     Runnable onFailure(Throwable failure);
 
     /**
+     * <p>Notifies this {@code HttpChannel} that an asynchronous close happened.</p>
+     *
+     * @return a {@code Runnable} that performs the close action, or {@code null}
+     * if no close action needs be performed by the calling thread
+     */
+    default Runnable onClose()
+    {
+        return null;
+    }
+
+    /**
      * Recycle the HttpChannel, so that a new cycle of calling {@link #setHttpStream(HttpStream)},
      * {@link #onRequest(MetaData.Request)} etc. may be performed on the channel.
+     * @see #initialize()
      */
     void recycle();
+
+    /**
+     * Initialize the HttpChannel when a new cycle of request handling begins.
+     * @see #recycle()
+     */
+    void initialize();
+
+    /**
+     * @return the active {@link ComplianceViolation.Listener}
+     */
+    ComplianceViolation.Listener getComplianceViolationListener();
+
+    /**
+     * @param request attempt to resolve the HttpChannel from the provided request
+     * @return the HttpChannel if found
+     * @throws IllegalStateException if unable to find HttpChannel
+     */
+    static HttpChannel from(Request request)
+    {
+        if (Request.unWrap(request).getComponents() instanceof HttpChannel httpChannel)
+            return httpChannel;
+        throw new IllegalStateException("Unable to find HttpChannel from " + request);
+    }
 
     /**
      * <p>A factory for {@link HttpChannel} instances.</p>

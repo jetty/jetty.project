@@ -95,6 +95,14 @@ public interface CharsetStringBuilder
      */
     String build() throws CharacterCodingException;
 
+    /**
+     * @return the length in characters
+     */
+    int length();
+
+    /**
+     * <p>Resets this sequence to be empty.</p>
+     */
     void reset();
 
     /**
@@ -169,6 +177,12 @@ public interface CharsetStringBuilder
         }
 
         @Override
+        public int length()
+        {
+            return _builder.length();
+        }
+
+        @Override
         public void reset()
         {
             _builder.setLength(0);
@@ -205,6 +219,12 @@ public interface CharsetStringBuilder
             String s = _builder.toString();
             _builder.setLength(0);
             return s;
+        }
+
+        @Override
+        public int length()
+        {
+            return _builder.length();
         }
 
         @Override
@@ -317,6 +337,12 @@ public interface CharsetStringBuilder
             {
                 _stringBuilder.setLength(0);
             }
+        }
+
+        @Override
+        public int length()
+        {
+            return _stringBuilder.length();
         }
 
         @Override

@@ -41,9 +41,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
@@ -314,7 +312,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testForwardWithParam() throws Exception
     {
         createDefaultContextHandlerCollection();
@@ -841,7 +838,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testDispatchMapping() throws Exception
     {
         createDefaultContextHandlerCollection();

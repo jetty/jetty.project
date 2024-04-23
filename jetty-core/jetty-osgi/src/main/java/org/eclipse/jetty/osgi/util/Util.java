@@ -16,9 +16,10 @@ package org.eclipse.jetty.osgi.util;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
@@ -34,12 +35,16 @@ import org.osgi.framework.Filter;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Various useful functions utility methods for OSGi wide use.
  */
 public class Util
 {
+     private static final Logger LOG = LoggerFactory.getLogger(Util.class);
+
     /**
      * Resolve a path either absolutely or against the bundle install location, or
      * against jetty home.
@@ -47,7 +52,7 @@ public class Util
      * @param path the path to resolve
      * @param bundle the bundle
      * @param jettyHome the path to jetty home
-     * @return the URI within the bundle as a usable URI
+     * @return the URI resolved either absolutely or against the bundle install location or jetty home.
      */
     public static URI resolvePathAsLocalizedURI(String path, Bundle bundle, Path jettyHome)
     throws Exception
@@ -55,8 +60,24 @@ public class Util
         if (StringUtil.isBlank(path))
             return null;
 
-        if (path.startsWith("/") || path.startsWith("file:/")) //absolute location
-            return Paths.get(path).toUri();
+        if (path.startsWith("file:/"))
+            return new URI(path);
+
+        if (path.startsWith("/") && File.separatorChar != '/')
+            return new URI("file:" + path);
+
+        try
+        {
+            Path p = FileSystems.getDefault().getPath(path);
+            if (p.isAbsolute())
+                return p.toUri();
+        }
+        catch (InvalidPathException x)
+        {
+            //ignore and try via the jetty bundle instead
+            LOG.trace("IGNORED", x);
+        }
+
         
         //relative location
         //try inside the bundle first

@@ -15,12 +15,16 @@ package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.HTTP2StreamEndPoint;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,26 +38,51 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     }
 
     @Override
-    public void onDataAvailable()
+    public Runnable onDataAvailable()
     {
-        processDataAvailable();
+        // The InvocationType may change depending on the read callback.
+        return new Invocable.ReadyTask(getInvocationType(), this::processDataAvailable);
     }
 
     @Override
-    public void onTimeout(TimeoutException timeout, Promise<Boolean> promise)
+    public Runnable onReset(ResetFrame frame, Callback callback)
+    {
+        int error = frame.getError();
+        EofException failure = new EofException(ErrorCode.toString(error, "error_code_" + error));
+        return onFailure(failure, callback);
+    }
+
+    @Override
+    public Runnable onTimeout(TimeoutException timeout, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout on {}", this, timeout);
         Connection connection = getConnection();
-        if (connection != null)
-            promise.succeeded(connection.onIdleExpired(timeout));
-        else
+        if (connection == null)
+        {
             promise.succeeded(true);
+            return null;
+        }
+        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        {
+            boolean expire = connection.onIdleExpired(timeout);
+            if (expire)
+            {
+                processFailure(timeout);
+                close(timeout);
+            }
+            promise.succeeded(expire);
+        });
     }
 
     @Override
-    public void onFailure(Throwable failure, Callback callback)
+    public Runnable onFailure(Throwable failure, Callback callback)
     {
-        callback.failed(failure);
+        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        {
+            processFailure(failure);
+            close(failure);
+            callback.failed(failure);
+        });
     }
 }

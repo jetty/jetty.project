@@ -679,7 +679,7 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
         assertThat(responseBody, Matchers.containsString("getQueryString()=[code=param]"));
-        assertThat(responseBody, Matchers.containsString("getRequestURL()=[http://test:80/error/599?code=param]"));
+        assertThat(responseBody, Matchers.containsString("getRequestURL()=[http://test/error/599?code=param]"));
         assertThat(responseBody, Matchers.containsString("getParameterMap().size=2"));
         assertThat(responseBody, Matchers.containsString("getParameterMap()[code]=[param]"));
         assertThat(responseBody, Matchers.containsString("getParameterMap()[value]=[zed]"));

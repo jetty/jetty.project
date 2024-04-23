@@ -363,4 +363,76 @@ public class IteratingCallbackTest
         assertEquals(1, process.get());
         assertEquals(1, failure.get());
     }
+
+    @Test
+    public void testWhenIdleAbortSerializesOnCompleteFailure() throws Exception
+    {
+        AtomicInteger count = new AtomicInteger();
+        CountDownLatch ocfLatch = new CountDownLatch(1);
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                count.incrementAndGet();
+                return Action.IDLE;
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                ocfLatch.countDown();
+            }
+        };
+
+        icb.iterate();
+
+        assertEquals(1, count.get());
+
+        // Aborting should not iterate.
+        icb.abort(new Exception());
+
+        assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(icb.isAborted());
+        assertEquals(1, count.get());
+    }
+
+    @Test
+    public void testWhenProcessingAbortSerializesOnCompleteFailure() throws Exception
+    {
+        AtomicInteger count = new AtomicInteger();
+        CountDownLatch ocfLatch = new CountDownLatch(1);
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process() throws Throwable
+            {
+                count.incrementAndGet();
+                abort(new Exception());
+
+                // After calling abort, onCompleteFailure() must not be called yet.
+                assertFalse(ocfLatch.await(1, TimeUnit.SECONDS));
+
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                ocfLatch.countDown();
+            }
+        };
+
+        icb.iterate();
+
+        assertEquals(1, count.get());
+
+        assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(icb.isAborted());
+
+        // Calling succeeded() won't cause further iterations.
+        icb.succeeded();
+
+        assertEquals(1, count.get());
+    }
 }

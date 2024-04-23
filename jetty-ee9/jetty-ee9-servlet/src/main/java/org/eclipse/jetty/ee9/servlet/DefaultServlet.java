@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,7 +128,7 @@ import org.slf4j.LoggerFactory;
  *                    Max entries in a cache of ACCEPT-ENCODING headers.
  * </pre>
  */
-public class DefaultServlet extends HttpServlet implements ResourceFactory, WelcomeFactory
+public class DefaultServlet extends HttpServlet implements WelcomeFactory
 {
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
@@ -197,7 +196,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         _relativeBaseResource = getInitParameter("relativeBaseResource", "relativeResourceBase");
 
         String br = getInitParameter("baseResource", "resourceBase");
-        if (br != null)
+        if (br == null)
+        {
+            _baseResource = _contextHandler.getBaseResource();
+        }
+        else
         {
             if (_relativeBaseResource != null)
                 throw new UnavailableException("baseResource & relativeBaseResource");
@@ -252,7 +255,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
             if (contentFactory == null)
             {
-                contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes)
+                {
+                    @Override
+                    protected Resource resolve(String pathInContext)
+                    {
+                        return DefaultServlet.this.resolve(pathInContext);
+                    }
+                };
                 if (_useFileMappedBuffer)
                     contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css");
@@ -308,22 +318,22 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new ByteBufferPool.NonPooling();
+            return ByteBufferPool.NON_POOLING;
         Server server = contextHandler.getServer();
         if (server == null)
-            return new ByteBufferPool.NonPooling();
+            return ByteBufferPool.NON_POOLING;
         return server.getByteBufferPool();
     }
 
     private String getInitParameter(String name, String... deprecated)
     {
-        String value = super.getInitParameter(name);
+        String value = getInitParameter(name);
         if (value != null)
             return value;
 
         for (String d : deprecated)
         {
-            value = super.getInitParameter(d);
+            value = getInitParameter(d);
             if (value != null)
             {
                 LOG.warn("Deprecated {} used instead of {}", d, name);
@@ -443,19 +453,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         return dft;
     }
 
-    @Override
-    public Resource newResource(String resource)
-    {
-        return resolve(resource);
-    }
-
-    @Override
-    public Resource newResource(URI uri)
-    {
-        // TODO optimised path for URI?
-        return resolve(uri.toString());
-    }
-
     /**
      * get Resource to serve.
      * Map a path to a resource. The default implementation calls
@@ -514,7 +511,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        doGet(request, response);
     }
 
     @Override
@@ -535,7 +532,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     protected void doOptions(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        response.setHeader("Allow", "GET, HEAD, OPTIONS");
+        response.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
 
     @Override

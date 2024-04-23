@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -59,7 +58,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -191,7 +189,7 @@ public class DefaultServlet extends HttpServlet
         {
             try
             {
-                baseResource = Objects.requireNonNull(_contextHandler.newResource(rb));
+                baseResource = URIUtil.isRelative(rb) ? _contextHandler.getBaseResource().resolve(rb) :  _contextHandler.newResource(rb);
             }
             catch (Exception e)
             {
@@ -199,6 +197,8 @@ public class DefaultServlet extends HttpServlet
                 throw new UnavailableException(e.toString());
             }
         }
+        if (baseResource != null && !(baseResource.isDirectory() && baseResource.isReadable()))
+            LOG.warn("baseResource {} is not a readable directory", baseResource);
 
         List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
             getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
@@ -208,8 +208,7 @@ public class DefaultServlet extends HttpServlet
         if (contentFactory == null)
         {
             MimeTypes mimeTypes = _contextHandler.getMimeTypes();
-            ResourceFactory resourceFactory = baseResource != null ? ResourceFactory.of(baseResource) : this::getResource;
-            contentFactory = new ResourceHttpContentFactory(resourceFactory, mimeTypes);
+            contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
             Resource styleSheet = _contextHandler.getServer().getDefaultStyleSheet();
@@ -321,22 +320,22 @@ public class DefaultServlet extends HttpServlet
     private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new ByteBufferPool.NonPooling();
+            return ByteBufferPool.NON_POOLING;
         Server server = contextHandler.getServer();
         if (server == null)
-            return new ByteBufferPool.NonPooling();
+            return ByteBufferPool.NON_POOLING;
         return server.getByteBufferPool();
     }
 
     private String getInitParameter(String name, String... deprecated)
     {
-        String value = super.getInitParameter(name);
+        String value = getInitParameter(name);
         if (value != null)
             return value;
 
         for (String d : deprecated)
         {
-            value = super.getInitParameter(d);
+            value = getInitParameter(d);
             if (value != null)
             {
                 LOG.warn("Deprecated {} used instead of {}", d, name);
@@ -487,7 +486,7 @@ public class DefaultServlet extends HttpServlet
                 // otherwise wrap the servlet request as a core request
                 Request coreRequest = httpServletRequest instanceof ServletApiRequest
                     ? servletChannel.getRequest()
-                    : new ServletCoreRequest(httpServletRequest);
+                    : ServletCoreRequest.wrap(httpServletRequest);
 
                 // If the servlet response has been wrapped and has been written to,
                 // then the servlet response must be wrapped as a core response
@@ -583,23 +582,6 @@ public class DefaultServlet extends HttpServlet
     {
         // override to eliminate TRACE that the default HttpServlet impl adds
         resp.setHeader("Allow", "GET, HEAD, OPTIONS");
-    }
-
-    private Resource getResource(URI uri)
-    {
-        String uriPath = uri.getRawPath();
-        Resource result = null;
-        try
-        {
-            result = _contextHandler.getResource(uriPath);
-        }
-        catch (IOException x)
-        {
-            LOG.trace("IGNORED", x);
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug("Resource {}={}", uriPath, result);
-        return result;
     }
 
     private class ServletResourceService extends ResourceService implements ResourceService.WelcomeFactory

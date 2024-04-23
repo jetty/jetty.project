@@ -109,10 +109,7 @@ public abstract class TransformingFlusher
         }
 
         if (failed)
-        {
-            flusher.failed(t);
-            flusher.iterate();
-        }
+            flusher.abort(t);
     }
 
     private void onFailure(Throwable t)

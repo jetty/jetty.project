@@ -33,6 +33,8 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -43,7 +45,8 @@ public class HTTP3ClientDocs
     {
         // tag::start[]
         // Instantiate HTTP3Client.
-        HTTP3Client http3Client = new HTTP3Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
 
         // Configure HTTP3Client, for example:
         http3Client.getHTTP3Configuration().setStreamIdleTimeout(15000);
@@ -55,7 +58,8 @@ public class HTTP3ClientDocs
 
     public void stop() throws Exception
     {
-        HTTP3Client http3Client = new HTTP3Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
         // tag::stop[]
         // Stop HTTP3Client.
@@ -65,7 +69,8 @@ public class HTTP3ClientDocs
 
     public void connect() throws Exception
     {
-        HTTP3Client http3Client = new HTTP3Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
         // tag::connect[]
         // Address of the server's port.
@@ -83,7 +88,8 @@ public class HTTP3ClientDocs
 
     public void configure() throws Exception
     {
-        HTTP3Client http3Client = new HTTP3Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
 
         // tag::configure[]
@@ -105,7 +111,8 @@ public class HTTP3ClientDocs
 
     public void newStream() throws Exception
     {
-        HTTP3Client http3Client = new HTTP3Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
         // tag::newStream[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
@@ -130,7 +137,8 @@ public class HTTP3ClientDocs
 
     public void newStreamWithData() throws Exception
     {
-        HTTP3Client http3Client = new HTTP3Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
         // tag::newStreamWithData[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
@@ -173,7 +181,8 @@ public class HTTP3ClientDocs
 
     public void responseListener() throws Exception
     {
-        HTTP3Client http3Client = new HTTP3Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
         CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
@@ -231,7 +240,8 @@ public class HTTP3ClientDocs
 
     public void reset() throws Exception
     {
-        HTTP3Client http3Client = new HTTP3Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
         CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});

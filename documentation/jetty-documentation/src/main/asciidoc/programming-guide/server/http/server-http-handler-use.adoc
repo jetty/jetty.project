@@ -224,6 +224,27 @@ Server
         └── ContextHandler N
 ----
 
+[[pg-server-http-handler-use-sizelimit]]
+====== SizeLimitHandler
+
+`SizeLimitHandler` tracks the sizes of request content and response content, and fails the request processing with an HTTP status code of link:https://www.rfc-editor.org/rfc/rfc9110.html#name-413-content-too-large[`413 Content Too Large`].
+
+Server applications can set up the `SizeLimitHandler` before or after handlers that modify the request content or response content such as xref:pg-server-http-handler-use-gzip[`GzipHandler`].
+When `SizeLimitHandler` is before `GzipHandler` in the `Handler` tree, it will limit the compressed content; when it is after, it will limit the uncompressed content.
+
+The `Handler` tree structure look like the following, to limit uncompressed content:
+
+[source,screen]
+----
+Server
+└── GzipHandler
+    └── SizeLimitHandler
+        └── ContextHandlerCollection
+            ├── ContextHandler 1
+            :── ...
+            └── ContextHandler N
+----
+
 [[pg-server-http-handler-use-statistics]]
 ====== StatisticsHandler
 
@@ -331,7 +352,7 @@ Server
 In the example above, `TotalEventsHandler` may record the total times of request processing, from `SlowHandler` all the way to the `ContextHandler`.
 On the other hand, `AppEventsHandler` may record both the time it takes for the request to flow from `TotalEventsHandler` to `AppEventsHandler`, therefore effectively measuring the processing time due to `SlowHandler`, and the time it takes to process the request by the `ContextHandler`.
 
-Refer to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler/EventsHandler[javadocs] for further information.
+Refer to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler/EventsHandler.html[javadocs] for further information.
 
 [[pg-server-http-handler-use-qos]]
 ====== QoSHandler
@@ -382,6 +403,58 @@ Server applications must configure a `HttpConfiguration` object with the secure 
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=securedHandler]
 ----
+
+[[pg-server-http-handler-use-cross-origin]]
+====== CrossOriginHandler
+
+`CrossOriginHandler` supports the server-side requirements of the link:https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[CORS protocol] implemented by browsers when performing cross-origin requests.
+
+An example of a cross-origin request is when a script downloaded from the origin domain `+http://domain.com+` uses `fetch()` or `XMLHttpRequest` to make a request to a cross domain such as `+http://cross.domain.com+` (a subdomain of the origin domain) or to `+http://example.com+` (a completely different domain).
+
+This is common, for example, when you embed reusable components such as a chat component into a web page: the web page and the chat component files are downloaded from `+http://domain.com+`, but the chat server is at `+http://chat.domain.com+`, so the chat component must make cross-origin requests to the chat server.
+
+This kind of setup exposes to link:https://owasp.org/www-community/attacks/csrf[cross-site request forgery (CSRF) attacks], and the CORS protocol has been established to protect against this kind of attacks.
+
+For security reasons, browsers by default do not allow cross-origin requests, unless the response from the cross domain contains the right CORS headers.
+
+`CrossOriginHandler` relieves server-side web applications from handling CORS headers explicitly.
+You can set up your `Handler` tree with the `CrossOriginHandler`, configure it, and it will take care of the CORS headers separately from your application, where you can concentrate on the business logic.
+
+The `Handler` tree structure looks like the following:
+
+[source,screen]
+----
+Server
+└── CrossOriginHandler
+    └── ContextHandler /app
+        └── AppHandler
+----
+
+The most important `CrossOriginHandler` configuration parameter that must be configured is `allowedOrigins`, which by default is the empty set, therefore disallowing all origins.
+
+You want to restrict requests to your cross domain to only origins you trust.
+From the chat example above, the chat server at `+http://chat.domain.com+` knows that the chat component is downloaded from the origin server at `+http://domain.com+`, so the `CrossOriginHandler` is configured in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=crossOriginAllowedOrigins]
+----
+
+Browsers send cross-origin requests in two ways:
+
+* Directly, if the cross-origin request meets some simple criteria.
+* By issuing a hidden _preflight_ request before the actual cross-origin request, to verify with the server if it is willing to reply properly to the actual cross-origin request.
+
+Both preflight requests and cross-origin requests will be handled by `CrossOriginHandler`, which will analyze the request and possibly add appropriate CORS response headers.
+
+By default, preflight requests are not delivered to the `CrossOriginHandler` child `Handler`, but it is possible to configure `CrossOriginHandler` by setting `deliverPreflightRequests=true` so that the web application can fine-tune the CORS response headers.
+
+Another important `CrossOriginHandler` configuration parameter is `allowCredentials`, which controls whether cookies and authentication headers that match the cross-origin request to the cross domain are sent in the cross-origin requests.
+By default, `allowCredentials=false` so that cookies and authentication headers are not sent in cross-origin requests.
+
+If the application deployed in the cross domain requires cookies or authentication, then you must set `allowCredentials=true`, but you also need to restrict the allowed origins only to the ones your trust, otherwise your cross domain application will be vulnerable to CSRF attacks.
+
+For more `CrossOriginHandler` configuration options, refer to the link:{javadoc-url}/org/eclipse/jetty/server/handler/CrossOriginHandler.html[`CrossOriginHandler` javadocs].
 
 [[pg-server-http-handler-use-default]]
 ====== DefaultHandler

@@ -258,6 +258,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             httpChannel = httpChannels.poll();
         if (httpChannel == null)
             httpChannel = httpChannelFactory.newHttpChannel(this);
+        httpChannel.initialize();
         return httpChannel;
     }
 
@@ -306,13 +307,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             upgradeFrames.add(new HeadersFrame(1, request, null, true));
         }
         return true;
-    }
-
-    // Overridden for visibility.
-    @Override
-    protected void offerTask(Runnable task, boolean dispatch)
-    {
-        super.offerTask(task, dispatch);
     }
 
     @Override

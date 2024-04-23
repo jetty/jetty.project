@@ -82,7 +82,7 @@ public class UnixDomainServerConnector extends AbstractConnector
     {
         super(server, executor, scheduler, bufferPool, acceptors, factories.length > 0 ? factories : new ConnectionFactory[]{new HttpConnectionFactory()});
         selectorManager = newSelectorManager(getExecutor(), getScheduler(), selectors);
-        addBean(selectorManager, true);
+        installBean(selectorManager, true);
     }
 
     protected SelectorManager newSelectorManager(Executor executor, Scheduler scheduler, int selectors)
@@ -145,13 +145,33 @@ public class UnixDomainServerConnector extends AbstractConnector
         this.acceptedSendBufferSize = acceptedSendBufferSize;
     }
 
+    public SocketAddress getLocalSocketAddress()
+    {
+        try
+        {
+            return serverChannel == null ? null : serverChannel.getLocalAddress();
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
     @Override
     protected void doStart() throws Exception
     {
         getBeans(SelectorManager.SelectorManagerListener.class).forEach(selectorManager::addEventListener);
+
         serverChannel = open();
         addBean(serverChannel);
+
         super.doStart();
+
+        if (getAcceptors() == 0)
+        {
+            serverChannel.configureBlocking(false);
+            acceptor.set(selectorManager.acceptor(serverChannel));
+        }
     }
 
     @Override
@@ -201,25 +221,6 @@ public class UnixDomainServerConnector extends AbstractConnector
 
     private ServerSocketChannel open() throws IOException
     {
-        ServerSocketChannel serverChannel = openServerSocketChannel();
-        if (getAcceptors() == 0)
-        {
-            serverChannel.configureBlocking(false);
-            acceptor.set(selectorManager.acceptor(serverChannel));
-        }
-        return serverChannel;
-    }
-
-    private void close() throws IOException
-    {
-        ServerSocketChannel serverChannel = this.serverChannel;
-        this.serverChannel = null;
-        IO.close(serverChannel);
-        Files.deleteIfExists(getUnixDomainPath());
-    }
-
-    private ServerSocketChannel openServerSocketChannel() throws IOException
-    {
         ServerSocketChannel serverChannel = null;
         if (isInheritChannel())
         {
@@ -232,6 +233,14 @@ public class UnixDomainServerConnector extends AbstractConnector
         if (serverChannel == null)
             serverChannel = bindServerSocketChannel();
         return serverChannel;
+    }
+
+    private void close() throws IOException
+    {
+        ServerSocketChannel serverChannel = this.serverChannel;
+        this.serverChannel = null;
+        IO.close(serverChannel);
+        Files.deleteIfExists(getUnixDomainPath());
     }
 
     private ServerSocketChannel bindServerSocketChannel() throws IOException

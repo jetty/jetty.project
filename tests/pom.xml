@@ -4,20 +4,20 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests</artifactId>
   <packaging>pom</packaging>
   <name>Tests</name>
   <modules>
-    <module>jetty-home-tester</module>
+    <module>jetty-testers</module>
     <module>jetty-jmh</module>
+    <module>jetty-test-multipart</module>
     <module>jetty-test-session-common</module>
     <module>test-distribution</module>
     <module>test-integration</module>
-    <!-- TODO -->
-    <!-- module>test-jpms</module -->
+    <module>test-jpms</module>
   </modules>
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>

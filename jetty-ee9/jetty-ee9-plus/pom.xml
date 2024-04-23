@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-plus</artifactId>
   <name>EE9 :: Plus</name>
@@ -65,6 +65,12 @@
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration</Provide-Capability>
           </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-exports=org.eclipse.jetty.ee9.plus/org.eclipse.jetty.ee9.plus.annotation=org.eclipse.jetty.ee9.nested --add-opens org.eclipse.jetty.ee9.plus/org.eclipse.jetty.ee9.plus.annotation=org.eclipse.jetty.plus</argLine>
         </configuration>
       </plugin>
     </plugins>

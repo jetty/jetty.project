@@ -41,6 +41,7 @@ import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.api.Session;
@@ -80,8 +82,13 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -326,9 +333,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)
         {
             @Override
-            protected Connection newConnection(Destination destination, Session session)
+            protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
             {
-                return new HttpConnectionOverHTTP2(destination, session)
+                return new HttpConnectionOverHTTP2(destination, session, connection)
                 {
                     @Override
                     protected HttpChannelOverHTTP2 newHttpChannel()
@@ -520,10 +527,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client)
             {
                 @Override
-                protected Connection newConnection(Destination destination, Session session)
+                protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
                 {
                     sessions.add(session);
-                    return super.newConnection(destination, session);
+                    return super.newConnection(destination, session, connection);
                 }
             });
             QueuedThreadPool clientExecutor = new QueuedThreadPool();
@@ -733,6 +740,57 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    @Test
+    public void testResponseListenerAbortInOnBegin() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        AtomicReference<Throwable> onContentSourceErrorRef = new AtomicReference<>();
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+
+        org.eclipse.jetty.client.Request jettyRequest = httpClient.newRequest("localhost", connector.getLocalPort());
+        jettyRequest.send(new Response.Listener()
+        {
+            @Override
+            public void onBegin(org.eclipse.jetty.client.Response response)
+            {
+                response.abort(new ArrayStoreException("nothing is ever going to throw ArrayStoreException in our code"));
+            }
+
+            @Override
+            public void onContentSource(org.eclipse.jetty.client.Response response, Content.Source contentSource)
+            {
+                try
+                {
+                    Content.Chunk chunk = contentSource.read();
+                    chunk.release();
+                }
+                catch (Throwable x)
+                {
+                    onContentSourceErrorRef.set(x);
+                }
+            }
+
+            @Override
+            public void onComplete(Result result)
+            {
+                resultRef.set(result);
+            }
+        });
+
+        await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
+        assertThat(resultRef.get().getFailure(), instanceOf(ArrayStoreException.class));
+        assertThat(onContentSourceErrorRef.get(), is(nullValue()));
     }
 
     @Test

@@ -80,7 +80,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(true, BufferUtil.toBuffer("Hello World"), callback);
                 return true;
@@ -99,7 +99,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 8 * 1024 + 1);
                 fail();
@@ -120,9 +120,8 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
-
                 response.write(true, ByteBuffer.wrap(new byte[8 * 1024 + 1]), callback);
                 return true;
             }
@@ -141,7 +140,7 @@ public class SizeLimitHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 byte[] data = new byte[1024];
                 Arrays.fill(data, (byte)'X');
@@ -199,10 +198,12 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("POST /ctx/hello HTTP/1.0\r\n" +
-                "Content-Length: 8\r\n" +
-                "\r\n" +
-                "123456\r\n"));
+            _local.getResponse("""
+                POST /ctx/hello HTTP/1.0\r
+                Content-Length: 8\r
+                \r
+                123456\r
+                """));
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.getContent(), containsString("OK 8"));
     }
@@ -223,10 +224,11 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("POST /ctx/hello HTTP/1.0\r\n" +
-                "Content-Length: 32768\r\n" +
-                "\r\n" +
-                "123456..."));
+            _local.getResponse("""
+                POST /ctx/hello HTTP/1.0\r
+                Content-Length: 32768\r
+                \r
+                123456..."""));
         assertThat(response.getStatus(), equalTo(413));
         assertThat(response.getContent(), containsString("32768&gt;8192"));
     }
@@ -247,11 +249,13 @@ public class SizeLimitHandlerTest
         });
         _server.start();
 
-        try (LocalConnector.LocalEndPoint endp = _local.executeRequest(
-            "POST /ctx/hello HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "\r\n"))
+        try (LocalConnector.LocalEndPoint endPoint = _local.executeRequest(
+            """
+                POST /ctx/hello HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                \r
+                """))
         {
             byte[] data = new byte[1024];
             Arrays.fill(data, (byte)'X');
@@ -259,12 +263,37 @@ public class SizeLimitHandlerTest
             String text = new String(data, 0, 1024, Charset.defaultCharset());
 
             for (int i = 0; i < 9; i++)
-                endp.addInput("400\r\n" + text + "\r\n");
+                endPoint.addInput("400\r\n" + text + "\r\n");
 
-            HttpTester.Response response = HttpTester.parseResponse(endp.getResponse());
+            HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
 
             assertThat(response.getStatus(), equalTo(413));
             assertThat(response.getContent(), containsString("&gt;8192"));
+        }
+    }
+
+    @Test
+    public void testMultipleRequests() throws Exception
+    {
+        String message = "x".repeat(1024);
+        _contextHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.write(true, BufferUtil.toBuffer(message), callback);
+                return true;
+            }
+        });
+
+        _server.start();
+
+        for (int i = 0; i < 1000; i++)
+        {
+            HttpTester.Response response = HttpTester.parseResponse(
+                _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getContent(), equalTo(message));
         }
     }
 }

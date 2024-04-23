@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.plus.webapp;
 
-import java.util.Map;
 import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -208,8 +207,8 @@ public class EnvConfiguration extends AbstractConfiguration
         LOG.debug("Binding env entries from the server scope");
         doBindings(envCtx, context.getServer());
 
-        LOG.debug("Binding env entries from environment {} scope", ServletContextHandler.__environment.getName());
-        doBindings(envCtx, ServletContextHandler.__environment.getName());
+        LOG.debug("Binding env entries from environment {} scope", ServletContextHandler.ENVIRONMENT.getName());
+        doBindings(envCtx, ServletContextHandler.ENVIRONMENT.getName());
 
         LOG.debug("Binding env entries from the context scope");
         doBindings(envCtx, context);

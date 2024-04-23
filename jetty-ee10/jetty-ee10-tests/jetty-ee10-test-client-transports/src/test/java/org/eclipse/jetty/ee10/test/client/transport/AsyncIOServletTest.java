@@ -92,7 +92,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled
 public class AsyncIOServletTest extends AbstractTest
 {
     private static final ThreadLocal<RuntimeException> scope = new ThreadLocal<>();
@@ -1081,6 +1080,7 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
+    @Disabled // TODO Cannot write response from onError as failure has occurred
     public void testAsyncReadEarlyEOF(Transport transport) throws Exception
     {
         // SSLEngine receives the close alert from the client, and when
@@ -1136,7 +1136,7 @@ public class AsyncIOServletTest extends AbstractTest
             .body(requestContent)
             .onResponseSuccess(response ->
             {
-                if (transport == Transport.HTTP || transport == Transport.UNIX_DOMAIN)
+                if (transport == Transport.HTTP)
                     responseLatch.countDown();
             })
             .onResponseFailure((response, failure) ->
@@ -1155,7 +1155,6 @@ public class AsyncIOServletTest extends AbstractTest
             switch (transport)
             {
                 case HTTP:
-                case UNIX_DOMAIN:
                     assertThat(result.getResponse().getStatus(), Matchers.equalTo(responseCode));
                     break;
                 case H2C:
@@ -1173,7 +1172,6 @@ public class AsyncIOServletTest extends AbstractTest
         switch (transport)
         {
             case HTTP:
-            case UNIX_DOMAIN:
                 ((HttpConnectionOverHTTP)connection).getEndPoint().shutdownOutput();
                 break;
             case H2C:
@@ -1197,8 +1195,8 @@ public class AsyncIOServletTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
-    public void testAsyncEcho(Transport transport) throws Exception
+    @MethodSource("transports")
+    public void testAsyncReadEcho(Transport transport) throws Exception
     {
         // TODO: investigate why H3 does not work.
         Assumptions.assumeTrue(transport != Transport.H3);
@@ -1208,8 +1206,6 @@ public class AsyncIOServletTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                System.err.println("service " + request);
-
                 AsyncContext asyncContext = request.startAsync();
                 ServletInputStream input = request.getInputStream();
                 input.setReadListener(new ReadListener()
@@ -1222,7 +1218,6 @@ public class AsyncIOServletTest extends AbstractTest
                             int b = input.read();
                             if (b >= 0)
                             {
-                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
                                 response.getOutputStream().write(b);
                             }
                             else

@@ -60,7 +60,7 @@ public class RewriteHandler extends Handler.Wrapper
     {
         super(handler);
         _rules = rules;
-        addBean(_rules);
+        installBean(_rules);
     }
 
     /**

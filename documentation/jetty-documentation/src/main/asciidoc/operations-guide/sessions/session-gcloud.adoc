@@ -65,7 +65,7 @@ Because the Google Cloud DataStore is not a technology provided by the Eclipse F
 As GCloud requires certain Java Commons Logging features to work correctly, Jetty routes these through SLF4J.
 By default, Jetty implements the SLF4J api, but you can choose a different logging implementation by following the instructions xref:og-server-logging[here]
 
-IMPORTANT: If you want to use updated versions of the jar files automatically downloaded during the module enablement, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+IMPORTANT: If you want to use updated versions of the jar files automatically downloaded during the module enablement, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
 
 ==== Configuration
 

@@ -38,6 +38,7 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
@@ -129,7 +130,7 @@ public class WebSocketOverHTTP2Test
         server.setHandler(new EventsHandler(server.getHandler())
         {
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 if (onComplete != null)
                     onComplete.run();
@@ -179,7 +180,7 @@ public class WebSocketOverHTTP2Test
         startClient(protocolFn);
 
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo/query?param=value");
         Session session = wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS);
 
         String text = "websocket";
@@ -391,6 +392,11 @@ public class WebSocketOverHTTP2Test
         protected void configure(JettyWebSocketServletFactory factory)
         {
             factory.addMapping("/ws/echo", (request, response) -> new EchoSocket());
+            factory.addMapping("/ws/echo/query", (request, response) ->
+            {
+                assertNotNull(request.getQueryString());
+                return new EchoSocket();
+            });
             factory.addMapping("/ws/null", (request, response) ->
             {
                 response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503, "null");

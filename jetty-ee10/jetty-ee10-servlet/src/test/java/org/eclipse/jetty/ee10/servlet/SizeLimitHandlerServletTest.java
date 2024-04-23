@@ -15,12 +15,11 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -31,6 +30,7 @@ import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -38,16 +38,18 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SizeLimitHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SizeLimitHandlerServletTest
 {
@@ -56,8 +58,7 @@ public class SizeLimitHandlerServletTest
     private ServerConnector _connector;
     private HttpClient _client;
 
-    @BeforeEach
-    public void before() throws Exception
+    private void start(HttpServlet servlet) throws Exception
     {
         _server = new Server();
         _connector = new ServerConnector(_server);
@@ -70,15 +71,7 @@ public class SizeLimitHandlerServletTest
         sizeLimitHandler.setHandler(gzipHandler);
         contextHandler.insertHandler(sizeLimitHandler);
 
-        contextHandler.addServlet(new HttpServlet()
-        {
-            @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
-            {
-                String requestContent = IO.toString(req.getInputStream());
-                resp.getWriter().print(requestContent);
-            }
-        }, "/");
+        contextHandler.addServlet(servlet, "/");
 
         _server.setHandler(contextHandler);
         _server.start();
@@ -98,6 +91,16 @@ public class SizeLimitHandlerServletTest
     @Test
     public void testGzippedEcho() throws Exception
     {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                String requestContent = IO.toString(req.getInputStream());
+                resp.getWriter().print(requestContent);
+            }
+        });
+
         String content = "x".repeat(SIZE_LIMIT * 2);
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
@@ -122,6 +125,16 @@ public class SizeLimitHandlerServletTest
     @Test
     public void testNormalEcho() throws Exception
     {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                String requestContent = IO.toString(req.getInputStream());
+                resp.getWriter().print(requestContent);
+            }
+        });
+
         String content = "x".repeat(SIZE_LIMIT * 2);
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
@@ -134,24 +147,86 @@ public class SizeLimitHandlerServletTest
     @Test
     public void testGzipEchoNoAcceptEncoding() throws Exception
     {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                String requestContent = IO.toString(req.getInputStream());
+                // The content will be buffered, and the implementation
+                // will try to flush it, failing because of SizeLimitHandler.
+                resp.getWriter().print(requestContent);
+            }
+        });
+
         String content = "x".repeat(SIZE_LIMIT * 2);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
 
-        AtomicInteger contentReceived = new AtomicInteger();
-        CompletableFuture<Throwable> failure = new CompletableFuture<>();
+        StringBuilder contentReceived = new StringBuilder();
+        CompletableFuture<Result> resultFuture = new CompletableFuture<>();
         _client.POST(uri)
             .headers(httpFields -> httpFields.add(HttpHeader.CONTENT_ENCODING, "gzip"))
             .body(gzipContent(content))
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                contentReceived.addAndGet(chunk.getByteBuffer().remaining());
-                chunk.release();
+                contentReceived.append(BufferUtil.toString(chunk.getByteBuffer()));
                 demander.run();
-            }).send(result -> failure.complete(result.getFailure()));
+            })
+            .send(resultFuture::complete);
 
-        Throwable exception = failure.get(5, TimeUnit.SECONDS);
-        assertThat(exception, instanceOf(EOFException.class));
-        assertThat(contentReceived.get(), lessThan(SIZE_LIMIT));
+        Result result = resultFuture.get(5, TimeUnit.SECONDS);
+        assertNotNull(result);
+        assertThat(result.getResponse().getStatus(), equalTo(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(contentReceived.toString(), containsString("Response body is too large"));
+    }
+
+    @Test
+    public void testGzipEchoNoAcceptEncodingFlush() throws Exception
+    {
+        CountDownLatch flushFailureLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                String requestContent = IO.toString(req.getInputStream());
+                // The content will be buffered.
+                resp.getWriter().print(requestContent);
+                try
+                {
+                    // The flush will fail because exceeds
+                    // the SizeLimitHandler configuration.
+                    resp.flushBuffer();
+                }
+                catch (Throwable x)
+                {
+                    flushFailureLatch.countDown();
+                    throw x;
+                }
+            }
+        });
+
+        String content = "x".repeat(SIZE_LIMIT * 2);
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
+
+        StringBuilder contentReceived = new StringBuilder();
+        CompletableFuture<Result> resultFuture = new CompletableFuture<>();
+        _client.POST(uri)
+            .headers(httpFields -> httpFields.add(HttpHeader.CONTENT_ENCODING, "gzip"))
+            .body(gzipContent(content))
+            .onResponseContentAsync((response, chunk, demander) ->
+            {
+                contentReceived.append(BufferUtil.toString(chunk.getByteBuffer()));
+                demander.run();
+            })
+            .send(resultFuture::complete);
+
+        assertTrue(flushFailureLatch.await(5, TimeUnit.SECONDS));
+
+        Result result = resultFuture.get(5, TimeUnit.SECONDS);
+        assertNotNull(result);
+        assertThat(result.getResponse().getStatus(), equalTo(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(contentReceived.toString(), containsString("Response body is too large"));
     }
 
     public static Request.Content gzipContent(String content) throws Exception

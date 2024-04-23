@@ -79,7 +79,7 @@ public class HttpReceiverOverHTTPTest
         client = new HttpClient();
         client.setHttpCompliance(compliance);
         client.start();
-        destination = new HttpDestination(client, new Origin("http", "localhost", 8080), false);
+        destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
         endPoint = new ByteArrayEndPoint();
         connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>());
@@ -247,14 +247,20 @@ public class HttpReceiverOverHTTPTest
                     {
                         return new HttpReceiverOverHTTP(this)
                         {
+                            private boolean once = true;
+
                             @Override
                             protected void fillInterested()
                             {
-                                // Verify that the buffer has been released
-                                // before fillInterested() is called.
-                                assertNull(getResponseBuffer());
-                                // Fill the endpoint so receive is called again.
-                                endPoint.addInput("X");
+                                if (once)
+                                {
+                                    once = false;
+                                    // Verify that the buffer has been released
+                                    // before fillInterested() is called.
+                                    assertNull(getResponseBuffer());
+                                    // Fill the endpoint so receive is called again.
+                                    endPoint.addInput("X");
+                                }
                                 super.fillInterested();
                             }
                         };

@@ -14,14 +14,20 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,6 +36,7 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -43,18 +50,20 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -72,6 +81,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -111,6 +121,36 @@ public class WebAppContextTest
         server.addConnector(connector);
         lifeCycles.add(server);
         return server;
+    }
+
+    /**
+     * Create a webapp as a war on the fly.
+     *
+     * @param tempDir the directory into which the war will be generated
+     * @param name the name of the war
+     * @return the Path of the generated war
+     *
+     * @throws Exception if the war could not be created
+     */
+    private Path createWar(Path tempDir, String name) throws Exception
+    {
+        // Create war on the fly
+        Path testWebappDir = MavenPaths.projectBase().resolve("src/test/webapp");
+        assertTrue(Files.exists(testWebappDir));
+        Path warFile = tempDir.resolve(name);
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(testWebappDir, root);
+        }
+
+        return warFile;
     }
 
     @Test
@@ -251,20 +291,20 @@ public class WebAppContextTest
      *
      * @throws Exception on test failure
      */
-    @Disabled // Reenabled when cross context dispatch is implemented.
     @Test
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
         Handler.Sequence handlers = new Handler.Sequence();
         WebAppContext contextA = new WebAppContext(".", "/A");
-
         contextA.addServlet(ServletA.class, "/s");
+        contextA.setCrossContextDispatchSupported(true);
         handlers.addHandler(contextA);
-        WebAppContext contextB = new WebAppContext(".", "/B");
 
+        WebAppContext contextB = new WebAppContext(".", "/B");
         contextB.addServlet(ServletB.class, "/s");
         contextB.setContextWhiteList("/doesnotexist", "/B/s");
+        contextB.setCrossContextDispatchSupported(true);
         handlers.addHandler(contextB);
 
         server.setHandler(handlers);
@@ -479,23 +519,18 @@ public class WebAppContextTest
     }
 
     @Test
-    public void testBaseResourceAbsolutePath() throws Exception
+    public void testBaseResourceAbsolutePath(WorkDir workDir) throws Exception
     {
         Server server = newServer();
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-
-        // TODO this is not testing what it looks like.  The war should be set with
-        //      setWar (or converted to a jar:file before calling setBaseResource)
-        //      However the war is currently a javax war, so it needs to be converted.
-        new Throwable("fixme").printStackTrace();
-        Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
+        Path warPath = createWar(workDir.getEmptyPathDir(), "test.war");
         warPath = warPath.toAbsolutePath();
         assertTrue(warPath.isAbsolute(), "Path should be absolute: " + warPath);
         // Use String reference to war
         // On Unix / Linux this should have no issue.
-        // On Windows with fully qualified paths such as "E:\mybase\webapps\dump.war" the
+        // On Windows with fully qualified paths such as "E:\mybase\webapps\test.war" the
         // resolution of the Resource can trigger various URI issues with the "E:" portion of the provided String.
         context.setBaseResourceAsPath(warPath);
 
@@ -692,11 +727,15 @@ public class WebAppContextTest
     @MethodSource("extraClasspathGlob")
     public void testExtraClasspathGlob(String description, String extraClasspathGlobReference) throws Exception
     {
+        Path testPath = MavenPaths.targetTestDir("testExtraClasspathGlob");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+
         Server server = newServer();
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
+        Path warPath = createWar(testPath, "test.war");
         context.setBaseResourceAsPath(warPath);
         context.setExtraClasspath(extraClasspathGlobReference);
 
@@ -765,11 +804,15 @@ public class WebAppContextTest
     @MethodSource("extraClasspathDir")
     public void testExtraClasspathDir(String extraClassPathReference) throws Exception
     {
+        Path testPath = MavenPaths.targetTestDir("testExtraClasspathDir");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+
         Server server = newServer();
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
+        Path warPath = createWar(testPath, "test.war");
         context.setBaseResourceAsPath(warPath);
 
         context.setExtraClasspath(extraClassPathReference);
@@ -792,6 +835,99 @@ public class WebAppContextTest
     }
 
     @Test
+    public void testRestartWebApp(WorkDir workDir) throws Exception
+    {
+        Server server = newServer();
+
+        // Create war
+        Path tempDir = workDir.getEmptyPathDir();
+        Path testWebappDir = MavenPaths.projectBase().resolve("src/test/webapp");
+        assertTrue(Files.exists(testWebappDir));
+        Path warFile = tempDir.resolve("demo.war");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(testWebappDir, root);
+        }
+
+        // Create WebAppContext
+        WebAppContext context = new WebAppContext();
+        ResourceFactory resourceFactory = context.getResourceFactory();
+        Resource warResource = resourceFactory.newResource(warFile);
+        context.setContextPath("/");
+        context.setWarResource(warResource);
+        context.setExtractWAR(true);
+
+        server.setHandler(context);
+        server.start();
+
+        // Should not have failed the start of the WebAppContext
+        assertTrue(context.isAvailable(), "WebAppContext should be available");
+
+        // Test WebAppClassLoader contents for expected directory reference
+        List<String> actualRefs = getWebAppClassLoaderUrlRefs(context);
+        String[] expectedRefs = new String[]{
+            "/webapp/WEB-INF/classes/",
+            "/webapp/WEB-INF/lib/acme.jar",
+            "/webapp/WEB-INF/lib/alpha.jar",
+            "/webapp/WEB-INF/lib/omega.jar"
+        };
+
+        assertThat("URLs (sub) refs", actualRefs, containsInAnyOrder(expectedRefs));
+
+        // Simulate a reload
+        LOG.info("Stopping Initial Context");
+        context.stop();
+        LOG.info("Stopped Initial Context - waiting 2 seconds");
+        Thread.sleep(2000);
+        LOG.info("Touch War File: {}", warFile);
+        touch(warFile);
+        LOG.info("ReStarting Context");
+        context.start();
+
+        actualRefs = getWebAppClassLoaderUrlRefs(context);
+        expectedRefs = new String[]{
+            "/webapp/WEB-INF/classes/",
+            "/webapp/WEB-INF/lib/acme.jar",
+            "/webapp/WEB-INF/lib/alpha.jar",
+            "/webapp/WEB-INF/lib/omega.jar"
+        };
+        assertThat("URLs (sub) refs", actualRefs, containsInAnyOrder(expectedRefs));
+    }
+
+    private void touch(Path path) throws IOException
+    {
+        FileTime now = FileTime.fromMillis(System.currentTimeMillis());
+        Files.setLastModifiedTime(path, now);
+    }
+
+    private List<String> getWebAppClassLoaderUrlRefs(WebAppContext context)
+    {
+        ClassLoader contextClassLoader = context.getClassLoader();
+        assertThat(contextClassLoader, instanceOf(WebAppClassLoader.class));
+        WebAppClassLoader webAppClassLoader = (WebAppClassLoader)contextClassLoader;
+        String webappTempDir = context.getTempDirectory().toString();
+        List<String> actualRefs = new ArrayList<>();
+        URL[] urls = webAppClassLoader.getURLs();
+        for (URL url: urls)
+        {
+            String ref = url.toExternalForm();
+            int idx = ref.indexOf(webappTempDir);
+            // strip temp directory from URL (to make test easier to write)
+            if (idx >= 0)
+                ref = ref.substring(idx + webappTempDir.length());
+            actualRefs.add(ref);
+        }
+        return actualRefs;
+    }
+
+    @Test
     public void testSetServerPropagation()
     {
         Server server = new Server();
@@ -801,5 +937,63 @@ public class WebAppContextTest
         server.setHandler(new Handler.Sequence(context, handler));
 
         assertThat(handler.getServer(), sameInstance(server));
+    }
+
+    @Test
+    public void testAddServerClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
+
+        WebAppContext.addServerClasses(server, testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+
+        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+        Path warPath = createWar(testPath, "test.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> serverClasses = List.of(context.getHiddenClasses());
+        assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
+        assertThat("Should have pattern from defaults", serverClasses, hasItem("org.eclipse.jetty."));
+        assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
+        for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
+            assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
+    }
+
+    @Test
+    public void testAddSystemClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
+
+        WebAppContext.addSystemClasses(server, testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+        Path warPath = createWar(testPath, "test.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> systemClasses = List.of(context.getProtectedClasses());
+        assertThat("Should have environment specific test pattern", systemClasses, hasItem(testPattern));
+        assertThat("Should have pattern from defaults", systemClasses, hasItem("javax."));
+        assertThat("Should have pattern from defaults", systemClasses, hasItem("jakarta."));
+        assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
+        for (String defaultSystemClass: WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
+            assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
     }
 }

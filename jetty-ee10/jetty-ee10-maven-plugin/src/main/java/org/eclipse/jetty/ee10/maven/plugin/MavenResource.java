@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
@@ -209,14 +208,6 @@ public class MavenResource extends Resource
         if (_resource == null)
             return null;
         return _resource.newInputStream();
-    }
-
-    @Override
-    public ReadableByteChannel newReadableByteChannel() throws IOException
-    {
-        if (_resource == null)
-            return null;
-        return _resource.newReadableByteChannel();
     }
 
     @Override
