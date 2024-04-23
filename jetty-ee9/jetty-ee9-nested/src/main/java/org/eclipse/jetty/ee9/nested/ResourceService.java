@@ -40,8 +40,8 @@ import org.eclipse.jetty.ee9.nested.resource.HttpContentRangeWriter;
 import org.eclipse.jetty.ee9.nested.resource.RangeWriter;
 import org.eclipse.jetty.ee9.nested.resource.SeekableByteChannelRangeWriter;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.EtagUtils;
+import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -616,7 +616,8 @@ public class ResourceService
                     return false;
                 }
 
-                long ifmsl = DateParser.parseDate(ifms);
+                // TODO: what should we do when we get a crappy date?
+                long ifmsl = HttpDateTime.parseToEpoch(ifms);
                 if (ifmsl != -1)
                 {
                     long lm = content.getResource().lastModified().toEpochMilli();
@@ -631,7 +632,8 @@ public class ResourceService
             // Parse the if[un]modified dates and compare to resource
             if (ifums != null && ifm == null)
             {
-                long ifumsl = DateParser.parseDate(ifums);
+                // TODO: what should we do when we get a crappy date?
+                long ifumsl = HttpDateTime.parseToEpoch(ifums);
                 if (ifumsl != -1)
                 {
                     long lm = content.getResource().lastModified().toEpochMilli();
