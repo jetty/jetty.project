@@ -101,9 +101,9 @@
 
   <profiles>
     <profile>
-      <id>enable-incubator-foreign</id>
+      <id>enable-foreign</id>
       <activation>
-        <jdk>[17,19)</jdk>
+        <jdk>[22,)</jdk>
       </activation>
       <build>
         <plugins>
@@ -112,8 +112,7 @@
             <configuration>
               <argLine>@{argLine}
                 ${jetty.surefire.argLine}
-                --add-modules jdk.incubator.foreign
-                --enable-native-access ALL-UNNAMED</argLine>
+                --enable-native-access org.eclipse.jetty.quic.quiche.foreign</argLine>
             </configuration>
           </plugin>
         </plugins>

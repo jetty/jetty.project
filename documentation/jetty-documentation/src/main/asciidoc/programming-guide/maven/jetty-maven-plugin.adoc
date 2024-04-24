@@ -43,7 +43,7 @@ However, `jetty:run-war` is designed to be run at the command line, whereas `jet
 ====
 While the Jetty Maven Plugin can be very useful for development we do not recommend its use in a _production capacity_.
 In order for the plugin to work it needs to leverage many internal Maven APIs and Maven itself it not a production deployment tool.
-We recommend either the traditional link:{DISTGUIDE}[distribution] deployment approach or using xref:advanced-embedding[embedded Jetty].
+We recommend either the traditional xrefr:og-deploy[distribution] deployment approach or using xref:og-arch[embedded Jetty].
 ====
 
 [[get-up-and-running]]
@@ -138,11 +138,11 @@ host:::
 The particular interface for the connector to listen on.
 By default, all interfaces.
 name:::
-The name of the connector, which is useful for xref:serving-webapp-from-particular-port[configuring contexts to respond only on particular connectors].
+The name of the connector, which is useful for configuring contexts to respond only on particular connectors.
 idleTimeout:::
 Maximum idle time for a connection.
-You could instead configure the connectors in a standard xref:jetty-xml-config[Jetty xml config file] and put its location into the `jettyXml` parameter.
-Note that since Jetty 9.0 it is no longer possible to configure a xref:maven-config-https[https connector] directly in the pom.xml: you need to xref:maven-config-https[use Jetty xml config files to do it].
+You could instead configure the connectors in a standard xref:og-xml[jetty xml config file] and put its location into the `jettyXml` parameter.
+Note that since Jetty 9.0 it is no longer possible to configure a https connector directly in the pom.xml: you need to use jetty xml config files to do it.
 loginServices::
 Optional.
 A list of `org.eclipse.jetty.security.LoginService` implementations. Note that there is no default realm.
@@ -158,7 +158,7 @@ There are three other ways to configure the `RequestLog`:
   * In a context xml config file, as specified in the `contextXml` parameter.
   * In the `webApp` element.
 +
-See xref:configuring-jetty-request-logs[Configuring Request Logs] for more information.
+See xref:pg-server-http-request-logging[Configuring Request Logs] for more information.
 server::
 Optional as of Jetty 9.3.1.
 This would configure an instance of `org.eclipse.jetty.server.Server` for the plugin to use, however it is usually _not_ necessary to configure this, as the plugin will automatically configure one for you.
@@ -366,12 +366,12 @@ See the section on xref:using-overlaid-wars[overlaid wars] for more information.
 containerIncludeJarPattern;;
 Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
-This is analogous to the context attribute xref:container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:container-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:og-container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
 webInfIncludeJarPattern;;
 Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
 You can make this pattern more restrictive to only match certain jars by using this setter.
-This is analogous to the context attribute xref:web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:web-inf-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:og-web-inf-include-jar-pattern[here].
 contextXml::
 The path to a context xml file that is applied to your webapp AFTER the `webApp` element.
 classesDirectory::
@@ -484,12 +484,12 @@ You can use this to replace or add configuration.
 containerIncludeJarPattern:::
 Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
-This is analogous to the context attribute xref:container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:container-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:og-container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
 webInfIncludeJarPattern:::
 Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
 You can make this pattern more restrictive to only match certain jars by using this setter.
-This is analogous to the context attribute xref:web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:web-inf-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:og-web-inf-include-jar-pattern[here].
 tempDirectory:::
 The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your webapp is running.
 The default is `${project.build.outputDirectory}/tmp`.
@@ -591,12 +591,12 @@ See the section on xref:using-overlaid-wars[overlaid wars] for more information.
 containerIncludeJarPattern;;
 Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
-This is analogous to the context attribute xref:container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:container-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:og-container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
 webInfIncludeJarPattern;;
 Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
 You can make this pattern more restrictive to only match certain jars by using this setter.
-This is analogous to the context attribute xref:web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:web-inf-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:og-web-inf-include-jar-pattern[here].
 contextXml::
 The path to a context xml file that is applied to your webapp AFTER the `webApp` element.
 classesDirectory::
@@ -662,12 +662,12 @@ You can use this to replace or add configuration.
 containerIncludeJarPattern:::
 Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
-This is analogous to the context attribute xref:container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:container-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:og-container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
 webInfIncludeJarPattern:::
 Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
 You can make this pattern more restrictive to only match certain jars by using this setter.
-This is analogous to the context attribute xref:web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:web-inf-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:og-web-inf-include-jar-pattern[here].
 tempDirectory:::
 The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your webapp is running.
 The default is `${project.build.outputDirectory}/tmp`.
@@ -743,7 +743,7 @@ No programmatic declarations of servlets, filters and listeners can be taken int
 You can calculate the effective web.xml for any pre-built war file by setting the `&lt;webApp&gt;&lt;war&gt;` parameter, or you can calculate it for the unassembled webapp by setting all of the usual `&lt;webApp&gt;` parameters as for `jetty:run`.
 
 Other useful information about your webapp that is produced as part of the analysis is also stored as context parameters in the effective-web.xml.
-The effective-web.xml can be used in conjunction with the xref:quickstart-webapp[Quickstart] feature to quickly start your webapp (note that Quickstart is not appropriate for the mvn Jetty goals).
+The effective-web.xml can be used in conjunction with the xref:og-quickstart[Quickstart] feature to quickly start your webapp (note that Quickstart is not appropriate for the mvn jetty goals).
 
 The effective web.xml from these combined sources is generated into a file, which by default is `target/effective-web.xml`, but can be changed by setting the `effectiveWebXml` configuration parameter.
 
@@ -768,12 +768,12 @@ You can use this to replace or add configuration.
 containerIncludeJarPattern:::
 Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
-This is analogous to the context attribute xref:container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:container-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented xref:og-container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
 webInfIncludeJarPattern:::
 Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
 You can make this pattern more restrictive to only match certain jars by using this setter.
-This is analogous to the context attribute xref:web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:web-inf-include-jar-pattern[here].
+This is analogous to the context attribute xref:og-web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented xref:og-web-inf-include-jar-pattern[here].
 tempDirectory:::
 The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your webapp is running.
 The default is `${project.build.outputDirectory}/tmp`.

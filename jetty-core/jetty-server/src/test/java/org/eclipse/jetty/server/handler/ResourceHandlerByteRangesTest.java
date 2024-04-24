@@ -174,7 +174,7 @@ public class ResourceHandlerByteRangesTest
             {
                 return path -> new ResourceHttpContent(memResource, "text/plain")
                 {
-                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
+                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
                     @Override
                     public ByteBuffer getByteBuffer()
@@ -215,7 +215,7 @@ public class ResourceHandlerByteRangesTest
             {
                 return path -> new ResourceHttpContent(memResource, "text/plain")
                 {
-                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
+                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
                     @Override
                     public ByteBuffer getByteBuffer()

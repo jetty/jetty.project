@@ -21,5 +21,5 @@ basehome:modules/logging/jetty
 lib/logging/jetty-slf4j-impl-${jetty.version}.jar
 
 [ini]
-jetty.webapp.addServerClasses+=,org.eclipse.jetty.logging.
-jetty.webapp.addServerClasses+=,${jetty.home.uri}/lib/logging/
+jetty.webapp.addHiddenClasses+=,org.eclipse.jetty.logging.
+jetty.webapp.addHiddenClasses+=,${jetty.home.uri}/lib/logging/

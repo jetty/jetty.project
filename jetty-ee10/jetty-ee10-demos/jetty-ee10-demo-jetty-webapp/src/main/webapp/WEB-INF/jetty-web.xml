@@ -9,13 +9,13 @@ org.eclipse.jetty.ee10.servlet.WebApplicationContext object
 -->
 
 <Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
-  <Get name="ServerClassMatcher">
+  <Get name="HiddenClassMatcher">
     <Call name="exclude">
       <Arg>
         <Array type="String">
-	  <Item>org.eclipse.jetty.util.</Item>
-	  <Item>org.eclipse.jetty.ee10.servlets.</Item>
-	</Array>
+          <Item>org.eclipse.jetty.util.</Item>
+          <Item>org.eclipse.jetty.ee10.servlets.</Item>
+        </Array>
       </Arg>
     </Call>
   </Get>

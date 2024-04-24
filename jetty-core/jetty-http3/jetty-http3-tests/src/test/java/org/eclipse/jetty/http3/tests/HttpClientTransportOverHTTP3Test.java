@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.tests;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -30,6 +32,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -236,4 +240,45 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testDynamicTableReference() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                HttpFields.Mutable headers = response.getHeaders();
+                headers.add("header1", "value1");
+                headers.add("header2", "value2");
+                headers.add("header3", "value3");
+                headers.add("header4", "value4");
+                headers.add("header5", "value5");
+
+                // This header should reference the named header already in the dynamic table.
+                headers.add("header5", "value6");
+                response.write(true, null, callback);
+                return true;
+            }
+        });
+
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertHeader(response, "header1", "value1");
+        assertHeader(response, "header2", "value2");
+        assertHeader(response, "header3", "value3");
+        assertHeader(response, "header4", "value4");
+        assertHeader(response, "header5", "value5", "value6");
+    }
+
+    private void assertHeader(ContentResponse response, String header, String... values)
+    {
+        assertThat(response.getHeaders().getValuesList(header), equalTo(Arrays.asList(values)));
+    }
+
 }

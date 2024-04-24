@@ -191,6 +191,112 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("jettyImages")
+    public void testStartRestartStopJettyBase(ImageFromDSL jettyImage) throws Exception
+    {
+        ensureParentImagesExist(jettyImage);
+
+        try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
+        {
+            genericContainer.withImagePullPolicy(PullPolicy.defaultPolicy());
+            genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
+
+            genericContainer.withExposedPorts(80, 8080) // jetty
+                .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
+                .withStartupAttempts(2)
+                .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
+                .start();
+
+            LOG.info("Started: " + jettyImage.getDockerImageName());
+
+            System.err.println("== jetty.sh start ==");
+            Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
+            assertThat(result.getExitCode(), is(0));
+            /*
+             * Example successful output
+             * ----
+             * STDOUT:
+             * Starting Jetty: . started
+             * OK Wed Oct 18 19:29:35 UTC 2023
+             * ----
+             */
+            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
+                allOf(
+                    containsString("Starting Jetty:"),
+                    containsString("\nOK ")
+                ));
+
+            startHttpClient();
+
+            URI containerUriRoot = URI.create("http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
+            LOG.debug("Container URI Root: {}", containerUriRoot);
+
+            System.err.println("== Attempt GET request to service ==");
+            ContentResponse response = client.GET(containerUriRoot);
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus(), new ResponseDetails(response));
+            assertThat(response.getContentAsString(), containsString("Powered by Eclipse Jetty:// Server"));
+
+            System.err.println("== jetty.sh status (should be running) ==");
+            result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
+            assertThat(result.getExitCode(), is(0));
+            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
+                containsString("Jetty running pid"));
+
+            System.err.println("== jetty.sh restart ==");
+            result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "restart");
+            assertThat(result.getExitCode(), is(0));
+            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
+                allOf(
+                    containsString("Starting Jetty:"),
+                    containsString("\nOK ")
+                ));
+
+            System.err.println("== Attempt GET request to service ==");
+            response = client.GET(containerUriRoot);
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus(), new ResponseDetails(response));
+            assertThat(response.getContentAsString(), containsString("Powered by Eclipse Jetty:// Server"));
+
+            System.err.println("== jetty.sh status (should be running) ==");
+            result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
+            assertThat(result.getExitCode(), is(0));
+            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
+                containsString("Jetty running pid"));
+
+            System.err.println("== jetty.sh stop ==");
+            result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
+            assertThat(result.getExitCode(), is(0));
+            /* Looking for output from jetty.sh indicating a stopped jetty.
+             * STDOUT Example 1
+             * ----
+             * Stopping Jetty: OK\n
+             * ----
+             * STOUT Example 2
+             * ----
+             * Stopping Jetty: .Killed 12345\n
+             * OK\n
+             * ----
+             */
+            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
+                matchesRegex("Stopping Jetty: .*[\n]?OK[\n]"));
+
+            System.err.println("== jetty.sh status (should be stopped) ==");
+            result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
+            assertThat(result.getExitCode(), is(1));
+            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
+                containsString("Jetty NOT running"));
+
+            System.err.println("== Attempt GET request to non-existent service ==");
+            client.setConnectTimeout(1000);
+            Exception failedGetException = assertThrows(Exception.class, () -> client.GET(containerUriRoot));
+            // GET failure can result in either exception below (which one is based on timing / race)
+            assertThat(failedGetException, anyOf(
+                instanceOf(ExecutionException.class),
+                instanceOf(AsynchronousCloseException.class))
+            );
+        }
+    }
+
     private void ensureParentImagesExist(ImageFromDSL jettyImage)
     {
         // The build stack for images
