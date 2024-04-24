@@ -952,7 +952,10 @@ public class HttpChannelState implements HttpChannel, Components
                 if (!error)
                 {
                     if (httpChannelState._onContentAvailable != null)
+                    {
+                        LOG.warn("demand pending state={} stream={}", httpChannelState, stream);
                         throw new IllegalArgumentException("demand pending");
+                    }
                     httpChannelState._onContentAvailable = demandCallback;
 
                     if (httpChannelState._expects100Continue && httpChannelState._response._writeCallback == null)
