@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
@@ -50,10 +51,11 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
+            .jvmArgs(List.of("-Dorg.eclipse.jetty.deploy.LEVEL=DEBUG"))
             .build();
 
         String[] setupArgs = {
-            "--add-to-start=http,ee10-webapp,ee10-deploy,disable-urlcache"
+            "--add-modules=http,ee10-webapp,ee10-deploy,disable-urlcache"
         };
 
         try (JettyHomeTester.Run setupRun = distribution.start(setupArgs))
@@ -118,10 +120,10 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 run2.getLogs().clear();
                 touch(warXmlPath);
 
-                // Wait for reload
-                // Started oeje10w.WebAppContext@3fec304{test,/test,b=file:///h
+                // Wait for reload to start context
                 assertTrue(run2.awaitConsoleLogsFor("Started oeje10w.WebAppContext@", START_TIMEOUT, TimeUnit.SECONDS));
-                assertTrue(run2.awaitConsoleLogsFor("{test,/test,", START_TIMEOUT, TimeUnit.SECONDS));
+                // wait for deployer node to complete so context is Started not Starting
+                assertTrue(run2.awaitConsoleLogsFor("Executing Node Node[started]", START_TIMEOUT, TimeUnit.SECONDS));
 
                 // Is webapp still there?
                 response = client.GET("http://localhost:" + port + "/test/log/");
