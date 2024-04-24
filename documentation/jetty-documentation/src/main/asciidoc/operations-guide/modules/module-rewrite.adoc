@@ -30,6 +30,8 @@ Rules can be matched against request data such as the request URI or the request
 
 The rule file `$JETTY_BASE/etc/jetty-rewrite-rules.xml` is initially empty, but contains commented examples of rules that you can add.
 
+The list of available rules can be found link:{javadoc-url}/org/eclipse/jetty/rewrite/handler/package-summary.html[here].
+
 An example of `jetty-rewrite-rules.xml` is the following:
 
 [source,xml]
