@@ -1593,4 +1593,32 @@ public class HTTPServerDocs
         }
         // end::continue100[]
     }
+
+    public void requestCustomizer() throws Exception
+    {
+        // tag::requestCustomizer[]
+        Server server = new Server();
+
+        // Configure the secure connector.
+        HttpConfiguration httpsConfig = new HttpConfiguration();
+
+        // Add the SecureRequestCustomizer.
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // Configure the SslContextFactory with the KeyStore information.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+        // Configure the Connector to speak HTTP/1.1 and HTTP/2.
+        HttpConnectionFactory h1 = new HttpConnectionFactory(httpsConfig);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(h1.getProtocol());
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+        ServerConnector connector = new ServerConnector(server, ssl, alpn, h2, h1);
+        server.addConnector(connector);
+
+        server.start();
+        // end::requestCustomizer[]
+    }
 }
