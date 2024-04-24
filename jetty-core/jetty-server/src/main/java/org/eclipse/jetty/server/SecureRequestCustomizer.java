@@ -67,7 +67,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     /**
      * @param sniHostCheck True if the SNI Host name must match.
      * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
-     * @param stsIncludeSubdomains If true, a include subdomain property is sent with any Strict-Transport-Security header
+     * @param stsIncludeSubdomains If true, an include subdomain property is sent with any Strict-Transport-Security header
      */
     public SecureRequestCustomizer(
         @Name("sniHostCheck") boolean sniHostCheck,
@@ -81,7 +81,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * @param sniRequired True if a SNI certificate is required.
      * @param sniHostCheck True if the SNI Host name must match.
      * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
-     * @param stsIncludeSubdomains If true, a include subdomain property is sent with any Strict-Transport-Security header
+     * @param stsIncludeSubdomains If true, an include subdomain property is sent with any Strict-Transport-Security header
      */
     public SecureRequestCustomizer(
         @Name("sniRequired") boolean sniRequired,

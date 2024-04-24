@@ -200,7 +200,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session does not exist
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -245,7 +245,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session does not exist
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -287,8 +287,8 @@ public class CreationTest
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            //check the session
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
             assertThat(response.getHeaders().getValuesList(HttpHeader.SET_COOKIE).size(), Matchers.is(1));
         }
         finally
@@ -338,8 +338,8 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the sessions exist persisted
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertTrue(ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -387,9 +387,9 @@ public class CreationTest
             ContentResponse response = client.GET(url + "?action=forwardinv");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist 
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertFalse(ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            //check that the session does not exist
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {

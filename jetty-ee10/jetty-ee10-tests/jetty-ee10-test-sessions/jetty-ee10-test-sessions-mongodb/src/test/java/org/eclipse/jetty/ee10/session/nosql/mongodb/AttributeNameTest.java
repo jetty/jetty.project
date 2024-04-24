@@ -77,6 +77,7 @@ public class AttributeNameTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cacheFactory.setSaveOnCreate(true);
 
         MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory(DB_NAME, COLLECTION_NAME);
         storeFactory.setGracePeriodSec(scavengePeriod);

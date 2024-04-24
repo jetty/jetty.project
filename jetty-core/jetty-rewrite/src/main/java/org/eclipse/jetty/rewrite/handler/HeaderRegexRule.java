@@ -66,7 +66,7 @@ public class HeaderRegexRule extends RegexRule
     }
 
     /**
-     * Set true to add the response header, false to put the response header..
+     * Set true to add the response header, false to put the response header.
      * @param add true to add the response header, false to put the response header.
      */
     public void setAdd(boolean add)
