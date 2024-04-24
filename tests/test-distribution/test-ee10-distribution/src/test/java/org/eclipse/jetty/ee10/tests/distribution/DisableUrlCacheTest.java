@@ -28,6 +28,8 @@ import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -38,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Isolated
 public class DisableUrlCacheTest extends AbstractJettyHomeTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DisableUrlCacheTest.class);
+
     @Test
     public void testReloadWebAppWithLog4j2() throws Exception
     {
@@ -65,6 +69,9 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             Path tempDir = distribution.getJettyBase().resolve("work");
             FS.ensureEmpty(tempDir);
 
+            Path resourcesDir = distribution.getJettyBase().resolve("resources");
+            FS.ensureEmpty(resourcesDir);
+
             Path webappsDir = distribution.getJettyBase().resolve("webapps");
             String warXml = """
                 <?xml version="1.0"  encoding="ISO-8859-1"?>
@@ -78,6 +85,17 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 """;
             Path warXmlPath = webappsDir.resolve("test.xml");
             Files.writeString(warXmlPath, warXml, StandardCharsets.UTF_8);
+
+            Path loggingFile = resourcesDir.resolve("jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=INFO
+                org.eclipse.jetty.deploy.LEVEL=DEBUG
+                org.eclipse.jetty.ee10.webapp.LEVEL=DEBUG
+                org.eclipse.jetty.ee10.webapp.WebAppClassLoader.LEVEL=INFO
+                org.eclipse.jetty.ee10.servlet.LEVEL=DEBUG
+                """;
+            Files.writeString(loggingFile, loggingConfig, StandardCharsets.UTF_8);
+
 
             int port = Tester.freePort();
             String[] runArgs = {
@@ -101,12 +119,14 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 touch(warXmlPath);
 
                 // Wait for reload
+                // Started oeje10w.WebAppContext@3fec304{test,/test,b=file:///h
                 assertTrue(run2.awaitConsoleLogsFor("Started oeje10w.WebAppContext@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("{test,/test,", START_TIMEOUT, TimeUnit.SECONDS));
 
                 // Is webapp still there?
                 response = client.GET("http://localhost:" + port + "/test/log/");
-                assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 content = response.getContentAsString();
+                assertThat(content, response.getStatus(), is(HttpStatus.OK_200));
                 assertThat(content, containsString("GET at LogServlet"));
             }
         }
@@ -114,6 +134,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
 
     private void touch(Path path) throws IOException
     {
+        LOG.info("Touch: {}", path);
         FileTime now = FileTime.fromMillis(System.currentTimeMillis() + 2000);
         Files.setLastModifiedTime(path, now);
     }

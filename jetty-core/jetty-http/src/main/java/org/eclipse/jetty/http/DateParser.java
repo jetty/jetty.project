@@ -22,7 +22,9 @@ import org.eclipse.jetty.util.thread.ThreadIdPool;
 
 /**
  * ThreadLocal data parsers for HTTP style dates
+ * @deprecated use {@link HttpDateTime} instead
  */
+@Deprecated(since = "12.0.9", forRemoval = true)
 public class DateParser
 {
     private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
@@ -47,6 +49,10 @@ public class DateParser
         "EEE dd-MMM-yy HH:mm:ss zzz", "EEE dd-MMM-yy HH:mm:ss"
     };
 
+    /**
+     * @deprecated use {@link HttpDateTime#parseToEpoch(String)} instead
+     */
+    @Deprecated(since = "12.0.9", forRemoval = true)
     public static long parseDate(String date)
     {
         return DATE_PARSER.apply(DateParser::new, DateParser::parse, date);
