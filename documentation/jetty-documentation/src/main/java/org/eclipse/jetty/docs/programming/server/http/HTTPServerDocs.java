@@ -92,7 +92,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -332,21 +331,18 @@ public class HTTPServerDocs
 
         // Set up a listener so that when the secure connector starts,
         // it configures the other connectors that have not started yet.
-        secureConnector.addEventListener(new LifeCycle.Listener()
+        secureConnector.addEventListener(new NetworkConnector.Listener()
         {
             @Override
-            public void lifeCycleStarted(LifeCycle lifeCycle)
+            public void onOpen(NetworkConnector connector)
             {
-                if (lifeCycle instanceof NetworkConnector networkConnector)
-                {
-                    int port = networkConnector.getLocalPort();
+                int port = connector.getLocalPort();
 
-                    // Configure the plain connector for secure redirects from http to https.
-                    plainConfig.setSecurePort(port);
+                // Configure the plain connector for secure redirects from http to https.
+                plainConfig.setSecurePort(port);
 
-                    // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
-                    http3Connector.setPort(port);
-                }
+                // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
+                http3Connector.setPort(port);
             }
         });
 
@@ -1134,6 +1130,8 @@ public class HTTPServerDocs
 
         // Add the CrossOriginHandler to protect from CSRF attacks.
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://domain.com"));
+        crossOriginHandler.setAllowCredentials(true);
         server.setHandler(crossOriginHandler);
 
         // Create a ServletContextHandler with contextPath.
@@ -1384,14 +1382,14 @@ public class HTTPServerDocs
             }
 
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 // Retrieve the before handling nanoTime.
                 long beforeHandlingNanoTime = (long)request.getAttribute("beforeHandlingNanoTime");
 
-                // Record the request processing time.
+                // Record the request processing time and the status that was sent back to the client.
                 long processingTime = NanoTime.millisSince(beforeHandlingNanoTime);
-                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms", request, processingTime);
+                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms and ended with status code %d", request, processingTime, status);
             }
         }
 

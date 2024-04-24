@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.7-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests</artifactId>
@@ -13,6 +13,7 @@
   <modules>
     <module>jetty-testers</module>
     <module>jetty-jmh</module>
+    <module>jetty-test-multipart</module>
     <module>jetty-test-session-common</module>
     <module>test-distribution</module>
     <module>test-integration</module>

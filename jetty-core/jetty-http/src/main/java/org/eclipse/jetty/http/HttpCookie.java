@@ -14,9 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -921,22 +918,19 @@ public interface HttpCookie
      */
     static String formatExpires(Instant expires)
     {
-        return DateTimeFormatter.RFC_1123_DATE_TIME
-            .withZone(ZoneOffset.UTC)
-            .format(expires);
+        return HttpDateTime.format(expires);
     }
 
     /**
-     * <p>Parses the {@code Expires} attribute value
-     * (in RFC 1123 format) into an {@link Instant}.</p>
+     * <p>Parses the {@code Expires} Date/Time attribute value
+     * into an {@link Instant}.</p>
      *
-     * @param expires an instant in the RFC 1123 string format
+     * @param expires a date/time in one of the RFC6265 supported formats
      * @return an {@link Instant} parsed from the given string
      */
     static Instant parseExpires(String expires)
     {
-        // TODO: RFC 1123 format only for now, see https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1.
-        return ZonedDateTime.parse(expires, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        return HttpDateTime.parse(expires).toInstant();
     }
 
     private static Map<String, String> lazyAttributePut(Map<String, String> attributes, String key, String value)

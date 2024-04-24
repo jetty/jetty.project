@@ -342,7 +342,7 @@ public class AttributeNormalizerTest
 
         // If file cannot be found it just uses the first resource.
         assertThat(normalizer.expand("${WAR.uri}/file4"), containsString("/dir1/file4"));
-        assertThat(normalizer.expand("${WAR.path}/file4"), containsString(File.separator + "dir1/file4"));
+        assertThat(normalizer.expand("${WAR.path}/file4"), containsString(File.separator + "dir1" + File.separator +  "file4"));
     }
 
     public static class Scenario

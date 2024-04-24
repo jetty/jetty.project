@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -158,10 +159,8 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
             throw new IllegalStateException("Config does not exist: " + config);
 
         Properties properties = new Properties();
-        try (InputStream inputStream = config.newInputStream())
+        try (InputStream inputStream = IOResources.asInputStream(config))
         {
-            if (inputStream == null)
-                throw new IllegalStateException("Config does have properties: " + config);
             properties.load(inputStream);
         }
 

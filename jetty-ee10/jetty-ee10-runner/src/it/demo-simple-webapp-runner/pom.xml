@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.eclipse.jetty.its</groupId>
-  <artifactId>jetty-runner-it-test-demo-simple-webapp</artifactId>
+  <artifactId>jetty-runner-ee10-it-test-demo-simple-webapp</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>war</packaging>
 
@@ -29,7 +29,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>demo-simple-webapp</artifactId>
+      <artifactId>jetty-ee10-demo-simple-webapp</artifactId>
       <version>@project.version@</version>
       <type>war</type>
     </dependency>
@@ -74,7 +74,7 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.ee10.demos</groupId>
-                  <artifactId>demo-simple-webapp</artifactId>
+                  <artifactId>jetty-ee10-demo-simple-webapp</artifactId>
                   <version>@project.version@</version>
                   <type>war</type>
                   <overWrite>false</overWrite>

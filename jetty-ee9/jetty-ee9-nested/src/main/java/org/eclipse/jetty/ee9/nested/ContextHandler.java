@@ -66,6 +66,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Context;
@@ -83,8 +84,8 @@ import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -267,7 +268,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                              String contextPath)
     {
         _coreContextHandler = new CoreContextHandler();
-        addBean(_coreContextHandler, false);
+        installBean(_coreContextHandler, false);
         _apiContext = context == null ? new APIContext() : context;
         _initParams = new HashMap<>();
         if (contextPath != null)
@@ -322,6 +323,26 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     public void setAllowNullPathInfo(boolean allowNullPathInfo)
     {
         _coreContextHandler.setAllowNullPathInContext(allowNullPathInfo);
+    }
+
+    /**
+     * Cross context dispatch support.
+     * @param supported {@code True} if cross context dispatch is supported
+     * @see org.eclipse.jetty.server.handler.ContextHandler#setCrossContextDispatchSupported(boolean)
+     */
+    public void setCrossContextDispatchSupported(boolean supported)
+    {
+        getCoreContextHandler().setCrossContextDispatchSupported(supported);
+    }
+
+    /**
+     * Cross context dispatch support.
+     * @return {@code True} if cross context dispatch is supported
+     * @see org.eclipse.jetty.server.handler.ContextHandler#isCrossContextDispatchSupported()
+     */
+    public boolean isCrossContextDispatchSupported()
+    {
+        return getCoreContextHandler().isCrossContextDispatchSupported();
     }
 
     @Override
@@ -1705,7 +1726,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         // this is a dispatch with either a provided URI and/or a dispatched path
         // We will have to modify the request and then revert
         final HttpURI oldUri = baseRequest.getHttpURI();
-        final MultiMap<String> oldQueryParams = baseRequest.getQueryParameters();
+        final Fields oldQueryParams = baseRequest.getQueryFields();
         try
         {
             if (encodedPathQuery == null)
@@ -1747,7 +1768,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         finally
         {
             baseRequest.setHttpURI(oldUri);
-            baseRequest.setQueryParameters(oldQueryParams);
+            baseRequest.setQueryFields(oldQueryParams);
             baseRequest.resetParameters();
         }
     }
@@ -1836,10 +1857,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
 
         @Override
-        public ServletContext getContext(String uripath)
+        public ServletContext getContext(String path)
         {
-            // TODO No cross context dispatch
-            return null;
+            org.eclipse.jetty.server.handler.ContextHandler context = getContextHandler().getCoreContextHandler().getCrossContextHandler(path);
+
+            if (context == null)
+                return null;
+            if (context == _coreContextHandler)
+                return this;
+            return new CrossContextServletContext(_coreContextHandler, context.getContext());
         }
 
         @Override
@@ -1955,7 +1981,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;
-                return r.newInputStream();
+                return IOResources.asInputStream(r);
             }
             catch (Exception e)
             {
@@ -2539,7 +2565,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         CoreContextHandler()
         {
             super.setHandler(new CoreToNestedHandler());
-            addBean(ContextHandler.this, true);
+            installBean(ContextHandler.this, true);
         }
 
         @Override
@@ -2694,10 +2720,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private class CoreToNestedHandler extends Abstract
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback)
             {
                 HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
-                httpChannel.onProcess(response, callback);
+                Objects.requireNonNull(httpChannel).onProcess(response, callback);
                 httpChannel.handle();
                 return true;
             }

@@ -611,6 +611,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     }
 
     @Override
+    public void close()
+    {
+        Runnable task = _httpChannel.onClose();
+        if (task != null)
+            task.run();
+        super.close();
+    }
+
+    @Override
     public void onOpen()
     {
         super.onOpen();
@@ -1012,8 +1021,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
 
-            getHttpChannel().getComplianceViolationListener().onRequestEnd(getHttpChannel().getRequest());
-
             _failure = (Throwable)failure;
             _generator.setPersistent(false);
 
@@ -1025,6 +1032,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _httpChannel.setHttpStream(stream);
             }
 
+            // If there is no request, build one temporarily to handle the error.
+            // This is also done by HttpChannel.onFailure(), but here we can build
+            // a request with more information, such as the method, the URI, etc.
             if (_httpChannel.getRequest() == null)
             {
                 HttpURI uri = stream._uri;

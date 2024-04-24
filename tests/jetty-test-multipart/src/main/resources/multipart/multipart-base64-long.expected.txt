@@ -1,0 +1,5 @@
+Content-Type|multipart/form-data; boundary="JuH4rALGPJfmAquncS_U1du8s59GjKKiG9a8"
+Parts-Count|1
+Part-Filename|png|jetty-avatar-256.png
+# For base64 decoded use Part-Sha1sum|png|e75b73644afe9b234d70da9ff225229de68cdff8
+Part-Sha1sum|png|acfe7f4d511c797c77cd7ffc42321d0958270d33

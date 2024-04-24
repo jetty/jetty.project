@@ -38,7 +38,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -340,11 +340,11 @@ public class FormAuthenticator extends LoginAuthenticator
 
                             if (jUri.equals(buf.toString()))
                             {
-                                MultiMap<String> jPost = (MultiMap<String>)session.getAttribute(__J_POST);
+                                Fields jPost = (Fields)session.getAttribute(__J_POST);
                                 if (jPost != null)
                                 {
                                     LOG.debug("auth rePOST {}->{}", authentication, jUri);
-                                    baseRequest.setContentParameters(jPost);
+                                    baseRequest.setContentFields(jPost);
                                 }
                                 session.removeAttribute(__J_URI);
                                 session.removeAttribute(__J_METHOD);
@@ -379,7 +379,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
                     if (MimeTypes.Type.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(request.getMethod()))
                     {
-                        MultiMap<String> formParameters = new MultiMap<>();
+                        Fields formParameters = new Fields(true);
                         baseRequest.extractFormParameters(formParameters);
                         session.setAttribute(__J_POST, formParameters);
                     }

@@ -96,7 +96,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         SelectorProducer producer = new SelectorProducer();
         Executor executor = selectorManager.getExecutor();
         _strategy = new AdaptiveExecutionStrategy(producer, executor);
-        addBean(_strategy, true);
+        installBean(_strategy, true);
     }
 
     public Selector getSelector()
@@ -982,18 +982,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class CloseConnections implements SelectorUpdate
     {
-        private final Set<Closeable> _closed;
         private final CountDownLatch _complete = new CountDownLatch(1);
-
-        private CloseConnections()
-        {
-            this(null);
-        }
-
-        private CloseConnections(Set<Closeable> closed)
-        {
-            _closed = closed;
-        }
 
         @Override
         public void update(Selector selector)
@@ -1006,27 +995,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     if (key != null && key.isValid())
                     {
-                        Closeable closeable = null;
-                        Object attachment = key.attachment();
-                        if (attachment instanceof EndPoint)
-                        {
-                            EndPoint endPoint = (EndPoint)attachment;
-                            Connection connection = endPoint.getConnection();
-                            closeable = Objects.requireNonNullElse(connection, endPoint);
-                        }
-
-                        if (closeable != null)
-                        {
-                            if (_closed == null)
-                            {
-                                IO.close(closeable);
-                            }
-                            else if (!_closed.contains(closeable))
-                            {
-                                _closed.add(closeable);
-                                IO.close(closeable);
-                            }
-                        }
+                        Closeable closeable = (key.attachment() instanceof EndPoint endPoint)
+                            ? Objects.requireNonNullElse(endPoint.getConnection(), endPoint)
+                            : key.channel();
+                        IO.close(closeable);
                     }
                 }
             }

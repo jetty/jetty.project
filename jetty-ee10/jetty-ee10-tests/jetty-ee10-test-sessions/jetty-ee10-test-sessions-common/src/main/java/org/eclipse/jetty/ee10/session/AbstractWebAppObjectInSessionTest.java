@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.session;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,7 +28,6 @@ import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.AbstractSessionTestBase;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
@@ -87,14 +85,14 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
             //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
             File targetFile = new File(packageDirs, resourceName);
             //copy(sourceFile, targetFile);
-            IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
+            resource.copyTo(targetFile.toPath());
 
             resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + "$" + WebAppObjectInSessionServlet.TestSharedStatic.class.getSimpleName() + ".class";
             resource = resourceFactory.newResource(getClass().getResource(packageName + resourceName));
             //sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
             targetFile = new File(packageDirs, resourceName);
             //copy(sourceFile, targetFile);
-            IO.copy(resource.newInputStream(), new FileOutputStream(targetFile));
+            resource.copyTo(targetFile.toPath());
         }
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();

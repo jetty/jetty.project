@@ -22,6 +22,7 @@ import java.util.stream.IntStream;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
@@ -249,7 +250,19 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} is readable, processing: {}", streamId, interested);
         if (interested)
+        {
             getFillInterest().fillable();
+        }
+        else
+        {
+            QuicStreamEndPoint streamEndPoint = getQuicSession().getStreamEndPoint(streamId);
+            if (streamEndPoint.isStreamFinished())
+            {
+                EofException e = new EofException();
+                streamEndPoint.getFillInterest().onFail(e);
+                streamEndPoint.getQuicSession().onFailure(e);
+            }
+        }
         return interested;
     }
 

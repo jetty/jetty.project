@@ -16,4 +16,4 @@ lib/logging/slf4j-api-${slf4j.version}.jar
 
 [ini]
 slf4j.version?=@slf4j.version@
-jetty.webapp.addServerClasses+=,org.slf4j.
+jetty.webapp.addHiddenClasses+=,org.slf4j.

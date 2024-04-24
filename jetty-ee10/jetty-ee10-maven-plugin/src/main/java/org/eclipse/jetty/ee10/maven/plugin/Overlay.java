@@ -89,6 +89,8 @@ public class Overlay
         // only unpack if the overlay is newer
         if (!Files.exists(pathDir))
         {
+            // create directory
+            Files.createDirectories(pathDir);
             getResource().copyTo(pathDir);
         }
         else

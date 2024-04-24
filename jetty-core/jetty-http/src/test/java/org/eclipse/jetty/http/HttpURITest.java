@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,6 +54,7 @@ public class HttpURITest
             .path("/ignored/../p%61th;ignored/info")
             .param("param")
             .query("query=value")
+            .fragment("fragment")
             .asImmutable();
 
         assertThat(uri.getScheme(), is("http"));
@@ -63,8 +65,10 @@ public class HttpURITest
         assertThat(uri.getCanonicalPath(), is("/path/info"));
         assertThat(uri.getParam(), is("param"));
         assertThat(uri.getQuery(), is("query=value"));
+        assertThat(uri.getFragment(), is("fragment"));
         assertThat(uri.getAuthority(), is("host:8888"));
-        assertThat(uri.toString(), is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value"));
+        assertThat(uri.toString(), is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment"));
+        assertThat(uri.toURI().toString(), is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment"));
 
         uri = HttpURI.build(uri)
             .scheme("https")
@@ -638,6 +642,101 @@ public class HttpURITest
         assertThat(uri.hasAmbiguousEncoding(), is(expected.contains(Violation.AMBIGUOUS_PATH_ENCODING)));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/a%2Fb",
+        "/a%2F",
+        "/%2f",
+        "/%2f/"
+    })
+    public void testAmbiguousViaBuilderPath(String input)
+    {
+        HttpURI uri = HttpURI.build().path(input);
+        assertThat("has any violation", uri.hasViolations(), is(true));
+        assertThat("is ambiguous", uri.isAmbiguous(), is(true));
+    }
+
+    public static Stream<Arguments> suspiciousPathCharacterData()
+    {
+        return Stream.of(
+            // backslash
+            Arguments.of("/a%5Cb"),
+            Arguments.of("/a\\b"),
+            Arguments.of("/foo/bar/zed/%5c"),
+            Arguments.of("/foo/bar/..\\zed"),
+            Arguments.of("/foo/bar/zed/%5C"),
+            // TAB
+            Arguments.of("/%09b"),
+            Arguments.of("/a\tb"),
+            Arguments.of("/%09"),
+            // CR / LF
+            Arguments.of("/%0A"),
+            Arguments.of("/%0a"),
+            Arguments.of("/%0D"),
+            Arguments.of("/%0d"),
+            Arguments.of("/a/\r/\n/b"),
+            Arguments.of("/foo\r\nbar/"),
+            Arguments.of("/%0d%0a")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("suspiciousPathCharacterData")
+    public void testSuspiciousPathCharacterBuilderPath(String input)
+    {
+        HttpURI uri = HttpURI.build().path(input);
+        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat("has SUSPICIOUS_PATH_CHARACTERS violation", uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS), is(true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("suspiciousPathCharacterData")
+    public void testSuspiciousPathCharacterFromString(String input)
+    {
+        HttpURI uri = HttpURI.from(input);
+        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat("has SUSPICIOUS_PATH_CHARACTERS violation", uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS), is(true));
+    }
+
+    public static Stream<Arguments> illegalPathCharacterData()
+    {
+        return Stream.of(
+            // backslash
+            Arguments.of("/a\\b"),
+            Arguments.of("/a/..\\b"),
+            // control character
+            Arguments.of("/a\tb"),
+            Arguments.of("/a\rb"),
+            Arguments.of("/a\nb"),
+            // Pipe / piping symbols
+            Arguments.of("/a|b"),
+            Arguments.of("/a<b"),
+            Arguments.of("/a>b"),
+            // space character
+            Arguments.of("/a b"),
+            // double-quotes
+            Arguments.of("/a\"b")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("illegalPathCharacterData")
+    public void testIllegalPathCharacterBuilderPath(String input)
+    {
+        HttpURI uri = HttpURI.build().path(input);
+        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat("has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("illegalPathCharacterData")
+    public void testIllegalPathCharacterFromString(String input)
+    {
+        HttpURI uri = HttpURI.from(input);
+        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat("has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+    }
+
     public static Stream<Arguments> parseData()
     {
         return Stream.of(
@@ -1024,6 +1123,8 @@ public class HttpURITest
             // Path choices
             Arguments.of("http", "example.org", 0, "/a/b/c/d", null, null, "http://example.org/a/b/c/d"),
             Arguments.of("http", "example.org", 0, "/a%20b/c%20d", null, null, "http://example.org/a%20b/c%20d"),
+            Arguments.of("http", "example.org", 0, "/foo%2Fbaz", null, null, "http://example.org/foo%2Fbaz"),
+            Arguments.of("http", "example.org", 0, "/foo%252Fbaz", null, null, "http://example.org/foo%252Fbaz"),
             // Query specified
             Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
             Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
@@ -1044,6 +1145,24 @@ public class HttpURITest
     {
         HttpURI httpURI = HttpURI.from(scheme, server, port, path, query, fragment);
         assertThat(httpURI.asString(), is(expectedStr));
+    }
+
+    public static Stream<Arguments> fromStringAsStringCases()
+    {
+        return Stream.of(
+            Arguments.of("http://localhost:4444/", "http://localhost:4444/"),
+            Arguments.of("/foo/baz", "/foo/baz"),
+            Arguments.of("/foo%2Fbaz", "/foo%2Fbaz"),
+            Arguments.of("/foo%252Fbaz", "/foo%252Fbaz")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fromStringAsStringCases")
+    public void testFromStringAsString(String input, String expected)
+    {
+        HttpURI httpURI = HttpURI.from(input);
+        assertThat(httpURI.asString(), is(expected));
     }
 
     /**

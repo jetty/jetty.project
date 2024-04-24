@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.io.IOResources;
 
 /**
  * Range Writer selection for HttpContent
@@ -46,6 +47,6 @@ public class HttpContentRangeWriter
             return new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(path));
 
         // Fallback to InputStream
-        return new InputStreamRangeWriter(() -> content.getResource().newInputStream());
+        return new InputStreamRangeWriter(() -> IOResources.asInputStream(content.getResource()));
     }
 }

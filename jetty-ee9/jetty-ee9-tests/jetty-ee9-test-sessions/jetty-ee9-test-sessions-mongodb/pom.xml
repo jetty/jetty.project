@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9-test-sessions</artifactId>
-    <version>12.0.7-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-test-sessions-mongodb</artifactId>
   <name>EE9 :: Tests :: Sessions :: Mongo</name>
@@ -12,6 +12,11 @@
     <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>

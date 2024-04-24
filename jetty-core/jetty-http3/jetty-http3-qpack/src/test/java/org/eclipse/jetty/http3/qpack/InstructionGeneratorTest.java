@@ -25,7 +25,7 @@ import static org.hamcrest.Matchers.is;
 
 public class InstructionGeneratorTest
 {
-    private final ByteBufferPool _bufferPool = new ByteBufferPool.NonPooling();
+    private final ByteBufferPool _bufferPool = ByteBufferPool.NON_POOLING;
 
     private String toHexString(Instruction instruction)
     {
