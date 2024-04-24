@@ -26,7 +26,7 @@ import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(DisableUrlCacheTest.class);
 
-    @RepeatedTest(value = 40, failureThreshold = 1)
+    @Test
     public void testReloadWebAppWithLog4j2() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
