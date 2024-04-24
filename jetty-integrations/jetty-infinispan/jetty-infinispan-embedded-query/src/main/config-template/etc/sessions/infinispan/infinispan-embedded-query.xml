@@ -7,35 +7,7 @@
   <!-- ===================================================================== -->
   <!-- Get a reference to the default local cache.                           -->
   <!-- ===================================================================== -->
-  
-  <!--  TODO allow users to add more properties  -->
-  <New id="properties" class="java.util.Properties">
-    <Call name="put">
-      <Arg>
-        <Get class="org.hibernate.search.cfg.Environment" name="MODEL_MAPPING"/>
-      </Arg>
-      <Arg>
-        <New class="org.hibernate.search.cfg.SearchMapping">
-          <Call name="entity">
-            <Arg>
-              <Get class="org.eclipse.jetty.session.infinispan.InfinispanSessionData" name="class"/>
-            </Arg>
-            <Call name="indexed">
-              <Call name="providedId">
-                <Call name="property">
-                  <Arg type="String">expiry</Arg>
-                  <Arg>
-                    <Get class="java.lang.annotation.ElementType" name="FIELD"/>
-                  </Arg>
-                  <Call name="field"/>
-                </Call>
-              </Call>
-            </Call>
-          </Call>
-        </New>
-      </Arg>
-    </Call>
-  </New>
+
   
   <New id="cacheMgr" class="org.infinispan.manager.DefaultCacheManager">
     <Arg>
@@ -50,27 +22,16 @@
       <Arg>
         <Ref refid="defaultConfig"/>
       </Arg>
-      <Call name="indexing">
-        <Call name="index">
-          <Arg>
-            <Get class="org.infinispan.configuration.cache.Index" name="ALL"/>
-          </Arg>
-          <Call name="addIndexedEntity">
-            <Arg>
-              <Get class="org.eclipse.jetty.session.infinispan.InfinispanSessionData" name="class"/>
-            </Arg>
-            <Call name="withProperties">
-              <Arg>
-                <Ref refid="properties"/>
-              </Arg>
-              <Call id="config" name="build"/>
-            </Call>
-          </Call>
-        </Call>
+      <Call name="indexing"/>
+      <Call name="enabled"/>
+      <Call name="addIndexedEntity">
+        <Arg>
+          <Get class="org.eclipse.jetty.session.infinispan.InfinispanSessionData" name="class"/>
+        </Arg>
       </Call>
     </Call>
   </New>
-  
+
   <Ref refid="cacheMgr">
     <Call name="defineConfiguration">
       <Arg>jetty-query-sessions</Arg>
