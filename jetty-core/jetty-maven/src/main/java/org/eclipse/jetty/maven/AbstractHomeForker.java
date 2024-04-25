@@ -341,20 +341,31 @@ public abstract class AbstractHomeForker extends AbstractForker
         etcPath = Files.createDirectories(targetBasePath.resolve("etc"));
         libPath = Files.createDirectories(targetBasePath.resolve("lib"));
         webappPath = Files.createDirectories(targetBasePath.resolve("webapps"));
-        mavenLibPath = Files.createDirectories(libPath.resolve("maven-" + environment));
+        mavenLibPath = Files.createDirectories(libPath.resolve(environment + "-maven"));
 
-        //copy in the jetty-maven-plugin jar
+        //copy in the jetty-${ee}-maven-plugin jar
         URI thisJar = TypeUtil.getLocationOfClass(this.getClass());
         if (thisJar == null)
             throw new IllegalStateException("Can't find jar for jetty-" + environment + "-maven-plugin");
 
+        System.err.println("LOCATION OF COPIED JAR: " + thisJar.toASCIIString() + " copied to " + mavenLibPath.resolve("jetty-" + environment + "maven-plugin.jar"));
         try (InputStream jarStream = thisJar.toURL().openStream();
-             FileOutputStream fileStream = new FileOutputStream(mavenLibPath.resolve("plugin.jar").toFile()))
+             FileOutputStream fileStream = new FileOutputStream(mavenLibPath.resolve("jetty-" + environment + "-maven-plugin.jar").toFile()))
         {
             IO.copy(jarStream, fileStream);
         }
 
-        //copy in the maven.xml webapp file
+        //copy in the jetty-maven.jar for common classes
+        URI commonJar = TypeUtil.getLocationOfClass(AbstractHomeForker.class);
+        if (commonJar == null)
+            throw new IllegalStateException("Can't find jar for jetty-maven common classes");
+        try (InputStream jarStream = commonJar.toURL().openStream();
+             FileOutputStream fileStream = new FileOutputStream(mavenLibPath.resolve("jetty-maven.jar").toFile()))
+        {
+            IO.copy(jarStream, fileStream);
+        }
+
+        //copy in the maven-${ee}.xml webapp file
         String mavenXml = "maven-" + environment + ".xml";
         try (InputStream mavenXmlStream = getClass().getClassLoader().getResourceAsStream(mavenXml);
              FileOutputStream fileStream = new FileOutputStream(webappPath.resolve(mavenXml).toFile()))
@@ -364,7 +375,7 @@ public abstract class AbstractHomeForker extends AbstractForker
 
         Files.writeString(webappPath.resolve("maven-" + environment + ".properties"), "environment=" + environment);
 
-        //copy in the maven.mod file
+        //copy in the ${ee}-maven.mod file
         String mavenMod = environment + "-maven.mod";
         try (InputStream mavenModStream = getClass().getClassLoader().getResourceAsStream(mavenMod);
              FileOutputStream fileStream = new FileOutputStream(modulesPath.resolve(mavenMod).toFile()))
@@ -372,7 +383,7 @@ public abstract class AbstractHomeForker extends AbstractForker
             IO.copy(mavenModStream, fileStream);
         }
 
-        //copy in the jetty-maven.xml file
+        //copy in the jetty-${ee}-maven.xml file
         String jettyMavenXml = "jetty-" + environment + "-maven.xml";
         try (InputStream jettyMavenStream = getClass().getClassLoader().getResourceAsStream(jettyMavenXml);
              FileOutputStream fileStream = new FileOutputStream(etcPath.resolve(jettyMavenXml).toFile()))
