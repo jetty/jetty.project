@@ -273,6 +273,7 @@
     <mina.core.version>2.2.3</mina.core.version>
     <mongo.docker.version>3.2.20</mongo.docker.version>
     <mongodb.version>3.12.14</mongodb.version>
+    <native.maven.plugin.version>0.10.1</native.maven.plugin.version>
     <netty.version>4.1.107.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -1942,6 +1943,11 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.graalvm.buildtools</groupId>
+        <artifactId>native-maven-plugin</artifactId>
+        <version>${native.maven.plugin.version}</version>
+      </plugin>
+      <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <configuration>
@@ -2625,6 +2631,37 @@
         <skipTests>true</skipTests>
         <spotbugs.skip>true</spotbugs.skip>
       </properties>
+    </profile>
+    <profile>
+      <id>native</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <extensions>true</extensions>
+            <configuration>
+              <!-- ... -->
+            </configuration>
+            <executions>
+              <execution>
+                <id>test-native</id>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <phase>test</phase>
+              </execution>
+              <execution>
+                <id>build-native</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 
