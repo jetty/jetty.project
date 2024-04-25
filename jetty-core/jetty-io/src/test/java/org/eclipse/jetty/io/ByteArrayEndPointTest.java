@@ -30,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -100,8 +101,7 @@ public class ByteArrayEndPointTest
     @Test
     public void testGrowingFlush() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint((byte[])null, 15);
-        endp.setGrowOutput(true);
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(null, 0, null, 15, true);
 
         assertEquals(true, endp.flush(BufferUtil.toBuffer("some output")));
         assertEquals("some output", endp.getOutputString());
@@ -123,18 +123,16 @@ public class ByteArrayEndPointTest
     @Test
     public void testFlush() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint((byte[])null, 15);
-        endp.setGrowOutput(false);
-        endp.setOutput(BufferUtil.allocate(10));
+        ByteArrayEndPoint endp = new ByteArrayEndPoint((byte[])null, 10);
 
         ByteBuffer data = BufferUtil.toBuffer("Some more data.");
-        assertEquals(false, endp.flush(data));
+        assertFalse(endp.flush(data));
         assertEquals("Some more ", endp.getOutputString());
         assertEquals("data.", BufferUtil.toString(data));
 
         assertEquals("Some more ", endp.takeOutputString());
 
-        assertEquals(true, endp.flush(data));
+        assertTrue(endp.flush(data));
         assertEquals("data.", BufferUtil.toString(endp.takeOutput()));
         endp.close();
     }
@@ -205,9 +203,7 @@ public class ByteArrayEndPointTest
     @Test
     public void testWrite() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000, (byte[])null, 15);
-        endp.setGrowOutput(false);
-        endp.setOutput(BufferUtil.allocate(10));
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000, (byte[])null, 10);
 
         ByteBuffer data = BufferUtil.toBuffer("Data.");
         ByteBuffer more = BufferUtil.toBuffer(" Some more.");
@@ -215,7 +211,7 @@ public class ByteArrayEndPointTest
         FutureCallback fcb = new FutureCallback();
         endp.write(fcb, data);
         assertTrue(fcb.isDone());
-        assertEquals(null, fcb.get());
+        assertNull(fcb.get());
         assertEquals("Data.", endp.getOutputString());
 
         fcb = new FutureCallback();
@@ -226,7 +222,7 @@ public class ByteArrayEndPointTest
         assertEquals("Data. Some", endp.takeOutputString());
 
         assertTrue(fcb.isDone());
-        assertEquals(null, fcb.get());
+        assertNull(fcb.get());
         assertEquals(" more.", endp.getOutputString());
         endp.close();
     }
@@ -258,10 +254,8 @@ public class ByteArrayEndPointTest
         long halfIdleTimeout = idleTimeout / 2;
         long oneAndHalfIdleTimeout = idleTimeout + halfIdleTimeout;
 
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, idleTimeout);
-        endp.setGrowOutput(false);
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, idleTimeout, null, 5, false);
         endp.addInput("test");
-        endp.setOutput(BufferUtil.allocate(5));
 
         assertTrue(endp.isOpen());
         Thread.sleep(oneAndHalfIdleTimeout);

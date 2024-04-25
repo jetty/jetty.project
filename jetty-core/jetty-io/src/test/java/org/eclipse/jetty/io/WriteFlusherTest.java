@@ -59,8 +59,7 @@ public class WriteFlusherTest
 
     private void testCompleteWrite(boolean failBefore) throws Exception
     {
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16);
-        endPoint.setGrowOutput(true);
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, true);
 
         AtomicBoolean incompleteFlush = new AtomicBoolean();
         WriteFlusher flusher = new WriteFlusher(endPoint)
