@@ -58,10 +58,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private final AutoLock _lock = new AutoLock();
     private final Condition _hasOutput = _lock.newCondition();
     private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
-    private final int _outputSize;
-    private boolean _growable;
-
-    private RetainableByteBuffer.Appendable _buffer;
+    private final RetainableByteBuffer.DynamicCapacity _buffer;
 
     public ByteArrayEndPoint()
     {
@@ -124,20 +121,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, ByteBuffer input, int outputSize, boolean growable)
     {
         super(timer);
-        _outputSize = outputSize;
-        _growable = growable;
         if (BufferUtil.hasContent(input))
             addInput(input);
-        allocateOutputBuffer();
+
+        _buffer = growable
+            ? new RetainableByteBuffer.DynamicCapacity(null, false, -1, outputSize)
+            : new RetainableByteBuffer.DynamicCapacity(null, false, outputSize);
         setIdleTimeout(idleTimeoutMs);
         onOpen();
-    }
-
-    private void allocateOutputBuffer()
-    {
-        _buffer = _growable
-            ? new RetainableByteBuffer.DynamicCapacity(null, false, -1, _outputSize)
-            : new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(_outputSize > 0 ? _outputSize : 1024));
     }
 
     @Override
@@ -316,8 +307,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
         try (AutoLock ignored = _lock.lock())
         {
-            taken = _buffer.getByteBuffer();
-            allocateOutputBuffer();
+            taken = _buffer.takeRetainableByteBuffer().getByteBuffer();
         }
         getWriteFlusher().completeWrite();
         return taken;
@@ -342,8 +332,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 if (!_hasOutput.await(time, unit))
                     return null;
             }
-            taken = _buffer.getByteBuffer();
-            allocateOutputBuffer();
+            taken = _buffer.takeRetainableByteBuffer().getByteBuffer();
         }
         getWriteFlusher().completeWrite();
         return taken;
