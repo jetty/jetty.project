@@ -610,29 +610,29 @@ public interface RetainableByteBuffer extends Retainable
                 buf.append("-");
             else
                 buf.append(maxSize());
-            addDetail(buf);
+            addDetailString(buf);
             buf.append(",");
             buf.append(getRetainable());
             buf.append("]");
-            addValue(buf);
+            addValueString(buf);
             return buf.toString();
         }
 
-        protected void addDetail(StringBuilder stringBuilder)
+        protected void addDetailString(StringBuilder stringBuilder)
         {
         }
 
-        protected void addValue(StringBuilder stringBuilder)
+        protected void addValueString(StringBuilder stringBuilder)
         {
             if (canRetain())
             {
                 stringBuilder.append("={");
-                addValue(stringBuilder, this);
+                addValueString(stringBuilder, this);
                 stringBuilder.append("}");
             }
         }
 
-        protected void addValue(StringBuilder buf, RetainableByteBuffer value)
+        protected void addValueString(StringBuilder buf, RetainableByteBuffer value)
         {
             RetainableByteBuffer slice = value.slice();
             try
@@ -854,6 +854,33 @@ public interface RetainableByteBuffer extends Retainable
                     _buffers.add(combined);
                     _aggregate = null;
                     yield combined.getByteBuffer();
+                }
+            };
+        }
+
+        /**
+         * Take the contents of this buffer, leaving it clear and independent
+         * @return An independent buffer with the contents of this buffer, avoiding copies if possible.
+         */
+        public RetainableByteBuffer takeRetainableByteBuffer()
+        {
+            return switch (_buffers.size())
+            {
+                case 0 -> RetainableByteBuffer.EMPTY;
+                case 1 ->
+                {
+                    RetainableByteBuffer buffer = _buffers.get(0);
+                    _aggregate = null;
+                    _buffers.clear();
+                    yield buffer;
+                }
+                default ->
+                {
+                    List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers);
+                    _aggregate = null;
+                    _buffers.clear();
+
+                    yield new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
                 }
             };
         }
@@ -1102,7 +1129,7 @@ public interface RetainableByteBuffer extends Retainable
             if (length == 0)
                 return true;
 
-            // Try appending to the existing aggregation buffer
+            // Try appending to any existing aggregation buffer
             boolean existing = _aggregate != null;
             if (existing)
             {
@@ -1208,6 +1235,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean appendTo(ByteBuffer to)
         {
+            _aggregate = null;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
                 RetainableByteBuffer buffer = i.next();
@@ -1222,6 +1250,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean appendTo(RetainableByteBuffer to)
         {
+            _aggregate = null;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
                 RetainableByteBuffer buffer = i.next();
@@ -1236,6 +1265,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public void putTo(ByteBuffer toInfillMode)
         {
+            _aggregate = null;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
                 RetainableByteBuffer buffer = i.next();
@@ -1248,6 +1278,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public void writeTo(Content.Sink sink, boolean last, Callback callback)
         {
+            _aggregate = null;
             switch (_buffers.size())
             {
                 case 0 -> callback.succeeded();
@@ -1300,9 +1331,9 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        protected void addDetail(StringBuilder stringBuilder)
+        protected void addDetailString(StringBuilder stringBuilder)
         {
-            super.addDetail(stringBuilder);
+            super.addDetailString(stringBuilder);
             stringBuilder.append(",as=");
             stringBuilder.append(_aggregationSize);
             stringBuilder.append(",mr=");
@@ -1310,13 +1341,13 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        protected void addValue(StringBuilder stringBuilder)
+        protected void addValueString(StringBuilder stringBuilder)
         {
             if (canRetain())
             {
                 stringBuilder.append("={");
                 for (RetainableByteBuffer buffer : _buffers)
-                    addValue(stringBuilder, buffer);
+                    addValueString(stringBuilder, buffer);
                 stringBuilder.append("}");
             }
         }

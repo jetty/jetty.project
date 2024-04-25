@@ -325,13 +325,13 @@ public class WriteFlusherTest
     @Test
     public void testPendingWriteDoesNotStoreConsumedBuffers() throws Exception
     {
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 10);
+        int capacity = 10;
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], capacity);
 
-        int toWrite = endPoint.getOutput().capacity();
-        byte[] chunk1 = new byte[toWrite / 2];
+        byte[] chunk1 = new byte[capacity / 2];
         Arrays.fill(chunk1, (byte)1);
         ByteBuffer buffer1 = ByteBuffer.wrap(chunk1);
-        byte[] chunk2 = new byte[toWrite];
+        byte[] chunk2 = new byte[capacity];
         Arrays.fill(chunk1, (byte)2);
         ByteBuffer buffer2 = ByteBuffer.wrap(chunk2);
 

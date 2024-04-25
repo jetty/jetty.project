@@ -24,10 +24,10 @@ public class NonRetainableByteBuffer extends RetainableByteBuffer.FixedCapacity
         super(byteBuffer, NON_RETAINABLE);
     }
 
-    protected void addValue(StringBuilder stringBuilder)
+    protected void addValueString(StringBuilder stringBuilder)
     {
         stringBuilder.append("={");
-        addValue(stringBuilder, this);
+        addValueString(stringBuilder, this);
         stringBuilder.append("}");
     }
 }
