@@ -285,7 +285,13 @@ public class BufferedResponseHandler extends HandlerWrapper
 
         private void commit(Callback callback)
         {
-            _aggregate.writeTo(getNextInterceptor(), true, callback);
+            _aggregate.writeTo(getNextInterceptor(), true, Callback.from(this::completed, callback));
+        }
+
+        private void completed()
+        {
+            _aggregate.release();
+            _aggregate = null;
         }
     }
 }

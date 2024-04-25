@@ -852,6 +852,7 @@ public interface RetainableByteBuffer extends Retainable
                     BufferUtil.flipToFlush(byteBuffer, 0);
                     _buffers.clear();
                     _buffers.add(combined);
+                    _aggregate = null;
                     yield combined.getByteBuffer();
                 }
             };
