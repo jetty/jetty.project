@@ -109,6 +109,7 @@ public class SizeLimitHandler extends Handler.Wrapper
     {
         private final HttpFields.Mutable _httpFields;
         private long _written = 0;
+        private HttpException.RuntimeException _failure;
 
         public SizeLimitResponseWrapper(Request request, Response wrapped)
         {
@@ -119,7 +120,7 @@ public class SizeLimitHandler extends Handler.Wrapper
                 @Override
                 public HttpField onAddField(HttpField field)
                 {
-                    if (field.getHeader().is(HttpHeader.CONTENT_LENGTH.asString()))
+                    if (field.getHeader() == HttpHeader.CONTENT_LENGTH)
                     {
                         long contentLength = field.getLongValue();
                         if (_responseLimit >= 0 && contentLength > _responseLimit)
@@ -139,12 +140,19 @@ public class SizeLimitHandler extends Handler.Wrapper
         @Override
         public void write(boolean last, ByteBuffer content, Callback callback)
         {
+            if (_failure != null)
+            {
+                callback.failed(_failure);
+                return;
+            }
+
             if (content != null && content.remaining() > 0)
             {
                 if (_responseLimit >= 0 && (_written + content.remaining())  > _responseLimit)
                 {
-                    String message = "Response body is too large: %d>%d".formatted(_written + content.remaining(), _responseLimit);
-                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, message));
+                    _failure = new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500,
+                        "Response body is too large: %d>%d".formatted(_written + content.remaining(), _responseLimit));
+                    callback.failed(_failure);
                     return;
                 }
                 _written += content.remaining();

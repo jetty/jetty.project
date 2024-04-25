@@ -53,7 +53,7 @@ public class RedirectPatternRule extends PatternRule
     }
 
     /**
-     * Set the location to redirect..
+     * Set the location to redirect.
      * @param value the location to redirect.
      */
     public void setLocation(String value)
