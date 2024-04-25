@@ -14,9 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,8 +29,10 @@ import org.eclipse.jetty.util.CompletableTask;
 @Deprecated
 public class ChunkAccumulator
 {
-    private final List<Chunk> _chunks = new ArrayList<>();
-    private int _length;
+    private final RetainableByteBuffer.DynamicCapacity _accumulator = new RetainableByteBuffer.DynamicCapacity(null, false, -1);
+
+    public ChunkAccumulator()
+    {}
 
     /**
      * Add a {@link Chunk} to the accumulator.
@@ -45,19 +44,9 @@ public class ChunkAccumulator
     public boolean add(Chunk chunk)
     {
         if (chunk.hasRemaining())
-        {
-            _length = Math.addExact(_length, chunk.remaining());
-            if (chunk.canRetain())
-            {
-                chunk.retain();
-                return _chunks.add(chunk);
-            }
-            return _chunks.add(Chunk.from(BufferUtil.copy(chunk.getByteBuffer()), chunk.isLast()));
-        }
-        else if (Chunk.isFailure(chunk))
-        {
+            return _accumulator.append(chunk);
+        if (Chunk.isFailure(chunk))
             throw new IllegalArgumentException("chunk is failure");
-        }
         return false;
     }
 
@@ -67,63 +56,28 @@ public class ChunkAccumulator
      */
     public int length()
     {
-        return _length;
+        return _accumulator.remaining();
     }
 
     public byte[] take()
     {
-        if (_length == 0)
+        RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
+        if (buffer.isEmpty())
             return BufferUtil.EMPTY_BUFFER.array();
-        byte[] bytes = new byte[_length];
-        int offset = 0;
-        for (Chunk chunk : _chunks)
-        {
-            offset += chunk.get(bytes, offset, chunk.remaining());
-            chunk.release();
-        }
-        assert offset == _length;
-        _chunks.clear();
-        _length = 0;
-        return bytes;
+        return BufferUtil.toArray(buffer.getByteBuffer());
     }
 
     public RetainableByteBuffer take(ByteBufferPool pool, boolean direct)
     {
-        if (_length == 0)
-            return RetainableByteBuffer.EMPTY;
-
-        if (_chunks.size() == 1)
-        {
-            Chunk chunk = _chunks.get(0);
-            ByteBuffer byteBuffer = chunk.getByteBuffer();
-
-            if (direct == byteBuffer.isDirect())
-            {
-                _chunks.clear();
-                _length = 0;
-                return RetainableByteBuffer.wrap(byteBuffer, chunk);
-            }
-        }
-
-        RetainableByteBuffer buffer = Objects.requireNonNullElse(pool, new ByteBufferPool.NonPooling()).acquire(_length, direct);
-        int offset = 0;
-        for (Chunk chunk : _chunks)
-        {
-            offset += chunk.remaining();
-            chunk.appendTo(buffer);
-            chunk.release();
-        }
-        assert offset == _length;
-        _chunks.clear();
-        _length = 0;
+        RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
+        RetainableByteBuffer to = Objects.requireNonNullElse(pool, ByteBufferPool.NON_POOLING).acquire(buffer.remaining(), direct);
+        buffer.appendTo(to);
         return buffer;
     }
 
     public void close()
     {
-        _chunks.forEach(Chunk::release);
-        _chunks.clear();
-        _length = 0;
+        _accumulator.clear();
     }
 
     public CompletableFuture<byte[]> readAll(Content.Source source)
@@ -201,7 +155,7 @@ public class ChunkAccumulator
                 {
                     _accumulator.add(chunk);
 
-                    if (_maxLength > 0 && _accumulator._length > _maxLength)
+                    if (_maxLength > 0 && _accumulator.length() > _maxLength)
                         throw new IOException("accumulation too large");
                 }
                 catch (Throwable t)
