@@ -32,6 +32,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -142,7 +143,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * with the last boolean set true.  If no content is available to commit
      * or close, then a null buffer is passed.
      */
-    public interface Interceptor
+    public interface Interceptor extends Content.Sink
     {
         /**
          * Write content.
@@ -156,6 +157,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
          * or {@link Callback#failed(Throwable)}.
          */
         void write(ByteBuffer content, boolean last, Callback callback);
+
+        @Override
+        default void write(boolean last, ByteBuffer content, Callback callback)
+        {
+            write(content, last, callback);
+        }
 
         /**
          * @return The next Interceptor in the chain or null if this is the
