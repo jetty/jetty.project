@@ -1097,15 +1097,13 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (_buffers.isEmpty())
                 return;
-            _aggregate = null;
-            boolean first = true;
             for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
             {
                 RetainableByteBuffer rbb = i.next();
-                if (first)
+                if (rbb == _aggregate)
                 {
+                    // We were aggregating so let's keep one buffer to aggregate again.
                     rbb.clear();
-                    first = false;
                 }
                 else
                 {
