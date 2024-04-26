@@ -58,23 +58,20 @@ public class IOResources
             return RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
 
         long longLength = resource.length();
-        if (longLength > Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Resource length exceeds 2 GiB: " + resource);
-        int length = (int)longLength;
 
         bufferPool = bufferPool == null ? new ByteBufferPool.NonPooling() : bufferPool;
 
         // Optimize for PathResource.
         Path path = resource.getPath();
-        if (path != null)
+        if (path != null && longLength < Integer.MAX_VALUE)
         {
-            RetainableByteBuffer retainableByteBuffer = bufferPool.acquire(length, direct);
+            RetainableByteBuffer retainableByteBuffer = bufferPool.acquire((int)longLength, direct);
             try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
             {
                 long totalRead = 0L;
                 ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
                 int pos = BufferUtil.flipToFill(byteBuffer);
-                while (totalRead < length)
+                while (totalRead < longLength)
                 {
                     int read = seekableByteChannel.read(byteBuffer);
                     if (read == -1)
@@ -92,25 +89,38 @@ public class IOResources
         }
 
         // Fallback to InputStream.
+        RetainableByteBuffer buffer = null;
         try (InputStream inputStream = resource.newInputStream())
         {
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
 
-            ByteBufferAggregator aggregator = new ByteBufferAggregator(bufferPool, direct, length > -1 ? length : 4096, length > -1 ? length : Integer.MAX_VALUE);
-            byte[] byteArray = new byte[4096];
+            RetainableByteBuffer.DynamicCapacity retainableByteBuffer = new RetainableByteBuffer.DynamicCapacity(bufferPool, direct, longLength);
             while (true)
             {
-                int read = inputStream.read(byteArray);
+                if (buffer == null)
+                    buffer = bufferPool.acquire(8192, false);
+                int read = inputStream.read(buffer.getByteBuffer().array());
                 if (read == -1)
                     break;
-                aggregator.aggregate(ByteBuffer.wrap(byteArray, 0, read));
+                buffer.getByteBuffer().limit(read);
+                retainableByteBuffer.append(buffer);
+                if (buffer.isRetained())
+                {
+                    buffer.release();
+                    buffer = null;
+                }
             }
-            return aggregator.takeRetainableByteBuffer();
+            return retainableByteBuffer;
         }
         catch (IOException e)
         {
             throw new RuntimeIOException(e);
+        }
+        finally
+        {
+            if (buffer != null)
+                buffer.release();
         }
     }
 
