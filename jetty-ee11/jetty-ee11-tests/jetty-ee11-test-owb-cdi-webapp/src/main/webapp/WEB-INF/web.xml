@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+  version="6.0">
+  <display-name>OWB CDI Integration Test WebApp</display-name>
+
+  <!--  This will be required by the SCI org.apache.webbeans.servlet.WebBeansConfigurationListener$Auto 
+        however, the current release of OWB has not renamed their META-INF/services to jakarta.servlet
+        so this SCI will not be found.
+  -->
+  <!-- context-param>
+    <param-name>openwebbeans.web.sci.active</param-name>
+    <param-value>true</param-value>
+  </context-param -->
+
+  <!-- Remove in favour of SCI when it has been fixed -->
+  <listener>
+    <listener-class>org.apache.webbeans.servlet.WebBeansConfigurationListener</listener-class>
+  </listener>
+
+  <resource-env-ref>
+    <description>Object factory for the CDI Bean Manager</description>
+    <resource-env-ref-name>BeanManager</resource-env-ref-name>
+    <resource-env-ref-type>jakarta.enterprise.inject.spi.BeanManager</resource-env-ref-type>
+  </resource-env-ref>
+</web-app>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <!-- TODO: review if this module is still needed -->
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee11.osgi</groupId>
+    <artifactId>jetty-ee11-osgi</artifactId>
+    <version>12.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-ee11-osgi-alpn</artifactId>
+  <packaging>jar</packaging>
+  <name>EE11 :: OSGi :: ALPN Fragment</name>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.alpn.fragment</bundle-symbolic-name>
+  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
+            <Bundle-Name>Jetty OSGi ALPN Fragment</Bundle-Name>
+            <Import-Package>!javax.*;!org.eclipse.jetty.*</Import-Package>
+            <Fragment-Host>system.bundle;extension:=framework</Fragment-Host>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

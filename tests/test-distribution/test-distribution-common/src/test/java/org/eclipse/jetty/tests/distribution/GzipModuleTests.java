@@ -33,8 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class GzipModuleTests extends AbstractJettyHomeTest
 {
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    //@ValueSource(strings = {"ee9", "ee10", "ee11"})
+    @ValueSource(strings = {"ee11"})
     public void testGzipDefault(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -76,7 +76,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testGzipDefaultExcludedMimeType(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -119,7 +119,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testGzipAddWebappSpecificExcludeMimeType(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

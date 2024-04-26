@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+  <!-- disable Jakarta WebSockets -->
+  <context-param>
+    <param-name>org.eclipse.jetty.websocket.jakarta</param-name>
+    <param-value>false</param-value>
+  </context-param>
+
+  <listener>
+    <listener-class>org.eclipse.jetty.websocket.jakarta.tests.server.InfoContextAttributeListener</listener-class>
+  </listener>
+
+  <filter>
+    <filter-name>wsuf</filter-name>
+    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>wsuf</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+</web-app>

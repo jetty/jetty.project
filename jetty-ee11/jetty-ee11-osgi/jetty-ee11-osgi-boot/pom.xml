@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee11.osgi</groupId>
+    <artifactId>jetty-ee11-osgi</artifactId>
+    <version>12.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-ee11-osgi-boot</artifactId>
+  <name>EE11 :: OSGi :: Boot</name>
+  <description>Jetty OSGi Boot bundle</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee11.osgi.boot.*</spotbugs.onlyAnalyze>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-osgi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-webapp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.platform</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.platform</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.cm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.event</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.util.tracker</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>org.eclipse.jetty.ee11.osgi.boot;singleton:=true</Bundle-SymbolicName>
+            <Bundle-Activator>org.eclipse.jetty.ee11.osgi.boot.EE11Activator</Bundle-Activator>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee11.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <Import-Package>${osgi.slf4j.import.packages},
+              jakarta.mail;version="2.0";resolution:=optional,
+              jakarta.mail.event;version="2.0";resolution:=optional,
+              jakarta.mail.internet;version="2.0";resolution:=optional,
+              jakarta.mail.search;version="2.0";resolution:=optional,
+              jakarta.mail.util;version="2.0";resolution:=optional,
+              jakarta.servlet;version="[$(version;==;${jakarta.servlet.api.version}),$(version;+;${jakarta.servlet.api.version}))",
+              jakarta.servlet.http;version="[$(version;==;${jakarta.servlet.api.version}),$(version;+;${jakarta.servlet.api.version}))",
+              jakarta.transaction;version="2.0.0";resolution:=optional,
+              jakarta.transaction.xa;version="2.0.0";resolution:=optional,
+              org.objectweb.asm;version="$(version;=;${asm.version})";resolution:=optional,
+              org.osgi.framework,
+              org.osgi.service.cm;version="${osgi-service-cm-version}",
+              org.osgi.service.component;version="${osgi-service-component-version}",
+              org.osgi.service.event;version="${osgi-service-event-version}",
+              org.osgi.service.packageadmin,
+              org.osgi.service.startlevel;version="1.0.0",
+              org.osgi.service.url;version="1.0.0",
+              org.osgi.util.tracker;version="${osgi-util-tracker-version}",
+              org.xml.sax,
+              org.xml.sax.helpers,
+              org.eclipse.jetty.ee11.annotations;resolution:=optional,
+              *</Import-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee11.webapp.Configuration</Provide-Capability>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <target>
+                <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
+                <copy todir="target/classes/jettyhome">
+                  <fileset dir="jettyhome">
+                    <exclude name="**/*.log"></exclude>
+                  </fileset>
+                </copy>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

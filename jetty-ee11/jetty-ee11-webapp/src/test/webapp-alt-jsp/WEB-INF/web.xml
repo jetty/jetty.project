@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+  version="6.0">
+
+  <servlet>
+    <servlet-name>zedName</servlet-name>
+    <jsp-file>/does/not/exist/index.jsp</jsp-file>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>zedName</servlet-name>
+    <url-pattern>/zed</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>precompiledName</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee11.webapp.ForcedServletTest$FakePrecompiledJSP</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>precompiledName</servlet-name>
+    <url-pattern>/precompiled/world.jsp</url-pattern>
+  </servlet-mapping>
+
+</web-app>

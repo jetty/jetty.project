@@ -122,7 +122,7 @@ public class TestServletAnnotations
 
         WebAppContext wac = new WebAppContext();
         ServletHolder defaultServlet = new ServletHolder();
-        defaultServlet.setClassName("org.eclipse.jetty.ee10.servlet.DefaultServlet");
+        defaultServlet.setClassName("org.eclipse.jetty.ee9.servlet.DefaultServlet");
         defaultServlet.setName("default");
         wac.getServletHandler().addServlet(defaultServlet);
 

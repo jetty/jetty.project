@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.9-SNAPSHOT</version>
+    <version>12.1.0-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.ee8</groupId>
   <artifactId>jetty-ee8</artifactId>
@@ -547,7 +547,8 @@
                       </rule>
                       <rule>
                         <!-- for ee8, we need to stay on 9.0.x of mortbay apache-jsp impl
-                             ee10 starts with version 10.0.x -->
+                             ee10 starts with version 10.0.x
+                             ee11 TODO -->
                         <groupId>org.mortbay.jasper</groupId>
                         <artifactId>apache-jsp</artifactId>
                         <ignoreVersions>
@@ -687,7 +688,8 @@
                       </rule>
                       <rule>
                         <!-- for ee8, we need to stay on 9.0.x of mortbay apache-jsp impl
-                             ee10 starts with version 10.0.x -->
+                             ee10 starts with version 10.0.x
+                             ee11 TODO -->
                         <groupId>org.mortbay.jasper</groupId>
                         <artifactId>apache-jsp</artifactId>
                         <ignoreVersions>

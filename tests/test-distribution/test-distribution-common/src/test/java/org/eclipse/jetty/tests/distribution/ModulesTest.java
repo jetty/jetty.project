@@ -76,7 +76,7 @@ public class ModulesTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee8-websocket-javax", "ee9-websocket-jakarta", "ee10-websocket-jakarta"})
+    @ValueSource(strings = {"ee8-websocket-javax", "ee9-websocket-jakarta", "ee10-websocket-jakarta", "ee11-websocket-jakarta"})
     public void testWebsocketModules(String module) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");

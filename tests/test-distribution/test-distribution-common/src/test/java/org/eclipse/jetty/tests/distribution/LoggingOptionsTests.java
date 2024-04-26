@@ -44,7 +44,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
     {
         List<Arguments> arguments = new ArrayList<>();
         
-        for (String env : new String[] {"ee9", "ee10"})
+        for (String env : new String[] {"ee9", "ee10", "ee11"})
         {
             arguments.add(Arguments.of(env, "logging-jetty",
                 Arrays.asList(

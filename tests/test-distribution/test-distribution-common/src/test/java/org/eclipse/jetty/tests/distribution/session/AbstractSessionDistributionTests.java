@@ -60,7 +60,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void stopRestartWebappTestSessionContentSaved(String environment) throws Exception
     {
         startExternalSessionStorage();

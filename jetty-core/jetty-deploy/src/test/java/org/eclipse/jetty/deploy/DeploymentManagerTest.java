@@ -113,13 +113,13 @@ public class DeploymentManagerTest
         });
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
-        Environment.ensure("ee10");
+        Environment.ensure("ee11");
         depman.addAppProvider(new MockAppProvider()
         {
             @Override
             public String getEnvironmentName()
             {
-                return "ee10";
+                return "ee11";
             }
         });
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
@@ -150,7 +150,7 @@ public class DeploymentManagerTest
                 "other",
                 "somethingElse",
                 "ee7",
-                "ee10",
+                "ee11",
                 "ee12"
                 ));
     }

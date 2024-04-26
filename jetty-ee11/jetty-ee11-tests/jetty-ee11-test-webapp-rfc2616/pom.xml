@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee11</groupId>
+    <artifactId>jetty-ee11-tests</artifactId>
+    <version>12.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-ee11-test-webapp-rfc2616</artifactId>
+  <packaging>war</packaging>
+  <name>EE11 :: Tests :: RFC2616 WebApp</name>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.rfc2616</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-servlets</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.jetty.ee11</groupId>
+        <artifactId>jetty-ee11-maven-plugin</artifactId>
+        <version>${project.version}</version>
+        <configuration>
+          <stopPort>8087</stopPort>
+          <stopKey>foo</stopKey>
+          <scan>1</scan>
+          <systemProperties>
+            <fooprop>222</fooprop>
+          </systemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

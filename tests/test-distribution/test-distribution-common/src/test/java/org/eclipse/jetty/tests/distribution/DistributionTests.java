@@ -196,7 +196,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testQuickStartGenerationAndRun(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -250,7 +250,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testSimpleWebAppWithJSPAndJSTL(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -293,12 +293,12 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee10"})
+    @ValueSource(strings = {"ee10", "ee11"})
     public void testSimpleWebAppWithJSPOnModulePath(String env) throws Exception
     {
         // Testing with env=ee9 is not possible because jakarta.transaction:1.x
         // does not have a proper module-info.java, so JPMS resolution will fail.
-        // For env=ee10, jakarta.transaction:2.x has a proper module-info.java.
+        // For env>=ee10, jakarta.transaction:2.x has a proper module-info.java.
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
@@ -341,7 +341,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testSimpleWebAppWithJSPOverH2C(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -349,7 +349,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testSimpleWebAppWithJSPOverH2(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -396,7 +396,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testLog4j2ModuleWithSimpleWebAppWithJSP(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -438,7 +438,16 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @CsvSource({"http,ee9,false,", "http,ee9,true", "https,ee9,false", "http,ee10,false", "http,ee10,true", "https,ee10,false"})
+    @CsvSource({
+        "http,ee9,false,",
+        "http,ee9,true",
+        "https,ee9,false",
+        "http,ee10,false,",
+        "http,ee10,true",
+        "https,ee10,false",
+        "http,ee11,false",
+        "http,ee11,true",
+        "https,ee11,false"})
     public void testWebsocketClientInWebappProvidedByServer(String scheme, String env, String jpms) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -488,7 +497,16 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @CsvSource({"http,ee9,false", "http,ee9,true", "https,ee9,false", "http,ee10,false", "http,ee10,true", "https,ee10,false"})
+    @CsvSource({
+        "http,ee9,false,",
+        "http,ee9,true",
+        "https,ee9,false",
+        "http,ee10,false,",
+        "http,ee10,true",
+        "https,ee10,false",
+        "http,ee11,false",
+        "http,ee11,true",
+        "https,ee11,false"})
     public void testWebsocketClientInWebapp(String scheme, String env, String jpms) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -558,7 +576,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testWebAppWithProxyAndJPMS(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -618,7 +636,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"ee9,false", "ee10,false", "ee10,true"})
+    @CsvSource(value = {"ee9,false", "ee10,false", "ee10,true", "ee11,false", "ee11,true"})
     public void testSimpleWebAppWithWebsocket(String env, String jpms) throws Exception
     {
         // Testing ee9 with JPMS won't work because ee9 jakarta.* jars
@@ -1387,7 +1405,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testEEFastCGIProxying(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -1571,7 +1589,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testRangeRequestMultiPartRangeResponse(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -1627,7 +1645,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee8", "ee9", "ee10"})
+    @ValueSource(strings = {"ee8", "ee9", "ee10", "ee11"})
     public void testXmlDeployWarNotInWebapps(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

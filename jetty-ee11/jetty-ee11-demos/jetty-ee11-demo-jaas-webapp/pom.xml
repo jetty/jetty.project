@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee11.demos</groupId>
+    <artifactId>jetty-ee11-demos</artifactId>
+    <version>12.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-ee11-demo-jaas-webapp</artifactId>
+  <packaging>war</packaging>
+  <name>EE11 :: Demo :: JAAS WebApp</name>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
+  </properties>
+  <build>
+    <!--
+      <plugins>
+        <plugin>
+          <groupId>org.eclipse.jetty.ee11</groupId>
+          <artifactId>jetty-ee11-maven-plugin</artifactId>
+          <version>${project.version}</version>
+          <configuration>
+            <scan>10</scan>
+            <systemProperties>
+                <jetty.base>${basedir}/src/main/config/modules/demo.d</jetty.base>
+                <java.security.auth.login.config>${basedir}/src/main/etc/ee11-demo-login.conf</java.security.auth.login.config>
+            </systemProperties>
+            <webApp>
+              <contextPath>/ee11-test-jaas</contextPath>
+              <securityHandler implementation="org.eclipse.jetty.ee11.security.ConstraintSecurityHandler">
+                <loginService implementation="org.eclipse.jetty.security.jaas.JAASLoginService">
+                  <name>Test JAAS Realm</name>
+                  <loginModuleName>ee11-xyz</loginModuleName>
+                </loginService>
+              </securityHandler>
+            </webApp>
+          </configuration>
+        </plugin>
+      </plugins>
+  -->
+  </build>
+</project>

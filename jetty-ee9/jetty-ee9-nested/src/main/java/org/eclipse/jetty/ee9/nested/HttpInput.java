@@ -493,7 +493,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      *     {@link Destroyable#destroy()} method called when {@link #recycle()} is called.</li>
      * </ul>
      *
-     * @deprecated Interceptor has been removed with no replacement in the EE10 implementation
+     * @deprecated Interceptor has been removed with no replacement in the EE10 or later implementations
      */
     @Deprecated(forRemoval = true)
     public interface Interceptor

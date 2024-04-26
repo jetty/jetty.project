@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+  <Set name="contextPath">/rfc2616-webapp</Set>
+  <Set name="war"><Property name="test.webapps" default="target/webapps" />/ee11-test-rfc2616.war</Set>
+  <Get name="ProtectedClassMatcher">
+    <Call name="add"><Arg>org.slf4j.</Arg></Call>
+    <Call name="add"><Arg>org.eclipse.jetty.logging.</Arg></Call>
+  </Get>
+  <Get name="HiddenClassMatcher">
+    <Call name="add"><Arg>-org.slf4j.</Arg></Call>
+    <Call name="add"><Arg>-org.eclipse.jetty.logging.</Arg></Call>
+  </Get>
+</Configure>

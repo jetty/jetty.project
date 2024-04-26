@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="https://jakarta.ee/xml/ns/jakartaee"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+   metadata-complete="false"
+   version="6.0">
+
+  <display-name>WebApp With Resources</display-name>
+
+  <servlet>
+    <servlet-name>Hello</servlet-name>
+    <servlet-class>com.acme.HelloWorld</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>Hello</servlet-name>
+    <url-pattern>/hello/*</url-pattern>
+  </servlet-mapping>
+
+</web-app>
+
+

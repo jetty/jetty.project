@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.9-SNAPSHOT</version>
+    <version>12.1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-home</artifactId>
@@ -126,20 +126,26 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-home</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-home</artifactId>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
@@ -336,8 +342,8 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee8.websocket,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee10.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>jetty-ee8-apache-jsp,jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-start,jetty-slf4j-impl,javadoc</excludeArtifactIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee8.websocket,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee11.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
+              <excludeArtifactIds>jetty-ee8-apache-jsp,jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee11-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-ee11-glassfish-jstl,jetty-start,jetty-slf4j-impl,javadoc</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -351,7 +357,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>jetty-ee8-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-apache-jsp,jetty-ee9-glassfish-jstl,jetty-ee10-apache-jsp,jetty-ee10-glassfish-jtl,jetty-start</excludeArtifactIds>
+              <excludeArtifactIds>jetty-ee8-apache-jsp,jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee11-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-ee11-glassfish-jstl,jetty-start</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
@@ -488,6 +494,12 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
+                  <groupId>org.eclipse.jetty.ee11</groupId>
+                  <artifactId>jetty-ee11-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                </artifactItem>
+                <artifactItem>
                   <groupId>org.eclipse.jetty.ee10</groupId>
                   <artifactId>jetty-ee10-home</artifactId>
                   <version>${project.version}</version>
@@ -553,8 +565,8 @@
                   <excludes combine.children="append">
                     <exclude>org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api</exclude>
                     <!--
-                      we need to exclude some libraries which are different depending on ee8/ee9/ee10
-                      enforcer is running at ee10/ee9/ee8 home level
+                      we need to exclude some libraries which are different depending on ee8/ee9/ee11
+                      enforcer is running at ee11/ee10/ee9/ee8 home level
                     -->
                     <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
                     <exclude>jakarta.servlet.jsp:jakarta.servlet.jsp-api</exclude>

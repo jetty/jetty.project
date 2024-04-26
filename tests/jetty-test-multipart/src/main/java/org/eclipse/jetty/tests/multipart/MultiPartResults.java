@@ -20,7 +20,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
- * Generic interface for access to MultiPart results across core / ee10 / ee9 / ee8 / etc ...
+ * Generic interface for access to MultiPart results across core / ee8 / ee9 / etc ...
  */
 public interface MultiPartResults
 {

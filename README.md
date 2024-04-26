@@ -11,7 +11,7 @@ Jetty is a modern fully asynchronous web server that has a long history as a com
 
 ```shell
 $ mkdir jetty-base && cd jetty-base
-$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee10-deploy
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee11-deploy
 $ cp ~/src/myproj/target/mywebapp.war webapps
 $ java -jar $JETTY_HOME/start.jar 
 ```
@@ -20,7 +20,7 @@ $ java -jar $JETTY_HOME/start.jar
 
 ```shell
 $ mkdir jetty-base && cd jetty-base
-$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee10-deploy,ee8-deploy
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee11-deploy,ee8-deploy
 $ cp ~/src/myproj/target/mywebapp10.war webapps
 $ cp ~/src/myproj/target/mywebapp8.war webapps
 $ echo "environment: ee8" > webapps/mywebapp8.properties

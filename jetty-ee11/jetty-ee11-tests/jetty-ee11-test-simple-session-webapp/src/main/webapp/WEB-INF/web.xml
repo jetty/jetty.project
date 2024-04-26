@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app
+        xmlns="https://jakarta.ee/xml/ns/jakartaee"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+        metadata-complete="false"
+        version="6.0">
+
+  <display-name>Very Simple Web Application</display-name>
+
+  <servlet>
+    <servlet-name>SessionTest</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.session.SessionTest</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>SessionTest</servlet-name>
+    <url-pattern>/session</url-pattern>
+  </servlet-mapping>
+
+</web-app>

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id='wac' class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+
+  <New id="tx" class="org.eclipse.jetty.ee11.plus.jndi.Transaction">
+    <Arg>ee11</Arg>
+    <Arg>
+      <New class="org.example.MockUserTransaction"/>
+    </Arg>
+  </New>
+
+  <Call name="getResourceFactory">
+    <Call id="realmResource" name="newResource">
+      <Arg><SystemProperty name="jetty.home" default="."/>/test-spec-realm.properties</Arg>
+    </Call>
+  </Call>
+
+  <Get name="securityHandler">
+    <Set name="loginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
+        <Set name="name">Test Realm</Set>
+        <Set name="config"><Ref refid="realmResource"/></Set>
+      </New>
+    </Set>
+  </Get>
+
+  <New id="maxAmount"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
+    <Arg><Ref refid='wac'/></Arg>
+    <Arg>maxAmount</Arg>
+    <Arg type="java.lang.Double">100</Arg>
+    <Arg type="boolean">true</Arg>
+  </New>
+
+
+  <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid='wac'/></Arg>
+    <Arg>jdbc/mydatasource</Arg>
+    <Arg>
+     <New class="org.example.MockDataSource">
+     </New>
+    </Arg>
+   </New>
+
+</Configure>

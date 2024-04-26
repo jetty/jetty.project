@@ -1,0 +1,19 @@
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+  <display-name>Intentionally Bad Init</display-name>
+
+  <servlet>
+    <servlet-name>BadInit</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee11.test.BadServletInit</servlet-class>
+    <load-on-startup>0</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>BadInit</servlet-name>
+    <url-pattern>/bad/*</url-pattern>
+  </servlet-mapping>
+
+</web-app>

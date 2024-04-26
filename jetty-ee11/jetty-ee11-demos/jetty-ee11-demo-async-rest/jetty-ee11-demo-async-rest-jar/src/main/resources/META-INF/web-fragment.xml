@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<web-fragment 
+   xmlns="https://jakarta.ee/xml/ns/jakartaee"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-fragment_6_0.xsd"
+   version="6.0">
+	<servlet>
+    <display-name>SerialRestServlet</display-name>
+    <servlet-name>SerialRestServlet</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee11.demos.SerialRestServlet</servlet-class>
+  </servlet>
+	<servlet-mapping>
+		<servlet-name>SerialRestServlet</servlet-name>
+		<url-pattern>/testSerial</url-pattern>
+	</servlet-mapping>
+
+  <servlet>
+    <display-name>AsyncRestServlet</display-name>
+    <servlet-name>AsyncRestServlet</servlet-name>
+    <servlet-class>org.eclipse.jetty.ee11.demos.AsyncRestServlet</servlet-class>
+    <async-supported>true</async-supported>
+  </servlet>
+	<servlet-mapping>
+		<servlet-name>AsyncRestServlet</servlet-name>
+		<url-pattern>/testAsync</url-pattern>
+	</servlet-mapping>	
+</web-fragment>

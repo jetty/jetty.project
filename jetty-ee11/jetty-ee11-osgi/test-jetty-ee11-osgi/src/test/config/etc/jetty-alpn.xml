@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
+
+  <Call name="addConnectionFactory">
+    <Arg>
+      <New class="org.eclipse.jetty.server.SslConnectionFactory">
+        <Arg name="next">alpn</Arg>
+        <Arg name="sslContextFactory"><Ref refid="sslContextFactory"/></Arg>
+      </New>
+    </Arg>
+  </Call>
+  
+  <Call name="addConnectionFactory">
+    <Arg>
+      <New id="alpn" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
+        <Arg name="protocols" type="String"><Property name="jetty.alpn.protocols" default="h2,http/1.1" /></Arg>
+        <Set name="defaultProtocol" property="jetty.alpn.defaultProtocol"/>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

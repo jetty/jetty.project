@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app
+  xmlns="https://jakarta.ee/xml/ns/jakartaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+  version="6.0">
+
+  <context-param>
+    <param-name>org.eclipse.jetty.websocket.jakarta.addDynamicFilter</param-name>
+    <param-value>false</param-value>
+  </context-param>
+
+  <filter>
+    <filter-name>org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-class>org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <init-param>
+      <param-name>customParam</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <url-pattern>/echo/*</url-pattern>
+  </filter-mapping>
+</web-app>

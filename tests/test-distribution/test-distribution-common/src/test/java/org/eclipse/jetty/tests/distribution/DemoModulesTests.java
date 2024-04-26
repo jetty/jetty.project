@@ -47,7 +47,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 {
     private static Stream<Arguments> provideEnvironmentsToTest()
     {
-        String envsToTest = System.getProperty("environmentsToTest", "ee8,ee9,ee10");
+        String envsToTest = System.getProperty("environmentsToTest", "ee8,ee9,ee10,ee11");
         return Arrays.stream(envsToTest.split(",")).map(Arguments::of);
     }
 
