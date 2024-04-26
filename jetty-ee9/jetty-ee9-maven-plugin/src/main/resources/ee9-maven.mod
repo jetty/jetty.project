@@ -12,7 +12,7 @@ ee9-webapp
 ee9-annotations
 
 [lib]
-lib/maven-ee9/**.jar
+lib/ee9-maven/**.jar
 
 [xml]
 etc/jetty-ee9-maven.xml
