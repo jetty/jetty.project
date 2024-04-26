@@ -12,7 +12,7 @@ ee8-webapp
 ee8-annotations
 
 [lib]
-lib/maven-ee8/**.jar
+lib/ee8-maven/**.jar
 
 [xml]
 etc/jetty-ee8-maven.xml

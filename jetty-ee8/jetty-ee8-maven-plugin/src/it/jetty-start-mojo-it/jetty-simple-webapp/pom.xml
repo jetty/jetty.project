@@ -140,7 +140,7 @@
               </jettyXmls>
               <loginServices>
                 <loginService implementation="org.eclipse.jetty.security.HashLoginService">
-                  <config implementation="org.eclipse.jetty.ee8.maven.plugin.MavenResource">
+                  <config implementation="org.eclipse.jetty.maven.MavenResource">
                     <resourceAsString>${basedir}/src/config/login.xml</resourceAsString>
                   </config>
                 </loginService>

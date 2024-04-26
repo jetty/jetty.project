@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.maven.plugin;
+package org.eclipse.jetty.maven;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,6 +85,7 @@ public class Overlay
     {
         if (dir == null)
             throw new IllegalStateException("No overly unpack directory");
+
         Path pathDir = dir.toPath();
         // only unpack if the overlay is newer
         if (!Files.exists(pathDir))

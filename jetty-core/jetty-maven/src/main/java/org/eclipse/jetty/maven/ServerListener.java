@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.maven.plugin;
+package org.eclipse.jetty.maven;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

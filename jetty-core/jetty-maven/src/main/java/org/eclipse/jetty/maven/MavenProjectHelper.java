@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.maven.plugin.utils;
+package org.eclipse.jetty.maven;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -35,8 +35,6 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.jetty.ee10.maven.plugin.OverlayManager;
-import org.eclipse.jetty.ee10.maven.plugin.WarPluginInfo;
 
 /**
  * MavenProjectHelper
