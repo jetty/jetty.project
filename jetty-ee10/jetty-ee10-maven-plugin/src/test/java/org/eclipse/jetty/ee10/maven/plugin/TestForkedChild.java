@@ -88,7 +88,7 @@ public class TestForkedChild
                 webapp.setBaseResourceAsPath(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[0]));
-                child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing
+                child.getJettyEmbedder().setExitVm(false); //ensure jetty doesn't stop vm for testing
                 child.start();
             }
             catch (Exception e)
