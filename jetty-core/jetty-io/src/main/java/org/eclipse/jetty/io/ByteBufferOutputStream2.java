@@ -17,16 +17,19 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
+
 /**
- * This class implements an output stream in which the data is written into a list of ByteBuffer,
- * the buffer list automatically grows as data is written to it, the buffers are taken from the
- * supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.
- *
+ * This class implements an output stream in which the data is buffered.
+ * <p>
  * Designed to mimic {@link java.io.ByteArrayOutputStream} but with better memory usage, and less copying.
+ * @deprecated Use {@link Content.Sink#asBuffered(Content.Sink, ByteBufferPool, boolean, int, int)}
  */
+@Deprecated
 public class ByteBufferOutputStream2 extends OutputStream
 {
-    private final ByteBufferAccumulator _accumulator;
+    private final RetainableByteBuffer.DynamicCapacity _accumulator;
     private int _size = 0;
 
     public ByteBufferOutputStream2()
@@ -36,7 +39,7 @@ public class ByteBufferOutputStream2 extends OutputStream
 
     public ByteBufferOutputStream2(ByteBufferPool bufferPool, boolean direct)
     {
-        _accumulator = new ByteBufferAccumulator(bufferPool == null ? ByteBufferPool.NON_POOLING : bufferPool, direct);
+        _accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, direct, -1);
     }
 
     /**
@@ -57,7 +60,7 @@ public class ByteBufferOutputStream2 extends OutputStream
      */
     public RetainableByteBuffer toByteBuffer()
     {
-        return _accumulator.toRetainableByteBuffer();
+        return _accumulator;
     }
 
     /**
@@ -65,7 +68,7 @@ public class ByteBufferOutputStream2 extends OutputStream
      */
     public byte[] toByteArray()
     {
-        return _accumulator.toByteArray();
+        return BufferUtil.toArray(_accumulator.getByteBuffer());
     }
 
     public int size()
@@ -83,30 +86,33 @@ public class ByteBufferOutputStream2 extends OutputStream
     public void write(byte[] b, int off, int len)
     {
         _size += len;
-        _accumulator.copyBytes(b, off, len);
+        _accumulator.append(ByteBuffer.wrap(b, off, len));
     }
 
     public void write(ByteBuffer buffer)
     {
         _size += buffer.remaining();
-        _accumulator.copyBuffer(buffer);
+        _accumulator.append(buffer);
     }
 
     public void writeTo(ByteBuffer buffer)
     {
-        _accumulator.writeTo(buffer);
+        _accumulator.putTo(buffer);
     }
 
     public void writeTo(OutputStream out) throws IOException
     {
-        _accumulator.writeTo(out);
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            _accumulator.writeTo(Content.Sink.from(out), false, callback);
+            callback.block();
+        }
     }
 
     @Override
     public void close()
     {
-        _accumulator.close();
-        _size = 0;
+        _accumulator.clear();
     }
 
     @Override
