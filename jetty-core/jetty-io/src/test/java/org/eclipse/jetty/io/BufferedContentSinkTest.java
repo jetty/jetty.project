@@ -440,7 +440,7 @@ public class BufferedContentSinkTest
                 buffered.write(false, ByteBuffer.wrap(input2), Callback.from(() ->
                     buffered.write(true, ByteBuffer.wrap(input3), Callback.NOOP)))));
 
-            // We expect 3 buffer flushes: 4096b + 4096b + 1808b == 10_000b.
+            // We expect 3 buffer flushes: 4096b + 3004b + 2000 == 10_000b.
             Content.Chunk chunk = async.read();
             assertThat(chunk, notNullValue());
             assertThat(chunk.remaining(), is(4096));
@@ -450,14 +450,14 @@ public class BufferedContentSinkTest
 
             chunk = async.read();
             assertThat(chunk, notNullValue());
-            assertThat(chunk.remaining(), is(4096));
+            assertThat(chunk.remaining(), is(input2.length - (4096 - input1.length)));
             accumulatingBuffer.put(chunk.getByteBuffer());
             assertThat(chunk.release(), is(true));
             assertThat(chunk.isLast(), is(false));
 
             chunk = async.read();
             assertThat(chunk, notNullValue());
-            assertThat(chunk.remaining(), is(1808));
+            assertThat(chunk.remaining(), is(input3.length));
             accumulatingBuffer.put(chunk.getByteBuffer());
             assertThat(chunk.release(), is(true));
             assertThat(chunk.isLast(), is(true));
@@ -551,13 +551,13 @@ public class BufferedContentSinkTest
             callback.succeeded();
 
             Content.Chunk read = await().atMost(5, TimeUnit.SECONDS).until(async::read, Objects::nonNull);
-            assertThat(read.isLast(), is(false));
             assertThat(read.remaining(), is(1024));
+            assertThat(read.isLast(), is(false));
             assertThat(read.release(), is(true));
 
             read = await().atMost(5, TimeUnit.SECONDS).until(async::read, Objects::nonNull);
-            assertThat(read.isLast(), is(true));
             assertThat(read.remaining(), is(1024));
+            assertThat(read.isLast(), is(true));
             assertThat(read.release(), is(true));
 
             assertTrue(complete.await(5, TimeUnit.SECONDS));
