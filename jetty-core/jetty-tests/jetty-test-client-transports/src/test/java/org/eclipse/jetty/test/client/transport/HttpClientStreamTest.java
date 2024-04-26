@@ -79,7 +79,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1150,17 +1149,9 @@ public class HttpClientStreamTest extends AbstractTest
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
-        // Since the connector was stopped, there is no guarantee that
-        // the pending demand got serviced with an error chunk.
-        if (serverDemandLatch.await(5, TimeUnit.SECONDS))
-        {
-            assertTrue(Content.Chunk.isFailure(lastChunk.get(), true));
-            assertInstanceOf(IOException.class, lastChunk.get().getFailure());
-        }
-        else
-        {
-            assertThat(lastChunk.get(), is(nullValue()));
-        }
+        assertTrue(serverDemandLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(Content.Chunk.isFailure(lastChunk.get(), true));
+        assertInstanceOf(IOException.class, lastChunk.get().getFailure());
     }
 
     @ParameterizedTest
