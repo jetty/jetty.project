@@ -42,12 +42,7 @@ public class BufferedContentSink implements Content.Sink
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedContentSink.class);
 
-    private static final int START_BUFFER_SIZE = 1024;
-
     private final Content.Sink _delegate;
-    private final ByteBufferPool _bufferPool;
-    private final boolean _direct;
-    private final int _maxBufferSize;
     private final int _maxAggregationSize;
     private final RetainableByteBuffer.DynamicCapacity _aggregator;
     private final SerializedInvoker _serializer = new SerializedInvoker();
@@ -63,9 +58,6 @@ public class BufferedContentSink implements Content.Sink
         if (maxBufferSize < maxAggregationSize)
             throw new IllegalArgumentException("maxBufferSize (" + maxBufferSize + ") must be >= maxAggregationSize (" + maxAggregationSize + ")");
         _delegate = delegate;
-        _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
-        _direct = direct;
-        _maxBufferSize = maxBufferSize;
         _maxAggregationSize = maxAggregationSize;
         _aggregator = new RetainableByteBuffer.DynamicCapacity(bufferPool, direct, maxBufferSize);
     }
