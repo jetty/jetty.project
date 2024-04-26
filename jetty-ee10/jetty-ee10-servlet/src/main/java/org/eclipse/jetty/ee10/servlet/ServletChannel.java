@@ -279,7 +279,9 @@ public class ServletChannel
     public ServletContextResponse getServletContextResponse()
     {
         ServletContextRequest request = _servletContextRequest;
-        return request == null ? null : request.getServletContextResponse();
+        if (_servletContextRequest == null)
+            throw new IllegalStateException("Request/Response does not exist (likely recycled)");
+        return request.getServletContextResponse();
     }
 
     /**
@@ -291,6 +293,8 @@ public class ServletChannel
      */
     public Response getResponse()
     {
+        if (_response == null)
+            throw new IllegalStateException("Response does not exist (likely recycled)");
         return _response;
     }
 
