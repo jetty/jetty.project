@@ -347,8 +347,7 @@ public abstract class AbstractHomeForker extends AbstractForker
         URI thisJar = TypeUtil.getLocationOfClass(this.getClass());
         if (thisJar == null)
             throw new IllegalStateException("Can't find jar for jetty-" + environment + "-maven-plugin");
-
-        System.err.println("LOCATION OF COPIED JAR: " + thisJar.toASCIIString() + " copied to " + mavenLibPath.resolve("jetty-" + environment + "maven-plugin.jar"));
+        
         try (InputStream jarStream = thisJar.toURL().openStream();
              FileOutputStream fileStream = new FileOutputStream(mavenLibPath.resolve("jetty-" + environment + "-maven-plugin.jar").toFile()))
         {
