@@ -71,7 +71,9 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     @Override
     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        offer(new AsyncChunk(last, byteBuffer, callback));
+        ByteBuffer slice = byteBuffer.slice();
+        BufferUtil.clear(byteBuffer);
+        offer(new AsyncChunk(last, slice, callback));
     }
 
     /**

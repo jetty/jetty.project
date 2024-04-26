@@ -1332,9 +1332,9 @@ public interface RetainableByteBuffer extends Retainable
         protected void addDetailString(StringBuilder stringBuilder)
         {
             super.addDetailString(stringBuilder);
-            stringBuilder.append(",as=");
+            stringBuilder.append(",aggSize=");
             stringBuilder.append(_aggregationSize);
-            stringBuilder.append(",mr=");
+            stringBuilder.append(",minRetain=");
             stringBuilder.append(_minRetainSize);
         }
 
