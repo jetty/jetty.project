@@ -55,7 +55,7 @@ public class RedirectRegexRule extends RegexRule
     }
 
     /**
-     * Set the location to redirect..
+     * Set the location to redirect.
      * @param location the location to redirect.
      */
     public void setLocation(String location)

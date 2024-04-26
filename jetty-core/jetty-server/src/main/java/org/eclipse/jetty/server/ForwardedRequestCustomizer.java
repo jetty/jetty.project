@@ -43,7 +43,7 @@ import static java.lang.invoke.MethodType.methodType;
 /**
  * Customize Requests for Proxy Forwarding.
  * <p>
- * This customizer looks at at HTTP request for headers that indicate
+ * This customizer looks at HTTP request for headers that indicate
  * it has been forwarded by one or more proxies.  Specifically handled are
  * <ul>
  * <li>{@code Forwarded}, as defined by <a href="https://tools.ietf.org/html/rfc7239">rfc7239</a>
@@ -80,7 +80,7 @@ import static java.lang.invoke.MethodType.methodType;
  *     <tbody style="text-align: left; vertical-align: top;">
  *         <tr>
  *             <td>1</td>
- *             <td><code>Forwarded</code> Header</td>
+ *             <td>{@code Forwarded} Header</td>
  *             <td>"{@code host=<host>}" param (Required)</td>
  *             <td>"{@code host=<host>:<port>} param (Implied)</td>
  *             <td>"{@code proto=<value>}" param (Optional)</td>
@@ -88,7 +88,7 @@ import static java.lang.invoke.MethodType.methodType;
  *         </tr>
  *         <tr>
  *             <td>2</td>
- *             <td><code>X-Forwarded-Host</code> Header</td>
+ *             <td>{@code X-Forwarded-Host} Header</td>
  *             <td>Required</td>
  *             <td>Implied</td>
  *             <td>n/a</td>
@@ -96,7 +96,7 @@ import static java.lang.invoke.MethodType.methodType;
  *         </tr>
  *         <tr>
  *             <td>3</td>
- *             <td><code>X-Forwarded-Port</code> Header</td>
+ *             <td>{@code X-Forwarded-Port} Header</td>
  *             <td>n/a</td>
  *             <td>Required</td>
  *             <td>n/a</td>
@@ -104,7 +104,7 @@ import static java.lang.invoke.MethodType.methodType;
  *         </tr>
  *         <tr>
  *             <td>4</td>
- *             <td><code>X-Forwarded-Server</code> Header</td>
+ *             <td>{@code X-Forwarded-Server} Header</td>
  *             <td>Required</td>
  *             <td>Optional</td>
  *             <td>n/a</td>
@@ -112,29 +112,29 @@ import static java.lang.invoke.MethodType.methodType;
  *         </tr>
  *         <tr>
  *             <td>5</td>
- *             <td><code>X-Forwarded-Proto</code> Header</td>
+ *             <td>{@code X-Forwarded-Proto} Header</td>
  *             <td>n/a</td>
  *             <td>Implied from value</td>
  *             <td>Required</td>
  *             <td>
  *                 <p>left-most value becomes protocol.</p>
  *                 <ul>
- *                     <li>Value of "<code>http</code>" means port=80.</li>
+ *                     <li>Value of "{@code http}" means port=80.</li>
  *                     <li>Value of "{@link HttpConfiguration#getSecureScheme()}" means port={@link HttpConfiguration#getSecurePort()}.</li>
  *                 </ul>
  *             </td>
  *         </tr>
  *         <tr>
  *             <td>6</td>
- *             <td><code>X-Proxied-Https</code> Header</td>
+ *             <td>{@code X-Proxied-Https} Header</td>
  *             <td>n/a</td>
  *             <td>Implied from value</td>
  *             <td>boolean</td>
  *             <td>
  *                 <p>left-most value determines protocol and port.</p>
  *                 <ul>
- *                     <li>Value of "<code>on</code>" means port={@link HttpConfiguration#getSecurePort()}, and protocol={@link HttpConfiguration#getSecureScheme()}).</li>
- *                     <li>Value of "<code>off</code>" means port=80, and protocol=http.</li>
+ *                     <li>Value of "{@code on}" means port={@link HttpConfiguration#getSecurePort()}, and protocol={@link HttpConfiguration#getSecureScheme()}).</li>
+ *                     <li>Value of "{@code off}" means port=80, and protocol=http.</li>
  *                 </ul>
  *             </td>
  *         </tr>
@@ -799,12 +799,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         @Override
         public String toString()
         {
-            final StringBuilder sb = new StringBuilder("MutableHostPort{");
-            sb.append("host='").append(_host).append("'/").append(_hostSource);
-            sb.append(", port=").append(_port);
-            sb.append("/").append(_portSource);
-            sb.append('}');
-            return sb.toString();
+            return "%s@%x{host='%s'/%s, port=%d/%s}".formatted(getClass().getSimpleName(), hashCode(), _host, _hostSource, _port, _portSource);
         }
     }
 
@@ -888,7 +883,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>Proxy-auth-cert</code>
+         * Called if header is {@code Proxy-auth-cert}
          */
         public void handleCipherSuite(HttpField field)
         {
@@ -904,7 +899,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>Proxy-Ssl-Id</code>
+         * Called if header is {@code Proxy-Ssl-Id}
          */
         public void handleSslSessionId(HttpField field)
         {
@@ -920,7 +915,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>X-Forwarded-Host</code>
+         * Called if header is {@code X-Forwarded-Host}
          */
         public void handleForwardedHost(HttpField field)
         {
@@ -928,7 +923,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>X-Forwarded-For</code>
+         * Called if header is {@code X-Forwarded-For}
          */
         public void handleForwardedFor(HttpField field)
         {
@@ -937,7 +932,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>X-Forwarded-Server</code>
+         * Called if header is {@code X-Forwarded-Server}
          */
         public void handleForwardedServer(HttpField field)
         {
@@ -947,7 +942,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>X-Forwarded-Port</code>
+         * Called if header is {@code X-Forwarded-Port}
          */
         public void handleForwardedPort(HttpField field)
         {
@@ -957,7 +952,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>X-Forwarded-Proto</code>
+         * Called if header is {@code X-Forwarded-Proto}
          */
         public void handleProto(HttpField field)
         {
@@ -965,7 +960,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>X-Proxied-Https</code>
+         * Called if header is {@code X-Proxied-Https}
          */
         public void handleHttps(HttpField field)
         {
@@ -988,7 +983,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         /**
-         * Called if header is <code>Forwarded</code>
+         * Called if header is {@code Forwarded}
          */
         public void handleRFC7239(HttpField field)
         {
