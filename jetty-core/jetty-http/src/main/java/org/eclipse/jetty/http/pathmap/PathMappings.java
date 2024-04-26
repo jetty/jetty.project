@@ -263,6 +263,14 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
     }
 
     /**
+     * @return The {@link MappedResource} of the default servlet, or null if it is not set.
+     */
+    public MappedResource<E> getDefault()
+    {
+        return _servletDefault;
+    }
+
+    /**
      * <p>Find the best single match for a path.</p>
      * <p>The match may be found by optimized direct lookups when possible, otherwise all mappings
      * are iterated over and the first match returned</p>

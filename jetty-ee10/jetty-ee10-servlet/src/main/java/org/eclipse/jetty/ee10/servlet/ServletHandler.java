@@ -478,7 +478,7 @@ public class ServletHandler extends Handler.Wrapper
      */
     public MatchedResource<MappedServlet> getMatchedServlet(String target)
     {
-        if (target.startsWith("/") || target.length() == 0)
+        if (target.startsWith("/") || target.isEmpty())
         {
             if (_servletPathMap == null)
                 return null;
@@ -489,6 +489,18 @@ public class ServletHandler extends Handler.Wrapper
         if (holder == null)
             return null;
         return new MatchedResource<>(holder, null, MatchedPath.EMPTY);
+    }
+
+    /**
+     * ServletHolder for the default servlet.
+     *
+     * @return MatchedResource, pointing to the {@link MappedResource} for the {@link ServletHolder}.
+     */
+    public MappedResource<MappedServlet> getDefaultServlet()
+    {
+        if (_servletPathMap == null)
+            return null;
+        return _servletPathMap.getDefault();
     }
 
     /**
