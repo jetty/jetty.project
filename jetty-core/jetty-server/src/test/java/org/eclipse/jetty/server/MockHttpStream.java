@@ -24,8 +24,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
@@ -49,7 +49,7 @@ public class MockHttpStream implements HttpStream
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
     private final CountDownLatch _completed = new CountDownLatch(1);
-    private final ByteBufferAccumulator _accumulator = new ByteBufferAccumulator();
+    private final RetainableByteBuffer.DynamicCapacity _accumulator = new RetainableByteBuffer.DynamicCapacity();
     private final AtomicReference<ByteBuffer> _out = new AtomicReference<>();
     private final HttpChannel _channel;
     private final AtomicReference<MetaData.Response> _response = new AtomicReference<>();
@@ -186,7 +186,7 @@ public class MockHttpStream implements HttpStream
         }
 
         if (content != null)
-            _accumulator.copyBuffer(content);
+            _accumulator.append(content);
 
         if (last)
         {

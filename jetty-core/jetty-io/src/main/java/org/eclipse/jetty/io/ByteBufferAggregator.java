@@ -26,7 +26,9 @@ import org.slf4j.LoggerFactory;
  * Once the buffer is full, the aggregator will not aggregate any more bytes until its buffer is taken out,
  * after which a new aggregate/take buffer cycle can start.</p>
  * <p>The buffers are taken from the supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.</p>
+ * @deprecated Use {@link RetainableByteBuffer.DynamicCapacity}
  */
+@Deprecated(forRemoval = true)
 public class ByteBufferAggregator
 {
     private static final Logger LOG = LoggerFactory.getLogger(ByteBufferAggregator.class);

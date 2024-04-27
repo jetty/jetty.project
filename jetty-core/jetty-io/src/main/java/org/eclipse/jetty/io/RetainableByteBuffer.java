@@ -885,6 +885,48 @@ public interface RetainableByteBuffer extends Retainable
             };
         }
 
+        /**
+         * Take the contents of this buffer, leaving it clear and independent
+         * @return An independent buffer with the contents of this buffer, avoiding copies if possible.
+         */
+        public byte[] takeByteArray()
+        {
+            return switch (_buffers.size())
+            {
+                case 0 -> RetainableByteBuffer.EMPTY.getByteBuffer().array();
+                case 1 ->
+                {
+                    RetainableByteBuffer buffer = _buffers.get(0);
+                    _aggregate = null;
+                    _buffers.clear();
+                    byte[] array = BufferUtil.toArray(buffer.getByteBuffer());
+                    buffer.release();
+                    yield array;
+                }
+                default ->
+                {
+                    long size = size();
+                    if (size > Integer.MAX_VALUE)
+                        throw new BufferOverflowException();
+
+                    int length = (int)size;
+                    byte[] array = new byte[length];
+
+                    int offset = 0;
+                    for (RetainableByteBuffer buffer : _buffers)
+                    {
+                        int remaining = buffer.remaining();
+                        buffer.get(array, offset, remaining);
+                        offset += remaining;
+                        buffer.release();
+                    }
+                    _buffers.clear();
+                    _aggregate = null;
+                    yield array;
+                }
+            };
+        }
+
         @Override
         public byte get() throws BufferUnderflowException
         {
