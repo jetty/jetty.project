@@ -18,7 +18,9 @@ import java.nio.ByteBuffer;
 /**
  * <p>Abstract implementation of {@link RetainableByteBuffer} with
  * reference counting.</p>
+ * @deprecated
  */
+@Deprecated(forRemoval = true)
 public abstract class AbstractRetainableByteBuffer extends RetainableByteBuffer.FixedCapacity
 {
     private final ReferenceCounter _refCount;

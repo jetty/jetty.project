@@ -107,7 +107,7 @@ public interface ByteBufferPool
         @Override
         public RetainableByteBuffer acquire(int size, boolean direct)
         {
-            return new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(size, direct));
+            return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
         }
 
         @Override
