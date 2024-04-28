@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -52,7 +51,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * A Zero-capacity, non-retainable {@code RetainableByteBuffer}.
      */
-    RetainableByteBuffer EMPTY = wrap(BufferUtil.EMPTY_BUFFER);
+    RetainableByteBuffer EMPTY = new NonRetainableByteBuffer(BufferUtil.EMPTY_BUFFER);
 
     /**
      * <p>Returns a non-retainable {@code RetainableByteBuffer} that wraps
@@ -72,7 +71,7 @@ public interface RetainableByteBuffer extends Retainable
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
     {
-        return new NonRetainableByteBuffer(byteBuffer);
+        return new NonPooled(byteBuffer);
     }
 
     /**
@@ -86,7 +85,7 @@ public interface RetainableByteBuffer extends Retainable
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
     {
-        return new FixedCapacity(byteBuffer, retainable);
+        return new NonPooled(byteBuffer, retainable);
     }
 
     /**
@@ -99,7 +98,7 @@ public interface RetainableByteBuffer extends Retainable
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
     {
-        return new FixedCapacity(byteBuffer)
+        return new NonPooled(byteBuffer)
         {
             @Override
             public boolean release()
@@ -673,6 +672,10 @@ public interface RetainableByteBuffer extends Retainable
     class FixedCapacity extends Abstract implements Appendable
     {
         private final ByteBuffer _byteBuffer;
+        /*
+         * Remember the flip mode of the internal bytebuffer.  This is useful when a FixedCapacity buffer is used
+         * to aggregate multiple other buffers (e.g. by DynamicCapacity buffer), as it avoids a flip/flop on every append.
+         */
         private int _flipPosition = -1;
 
         public FixedCapacity(ByteBuffer byteBuffer)
@@ -680,7 +683,7 @@ public interface RetainableByteBuffer extends Retainable
             this(byteBuffer, new ReferenceCounter());
         }
 
-        protected FixedCapacity(ByteBuffer byteBuffer, Retainable retainable)
+        public FixedCapacity(ByteBuffer byteBuffer, Retainable retainable)
         {
             super(retainable);
             _byteBuffer = Objects.requireNonNull(byteBuffer);
@@ -714,6 +717,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public ByteBuffer getByteBuffer()
         {
+            // Ensure buffer is in flush mode if accessed externally
             if (_flipPosition >= 0)
             {
                 BufferUtil.flipToFlush(_byteBuffer, _flipPosition);
@@ -728,10 +732,48 @@ public interface RetainableByteBuffer extends Retainable
             ByteBuffer byteBuffer = getByteBuffer();
             if (byteBuffer.isReadOnly() || isRetained())
                 throw new ReadOnlyBufferException();
+            // Ensure buffer is flipped to fill mode (and left that way)
             if (_flipPosition < 0)
                 _flipPosition = BufferUtil.flipToFill(byteBuffer);
             BufferUtil.put(bytes, byteBuffer);
             return !bytes.hasRemaining();
+        }
+    }
+
+    /**
+     * A {@link FixedCapacity} buffer that is not pooled, but may be {@link Retainable#canRetain() retained}.
+     */
+    class NonPooled extends FixedCapacity
+    {
+        // TODO should this be an isPooled() method, so the DynamicCapacity buffers can be seen as pooled if
+        // they have a buffer pool.  Current usage of this class is only in optimization to determine if a buffer
+        // array can be used directly. See takeByteArray
+        public NonPooled(ByteBuffer byteBuffer)
+        {
+            super(byteBuffer);
+        }
+
+        protected NonPooled(ByteBuffer byteBuffer, Retainable retainable)
+        {
+            super(byteBuffer, retainable);
+        }
+    }
+
+    /**
+     * a {@link FixedCapacity} buffer that is neither not pooled nor {@link Retainable#canRetain() retainable}.
+     */
+    class NonRetainableByteBuffer extends NonPooled
+    {
+        public NonRetainableByteBuffer(ByteBuffer byteBuffer)
+        {
+            super(byteBuffer, NON_RETAINABLE);
+        }
+
+        protected void addValueString(StringBuilder stringBuilder)
+        {
+            stringBuilder.append("={");
+            addValueString(stringBuilder, this);
+            stringBuilder.append("}");
         }
     }
 
@@ -887,7 +929,8 @@ public interface RetainableByteBuffer extends Retainable
 
         /**
          * Take the contents of this buffer, leaving it clear and independent
-         * @return An independent buffer with the contents of this buffer, avoiding copies if possible.
+         * @return A possibly newly allocated array with the contents of this buffer, avoiding copies if possible.
+         * The length of the array may be larger than the contents, but the offset will always be 0.
          */
         public byte[] takeByteArray()
         {
@@ -899,7 +942,11 @@ public interface RetainableByteBuffer extends Retainable
                     RetainableByteBuffer buffer = _buffers.get(0);
                     _aggregate = null;
                     _buffers.clear();
-                    byte[] array = BufferUtil.toArray(buffer.getByteBuffer());
+
+                    // The array within the buffer can be used if it is not pooled, is not shared and it exits
+                    byte[] array = (buffer instanceof NonPooled && !buffer.isRetained() && !buffer.isDirect())
+                        ? buffer.getByteBuffer().array() : BufferUtil.toArray(buffer.getByteBuffer());
+
                     buffer.release();
                     yield array;
                 }

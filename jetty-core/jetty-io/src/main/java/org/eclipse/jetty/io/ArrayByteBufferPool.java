@@ -581,14 +581,20 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private static class Buffer extends AbstractRetainableByteBuffer
+    private static class Buffer extends RetainableByteBuffer.FixedCapacity
     {
         private final Consumer<RetainableByteBuffer> _releaser;
+        private final ReferenceCounter _referenceCounter;
         private int _usages;
 
         private Buffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
         {
-            super(buffer);
+            super(buffer, new ReferenceCounter(0));
+
+            if (getRetainable() instanceof  ReferenceCounter referenceCounter)
+                _referenceCounter = referenceCounter;
+            else
+                throw new IllegalArgumentException();
             this._releaser = releaser;
         }
 
@@ -609,6 +615,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             if (++_usages < 0)
                 _usages = 0;
             return _usages;
+        }
+
+        /**
+         * @see ReferenceCounter#acquire()
+         */
+        protected void acquire()
+        {
+            _referenceCounter.acquire();
         }
     }
 

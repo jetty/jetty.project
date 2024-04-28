@@ -37,7 +37,6 @@ public class MessageOutputStream extends OutputStream
 
     private final AutoLock lock = new AutoLock();
     private final CoreSession coreSession;
-    private final int bufferSize;
     private final RetainableByteBuffer buffer;
     private long frameCount;
     private long bytesSent;
@@ -48,12 +47,12 @@ public class MessageOutputStream extends OutputStream
     public MessageOutputStream(CoreSession coreSession, ByteBufferPool bufferPool)
     {
         this.coreSession = coreSession;
-        this.bufferSize = coreSession.getOutputBufferSize();
+        int bufferSize = coreSession.getOutputBufferSize();
         RetainableByteBuffer pooled = bufferPool.acquire(bufferSize, true);
 
         // TODO is it really necessary to restrict the buffer to exactly the size requested, rather than the size acquired?
         if (pooled.capacity() != bufferSize)
-            pooled = RetainableByteBuffer.wrap(pooled.getByteBuffer().limit(bufferSize).slice().limit(0), pooled);
+            pooled = new RetainableByteBuffer.FixedCapacity(pooled.getByteBuffer().limit(bufferSize).slice().limit(0), pooled);
         this.buffer = pooled;
     }
 
