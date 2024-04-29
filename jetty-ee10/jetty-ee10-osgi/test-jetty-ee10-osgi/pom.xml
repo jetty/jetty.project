@@ -42,6 +42,18 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <!--
+    <dependency>
+       <groupId>org.slf4j</groupId>
+       <artifactId>slf4j-simple</artifactId>
+       <scope>test</scope>
+     </dependency>
+     -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <!-- scope>test</scope -->
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>jetty-ee10-demo-mock-resources</artifactId>
@@ -261,18 +273,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!--
-    <dependency>
-       <groupId>org.slf4j</groupId>
-       <artifactId>slf4j-simple</artifactId>
-       <scope>test</scope>
-     </dependency>
-     -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -539,6 +539,8 @@
             <systemPropertyVariables>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <!-- uncomment to be able to use jetty logging -->
+              <!-- pax.exam.system>default</pax.exam.system -->
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
             <!-- TODO -->
