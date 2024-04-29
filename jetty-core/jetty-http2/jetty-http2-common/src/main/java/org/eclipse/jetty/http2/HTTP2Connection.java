@@ -293,6 +293,8 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     public void onStreamFailure(int streamId, int error, String reason)
     {
         session.onStreamFailure(streamId, error, reason);
+        if (producer.networkBuffer != null)
+            producer.releaseNetworkBuffer();
     }
 
     @Override
@@ -300,6 +302,8 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     {
         producer.failed = true;
         session.onConnectionFailure(error, reason);
+        if (producer.networkBuffer != null)
+            producer.releaseNetworkBuffer();
     }
 
     @Override
@@ -318,7 +322,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         private void setInputBuffer(ByteBuffer byteBuffer)
         {
             acquireNetworkBuffer();
-            // TODO handle buffer overflow?
             if (!networkBuffer.append(byteBuffer))
                 LOG.warn("overflow");
         }

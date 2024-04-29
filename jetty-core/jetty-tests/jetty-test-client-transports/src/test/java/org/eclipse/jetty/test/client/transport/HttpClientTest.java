@@ -759,6 +759,8 @@ public class HttpClientTest extends AbstractTest
         CountDownLatch resultLatch = new CountDownLatch(1);
         destination.send(request, result ->
         {
+            if (result.getFailure() != null)
+                result.getFailure().printStackTrace();
             assertTrue(result.isSucceeded());
             assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
             resultLatch.countDown();

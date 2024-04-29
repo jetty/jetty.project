@@ -283,8 +283,10 @@ public interface RetainableByteBuffer extends Retainable
      */
     default RetainableByteBuffer slice()
     {
-        if (canRetain())
-            retain();
+        if (!canRetain())
+            return new NonRetainableByteBuffer(getByteBuffer().slice());
+
+        retain();
         return RetainableByteBuffer.wrap(getByteBuffer().slice(), this);
     }
 
@@ -296,29 +298,31 @@ public interface RetainableByteBuffer extends Retainable
      */
     default RetainableByteBuffer slice(long length)
     {
-        if (canRetain())
-            retain();
-
         int size = remaining();
         ByteBuffer byteBuffer = getByteBuffer();
         int limit = byteBuffer.limit();
+        ByteBuffer slice;
 
         if (length <= size)
         {
             byteBuffer.limit(byteBuffer.position() + Math.toIntExact(length));
-            ByteBuffer slice = byteBuffer.slice();
+            slice = byteBuffer.slice();
             byteBuffer.limit(limit);
-            return RetainableByteBuffer.wrap(slice, this);
         }
         else
         {
             length = Math.min(length, byteBuffer.capacity() - byteBuffer.position());
             byteBuffer.limit(byteBuffer.position() + Math.toIntExact(length));
-            ByteBuffer slice = byteBuffer.slice();
+            slice = byteBuffer.slice();
             byteBuffer.limit(limit);
             slice.limit(size);
-            return RetainableByteBuffer.wrap(slice, this);
         }
+
+        if (!canRetain())
+            return new NonRetainableByteBuffer(slice);
+
+        retain();
+        return RetainableByteBuffer.wrap(slice, this);
     }
 
     /**
@@ -633,34 +637,47 @@ public interface RetainableByteBuffer extends Retainable
 
         protected void addValueString(StringBuilder buf, RetainableByteBuffer value)
         {
-            RetainableByteBuffer slice = value.slice();
-            try
+            if (value.canRetain())
+            {
+                RetainableByteBuffer slice = value.slice();
+                try
+                {
+                    buf.append("<<<");
+
+                    int size = slice.remaining();
+
+                    int skip = Math.max(0, size - 32);
+
+                    int bytes = 0;
+                    while (slice.remaining() > 0)
+                    {
+                        BufferUtil.appendDebugByte(buf, slice.get());
+                        if (skip > 0 && ++bytes == 16)
+                        {
+                            buf.append("...");
+                            slice.skip(skip);
+                        }
+                    }
+                    buf.append(">>>");
+                }
+                catch (Throwable x)
+                {
+                    buf.append(x);
+                }
+                finally
+                {
+                    slice.release();
+                }
+            }
+            else if (value instanceof FixedCapacity)
             {
                 buf.append("<<<");
-
-                int size = slice.remaining();
-
-                int skip = Math.max(0, size - 32);
-
-                int bytes = 0;
-                while (slice.remaining() > 0)
-                {
-                    BufferUtil.appendDebugByte(buf, slice.get());
-                    if (skip > 0 && ++bytes == 16)
-                    {
-                        buf.append("...");
-                        slice.skip(skip);
-                    }
-                }
+                BufferUtil.appendDebugString(buf, value.getByteBuffer());
                 buf.append(">>>");
             }
-            catch (Throwable x)
+            else
             {
-                buf.append(x);
-            }
-            finally
-            {
-                slice.release();
+                buf.append("<!canRetain>");
             }
         }
     }

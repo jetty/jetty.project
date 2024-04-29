@@ -1265,7 +1265,7 @@ public class BufferUtil
         return buf.toString();
     }
 
-    private static void appendDebugString(StringBuilder buf, ByteBuffer buffer)
+    public static void appendDebugString(StringBuilder buf, ByteBuffer buffer)
     {
         // Take a readonly copy so we can adjust the limit
         buffer = buffer.asReadOnlyBuffer();
