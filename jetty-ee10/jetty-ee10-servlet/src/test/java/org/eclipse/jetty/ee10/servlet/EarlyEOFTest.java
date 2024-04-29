@@ -68,7 +68,8 @@ public class EarlyEOFTest
     @Test
     public void testEarlyEOF() throws Exception
     {
-        start(new HttpServlet() {
+        start(new HttpServlet()
+        {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
