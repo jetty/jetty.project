@@ -148,25 +148,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         super.onClose(cause);
 
         LifeCycle.stop(strategy);
-
-        // Run the tasks remaining after the strategy was stopped
-        Queue<Runnable> copy;
-        try (AutoLock ignored = lock.lock())
-        {
-            copy = new ArrayDeque<>(tasks);
-            tasks.clear();
-        }
-        copy.forEach(task ->
-        {
-            try
-            {
-                task.run();
-            }
-            catch (Throwable x)
-            {
-                LOG.warn("Error running leftover task during onClose", x);
-            }
-        });
     }
 
     @Override
