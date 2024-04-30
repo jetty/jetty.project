@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.TopologicalSort;
  * for ordering.
  * </p>
  * <p>Also since Jetty-9.4, Configurations are responsible for providing {@link #getHiddenClasses()} and
- * {@link #getHiddenClasses()} to configure the {@link WebAppClassLoader} for each context.
+ * {@link #getProtectedClasses()} to configure the {@link WebAppClassLoader} for each context.
  * </p>
  */
 public interface Configuration
@@ -104,7 +104,7 @@ public interface Configuration
     }
 
     /**
-     * Get the system (hidden) classes associated with this Configuration.
+     * Get the server (hidden) classes associated with this Configuration.
      *
      * @return ClassMatcher of server classes.
      */

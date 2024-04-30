@@ -75,7 +75,7 @@ public class WebAppClassLoaderTest
     }
 
     @AfterEach
-    public void afterEach() throws Exception
+    public void afterEach()
     {
         IO.close(_loader);
         LifeCycle.stop(_server);
@@ -251,7 +251,7 @@ public class WebAppClassLoaderTest
         String[] newSysC = new String[oldSysC.length + 1];
         newSysC[0] = "org.eclipse.jetty.ee9.webapp.";
         System.arraycopy(oldSysC, 0, newSysC, 1, oldSysC.length);
-        _context.setHiddenClassMatcher(new ClassMatcher(newSysC));
+        _context.setProtectedClassMatcher(new ClassMatcher(newSysC));
 
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
@@ -315,7 +315,6 @@ public class WebAppClassLoaderTest
 
         resources = Collections.list(_loader.getResources("org/acme/resource.txt"));
 
-        expected.clear();
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
         expected.add(targetTestClasses);

@@ -131,7 +131,7 @@ public class AbstractConfiguration implements Configuration
 
         /**
          * Protect classes from modification by the web application by adding them
-         * to the {@link WebAppConfiguration#getHiddenClasses()} and
+         * to the {@link WebAppConfiguration#getProtectedClasses()} and
          * expose them to the web application by adding them
          * as exclusions to the {@link WebAppConfiguration#getHiddenClasses()}
          *

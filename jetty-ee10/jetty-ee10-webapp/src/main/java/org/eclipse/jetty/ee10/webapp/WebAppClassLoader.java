@@ -546,7 +546,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         if (webappUrl != null && (!checkSystemResource || !_context.isProtectedResource(name, webappUrl)))
         {
-
             webappClass = this.foundClass(name, webappUrl);
             resolveClass(webappClass);
             if (LOG.isDebugEnabled())
