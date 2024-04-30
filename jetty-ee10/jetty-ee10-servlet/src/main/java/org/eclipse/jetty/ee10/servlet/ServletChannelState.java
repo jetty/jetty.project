@@ -1027,13 +1027,9 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("completing {}", toStringLocked());
 
-            switch (_requestState)
-            {
-                case COMPLETED:
-                    throw new IllegalStateException(getStatusStringLocked());
-                default:
-                    _requestState = RequestState.COMPLETING;
-            }
+            if (_requestState == RequestState.COMPLETED)
+                throw new IllegalStateException(getStatusStringLocked());
+            _requestState = RequestState.COMPLETING;
         }
     }
 
@@ -1154,18 +1150,14 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {}", toStringLocked());
 
-            switch (_state)
-            {
-                case IDLE:
-                    break;
-                default:
-                    throw new IllegalStateException(getStatusStringLocked());
-            }
+            if (_state != State.IDLE)
+                throw new IllegalStateException(getStatusStringLocked());
+            if (_inputState != InputState.IDLE)
+                throw new IllegalStateException(getStatusStringLocked());
             _asyncListeners = null;
             _state = State.UPGRADED;
             _requestState = RequestState.BLOCKING;
             _initial = true;
-            _inputState = InputState.IDLE;
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
@@ -1306,19 +1298,17 @@ public class ServletChannelState
         return woken;
     }
 
-    public boolean onReadEof()
+    public boolean onReadListenerReady()
     {
         boolean woken = false;
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadEof {}", toStringLocked());
+                LOG.debug("onReadListenerReady {}", toStringLocked());
 
             switch (_inputState)
             {
                 case IDLE:
-                case READY:
-                case UNREADY:
                     _inputState = InputState.READY;
                     if (_state == State.WAITING)
                     {
@@ -1327,36 +1317,13 @@ public class ServletChannelState
                     }
                     break;
 
+                case READY:
+                case UNREADY:
                 default:
                     throw new IllegalStateException(toStringLocked());
             }
         }
         return woken;
-    }
-
-    /**
-     * Called to indicate that some content was produced and is
-     * ready for consumption.
-     */
-    public void onContentAdded()
-    {
-        try (AutoLock ignored = lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onContentAdded {}", toStringLocked());
-
-            switch (_inputState)
-            {
-                case IDLE:
-                case UNREADY:
-                case READY:
-                    _inputState = InputState.READY;
-                    break;
-
-                default:
-                    throw new IllegalStateException(toStringLocked());
-            }
-        }
     }
 
     /**
@@ -1369,6 +1336,8 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadIdle {}", toStringLocked());
 
+            // Blocking moves from UNREADY -> IDLE
+            // Async moves from READY -> IDLE
             switch (_inputState)
             {
                 case UNREADY:
@@ -1398,11 +1367,11 @@ public class ServletChannelState
             switch (_inputState)
             {
                 case IDLE:
-                case UNREADY:
-                case READY:  // READY->UNREADY is needed by AsyncServletIOTest.testStolenAsyncRead
                     _inputState = InputState.UNREADY;
                     break;
 
+                case READY:
+                case UNREADY:
                 default:
                     throw new IllegalStateException(toStringLocked());
             }

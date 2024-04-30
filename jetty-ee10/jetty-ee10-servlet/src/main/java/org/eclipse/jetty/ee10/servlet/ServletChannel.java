@@ -388,9 +388,9 @@ public class ServletChannel
      */
     void recycle(Throwable x)
     {
-        _state.recycle();
         _httpInput.recycle();
         _httpOutput.recycle();
+        _state.recycle();
         _servletContextRequest = null;
         _request = null;
         _response = null;

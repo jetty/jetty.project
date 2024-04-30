@@ -195,7 +195,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         _contentProducer = _asyncContentProducer;
         // trigger content production
-        if (isReady() && _channelState.onReadEof()) // onReadEof b/c we want to transition from WAITING to WOKEN
+        if (isReady() && _channelState.onReadListenerReady()) // onReadListenerReady b/c we want to transition from WAITING to WOKEN
             scheduleReadListenerNotification(); // this is needed by AsyncServletIOTest.testStolenAsyncRead
     }
 
