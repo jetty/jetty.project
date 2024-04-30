@@ -30,11 +30,6 @@ Other popular tools include Ant and Gradle.
 [[configuring-embedded-jetty-with-maven]]
 ==== Using Embedded Jetty with Maven
 
-To understand the basic operations of building and running against Jetty, first review:
-
-* xref:advanced-embedding[Embedding with Jetty]
-* xref:jetty-helloworld[Jetty HelloWorld example]
-
 Maven uses convention over configuration, so it is best to use the project structure Maven recommends.
 You can use _xref:archetypes[http://maven.apache.org/guides/introduction/introduction-to-archetypes.html[archetypes]]_ to quickly setup Maven projects, but we will set up the structure manually for this simple tutorial example:
 
@@ -279,4 +274,4 @@ A Web Application Archive (WAR) file can be produced from the project with the c
 > mvn package
 ----
 
-The resulting war file is in the `target` directory and may be deployed on any standard servlet server, including xref:configuring-deployment[Jetty].
+The resulting war file is in the `target` directory and may be deployed on any standard servlet server, including xref:og-deploy[Jetty].

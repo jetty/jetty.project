@@ -1004,7 +1004,7 @@ public class HttpFieldsTest
     public void testAddNullValueList()
     {
         HttpFields.Mutable fields = HttpFields.build();
-        assertThrows(IllegalArgumentException.class, () -> fields.add("name", (List<String>)null));
+        assertThrows(NullPointerException.class, () -> fields.add("name", (List<String>)null));
         assertThat(fields.size(), is(0));
         List<String> list = new ArrayList<>();
         fields.add("name", list);
@@ -1373,5 +1373,57 @@ public class HttpFieldsTest
         fields.add(new HttpField("Test", "two"));
         fields.ensureField(new HttpField("Test", "three, four"));
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three, four"));
+    }
+
+    @Test
+    public void testWrapperComputeFieldCallingOnField()
+    {
+        var wrapper = new HttpFields.Mutable.Wrapper(HttpFields.build())
+        {
+            final List<String> actions = new ArrayList<>();
+
+            @Override
+            public HttpField onAddField(HttpField field)
+            {
+                actions.add("onAddField");
+                return super.onAddField(field);
+            }
+
+            @Override
+            public boolean onRemoveField(HttpField field)
+            {
+                actions.add("onRemoveField");
+                return super.onRemoveField(field);
+            }
+
+            @Override
+            public HttpField onReplaceField(HttpField oldField, HttpField newField)
+            {
+                actions.add("onReplaceField");
+                return super.onReplaceField(oldField, newField);
+            }
+        };
+
+        wrapper.computeField("non-existent", (name, httpFields) -> null);
+        assertThat(wrapper.size(), is(0));
+        assertThat(wrapper.actions, is(List.of()));
+
+        wrapper.computeField("non-existent", (name, httpFields) -> new HttpField("non-existent", "a"));
+        wrapper.computeField("non-existent", (name, httpFields) -> new HttpField("non-existent", "b"));
+        wrapper.computeField("non-existent", (name, httpFields) -> null);
+        assertThat(wrapper.size(), is(0));
+        assertThat(wrapper.actions, is(List.of("onAddField", "onReplaceField", "onRemoveField")));
+        wrapper.actions.clear();
+
+        wrapper.computeField(HttpHeader.VARY, (name, httpFields) -> null);
+        assertThat(wrapper.size(), is(0));
+        assertThat(wrapper.actions, is(List.of()));
+
+        wrapper.computeField(HttpHeader.VARY, (name, httpFields) -> new HttpField(HttpHeader.VARY, "a"));
+        wrapper.computeField(HttpHeader.VARY, (name, httpFields) -> new HttpField(HttpHeader.VARY, "b"));
+        wrapper.computeField(HttpHeader.VARY, (name, httpFields) -> null);
+        assertThat(wrapper.size(), is(0));
+        assertThat(wrapper.actions, is(List.of("onAddField", "onReplaceField", "onRemoveField")));
+        wrapper.actions.clear();
     }
 }

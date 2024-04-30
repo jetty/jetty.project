@@ -20,13 +20,12 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
     private final ServletContext _servletContext;
-    private final ContextHandler.ScopedContext _context;
+    private final ServletContextHandler.ServletScopedContext _context;
     private final AsyncContextState _asyncContext;
     private final HttpURI _baseURI;
     private final ServletChannelState _state;
@@ -35,7 +34,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
-    public AsyncContextEvent(ContextHandler.ScopedContext context, AsyncContextState asyncContext, ServletChannelState state, ServletRequest request, ServletResponse response)
+    public AsyncContextEvent(ServletContextHandler.ServletScopedContext context, AsyncContextState asyncContext, ServletChannelState state, ServletRequest request, ServletResponse response)
     {
         super(null, request, response, null);
         _context = context;
@@ -76,7 +75,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         return _dispatchContext == null ? _servletContext : _dispatchContext;
     }
 
-    public ContextHandler.ScopedContext getContext()
+    public ServletContextHandler.ServletScopedContext getContext()
     {
         return _context;
     }

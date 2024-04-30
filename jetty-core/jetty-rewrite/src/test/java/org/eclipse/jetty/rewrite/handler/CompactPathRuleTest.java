@@ -51,7 +51,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
     @MethodSource("scenarios")
     public void testCompactPathRule(String inputPath, String inputQuery, String expectedPath, String expectedQuery, String expectedPathQuery) throws Exception
     {
-        httpConfig.setUriCompliance(UriCompliance.UNSAFE);
+        _httpConfig.setUriCompliance(UriCompliance.UNSAFE);
         CompactPathRule rule = new CompactPathRule();
         _rewriteHandler.addRule(rule);
         start(new Handler.Abstract()

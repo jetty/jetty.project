@@ -101,7 +101,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
-    public void testDemoAddServerClasses(String env) throws Exception
+    public void testDemoAddHiddenClasses(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -124,14 +124,14 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runListConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, runListConfig.getExitValue(), "Exit value");
                 // Example of what we expect
-                // jetty.webapp.addServerClasses = org.eclipse.jetty.logging.,${jetty.home.uri}/lib/logging/,org.slf4j.,${jetty.base.uri}/lib/bouncycastle/
-                String addServerKey = " jetty.webapp.addServerClasses = ";
+                // jetty.webapp.addHiddenClasses = org.eclipse.jetty.logging.,${jetty.home.uri}/lib/logging/,org.slf4j.,${jetty.base.uri}/lib/bouncycastle/
+                String addServerKey = " jetty.webapp.addHiddenClasses = ";
                 String addServerClasses = runListConfig.getLogs().stream()
                     .filter(s -> s.startsWith(addServerKey))
                     .findFirst()
                     .orElseThrow(() ->
                         new NoSuchElementException("Unable to find [" + addServerKey + "]"));
-                assertThat("'jetty.webapp.addServerClasses' entry count",
+                assertThat("'jetty.webapp.addHiddenClasses' entry count",
                     addServerClasses.split(",").length,
                     greaterThan(1));
             }

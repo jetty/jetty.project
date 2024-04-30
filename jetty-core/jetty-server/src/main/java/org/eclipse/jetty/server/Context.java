@@ -118,6 +118,29 @@ public interface Context extends Attributes, Decorator, Executor
     File getTempDirectory();
 
     /**
+     * Check cross context dispatch status
+     * @param request The request to check
+     * @return {@code True} IFF this context {@link ContextHandler#isCrossContextDispatchSupported() supports cross context}
+     * and the passed request is a cross context request.
+     */
+    default boolean isCrossContextDispatch(Request request)
+    {
+        return false;
+    }
+
+    /**
+     * Get any cross context dispatch type
+     * @param request The request to get the type for
+     * @return A String representation of a dispatcher type iff this context
+     * {@link ContextHandler#isCrossContextDispatchSupported() supports cross context}
+     * and the passed request is a cross context request, otherwise null.
+     */
+    default String getCrossContextDispatchType(Request request)
+    {
+        return null;
+    }
+
+    /**
      * <p>Returns the URI path scoped to the passed context path.</p>
      * <p>For example, if the context path passed is {@code /ctx} then a
      * path of {@code /ctx/foo/bar} will return {@code /foo/bar}.</p>

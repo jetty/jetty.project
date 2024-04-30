@@ -63,6 +63,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(WorkDirExtension.class)
@@ -71,6 +72,7 @@ public class AbstractTest
     public WorkDir workDir;
 
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
+    protected Path pemDir;
     protected SslContextFactory.Server sslContextFactoryServer;
     protected ServerQuicConfiguration serverQuicConfig;
     protected Server server;
@@ -100,6 +102,12 @@ public class AbstractTest
         return transports;
     }
 
+    @BeforeEach
+    public void prepare()
+    {
+        pemDir = workDir.getEmptyPathDir();
+    }
+
     @AfterEach
     public void dispose()
     {
@@ -122,7 +130,8 @@ public class AbstractTest
     protected void prepareServer(Transport transport, HttpServlet servlet) throws Exception
     {
         sslContextFactoryServer = newSslContextFactoryServer();
-        serverQuicConfig = new ServerQuicConfiguration(sslContextFactoryServer, workDir.getEmptyPathDir());
+        Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
+        serverQuicConfig = new ServerQuicConfiguration(sslContextFactoryServer, serverPemDirectory);
         if (server == null)
             server = newServer();
         connector = newConnector(transport, server);
@@ -262,7 +271,8 @@ public class AbstractTest
                 clientConnector.setSelectors(1);
                 SslContextFactory.Client sslContextFactory = newSslContextFactoryClient();
                 clientConnector.setSslContextFactory(sslContextFactory);
-                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+                Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
+                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, clientPemDirectory));
                 yield new HttpClientTransportOverHTTP3(http3Client);
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");
@@ -305,6 +315,15 @@ public class AbstractTest
             {
                 case HTTP, H2C, FCGI -> false;
                 case HTTPS, H2, H3 -> true;
+            };
+        }
+
+        public boolean isMultiplexed()
+        {
+            return switch (this)
+            {
+                case HTTP, HTTPS, FCGI -> false;
+                case H2C, H2, H3 -> true;
             };
         }
     }

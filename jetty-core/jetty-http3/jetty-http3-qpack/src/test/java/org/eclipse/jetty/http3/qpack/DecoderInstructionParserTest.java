@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderInstructionParserTest
 {
-    private final ByteBufferPool bufferPool = new ByteBufferPool.NonPooling();
+    private final ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
     private DecoderInstructionParser _instructionParser;
     private DecoderParserDebugHandler _handler;
 

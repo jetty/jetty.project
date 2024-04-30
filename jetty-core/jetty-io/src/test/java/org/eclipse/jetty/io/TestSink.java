@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 public class TestSink implements Content.Sink
@@ -26,7 +27,7 @@ public class TestSink implements Content.Sink
     @Override
     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        accumulatedChunks.add(Content.Chunk.from(byteBuffer, last));
+        accumulatedChunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), last));
         callback.succeeded();
     }
 

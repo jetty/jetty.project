@@ -16,6 +16,7 @@ package org.eclipse.jetty.rewrite.handler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -29,6 +30,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
     private void start(RedirectRegexRule rule) throws Exception
     {
         _rewriteHandler.addRule(rule);
+        _httpConfig.setUriCompliance(UriCompliance.UNSAFE);
         start(new Handler.Abstract()
         {
             @Override

@@ -49,6 +49,7 @@ public class DirConfigSource implements ConfigSource
     static
     {
         // Arguments that are not allowed to be in start.ini or start.d/{name}.ini files
+        // These should only be used on the command line
         BANNED_ARGS = new ArrayList<>();
         BANNED_ARGS.add("--help");
         BANNED_ARGS.add("-?");
@@ -64,8 +65,11 @@ public class DirConfigSource implements ConfigSource
         BANNED_ARGS.add("--write-module-graph");
         BANNED_ARGS.add("--version");
         BANNED_ARGS.add("-v");
+        BANNED_ARGS.add("--files");
         BANNED_ARGS.add("--download");
         BANNED_ARGS.add("--create-files");
+        BANNED_ARGS.add("--skip-create-files");
+        BANNED_ARGS.add("--skip-file-validation");
         BANNED_ARGS.add("--create-startd");
         BANNED_ARGS.add("--create-start-ini");
         BANNED_ARGS.add("--create-start-d");

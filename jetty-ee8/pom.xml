@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.8-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.ee8</groupId>
   <artifactId>jetty-ee8</artifactId>
@@ -29,6 +29,7 @@
     <module>jetty-ee8-plus</module>
     <module>jetty-ee8-proxy</module>
     <module>jetty-ee8-quickstart</module>
+    <module>jetty-ee8-runner</module>
     <module>jetty-ee8-security</module>
     <module>jetty-ee8-servlet</module>
     <module>jetty-ee8-servlets</module>
@@ -49,7 +50,7 @@
     <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
     <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
     <jsp.impl.version>9.0.83.1</jsp.impl.version>
-    <modify-sources-plugin.version>1.0.9</modify-sources-plugin.version>
+    <modify-sources-plugin.version>1.0.10</modify-sources-plugin.version>
     <sonar.skip>true</sonar.skip>
     <weld.version>3.1.9.Final</weld.version>
   </properties>
@@ -157,6 +158,12 @@
         <groupId>org.eclipse.jetty.ee8.demos</groupId>
         <artifactId>jetty-ee8-demo-mock-resources</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.demos</groupId>
+        <artifactId>jetty-ee8-demo-simple-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee8.demos</groupId>
@@ -447,6 +454,146 @@
                   <formats>
                     <format>html</format>
                   </formats>
+                  <onlyProjectDependencies>true</onlyProjectDependencies>
+                  <onlyUpgradable>true</onlyUpgradable>
+                  <ruleSet>
+                    <rules>
+                      <rule>
+                        <!-- ignore maven alpha/beta releases -->
+                        <groupId>org.apache.maven</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-(alpha|beta).?[0-9]+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore jetty core/root deps -->
+                        <groupId>org.eclipse.jetty</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore all jetty nested deps -->
+                        <groupId>org.eclipse.jetty.*</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 1.x of annotation spec
+                             ee9 starts with version 2.0.x -->
+                        <groupId>jakarta.annotation</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!1.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 2.x of jsp spec
+                             ee9 starts with version 3.x -->
+                        <groupId>jakarta.servlet.jsp</groupId>
+                        <artifactId>jakarta.servlet.jsp-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 1.x of jsp-jstl spec
+                             ee9 starts with version 2.x -->
+                        <groupId>jakarta.servlet.jsp.jstl</groupId>
+                        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!1.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 1.x of transaction spec
+                             ee9 starts with version 2.x -->
+                        <groupId>jakarta.transaction</groupId>
+                        <artifactId>jakarta.transaction-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!1.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 2.1.x of apache directory api+impl (LDAP) -->
+                        <groupId>org.apache.directory.api</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.1.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee8, we need to stay on 9.0.x of mortbay apache-jsp impl
+                             ee10 starts with version 10.0.x -->
+                        <groupId>org.mortbay.jasper</groupId>
+                        <artifactId>apache-jsp</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!9.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore unstable mina releases -->
+                        <groupId>org.apache.mina</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-M[0-9]+$</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                    </rules>
+                  </ruleSet>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        $ mvn -Pupdate-dependencies-ee8 validate
+        -->
+      <id>update-dependencies-ee8</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>ee8-update</id>
+                <goals>
+                  <goal>update-properties</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
                   <onlyProjectDependencies>true</onlyProjectDependencies>
                   <onlyUpgradable>true</onlyUpgradable>
                   <ruleSet>

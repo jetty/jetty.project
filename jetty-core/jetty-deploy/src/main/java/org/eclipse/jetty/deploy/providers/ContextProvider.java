@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -149,7 +150,7 @@ public class ContextProvider extends ScanningAppProvider
     public void loadProperties(Resource resource) throws IOException
     {
         Properties props = new Properties();
-        try (InputStream inputStream = resource.newInputStream())
+        try (InputStream inputStream = IOResources.asInputStream(resource))
         {
             props.load(inputStream);
             props.forEach((key, value) -> _properties.put((String)key, (String)value));
@@ -501,7 +502,7 @@ public class ContextProvider extends ScanningAppProvider
                 !Files.exists(path.getParent().resolve(basename + ".WAR"));
         }
 
-        // deploy if there is not a .war for of the same basename
+        // deploy if it is a .war and there is not a .xml for of the same basename
         if (FileID.isWebArchive(path))
         {
             // if a .xml file exists for it
@@ -518,5 +519,12 @@ public class ContextProvider extends ScanningAppProvider
     {
         if (isDeployable(path))
             super.pathAdded(path);
+    }
+
+    @Override
+    protected void pathChanged(Path path) throws Exception
+    {
+        if (isDeployable(path))
+            super.pathChanged(path);
     }
 }

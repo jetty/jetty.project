@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -408,7 +409,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 // If the channel doesn't have a request, then the error must have occurred during the parsing of
                 // the request line / headers, so make a temp request for logging and producing an error response.
-                MetaData.Request errorRequest = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
+                MetaData.Request errorRequest = new MetaData.Request("GET", HttpURI.from("/badRequest"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
                 _request = new ChannelRequest(this, errorRequest);
                 _response = new ChannelResponse(_request);
             }
@@ -461,6 +462,21 @@ public class HttpChannelState implements HttpChannel, Components
             LOG.debug("consuming content during error {}", unconsumed.toString());
 
         return task;
+    }
+
+    @Override
+    public Runnable onClose()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onClose {} stream={}", this, _stream);
+
+            // If the channel doesn't have a stream, then no action is needed.
+            if (_stream == null)
+                return null;
+        }
+        return onFailure(new EofException());
     }
 
     public void addHttpStreamWrapper(Function<HttpStream, HttpStream> onStreamEvent)
@@ -719,6 +735,10 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
+                ComplianceViolation.Listener listener = getComplianceViolationListener();
+                if (listener != null)
+                    listener.onRequestEnd(_request);
+
                 // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
                     stream.succeeded();
@@ -1448,12 +1468,11 @@ public class HttpChannelState implements HttpChannel, Components
                 response = httpChannelState._response;
                 stream = httpChannelState._stream;
 
-                // We are being tough on handler implementations and expect them
-                // to not have pending operations when calling succeeded or failed.
+                // We convert a call to succeeded with pending demand/write into a call to failed.
                 if (httpChannelState._onContentAvailable != null)
-                    throw new IllegalStateException("demand pending");
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 if (response.lockedIsWriting())
-                    throw new IllegalStateException("write pending");
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("write pending"));
 
                 if (lockedCompleteCallback())
                     return;
@@ -1472,7 +1491,7 @@ public class HttpChannelState implements HttpChannel, Components
                 long committedContentLength = httpChannelState._committedContentLength;
 
                 if (committedContentLength >= 0 && committedContentLength != totalWritten && !(totalWritten == 0 && HttpMethod.HEAD.is(_request.getMethod())))
-                    failure = new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten));
+                    failure = ExceptionUtil.combine(failure, new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten)));
 
                 // Is the request fully consumed?
                 Throwable unconsumed = stream.consumeAvailable();

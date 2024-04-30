@@ -30,7 +30,7 @@ Infinispan-specific jar files are download to the directory named `$JETTY_BASE/l
 
 In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `$JETTY_BASE/start.d` directory.
 
-NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
 
 ====== Configuration
 
@@ -83,7 +83,7 @@ Enabling the `session-store-infinispan-embedded` module runs an in-process insta
 Because Infinispan is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
 Infinispan-specific jar files will be downloaded and saved to a directory named `$JETTY_BASE/lib/infinispan/`.
 
-NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
 
 ====== Configuration
 

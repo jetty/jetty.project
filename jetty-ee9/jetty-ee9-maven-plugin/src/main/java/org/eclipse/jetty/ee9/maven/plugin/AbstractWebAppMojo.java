@@ -47,7 +47,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.jetty.ee9.maven.plugin.utils.MavenProjectHelper;
+import org.eclipse.jetty.maven.MavenProjectHelper;
+import org.eclipse.jetty.maven.MavenServerConnector;
+import org.eclipse.jetty.maven.PluginLog;
+import org.eclipse.jetty.maven.ScanTargetPattern;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -562,7 +565,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (jettyHome == null)
             jetty.setJettyHomeZip(jettyHomeZip != null ? jettyHomeZip : mavenProjectHelper.resolveArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
 
-        jetty.version = plugin.getVersion();
+        jetty.setVersion(plugin.getVersion());
         jetty.setJettyHome(jettyHome);
         jetty.setJettyBase(jettyBase);
         jetty.setBaseDir(target);

@@ -34,6 +34,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -49,6 +50,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,10 +73,20 @@ public class CustomRequestLogTest
 
     private void start(String formatString) throws Exception
     {
-        start(formatString, new SimpleHandler());
+        start(formatString, (log) -> {});
+    }
+
+    private void start(String formatString, Consumer<CustomRequestLog> configCustomRequestLog) throws Exception
+    {
+        start(formatString, new SimpleHandler(), configCustomRequestLog);
     }
 
     private void start(String formatString, Handler handler) throws Exception
+    {
+        start(formatString, handler, (log) -> {});
+    }
+
+    private void start(String formatString, Handler handler, Consumer<CustomRequestLog> configCustomRequestLog) throws Exception
     {
         _server = new Server();
         _httpConfig = new HttpConfiguration();
@@ -82,6 +94,8 @@ public class CustomRequestLogTest
         _server.addConnector(_serverConnector);
         TestRequestLogWriter writer = new TestRequestLogWriter();
         _log = new CustomRequestLog(writer, formatString);
+        if (configCustomRequestLog != null)
+            configCustomRequestLog.accept(_log);
         _server.setRequestLog(_log);
         _server.setHandler(handler);
         _server.start();
@@ -139,6 +153,36 @@ public class CustomRequestLogTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         log = _logs.poll(1, TimeUnit.SECONDS);
         assertNull(log);
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        /foo/a/,true
+        /zed/b/,false
+        /zef/c/,true
+        /zee/d/,false
+        """)
+    public void testIgnorePaths(String testPath, boolean existsInLog) throws Exception
+    {
+        start("RequestPath: %U",
+            customRequestLog ->
+            {
+                customRequestLog.setIgnorePaths(new String[]{"/zed/*", "/zee/*"});
+            });
+
+        HttpTester.Response response = getResponse("GET @PATH@ HTTP/1.0\n\n".replace("@PATH@", testPath));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        if (existsInLog)
+        {
+            String log = _logs.poll(5, TimeUnit.SECONDS);
+            assertThat(log, is("RequestPath: " + testPath));
+        }
+        else
+        {
+            String log = _logs.poll(1, TimeUnit.SECONDS);
+            assertNull(log);
+        }
     }
 
     @Test

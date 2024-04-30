@@ -92,7 +92,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -332,21 +331,18 @@ public class HTTPServerDocs
 
         // Set up a listener so that when the secure connector starts,
         // it configures the other connectors that have not started yet.
-        secureConnector.addEventListener(new LifeCycle.Listener()
+        secureConnector.addEventListener(new NetworkConnector.Listener()
         {
             @Override
-            public void lifeCycleStarted(LifeCycle lifeCycle)
+            public void onOpen(NetworkConnector connector)
             {
-                if (lifeCycle instanceof NetworkConnector networkConnector)
-                {
-                    int port = networkConnector.getLocalPort();
+                int port = connector.getLocalPort();
 
-                    // Configure the plain connector for secure redirects from http to https.
-                    plainConfig.setSecurePort(port);
+                // Configure the plain connector for secure redirects from http to https.
+                plainConfig.setSecurePort(port);
 
-                    // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
-                    http3Connector.setPort(port);
-                }
+                // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
+                http3Connector.setPort(port);
             }
         });
 
@@ -1596,5 +1592,33 @@ public class HTTPServerDocs
             }
         }
         // end::continue100[]
+    }
+
+    public void requestCustomizer() throws Exception
+    {
+        // tag::requestCustomizer[]
+        Server server = new Server();
+
+        // Configure the secure connector.
+        HttpConfiguration httpsConfig = new HttpConfiguration();
+
+        // Add the SecureRequestCustomizer.
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // Configure the SslContextFactory with the KeyStore information.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+        // Configure the Connector to speak HTTP/1.1 and HTTP/2.
+        HttpConnectionFactory h1 = new HttpConnectionFactory(httpsConfig);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(h1.getProtocol());
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+        ServerConnector connector = new ServerConnector(server, ssl, alpn, h2, h1);
+        server.addConnector(connector);
+
+        server.start();
+        // end::requestCustomizer[]
     }
 }

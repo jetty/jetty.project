@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8</groupId>
     <artifactId>jetty-ee8</artifactId>
-    <version>12.0.8-SNAPSHOT</version>
+    <version>12.0.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
@@ -85,6 +85,10 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-maven</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

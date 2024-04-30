@@ -85,7 +85,7 @@ public class Socks5ProxyTest
         byte ip1 = 127;
         byte ip2 = 0;
         byte ip3 = 0;
-        byte ip4 = 13;
+        short ip4 = 255;
         String serverHost = ip1 + "." + ip2 + "." + ip3 + "." + ip4;
         int serverPort = proxyPort + 1; // Any port will do
         String method = "GET";
@@ -128,7 +128,7 @@ public class Socks5ProxyTest
             assertEquals(ip1, buffer.get());
             assertEquals(ip2, buffer.get());
             assertEquals(ip3, buffer.get());
-            assertEquals(ip4, buffer.get());
+            assertEquals((byte)ip4, buffer.get());
             assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
             // Write connect response.
