@@ -388,6 +388,7 @@ public class ServletChannel
      */
     void recycle(Throwable x)
     {
+        // _httpInput must be recycled before _state.
         _httpInput.recycle();
         _httpOutput.recycle();
         _state.recycle();
