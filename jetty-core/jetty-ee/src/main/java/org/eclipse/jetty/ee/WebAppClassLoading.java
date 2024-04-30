@@ -169,8 +169,9 @@ public class WebAppClassLoading
      * Add a hidden (server) Class pattern to use for all WebAppContexts of a given {@link Server}.
      * @param attributes The {@link Attributes} instance to add classes to
      * @param patterns the patterns to use
+     * @deprecated use {@link #addHiddenClasses(Server, String...)} instead
      */
-    @Deprecated (forRemoval = true)
+    @Deprecated (since = "12.0.9", forRemoval = true)
     public static void addHiddenClasses(Attributes attributes, String... patterns)
     {
         if (patterns != null && patterns.length > 0)

@@ -21,7 +21,6 @@ import org.eclipse.jetty.util.IncludeExcludeSet;
 /**
  * @deprecated Use org.eclipse.jetty.util.ClassMatcher
  */
-
 @Deprecated(since = "12.0.8", forRemoval = true)
 public class ClassMatcher extends org.eclipse.jetty.util.ClassMatcher
 {

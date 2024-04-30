@@ -870,7 +870,7 @@ public class WebAppContextTest
         server.setHandler(context);
         server.start();
 
-        List<String> serverClasses = List.of(context.getServerClasses());
+        List<String> serverClasses = List.of(context.getHiddenClasses());
         assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
         assertThat("Should have pattern from defaults", serverClasses, hasItem("org.eclipse.jetty."));
         assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
@@ -898,7 +898,7 @@ public class WebAppContextTest
         server.setHandler(context);
         server.start();
 
-        List<String> systemClasses = List.of(context.getSystemClasses());
+        List<String> systemClasses = List.of(context.getProtectedClasses());
         assertThat("Should have environment specific test pattern", systemClasses, hasItem(testPattern));
         assertThat("Should have pattern from defaults", systemClasses, hasItem("javax."));
         assertThat("Should have pattern from defaults", systemClasses, hasItem("jakarta."));
