@@ -21,7 +21,6 @@ import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -68,7 +68,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
 
     private final boolean _rfc7239;
     private final String _forwardedHeader;
-    private final ConcurrentMap<String, Remote> _remotes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Remote> _remotes = new ConcurrentHashMap<>();
     private volatile boolean _enabled;
     private int _threadLimit = 10;
 
@@ -163,7 +163,10 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         }
 
         // We accept the request and will always handle it.
-        LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, callback);
+        // Use a compute method to remove the Remote instance as it is necessary for
+        // the ref counter release and the removal to be atomic.
+        LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, Callback.from(callback, () ->
+            _remotes.computeIfPresent(remote._ip, (k, v) -> v._referenceCounter.release() ? null : v)));
         limitedRequest.handle();
         return true;
     }
@@ -177,7 +180,8 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
     private Remote getRemote(Request baseRequest)
     {
         String ip = getRemoteIP(baseRequest);
-        LOG.debug("ip={}", ip);
+        if (LOG.isDebugEnabled())
+            LOG.debug("ip={}", ip);
         if (ip == null)
             return null;
 
@@ -185,15 +189,18 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         if (limit <= 0)
             return null;
 
-        Remote remote = _remotes.get(ip);
-        if (remote == null)
+        // Use a compute method to create or retain the Remote instance as it is necessary for
+        // the ref counter increment or the instance creation to be mutually exclusive.
+        // The map MUST be a CHM as it guarantees the remapping function is only called once.
+        return _remotes.compute(ip, (k, v) ->
         {
-            Remote r = new Remote(baseRequest.getContext(), ip, limit);
-            remote = _remotes.putIfAbsent(ip, r);
-            if (remote == null)
-                remote = r;
-        }
-        return remote;
+            if (v != null)
+            {
+                v._referenceCounter.retain();
+                return v;
+            }
+            return new Remote(baseRequest.getContext(), k, limit);
+        });
     }
 
     protected String getRemoteIP(Request baseRequest)
@@ -208,7 +215,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         }
 
         // If no remote IP from a header, determine it directly from the channel
-        // Do not use the request methods, as they may have been lied to by the 
+        // Do not use the request methods, as they may have been lied to by the
         // RequestCustomizer!
         if (baseRequest.getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetAddr)
         {
@@ -255,7 +262,12 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         int comma = forwardedFor.lastIndexOf(',');
         return (comma >= 0) ? forwardedFor.substring(comma + 1).trim() : forwardedFor;
     }
-    
+
+    int getRemoteCount()
+    {
+        return _remotes.size();
+    }
+
     private static class LimitedRequest extends Request.Wrapper
     {
         private final Remote _remote;
@@ -517,6 +529,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
     private static final class Remote
     {
         private final Executor _executor;
+        private final Retainable.ReferenceCounter _referenceCounter = new Retainable.ReferenceCounter();
         private final String _ip;
         private final int _limit;
         private final AutoLock _lock = new AutoLock();
