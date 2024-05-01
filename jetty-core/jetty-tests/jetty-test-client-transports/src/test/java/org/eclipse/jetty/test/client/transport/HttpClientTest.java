@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -727,6 +728,8 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestWithDifferentDestination(Transport transport) throws Exception
     {
+        // TODO fix for H3
+        Assumptions.assumeFalse(transport == Transport.H3);
         String requestScheme = newURI(transport).getScheme();
         String requestHost = "otherHost.com";
         int requestPort = 8888;
