@@ -41,29 +41,13 @@ public class TestHandler extends Handler.Abstract
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        if (_hasRoles == null && _hasntRoles == null)
-        {
-            try
-            {
-                // TODO this is wrong
-                AuthenticationState.authenticate(request, response, callback);
-            }
-            catch (Throwable e)
-            {
-                //TODO: an Exception should only be thrown here if the response has
-                //not been set, but currently it seems that the ServletException is thrown
-                //anyway by ServletContextRequest.ServletApiRequest.authenticate.
-            }
-        }
-        else
-        {
-            testHasRoles(request, response);
-            testHasntRoles(request, response);
+        testHasRoles(request, response);
+        testHasntRoles(request, response);
 
-            response.setStatus(200);
-            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-            Content.Sink.write(response, true, "All OK\nrequestURI=" + request.getHttpURI(), callback);
-        }
+        response.setStatus(200);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+        Content.Sink.write(response, true, "All OK\nrequestURI=" + request.getHttpURI(), callback);
+
         return true;
     }
 
