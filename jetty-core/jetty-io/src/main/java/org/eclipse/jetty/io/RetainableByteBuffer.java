@@ -66,10 +66,11 @@ public interface RetainableByteBuffer extends Retainable
      * that may delegate calls to {@link #retain()}.</p>
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
-     * @return a non-retainable {@code RetainableByteBuffer}
+     * @return a {@link NonPooled} buffer wrapping the passed {@link ByteBuffer}
+     * @see NonPooled
      * @see ByteBufferPool.NonPooling
      */
-    static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
+    static RetainableByteBuffer.NonPooled wrap(ByteBuffer byteBuffer)
     {
         return new NonPooled(byteBuffer);
     }
@@ -80,10 +81,11 @@ public interface RetainableByteBuffer extends Retainable
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @param retainable the associated {@link Retainable}.
-     * @return a {@code RetainableByteBuffer}
+     * @return a {@link NonPooled} buffer wrapping the passed {@link ByteBuffer}
+     * @see NonPooled
      * @see ByteBufferPool.NonPooling
      */
-    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
+    static RetainableByteBuffer.NonPooled wrap(ByteBuffer byteBuffer, Retainable retainable)
     {
         return new NonPooled(byteBuffer, retainable);
     }
@@ -94,9 +96,9 @@ public interface RetainableByteBuffer extends Retainable
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @param releaser a {@link Runnable} to call when the buffer is released.
-     * @return a {@code RetainableByteBuffer}
+     * @return a {@link NonPooled} buffer wrapping the passed {@link ByteBuffer}
      */
-    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
+    static RetainableByteBuffer.NonPooled wrap(ByteBuffer byteBuffer, Runnable releaser)
     {
         return new NonPooled(byteBuffer)
         {
@@ -762,9 +764,9 @@ public interface RetainableByteBuffer extends Retainable
      */
     class NonPooled extends FixedCapacity
     {
-        // TODO should this be an isPooled() method, so the DynamicCapacity buffers can be seen as pooled if
-        // they have a buffer pool.  Current usage of this class is only in optimization to determine if a buffer
-        // array can be used directly. See takeByteArray
+        // TODO there be an isPooled() method? so the DynamicCapacity buffers can be seen as pooled if
+        //      they have a buffer pool.  Current usage of this class is only in optimization to determine if a buffer
+        //      array can be used directly. See takeByteArray
         public NonPooled(ByteBuffer byteBuffer)
         {
             super(byteBuffer);
