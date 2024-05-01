@@ -300,7 +300,7 @@
     <logback.version>1.5.3</logback.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.3.3</mariadb.version>
-    <maven-plugin.plugin.version>3.11.0</maven-plugin.plugin.version>
+    <maven-plugin.plugin.version>3.12.0</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
@@ -309,21 +309,21 @@
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
     <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.6.1</maven.dependency.plugin.version>
-    <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
+    <maven.deploy.plugin.version>3.1.2</maven.deploy.plugin.version>
     <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.2.0</maven.exec.plugin.version>
-    <maven.gpg.plugin.version>3.2.2</maven.gpg.plugin.version>
-    <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
+    <maven.gpg.plugin.version>3.2.4</maven.gpg.plugin.version>
+    <maven.install.plugin.version>3.1.2</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.6.1</maven.invoker.plugin.version>
-    <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
+    <maven.jar.plugin.version>3.4.1</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.6.3</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.11.0</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.12.0</maven.plugin-tools.version>
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.2.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.18</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.5.2</maven.shade.plugin.version>
-    <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
+    <maven.shade.plugin.version>3.5.3</maven.shade.plugin.version>
+    <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
     <maven.version>3.9.0</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
@@ -343,7 +343,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <settingsPath>src/it/settings.xml</settingsPath>
     <slf4j.version>2.0.9</slf4j.version>
-    <spotbugs.maven.plugin.version>4.8.3.1</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.8.4.0</spotbugs.maven.plugin.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
