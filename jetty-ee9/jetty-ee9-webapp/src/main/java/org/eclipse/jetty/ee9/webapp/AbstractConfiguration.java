@@ -19,15 +19,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.ClassMatcher;
-
 public class AbstractConfiguration implements Configuration
 {
     private final boolean _enabledByDefault;
     private final List<String> _after = new ArrayList<>();
     private final List<String> _beforeThis = new ArrayList<>();
-    private final ClassMatcher _protected = new ClassMatcher();
-    private final ClassMatcher _hidden = new ClassMatcher();
+    private final ClassMatcher _system = new ClassMatcher();
+    private final ClassMatcher _server = new ClassMatcher();
 
     protected AbstractConfiguration()
     {
@@ -87,29 +85,29 @@ public class AbstractConfiguration implements Configuration
 
     /**
      * Protect classes from modification by the web application by adding them
-     * to the {@link WebAppConfiguration#getProtectedClasses()}
+     * to the {@link WebAppConfiguration#getSystemClasses()}
      *
      * @param classes classname or package pattern
      */
     protected void protect(String... classes)
     {
-        _protected.add(classes);
+        _system.add(classes);
     }
 
     /**
      * Hide classes from the web application by adding them
-     * to the {@link WebAppConfiguration#getHiddenClasses()}
+     * to the {@link WebAppConfiguration#getServerClasses()}
      *
      * @param classes classname or package pattern
      */
     protected void hide(String... classes)
     {
-        _hidden.add(classes);
+        _server.add(classes);
     }
 
     /**
      * Expose classes to the web application by adding them
-     * as exclusions to the {@link WebAppConfiguration#getHiddenClasses()}
+     * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
      *
      * @param classes classname or package pattern
      */
@@ -119,15 +117,15 @@ public class AbstractConfiguration implements Configuration
         {
             if (c.startsWith("-"))
                 throw new IllegalArgumentException();
-            _hidden.add("-" + c);
+            _server.add("-" + c);
         }
     }
 
     /**
      * Protect classes from modification by the web application by adding them
-     * to the {@link WebAppConfiguration#getProtectedClasses()} and
+     * to the {@link WebAppConfiguration#getSystemClasses()} and
      * expose them to the web application by adding them
-     * as exclusions to the {@link WebAppConfiguration#getHiddenClasses()}
+     * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
      *
      * @param classes classname or package pattern
      */
@@ -138,8 +136,8 @@ public class AbstractConfiguration implements Configuration
             if (c.startsWith("-"))
                 throw new IllegalArgumentException();
 
-            _protected.add(c);
-            _hidden.add("-" + c);
+            _system.add(c);
+            _server.add("-" + c);
         }
     }
 
@@ -156,15 +154,15 @@ public class AbstractConfiguration implements Configuration
     }
 
     @Override
-    public ClassMatcher getProtectedClasses()
+    public ClassMatcher getSystemClasses()
     {
-        return _protected;
+        return _system;
     }
 
     @Override
-    public ClassMatcher getHiddenClasses()
+    public ClassMatcher getServerClasses()
     {
-        return _hidden;
+        return _server;
     }
 
     @Override

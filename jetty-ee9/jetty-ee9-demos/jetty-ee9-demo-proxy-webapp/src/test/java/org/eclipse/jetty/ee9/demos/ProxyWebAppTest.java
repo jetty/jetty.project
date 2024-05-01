@@ -57,7 +57,7 @@ public class ProxyWebAppTest
         // This is a pieced together WebApp.
         // We don't have a valid WEB-INF/lib to rely on at this point.
         // So, open up server classes here, for purposes of this testcase.
-        webapp.getHiddenClassMatcher().add("-org.eclipse.jetty.ee9.proxy.");
+        webapp.getServerClassMatcher().add("-org.eclipse.jetty.ee9.proxy.");
         // Default location (EE9)
         Path webappDir = MavenTestingUtils.getBasePath().resolve("src/main/webapp");
         if (!Files.exists(webappDir))

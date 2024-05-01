@@ -202,8 +202,8 @@ public class EmbeddedWeldTest
         webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.jboss.weld.environment.servlet.EnhancedListener()));
 
         String pkg = EmbeddedWeldTest.class.getPackage().getName();
-        webapp.getHiddenClassMatcher().add("-" + pkg + ".");
-        webapp.getProtectedClassMatcher().add(pkg + ".");
+        webapp.getServerClassMatcher().add("-" + pkg + ".");
+        webapp.getSystemClassMatcher().add(pkg + ".");
 
         webapp.addServlet(GreetingsServlet.class, "/greet");
         webapp.addFilter(MyFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -238,8 +238,8 @@ public class EmbeddedWeldTest
 
         // This is ugly but needed for maven for testing in a overlaid war pom
         String pkg = EmbeddedWeldTest.class.getPackage().getName();
-        webapp.getHiddenClassMatcher().add("-" + pkg + ".");
-        webapp.getProtectedClassMatcher().add(pkg + ".");
+        webapp.getServerClassMatcher().add("-" + pkg + ".");
+        webapp.getSystemClassMatcher().add(pkg + ".");
 
         webapp.getServletHandler().addListener(new ListenerHolder(MyContextListener.class));
         webapp.addFilter(MyFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));

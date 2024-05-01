@@ -55,7 +55,6 @@ import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -116,8 +115,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public static final org.eclipse.jetty.ee9.webapp.ClassMatcher __dftServerClasses =
         new org.eclipse.jetty.ee9.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_HIDDEN_CLASSES);
 
-    private final ClassMatcher _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
-    private final ClassMatcher _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _systemClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _serverClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
 
     private Configurations _configurations;
     private String _defaultsDescriptor = WEB_DEFAULTS_XML;
@@ -461,7 +460,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Add the known server class inclusions for all known configurations
         for (Configuration configuration : Configurations.getKnown())
         {
-            _hiddenClasses.include(configuration.getHiddenClasses().getInclusions());
+            _serverClasses.include(configuration.getServerClasses().getInclusions());
         }
 
         // Setup Configuration classes for this webapp!
@@ -469,8 +468,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _configurations.sort();
         for (Configuration configuration : _configurations)
         {
-            _protectedClasses.add(configuration.getProtectedClasses().getPatterns());
-            _hiddenClasses.exclude(configuration.getHiddenClasses().getExclusions());
+            _systemClasses.add(configuration.getSystemClasses().getPatterns());
+            _serverClasses.exclude(configuration.getServerClasses().getExclusions());
         }
 
         // Configure classloader
@@ -671,197 +670,119 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * Set the hidden (server) classes patterns.
+     * Set the server classes patterns.
      * <p>
      * These classes/packages are used to implement the server and are hidden
      * from the context.  If the context needs to load these classes, it must have its
      * own copy of them in WEB-INF/lib or WEB-INF/classes.
      *
-     * @param hiddenClasses the server classes pattern
+     * @param serverClasses the server classes pattern
      */
-    public void setHiddenClassMatcher(ClassMatcher hiddenClasses)
+    public void setServerClassMatcher(ClassMatcher serverClasses)
     {
-        _hiddenClasses.clear();
-        _hiddenClasses.add(hiddenClasses.getPatterns());
+        _serverClasses.clear();
+        _serverClasses.add(serverClasses.getPatterns());
     }
 
     /**
-     * Set the protected (system) classes patterns.
+     * Set the system classes patterns.
      * <p>
      * These classes/packages are provided by the JVM and
      * cannot be replaced by classes of the same name from WEB-INF,
      * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
      *
-     * @param protectedClasses the system classes pattern
+     * @param systemClasses the system classes pattern
      */
-    public void setProtectedClassMatcher(ClassMatcher protectedClasses)
+    public void setSystemClassMatcher(ClassMatcher systemClasses)
     {
-        _protectedClasses.clear();
-        _protectedClasses.add(protectedClasses.getPatterns());
+        _systemClasses.clear();
+        _systemClasses.add(systemClasses.getPatterns());
     }
 
     /**
-     * Add a ClassMatcher for hidden (server) classes by combining with
+     * Add a ClassMatcher for server classes by combining with
      * any existing matcher.
      *
-     * @param hiddenClasses The class matcher of patterns to add to the server ClassMatcher
+     * @param serverClasses The class matcher of patterns to add to the server ClassMatcher
      */
-    public void addHiddenClassMatcher(ClassMatcher hiddenClasses)
+    public void addServerClassMatcher(ClassMatcher serverClasses)
     {
-        _hiddenClasses.add(hiddenClasses.getPatterns());
+        _serverClasses.add(serverClasses.getPatterns());
     }
 
     /**
-     * Add a ClassMatcher for protected (system) classes by combining with
+     * Add a ClassMatcher for system classes by combining with
      * any existing matcher.
      *
-     * @param protectedClasses The class matcher of patterns to add to the system ClassMatcher
+     * @param systemClasses The class matcher of patterns to add to the system ClassMatcher
      */
-    public void addProtectedClassMatcher(ClassMatcher protectedClasses)
+    public void addSystemClassMatcher(ClassMatcher systemClasses)
     {
-        _protectedClasses.add(protectedClasses.getPatterns());
+        _systemClasses.add(systemClasses.getPatterns());
     }
 
     /**
      * @return The ClassMatcher used to match System (protected) classes
      */
-    public ClassMatcher getProtectedClassMatcher()
+    public ClassMatcher getSystemClassMatcher()
     {
-        return _protectedClasses;
+        return _systemClasses;
     }
 
     /**
      * @return The ClassMatcher used to match Server (hidden) classes
      */
-    public ClassMatcher getHiddenClassMatcher()
+    public ClassMatcher getServerClassMatcher()
     {
-        return _hiddenClasses;
+        return _serverClasses;
     }
 
     @ManagedAttribute(value = "classes and packages protected by context classloader", readonly = true)
-    public String[] getProtectedClasses()
+    public String[] getSystemClasses()
     {
-        return _protectedClasses.getPatterns();
+        return _systemClasses.getPatterns();
     }
 
     @ManagedAttribute(value = "classes and packages hidden by the context classloader", readonly = true)
-    public String[] getHiddenClasses()
+    public String[] getServerClasses()
     {
-        return _hiddenClasses.getPatterns();
+        return _serverClasses.getPatterns();
     }
 
     @Override
     public boolean isHiddenClass(Class<?> clazz)
     {
-        return _hiddenClasses.match(clazz);
+        return isServerClass(clazz);
     }
 
     @Override
     public boolean isProtectedClass(Class<?> clazz)
     {
-        return _protectedClasses.match(clazz);
+        return isSystemClass(clazz);
     }
 
     @Override
-    public boolean isHiddenResource(String name, URL url)
-    {
-        return _hiddenClasses.match(name, url);
-    }
-
-    @Override
-    public boolean isProtectedResource(String name, URL url)
-    {
-        return _protectedClasses.match(name, url);
-    }
-
-    /**
-     * @deprecated use {@link #setHiddenClassMatcher(ClassMatcher)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public void setServerClassMatcher(org.eclipse.jetty.ee9.webapp.ClassMatcher serverClasses)
-    {
-        setHiddenClassMatcher(serverClasses);
-    }
-
-    /**
-     * @deprecated use {@link #setProtectedClassMatcher(ClassMatcher)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public void setSystemClassMatcher(org.eclipse.jetty.ee9.webapp.ClassMatcher systemClasses)
-    {
-        setProtectedClassMatcher(systemClasses);
-    }
-
-    /**
-     * @deprecated use {@link #addHiddenClassMatcher(ClassMatcher)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public void addServerClassMatcher(org.eclipse.jetty.ee9.webapp.ClassMatcher serverClasses)
-    {
-        addHiddenClassMatcher(serverClasses);
-    }
-
-    /**
-     * @deprecated use {@link #addProtectedClassMatcher(ClassMatcher)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public void addSystemClassMatcher(org.eclipse.jetty.ee9.webapp.ClassMatcher systemClasses)
-    {
-        addProtectedClassMatcher(systemClasses);
-    }
-
-    /**
-     * @deprecated use {@link #getProtectedClassMatcher()}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public org.eclipse.jetty.ee9.webapp.ClassMatcher getSystemClassMatcher()
-    {
-        return new org.eclipse.jetty.ee9.webapp.ClassMatcher(getProtectedClassMatcher());
-    }
-
-    /**
-     * @deprecated use {@link #getHiddenClassMatcher()}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public org.eclipse.jetty.ee9.webapp.ClassMatcher getServerClassMatcher()
-    {
-        return new org.eclipse.jetty.ee9.webapp.ClassMatcher(getHiddenClassMatcher());
-    }
-
-    /**
-     * @deprecated use {@link #getProtectedClasses()}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public String[] getSystemClasses()
-    {
-        return getProtectedClasses();
-    }
-
-    /**
-     * @deprecated use {@link #getHiddenClasses()}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public String[] getServerClasses()
-    {
-        return getHiddenClasses();
-    }
-
-    /**
-     * @deprecated use {@link #isHiddenClass(Class)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
     public boolean isServerClass(Class<?> clazz)
     {
-        return isHiddenClass(clazz);
+        return _serverClasses.match(clazz);
     }
 
-    /**
-     * @deprecated use {@link #isProtectedClass(Class)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
+    @Override
     public boolean isSystemClass(Class<?> clazz)
     {
-        return isProtectedClass(clazz);
+        return _systemClasses.match(clazz);
+    }
+
+    @Override
+    public boolean isServerResource(String name, URL url)
+    {
+        return _serverClasses.match(name, url);
+    }
+
+    @Override
+    public boolean isSystemResource(String name, URL url)
+    {
+        return _systemClasses.match(name, url);
     }
 
     @Override
@@ -870,8 +791,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super.setServer(server);
         if (server != null)
         {
-            _protectedClasses.add(WebAppClassLoading.getProtectedClasses(server).getPatterns());
-            _hiddenClasses.add(WebAppClassLoading.getHiddenClasses(server).getPatterns());
+            _systemClasses.add(WebAppClassLoading.getProtectedClasses(server).getPatterns());
+            _serverClasses.add(WebAppClassLoading.getHiddenClasses(server).getPatterns());
         }
     }
 
@@ -983,16 +904,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void dump(Appendable out, String indent) throws IOException
     {
         List<String> systemClasses = null;
-        if (_protectedClasses != null)
+        if (_systemClasses != null)
         {
-            systemClasses = new ArrayList<>(_protectedClasses);
+            systemClasses = new ArrayList<>(_systemClasses);
             Collections.sort(systemClasses);
         }
 
         List<String> serverClasses = null;
-        if (_hiddenClasses != null)
+        if (_serverClasses != null)
         {
-            serverClasses = new ArrayList<>(_hiddenClasses);
+            serverClasses = new ArrayList<>(_serverClasses);
             Collections.sort(serverClasses);
         }
 
@@ -1570,8 +1491,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * Add a Server Class pattern to use for all ee9 WebAppContexts.
      * @param attributes The {@link Server} instance to add classes to
      * @param patterns the patterns to use
-     * @see #getHiddenClassMatcher()
-     * @see #getHiddenClasses()
+     * @see #getServerClassMatcher()
+     * @see #getServerClasses()
      * @deprecated use {@link WebAppClassLoading#addProtectedClasses(Server, String...)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
@@ -1584,8 +1505,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * Add a System Class pattern to use for all ee9 WebAppContexts.
      * @param attributes The {@link Server} instance to add classes to
      * @param patterns the patterns to use
-     * @see #getProtectedClassMatcher()
-     * @see #getProtectedClasses()
+     * @see #getSystemClassMatcher()
+     * @see #getSystemClasses()
      * @deprecated use {@link WebAppClassLoading#addHiddenClasses(Server, String...)}
      */
     @Deprecated(since = "12.0.8", forRemoval = true)
