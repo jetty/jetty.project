@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee11.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Locale;
@@ -337,6 +338,12 @@ public class ServletApiResponse implements HttpServletResponse
     public void setCharacterEncoding(String encoding)
     {
         getServletResponseInfo().setCharacterEncoding(encoding, ServletContextResponse.EncodingFrom.SET_CHARACTER_ENCODING);
+    }
+
+    @Override
+    public void setCharacterEncoding(Charset encoding)
+    {
+        setCharacterEncoding(encoding == null ? null : encoding.name());
     }
 
     @Override
