@@ -13,23 +13,8 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
-
-import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.maven.AbstractForkedChild;
+import org.eclipse.jetty.maven.AbstractJettyEmbedder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,15 +24,9 @@ import org.slf4j.LoggerFactory;
  * This is the class that is executed when the jetty maven plugin 
  * forks a process when DeploymentMode=FORKED.
  */
-public class JettyForkedChild extends ContainerLifeCycle
+public class JettyForkedChild extends AbstractForkedChild
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyForkedChild.class);
-    
-    protected JettyEmbedder jetty;
-    protected File tokenFile; // TODO: convert to Path
-    protected Scanner scanner;
-    protected File webAppPropsFile; // TODO: convert to Path
-    protected int scanInterval;
 
     /**
      * @param args arguments that were passed to main
@@ -56,158 +35,13 @@ public class JettyForkedChild extends ContainerLifeCycle
     public JettyForkedChild(String[] args)
         throws Exception
     {
-        jetty = new JettyEmbedder();
-        configure(args);
+       super(args);
     }
 
-    /**
-     * Based on the args passed to the program, configure jetty.
-     * 
-     * @param args args that were passed to the program.
-     * @throws Exception if unable to load webprops
-     */
-    public void configure(String[] args)
-        throws Exception
+    @Override
+    protected AbstractJettyEmbedder newJettyEmbedder()
     {
-        Map<String, String> jettyProperties = new HashMap<>();
-        
-        for (int i = 0; i < args.length; i++)
-        {
-            //--stop-port
-            if ("--stop-port".equals(args[i]))
-            {
-                jetty.setStopPort(Integer.parseInt(args[++i]));
-                continue;
-            }
-
-            //--stop-key
-            if ("--stop-key".equals(args[i]))
-            {
-                jetty.setStopKey(args[++i]);
-                continue;
-            }
-
-            //--jettyXml
-            if ("--jetty-xml".equals(args[i]))
-            {
-                List<File> jettyXmls = new ArrayList<>();
-                String[] names = StringUtil.csvSplit(args[++i]);
-                for (int j = 0; names != null && j < names.length; j++)
-                {
-                    jettyXmls.add(new File(names[j].trim()));
-                }
-                jetty.setJettyXmlFiles(jettyXmls);
-                continue;
-            }
-            //--webprops
-            if ("--webprops".equals(args[i]))
-            {
-                webAppPropsFile = new File(args[++i].trim());
-                jetty.setWebAppProperties(loadWebAppProps());
-                continue;
-            }
-            
-            //--token
-            if ("--token".equals(args[i]))
-            {
-                tokenFile = new File(args[++i].trim()); 
-                continue;
-            }
-
-            if ("--scanInterval".equals(args[i]))
-            {
-                scanInterval = Integer.parseInt(args[++i].trim());
-                scanner = new Scanner();
-                scanner.setReportExistingFilesOnStartup(false);
-                scanner.setScanInterval(scanInterval);
-                scanner.addListener(new Scanner.BulkListener()
-                {   
-                    public void filesChanged(Set<String> changes)
-                    {                       
-                        if (!Objects.isNull(scanner))
-                        {
-                            try
-                            {
-                                scanner.stop();
-                                if (!Objects.isNull(jetty.getWebApp()))
-                                {
-                                    //stop the webapp
-                                    jetty.getWebApp().stop();
-                                    //reload the props
-                                    jetty.setWebAppProperties(loadWebAppProps());
-                                    jetty.setWebApp(jetty.getWebApp());
-                                    //restart the webapp
-                                    jetty.redeployWebApp();
-
-                                    //restart the scanner
-                                    scanner.start();
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                LOG.error("Error reconfiguring/restarting webapp after change in watched files", e);
-                            }
-                        }
-                    }
-                });
-
-                if (!Objects.isNull(webAppPropsFile))
-                    scanner.addFile(webAppPropsFile.toPath());
-                continue;
-            }
-
-            //assume everything else is a jetty property to be passed in
-            String[] tmp = args[i].trim().split("=");
-            if (tmp.length == 2)
-            {
-                jettyProperties.put(tmp[0], tmp[1]);
-            }
-        }
-
-        jetty.setJettyProperties(jettyProperties);
-        jetty.setExitVm(true);
-    }
-
-    /**
-     * Load properties from a file describing the webapp if one is
-     * present.
-     * 
-     * @return file contents as properties
-     * @throws FileNotFoundException if there is a file not found problem
-     * @throws IOException if there is an IO problem
-     */
-    private Properties loadWebAppProps() throws FileNotFoundException, IOException
-    {
-        Properties props = new Properties();
-        if (Objects.nonNull(webAppPropsFile))
-            props.load(new FileInputStream(webAppPropsFile));
-        return props;
-    }
-
-    /**
-     * Start a jetty instance and webapp. This thread will
-     * wait until jetty exits.
-     */
-    public void doStart()
-        throws Exception
-    {
-        super.doStart();
-
-        //Start the embedded jetty instance
-        jetty.start();
-
-        //touch file to signify start of jetty
-        Path tokenPath = tokenFile.toPath();
-        Files.createFile(tokenPath);
-
-        //Start a watcher on a file that will change if the
-        //webapp is regenerated; stop the webapp, apply the
-        //properties and restart it.
-        if (scanner != null)
-            scanner.start();
-
-        //wait for jetty to finish
-        jetty.join();
+        return new JettyEmbedder();
     }
 
     public static void main(String[] args)
