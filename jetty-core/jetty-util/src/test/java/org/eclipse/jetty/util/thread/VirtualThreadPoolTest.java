@@ -113,31 +113,37 @@ public class VirtualThreadPoolTest
         CountDownLatch running = new CountDownLatch(4);
         Waiter waiter = new Waiter(running, false);
         Waiter spinner = new Waiter(running, true);
-        vtp.execute(waiter);
-        vtp.execute(spinner);
-        vtp.execute(waiter);
-        vtp.execute(spinner);
+        try
+        {
+            vtp.execute(waiter);
+            vtp.execute(spinner);
+            vtp.execute(waiter);
+            vtp.execute(spinner);
 
-        assertTrue(running.await(5, TimeUnit.SECONDS));
-        assertThat(trackingExecutor.size(), is(4));
+            assertTrue(running.await(5, TimeUnit.SECONDS));
+            assertThat(trackingExecutor.size(), is(4));
 
-        vtp.setDetailedDump(false);
-        String dump = vtp.dump();
-        assertThat(count(dump, "VirtualThread[#"), is(4));
-        assertThat(count(dump, "/runnable@"), is(2));
-        assertThat(count(dump, "/timed_waiting"), is(2));
-        assertThat(count(dump, "VirtualThreadPoolTest.java"), is(0));
+            vtp.setDetailedDump(false);
+            String dump = vtp.dump();
+            assertThat(count(dump, "VirtualThread[#"), is(4));
+            assertThat(count(dump, "/runnable@"), is(2));
+            assertThat(count(dump, "waiting"), is(2));
+            assertThat(count(dump, "VirtualThreadPoolTest.java"), is(0));
 
-        vtp.setDetailedDump(true);
-        dump = vtp.dump();
-        assertThat(count(dump, "VirtualThread[#"), is(4));
-        assertThat(count(dump, "/runnable@"), is(2));
-        assertThat(count(dump, "/timed_waiting"), is(2));
-        assertThat(count(dump, "VirtualThreadPoolTest.java"), is(4));
-        assertThat(count(dump, "CountDownLatch.await("), is(2));
-
-        waiter.countDown();
-        vtp.stop();
+            vtp.setDetailedDump(true);
+            dump = vtp.dump();
+            assertThat(count(dump, "VirtualThread[#"), is(4));
+            assertThat(count(dump, "/runnable@"), is(2));
+            assertThat(count(dump, "waiting"), is(2));
+            assertThat(count(dump, "VirtualThreadPoolTest.java"), is(4));
+            assertThat(count(dump, "CountDownLatch.await("), is(2));
+        }
+        finally
+        {
+            waiter.countDown();
+            spinner.countDown();
+            vtp.stop();
+        }
     }
 
     public static int count(String str, String subStr)
