@@ -291,8 +291,6 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H2")
-    @Tag("DisableLeakTracking:client:H2C")
     @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
     public void testRequestAfterFailedRequest(Transport transport) throws Exception
@@ -838,8 +836,6 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H2")
-    @Tag("DisableLeakTracking:client:H2C")
     @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
     public void testContentSourceListenersFailure(Transport transport) throws Exception
@@ -1000,8 +996,6 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H2")
-    @Tag("DisableLeakTracking:client:H2C")
     @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
     public void testParallelContentSourceListenersTotalFailure(Transport transport) throws Exception
