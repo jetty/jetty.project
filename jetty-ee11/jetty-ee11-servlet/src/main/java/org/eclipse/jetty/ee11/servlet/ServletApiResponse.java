@@ -172,6 +172,12 @@ public class ServletApiResponse implements HttpServletResponse
         sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, location);
     }
 
+    @Override
+    public void sendRedirect(String s, int i, boolean b) throws IOException
+    {
+        //TODO servlet6.1
+    }
+
     /**
      * Sends a response with one of the 300 series redirection codes.
      *

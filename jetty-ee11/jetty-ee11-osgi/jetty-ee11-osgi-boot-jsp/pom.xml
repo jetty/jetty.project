@@ -62,13 +62,13 @@
               com.sun.el.lang;resolution:=optional,
               com.sun.el.parser;resolution:=optional,
               com.sun.el.util;resolution:=optional,
-              jakarta.el;version="[5.0,6.0)",
-              jakarta.servlet;version="[$(version;==;${jakarta.servlet.api.version}),$(version;+;${jakarta.servlet.api.version}))",
-              jakarta.servlet.resources;version="[$(version;==;${jakarta.servlet.api.version}),$(version;+;${jakarta.servlet.api.version}))",
-              jakarta.servlet.jsp.resources;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
-              jakarta.servlet.jsp;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
-              jakarta.servlet.jsp.el;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
-              jakarta.servlet.jsp.tagext;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
+              jakarta.el;version="[6.0,7.0)",
+              jakarta.servlet;version="[$(version;==;${servletApi.osgiVersion}),$(version;+;${servletApi.osgiVersion}))",
+              jakarta.servlet.resources;version="[$(version;==;${servletApi.osgiVersion}),$(version;+;${servletApi.osgiVersion}))",
+              jakarta.servlet.jsp.resources;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
+              jakarta.servlet.jsp;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
+              jakarta.servlet.jsp.el;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
+              jakarta.servlet.jsp.tagext;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
               jakarta.servlet.jsp.jstl.core;version="2.0";resolution:=optional,
               jakarta.servlet.jsp.jstl.fmt;version="2.0";resolution:=optional,
               jakarta.servlet.jsp.jstl.sql;version="2.0";resolution:=optional,
@@ -138,8 +138,30 @@
             </goals>
             <phase>validate</phase>
             <configuration>
+              <versionString>${jakarta.servlet.jsp.api.version}</versionString>
+              <propertyPrefix>jspApi</propertyPrefix>
+            </configuration>
+          </execution>
+          <execution>
+            <id>set-jsp-impl-version</id>
+            <goals>
+              <goal>parse-version</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
               <versionString>${jsp.impl.version}</versionString>
               <propertyPrefix>jspImpl</propertyPrefix>
+            </configuration>
+          </execution>
+          <execution>
+            <id>set-servlet-api-version</id>
+            <goals>
+              <goal>parse-version</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <versionString>${jakarta.servlet.api.version}</versionString>
+              <propertyPrefix>servletApi</propertyPrefix>
             </configuration>
           </execution>
         </executions>

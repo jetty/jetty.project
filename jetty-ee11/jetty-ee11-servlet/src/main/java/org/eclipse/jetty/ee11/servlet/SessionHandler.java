@@ -285,6 +285,13 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         }
 
         @Override
+        public Accessor getAccessor()
+        {
+           //TODO servlet6.1
+            return null;
+        }
+
+        @Override
         public ManagedSession getSession()
         {
             return _session;

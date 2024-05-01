@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.ServletException;
@@ -261,7 +262,7 @@ public class ResponseHeadersTest
                 // and should never have a `charset=` entry on the `Content-Type` response header
                 response.setContentType("application/json");
                 // attempt to indicate that there is truly no charset meant to be used in the response header
-                response.setCharacterEncoding(null);
+                response.setCharacterEncoding((Charset)null);
 
                 writer.println("{ \"what\": \"should this be?\" }");
             }

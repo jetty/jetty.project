@@ -74,8 +74,8 @@
               jakarta.mail.internet;version="2.0";resolution:=optional,
               jakarta.mail.search;version="2.0";resolution:=optional,
               jakarta.mail.util;version="2.0";resolution:=optional,
-              jakarta.servlet;version="[$(version;==;${jakarta.servlet.api.version}),$(version;+;${jakarta.servlet.api.version}))",
-              jakarta.servlet.http;version="[$(version;==;${jakarta.servlet.api.version}),$(version;+;${jakarta.servlet.api.version}))",
+              jakarta.servlet;version="[$(version;==;${servletApi.osgiVersion}),$(version;+;${servletApi.osgiVersion}))",
+              jakarta.servlet.http;version="[$(version;==;${servletApi.osgiVersion}),$(version;+;${servletApi.osgiVersion}))",
               jakarta.transaction;version="2.0.0";resolution:=optional,
               jakarta.transaction.xa;version="2.0.0";resolution:=optional,
               org.objectweb.asm;version="$(version;=;${asm.version})";resolution:=optional,
@@ -97,6 +97,7 @@
           </instructions>
         </configuration>
       </plugin>
+
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
@@ -114,6 +115,23 @@
                   </fileset>
                 </copy>
               </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>set-servlet-api-version</id>
+            <goals>
+              <goal>parse-version</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <versionString>${jakarta.servlet.api.version}</versionString>
+              <propertyPrefix>servletApi</propertyPrefix>
             </configuration>
           </execution>
         </executions>

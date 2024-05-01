@@ -62,8 +62,6 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerConfigProvider(String className, Map properties, String layer, String appContext, String description)
     {
-        checkPermission();
-
         String key = getKey(layer, appContext);
         AuthConfigProvider configProvider = createConfigProvider(className, properties);
         DefaultRegistrationContext context = new DefaultRegistrationContext(configProvider, layer, appContext, description, true);
@@ -76,8 +74,6 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerConfigProvider(AuthConfigProvider provider, String layer, String appContext, String description)
     {
-        checkPermission();
-
         String key = getKey(layer, appContext);
         DefaultRegistrationContext context = new DefaultRegistrationContext(provider, layer, appContext, description, false);
         DefaultRegistrationContext oldContext = _registrations.put(key, context);
@@ -89,8 +85,6 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public boolean removeRegistration(String registrationID)
     {
-        checkPermission();
-
         DefaultRegistrationContext registrationContext = _registrations.remove(registrationID);
         if (registrationContext == null)
             return false;
@@ -116,8 +110,6 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String[] detachListener(RegistrationListener listener, String layer, String appContext)
     {
-        checkPermission();
-
         List<String> registrationIds = new ArrayList<>();
         for (DefaultRegistrationContext registration : _registrations.values())
         {
@@ -153,14 +145,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public void refresh()
     {
-        checkPermission();
-
         // TODO: maybe we should re-construct providers created from classname.
-    }
-
-    private static void checkPermission()
-    {
-        SecurityUtils.checkPermission(new SecurityPermission(PROVIDER_REGISTRATION_PERMISSION_NAME));
     }
 
     private static String getKey(String layer, String appContext)

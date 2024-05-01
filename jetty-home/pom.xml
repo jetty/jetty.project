@@ -126,26 +126,26 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-home</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-home</artifactId>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
@@ -565,7 +565,7 @@
                   <excludes combine.children="append">
                     <exclude>org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api</exclude>
                     <!--
-                      we need to exclude some libraries which are different depending on ee8/ee9/ee11
+                        we need to exclude some libraries which are different depending on ee8/ee9/ee10/ee11
                       enforcer is running at ee11/ee10/ee9/ee8 home level
                     -->
                     <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
@@ -581,6 +581,9 @@
                     <exclude>jakarta.interceptor:jakarta.interceptor-api</exclude>
                     <exclude>jakarta.enterprise:jakarta.enterprise.cdi-api</exclude>
                     <exclude>jakarta.el:jakarta.el-api</exclude>
+                    <exclude>jakarta.enterprise:jakarta.enterprise.lang-model</exclude>
+                    <exclude>jakarta.websocket:jakarta.websocket-client-api</exclude>
+                    <exclude>jakarta.websocket:jakarta.websocket-api</exclude>
                   </excludes>
                 </requireUpperBoundDeps>
               </rules>
