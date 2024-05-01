@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -76,16 +77,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class SessionHandlerTest
 {
+    /**
+     * Consumer that remembers a session
+     */
     public static class SessionConsumer implements Consumer<ManagedSession>
     {
         private ManagedSession _session;
-        
+
         @Override
         public void accept(ManagedSession s)
         {
             _session = s;
         }
-        
+
         public Session getSession()
         {
             return _session;
@@ -660,7 +664,107 @@ public class SessionHandlerTest
             return "";
         }
     }
-    
+
+    @Test
+    public void testSessionAccessor() throws Exception
+    {
+        String contextPath = "/";
+        String servletMapping = "/server";
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
+        server.addBean(sessionIdManager, true);
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        server.addBean(cacheFactory);
+
+        SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();
+        server.addBean(storeFactory);
+
+        HouseKeeper housekeeper = new HouseKeeper();
+        housekeeper.setIntervalSec(-1); //turn off scavenging
+        sessionIdManager.setSessionHouseKeeper(housekeeper);
+
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath(contextPath);
+        server.setHandler(context);
+        SessionHandler sessionHandler = new SessionHandler();
+        sessionHandler.setSessionIdManager(sessionIdManager);
+        sessionHandler.setMaxInactiveInterval(-1); //immortal session
+        context.setSessionHandler(sessionHandler);
+        server.start();
+
+        //test session invalid before using Accessor
+        final AtomicReference<ManagedSession> managedSession = new AtomicReference<>();
+        final AtomicReference<HttpSession.Accessor> accessor = new AtomicReference<>();
+        sessionHandler.newSession(null, null, managedSession::set);
+        //Wrap as an HttpSession
+        SessionHandler.ServletSessionApi servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        //invalidate the session
+        servletSessionApi.invalidate();
+        //test that the accessor can't be called after the session is invalidated
+        accessor.set(servletSessionApi.getAccessor());
+        assertThrows(IllegalStateException.class,  () -> accessor.get().access((s) ->
+        {
+        }));
+
+        //test session invalid after acquiring Accessor
+        sessionHandler.newSession(null, null, managedSession::set);
+        //Wrap as an HttpSession
+        servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        //Acquire Accessor
+        accessor.set(servletSessionApi.getAccessor());
+        //Invalidate session
+        servletSessionApi.invalidate();
+        //test that using the Accessor after the session is invalidated throws ISE
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) ->
+        {
+        }));
+
+        //test session is valid
+        sessionHandler.newSession(null, null, managedSession::set);
+        //Wrap as an HttpSession
+        servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        accessor.set(servletSessionApi.getAccessor());
+        final AtomicReference<String> id = new AtomicReference<>();
+        //use the Accessor
+        accessor.get().access((s) -> id.set(s.getId()));
+        assertEquals(managedSession.get().getId(), id.get());
+
+        //test re-using the Accessor
+        accessor.get().access((s) -> id.set(s.getId()));
+        assertEquals(managedSession.get().getId(), id.get());
+
+        //test re-using the Accessor on an invalid session
+        servletSessionApi.invalidate();
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) -> id.set(s.getId())));
+
+        //test invalidating the session via the Accessor
+        sessionHandler.newSession(null, null, managedSession::set);
+        //Wrap as an HttpSession
+        servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        accessor.set(servletSessionApi.getAccessor());
+        accessor.get().access(HttpSession::invalidate);
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) ->
+        {
+        }));
+
+        //test using Accessor after id change
+        sessionHandler.newSession(null, null, managedSession::set);
+        //Wrap as an HttpSession
+        servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        //Acquire the Accessor
+        accessor.set(servletSessionApi.getAccessor());
+        //Renew the session id
+        managedSession.get().renewId(new MockRequest(), null);
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) ->
+        {
+        }));
+    }
+
     @Test
     public void testSessionCookie() throws Exception
     {

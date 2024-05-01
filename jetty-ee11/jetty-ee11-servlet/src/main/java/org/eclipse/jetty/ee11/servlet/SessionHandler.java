@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.SessionCookieConfig;
@@ -263,6 +264,43 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         }
     }
 
+    public static class SessionAccessor implements HttpSession.Accessor
+    {
+        private final ManagedSession _session;
+        private final String _originalId;
+
+        public SessionAccessor(ManagedSession session)
+        {
+            _session = session;
+            _originalId = _session.getId();
+        }
+
+        @Override
+        public void access(Consumer<HttpSession> sessionConsumer) throws IllegalStateException
+        {
+            if (_session == null)
+                throw new IllegalStateException("No session");
+
+            if (!_session.isValid())
+                throw new IllegalStateException("Invalid session");
+
+            if (!_originalId.equals(_session.getId()))
+                throw new IllegalStateException("Session id changed");
+
+            //update the last accessed time, but ignore any updated session cookie
+            _session.access(System.currentTimeMillis());
+
+            try
+            {
+                sessionConsumer.accept(_session.getApi());
+            }
+            finally
+            {
+                _session.release();
+            }
+        }
+    }
+
     public static class ServletSessionApi implements HttpSession, Session.API
     {
         public static ServletSessionApi wrapSession(ManagedSession session)
@@ -287,8 +325,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         @Override
         public Accessor getAccessor()
         {
-           //TODO servlet6.1
-            return null;
+           return new SessionAccessor(_session);
         }
 
         @Override

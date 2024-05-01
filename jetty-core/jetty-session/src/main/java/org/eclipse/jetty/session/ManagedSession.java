@@ -201,7 +201,7 @@ public class ManagedSession implements Session
         }
     }
 
-    void release()
+    public void release()
     {
         try (AutoLock ignored = _lock.lock())
         {

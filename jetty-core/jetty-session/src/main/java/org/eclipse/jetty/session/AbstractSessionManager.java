@@ -393,7 +393,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /**
      * Get a known existing session
      *
-     * @param extendedId The session id, possibly imcluding worker name suffix.
+     * @param extendedId The session id, possibly including worker name suffix.
      * @return the Session matching the id or null if none exists
      */
     @Override
@@ -1190,7 +1190,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
         }
     }
-    
+
     protected void addSessionStreamWrapper(Request request)
     {
         request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request));
