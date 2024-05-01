@@ -17,14 +17,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisabledForJreRange(max = JRE.JAVA_20)
@@ -99,18 +100,97 @@ public class VirtualThreadPoolTest
     }
 
     @Test
-    public void testThread() throws Exception
+    public void testTrackingDump() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();
-        vtp.setName("vtp");
+        vtp.setTracking(true);
         vtp.start();
 
-        CountDownLatch ran = new CountDownLatch(1);
-        Thread t = vtp.newThread(ran::countDown);
-        assertThat(t.getName(), startsWith(vtp.getName()));
-        assertFalse(ran.await(1, TimeUnit.SECONDS));
-        t.start();
-        assertTrue(ran.await(5, TimeUnit.SECONDS));
+        assertThat(vtp.getVirtualThreadsExecutor(), instanceOf(TrackingExecutor.class));
+        TrackingExecutor trackingExecutor = (TrackingExecutor)vtp.getVirtualThreadsExecutor();
+        assertThat(trackingExecutor.size(), is(0));
+
+        CountDownLatch running = new CountDownLatch(4);
+        Waiter waiter = new Waiter(running, false);
+        Waiter spinner = new Waiter(running, true);
+        vtp.execute(waiter);
+        vtp.execute(spinner);
+        vtp.execute(waiter);
+        vtp.execute(spinner);
+
+        assertTrue(running.await(5, TimeUnit.SECONDS));
+        assertThat(trackingExecutor.size(), is(4));
+
+        vtp.setDetailedDump(false);
+        String dump = vtp.dump();
+        assertThat(count(dump, "VirtualThread[#"), is(4));
+        assertThat(count(dump, "/runnable@"), is(2));
+        assertThat(count(dump, "/timed_waiting"), is(2));
+        assertThat(count(dump, "VirtualThreadPoolTest.java"), is(0));
+
+        vtp.setDetailedDump(true);
+        dump = vtp.dump();
+        assertThat(count(dump, "VirtualThread[#"), is(4));
+        assertThat(count(dump, "/runnable@"), is(2));
+        assertThat(count(dump, "/timed_waiting"), is(2));
+        assertThat(count(dump, "VirtualThreadPoolTest.java"), is(4));
+        assertThat(count(dump, "CountDownLatch.await("), is(2));
+
+        waiter.countDown();
         vtp.stop();
+    }
+
+    public static int count(String str, String subStr)
+    {
+        if (StringUtil.isEmpty(str))
+            return 0;
+
+        int count = 0;
+        int idx = 0;
+
+        while ((idx = str.indexOf(subStr, idx)) != -1)
+        {
+            count++;
+            idx += subStr.length();
+        }
+
+        return count;
+    }
+
+    private static class Waiter extends CountDownLatch implements Runnable
+    {
+        private final CountDownLatch _running;
+        private final boolean _spin;
+
+        public Waiter(CountDownLatch running, boolean spin)
+        {
+            super(1);
+            _running = running;
+            _spin = spin;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                _running.countDown();
+
+                while (_spin && getCount() > 0)
+                    Thread.onSpinWait();
+
+                if (!await(10, TimeUnit.SECONDS))
+                    throw new IllegalStateException();
+
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+            finally
+            {
+                System.err.println("RAN!" + Thread.currentThread());
+            }
+        }
     }
 }

@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class VirtualThreads
 {
     private static final Logger LOG = LoggerFactory.getLogger(VirtualThreads.class);
-    private static final ThreadFactoryExecutor executor = getNamedVirtualThreadFactoryExecutor(null);
+    private static final Executor executor = getNamedVirtualThreadsExecutor(null);
     private static final Method isVirtualThread = probeIsVirtualThread();
 
     private static Method probeIsVirtualThread()
@@ -115,18 +115,6 @@ public class VirtualThreads
      */
     public static Executor getNamedVirtualThreadsExecutor(String namePrefix)
     {
-        return getNamedVirtualThreadFactoryExecutor(namePrefix);
-    }
-
-    /**
-     * Get a virtual threads {@code Executor} that names the virtual threads according to the provided name prefix.
-     * While named virtual threads enable observability they do also incur a minor performance penalty.
-     *
-     * @param namePrefix the prefix to use for the name of the virtual threads
-     * @return a virtual threads {@code Executor} that will name the virtual threads according to the provided name prefix.
-     */
-    public static ThreadFactoryExecutor getNamedVirtualThreadFactoryExecutor(String namePrefix)
-    {
         try
         {
             Class<?> builderClass = Class.forName("java.lang.Thread$Builder");
@@ -134,21 +122,7 @@ public class VirtualThreads
             if (StringUtil.isNotBlank(namePrefix))
                 threadBuilder = builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, namePrefix, 0L);
             ThreadFactory factory = (ThreadFactory)builderClass.getMethod("factory").invoke(threadBuilder);
-            Executor executor =  (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
-            return new ThreadFactoryExecutor()
-            {
-                @Override
-                public void execute(Runnable command)
-                {
-                    executor.execute(command);
-                }
-
-                @Override
-                public Thread newThread(Runnable r)
-                {
-                    return factory.newThread(r);
-                }
-            };
+            return (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
         }
         catch (Throwable x)
         {
@@ -161,15 +135,6 @@ public class VirtualThreads
      * @return a default virtual thread per task {@code Executor}
      */
     public static Executor getDefaultVirtualThreadsExecutor()
-    {
-        return executor;
-    }
-
-    /**
-     * Get a default virtual thread per task {@code Executor}.
-     * @return a default virtual thread per task {@code Executor}
-     */
-    public static ThreadFactoryExecutor getDefaultVirtualThreadFactoryExecutor()
     {
         return executor;
     }
@@ -257,7 +222,4 @@ public class VirtualThreads
     private VirtualThreads()
     {
     }
-
-    public interface ThreadFactoryExecutor extends ThreadFactory, Executor
-    {}
 }

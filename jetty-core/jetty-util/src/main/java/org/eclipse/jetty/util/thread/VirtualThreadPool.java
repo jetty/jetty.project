@@ -13,17 +13,14 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadFactory;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -32,15 +29,17 @@ import org.slf4j.LoggerFactory;
 /**
  * An implementation of {@link ThreadPool} interface that does not pool, but instead uses {@link VirtualThreads}.
  */
-public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
+@ManagedObject("A thread non-pool for virtual threads")
+public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
 {
     private static final Logger LOG = LoggerFactory.getLogger(VirtualThreadPool.class);
 
-    private String _name = null;
-    private Set<Thread> _threads;
-    private VirtualThreads.ThreadFactoryExecutor _virtualExecutor;
-    private Thread _main;
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
+    private String _name = null;
+    private Executor _virtualExecutor;
+    private Thread _main;
+    private boolean _tracking;
+    private boolean _detailedDump;
 
     public VirtualThreadPool()
     {
@@ -75,14 +74,27 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
     {
         if (isRunning())
             throw new IllegalStateException(getState());
-        _threads = tracking ? Collections.newSetFromMap(new WeakHashMap<>()) : null;
+        _tracking = tracking;
     }
 
     public boolean isTracking()
     {
-        return _threads != null;
+        return _tracking;
     }
 
+    @ManagedAttribute("reports additional details in the dump")
+    public boolean isDetailedDump()
+    {
+        return _detailedDump;
+    }
+
+    public void setDetailedDump(boolean detailedDump)
+    {
+        _detailedDump = detailedDump;
+        if (_virtualExecutor instanceof TrackingExecutor trackingExecutor)
+            trackingExecutor.setDetailedDump(detailedDump);
+    }
+    
     @Override
     protected void doStart() throws Exception
     {
@@ -107,10 +119,11 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
         _main.start();
 
         _virtualExecutor = Objects.requireNonNull(StringUtil.isBlank(_name)
-            ? VirtualThreads.getDefaultVirtualThreadFactoryExecutor()
-            : VirtualThreads.getNamedVirtualThreadFactoryExecutor(_name));
-        if (_threads != null)
-            _virtualExecutor = new TrackingVirtualExecutor(_virtualExecutor);
+            ? VirtualThreads.getDefaultVirtualThreadsExecutor()
+            : VirtualThreads.getNamedVirtualThreadsExecutor(_name));
+        if (_tracking)
+            _virtualExecutor = new TrackingExecutor(_virtualExecutor, _detailedDump);
+        addBean(_virtualExecutor);
         super.doStart();
     }
 
@@ -125,12 +138,6 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
         {
             l.signalAll();
         }
-    }
-
-    @Override
-    public Thread newThread(Runnable r)
-    {
-        return _virtualExecutor.newThread(r);
     }
 
     @Override
@@ -165,13 +172,13 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
     @Override
     public int getThreads()
     {
-        return -1;
+        return _virtualExecutor instanceof TrackingExecutor tracking ? tracking.size() : -1;
     }
 
     @Override
     public int getIdleThreads()
     {
-        return -1;
+        return 0;
     }
 
     @Override
@@ -199,50 +206,5 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadFacto
     public void execute(Runnable task)
     {
         _virtualExecutor.execute(task);
-    }
-
-    private class TrackingVirtualExecutor implements VirtualThreads.ThreadFactoryExecutor
-    {
-        private final VirtualThreads.ThreadFactoryExecutor _threadFactoryExecutor;
-
-        private TrackingVirtualExecutor(VirtualThreads.ThreadFactoryExecutor threadFactoryExecutor)
-        {
-            _threadFactoryExecutor = threadFactoryExecutor;
-        }
-
-        @Override
-        public void execute(Runnable task)
-        {
-            _threadFactoryExecutor.execute(() ->
-            {
-                try
-                {
-                    _threads.add(Thread.currentThread());
-                    task.run();
-                }
-                finally
-                {
-                    _threads.remove(Thread.currentThread());
-                }
-            });
-        }
-
-        @Override
-        public Thread newThread(Runnable task)
-        {
-            Thread thread = _threadFactoryExecutor.newThread(() ->
-            {
-                try
-                {
-                    task.run();
-                }
-                finally
-                {
-                    _threads.remove(Thread.currentThread());
-                }
-            });
-            _threads.add(thread);
-            return thread;
-        }
     }
 }
