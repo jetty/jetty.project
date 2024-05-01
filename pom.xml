@@ -207,11 +207,11 @@
     <build-helper.maven.plugin.version>3.5.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.15.0</checkstyle.version>
-    <commons-codec.version>1.16.1</commons-codec.version>
+    <checkstyle.version>10.16.0</checkstyle.version>
+    <commons-codec.version>1.17.0</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.26.1</commons.compress.version>
-    <commons.io.version>2.16.0</commons.io.version>
+    <commons.io.version>2.16.1</commons.io.version>
     <compiler.release>11</compiler.release>
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
@@ -221,16 +221,16 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.26.1</google.errorprone.version>
+    <google.errorprone.version>2.27.0</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
-    <grpc.version>1.62.2</grpc.version>
+    <grpc.version>1.63.0</grpc.version>
     <gson.version>2.10.1</gson.version>
     <guava.version>33.1.0-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>3.0.1</hawtio.version>
-    <hazelcast.version>5.3.6</hazelcast.version>
+    <hazelcast.version>5.4.0</hazelcast.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
     <infinispan.version>11.0.19.Final</infinispan.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
@@ -259,7 +259,7 @@
     <javax.cdi.api.version>2.0</javax.cdi.api.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
     <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
-    <jboss-logmanager.version>3.0.4.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
     <jboss-threads.version>3.6.1.Final</jboss-threads.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
@@ -316,7 +316,7 @@
     <maven.plugin-tools.version>3.11.0</maven.plugin-tools.version>
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.2.0</maven.remote-resources-plugin.version>
-    <maven.resolver.version>1.9.18</maven.resolver.version>
+    <maven.resolver.version>1.9.20</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.5.2</maven.shade.plugin.version>
     <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
@@ -334,7 +334,7 @@
     <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
-    <plexus-utils.version>4.0.0</plexus-utils.version>
+    <plexus-utils.version>4.0.1</plexus-utils.version>
     <plexus-xml.version>4.0.3</plexus-xml.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <settingsPath>src/it/settings.xml</settingsPath>
