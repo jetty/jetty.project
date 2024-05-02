@@ -180,7 +180,8 @@ public class ThreadLimitHandler extends HandlerWrapper
             }
             else
             {
-                baseRequest.addEventListener(new ServletRequestListener() {
+                baseRequest.addEventListener(new ServletRequestListener()
+                {
                     @Override
                     public void requestDestroyed(ServletRequestEvent sre)
                     {
