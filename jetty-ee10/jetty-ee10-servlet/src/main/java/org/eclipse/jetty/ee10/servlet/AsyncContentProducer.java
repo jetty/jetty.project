@@ -271,6 +271,9 @@ class AsyncContentProducer implements ContentProducer
         return _servletChannel.getServletRequestState().isInputUnready();
     }
 
+    /**
+     * Never returns an empty chunk that isn't a failure and/or last.
+     */
     private Content.Chunk produceChunk()
     {
         if (LOG.isDebugEnabled())

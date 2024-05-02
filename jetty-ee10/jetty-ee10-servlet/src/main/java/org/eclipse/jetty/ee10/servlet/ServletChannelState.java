@@ -102,12 +102,26 @@ public class ServletChannelState
 
     /*
      * The input readiness state.
+     * <pre>
+     *               read() without preceding isReady()
+     *                         ------
+     *                         \     \   unhandle() returns Action.READ_CALLBACK,
+     *                          \     \  or read() stole available content after setReadListener()
+     *                           ->  IDLE <--------------
+     *     blocking read() unblocked  ^                  \
+     *                                |                   \
+     *                                |                    \  setReadListener called while
+     *            registering demand  v                     v content is available
+     *                               UNREADY ------------> READY
+     *                                         demand
+     *                                         serviced
+     * </pre>
      */
     private enum InputState
     {
-        IDLE,       // No isReady; No data
-        UNREADY,    // isReady()==false; No data
-        READY       // isReady() was false; data is available
+        IDLE,       // No ReadListener notification pending
+        UNREADY,    // Demand registered
+        READY       // Demand serviced, ReadListener can be notified
     }
 
     /*
@@ -1336,8 +1350,6 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadIdle {}", toStringLocked());
 
-            // Blocking moves from UNREADY -> IDLE
-            // Async moves from READY -> IDLE
             switch (_inputState)
             {
                 case UNREADY:
