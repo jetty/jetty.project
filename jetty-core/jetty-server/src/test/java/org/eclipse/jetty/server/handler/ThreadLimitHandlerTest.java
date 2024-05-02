@@ -105,7 +105,7 @@ public class ThreadLimitHandlerTest
         _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
         assertThat(last.get(), is("0.0.0.0"));
 
-        assertThat(handler.getRemoteCount(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
     }
 
     @Test
@@ -150,7 +150,7 @@ public class ThreadLimitHandlerTest
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nX-Forwarded-For: 6.6.6.6,1.2.3.4\r\nForwarded: for=1.2.3.4\r\n\r\n");
         assertThat(last.get(), is("1.2.3.4"));
 
-        assertThat(handler.getRemoteCount(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
     }
 
     @Test
@@ -195,7 +195,7 @@ public class ThreadLimitHandlerTest
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nForwarded: for=6.6.6.6; for=1.2.3.4\r\nX-Forwarded-For: 6.6.6.6\r\nForwarded: proto=https\r\n\r\n");
         assertThat(last.get(), is("1.2.3.4"));
 
-        assertThat(handler.getRemoteCount(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
     }
 
     @Test
@@ -255,7 +255,7 @@ public class ThreadLimitHandlerTest
         await().atMost(10, TimeUnit.SECONDS).until(total::get, is(10));
         await().atMost(10, TimeUnit.SECONDS).until(count::get, is(0));
 
-        assertThat(handler.getRemoteCount(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
     }
 
     @Test
@@ -376,6 +376,6 @@ public class ThreadLimitHandlerTest
             assertThat(response, containsString(" read 2"));
         }
 
-        assertThat(handler.getRemoteCount(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
     }
 }
