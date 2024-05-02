@@ -546,6 +546,8 @@
               <exclude>**/TestJettyOSGiBootHTTP2Conscrypt.java</exclude>
               <exclude>**/TestJettyOSGiBootHTTP2JDK9.java</exclude>
               <exclude>**/TestJettyOSGiBootWithJakartaWebSocket.java</exclude>
+              <exclude>**/TestJettyOSGiBootWithJsp.java</exclude>
+              <exclude>**/TestJettyOSGiBootWithBundleJettyHome.java</exclude>
             </excludes>
           </configuration>
           <!-- paxexam still using junit 4 so we have to force the provider here -->
