@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -1059,7 +1060,7 @@ public class ServletChannelState
                 LOG.debug("completed {}", toStringLocked());
 
             if (_requestState != RequestState.COMPLETING)
-                throw new IllegalStateException(this.getStatusStringLocked());
+                failure = ExceptionUtil.combine(failure, new IllegalStateException(getStatusStringLocked()));
 
             if (failure != null)
                 abortResponse(failure);
