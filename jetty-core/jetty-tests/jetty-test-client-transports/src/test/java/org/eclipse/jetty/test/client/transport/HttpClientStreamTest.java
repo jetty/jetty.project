@@ -1063,9 +1063,7 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadWithPendingReadConcurrentServerCloseClosesStream(Transport transport) throws Exception
     {
-        CountDownLatch serverDemandLatch = new CountDownLatch(1);
         CountDownLatch serverLatch = new CountDownLatch(1);
-        AtomicReference<Content.Chunk> lastChunk = new AtomicReference<>();
         start(transport, new Handler.Abstract()
         {
             @Override
@@ -1076,16 +1074,14 @@ public class HttpClientStreamTest extends AbstractTest
                     @Override
                     public void run()
                     {
+                        // With H2, once the connector is stopping, there is no guarantee that the demand will be serviced
+                        // as the execution strategy is busy shutting down but is needed to run the dispatched thread that
+                        // services the demand; so we cannot expect that a last chunk will be read here.
                         Content.Chunk chunk = request.read();
                         if (chunk != null)
                             chunk.release();
                         if (chunk == null || !chunk.isLast())
-                        {
                             request.demand(this);
-                            return;
-                        }
-                        lastChunk.set(chunk);
-                        serverDemandLatch.countDown();
                     }
                 });
                 serverLatch.countDown();
@@ -1149,9 +1145,6 @@ public class HttpClientStreamTest extends AbstractTest
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(serverDemandLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(Content.Chunk.isFailure(lastChunk.get(), true));
-        assertInstanceOf(IOException.class, lastChunk.get().getFailure());
     }
 
     @ParameterizedTest
