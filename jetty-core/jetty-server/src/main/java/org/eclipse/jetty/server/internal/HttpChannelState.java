@@ -1125,15 +1125,12 @@ public class HttpChannelState implements HttpChannel, Components
             assert _request._lock.isHeldByCurrentThread();
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
-            if (writeCallback != null)
-            {
-                if (_writeFailure == null)
-                    _writeFailure = x;
-                else
-                    ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
-            }
             if (writeCallback == null)
                 return null;
+            if (_writeFailure == null)
+                _writeFailure = x;
+            else
+                ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
             return () -> HttpChannelState.failed(writeCallback, x);
         }
 
