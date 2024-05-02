@@ -42,17 +42,9 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <!--
-    <dependency>
-       <groupId>org.slf4j</groupId>
-       <artifactId>slf4j-simple</artifactId>
-       <scope>test</scope>
-     </dependency>
-     -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
-      <!-- scope>test</scope -->
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>

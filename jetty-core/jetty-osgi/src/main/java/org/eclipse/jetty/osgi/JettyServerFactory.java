@@ -200,9 +200,7 @@ public class JettyServerFactory
 
        if (deployers != null)
        {
-           Optional<DeploymentManager> opt = deployers.stream().findFirst();
-           if (opt.isPresent())
-               deploymentManager = opt.get();
+           deploymentManager = deployers.stream().findFirst().orElse(null);
        }
 
        if (deploymentManager == null)
