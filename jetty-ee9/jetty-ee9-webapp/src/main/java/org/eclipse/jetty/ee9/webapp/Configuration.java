@@ -104,7 +104,7 @@ public interface Configuration
     }
 
     /**
-     * Get the system classes associated with this Configuration.
+     * Get the server classes associated with this Configuration.
      *
      * @return ClassMatcher of server classes.
      */
