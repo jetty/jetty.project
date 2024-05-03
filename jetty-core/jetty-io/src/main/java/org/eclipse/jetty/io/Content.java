@@ -65,7 +65,7 @@ public class Content
      * @param source the source to copy from
      * @param sink the sink to copy to
      * @param callback the callback to notify when the copy is complete
-     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allows processing of individual {@link Chunk}s, including
+     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual {@link Chunk}s, including
      *      the ability to ignore transient failures.
      */
     public static void copy(Source source, Sink sink, Callback callback)
@@ -907,7 +907,7 @@ public class Content
              * @param callback The callback that will be called once the accepted chunk is processed.
              *                 {@link Callback#succeeded() Succeeding} this callback will allow the processing of subsequent chunks.
              *                 {@link Callback#failed(Throwable) Failing} this callback will fail the processing of all chunks.
-             * @return {@code True} if the chunk will be processed asynchronously and the callback will be called (or may have already been called),
+             * @return {@code true} if the chunk will be processed asynchronously and the callback will be called (or may have already been called),
              *         {@code false} otherwise, in which case subsequent chunks may be processed and the passed callback ignored.
              */
             boolean process(Chunk chunk, Callback callback);
