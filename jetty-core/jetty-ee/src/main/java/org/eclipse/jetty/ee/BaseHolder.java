@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee;
 
 import java.io.IOException;
 import java.util.function.BiFunction;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.UnavailableException;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -28,11 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AbstractHolder
- *
  * Base class for all servlet-related classes that may be lazily instantiated  (eg servlet, filter,
  * listener), and/or require metadata to be held regarding their origin
- * (web.xml, annotation, programmatic api etc).
+ * (web.xml, annotation, programmatic api etc.).
  *
  * @param <T> the type of holder
  */
@@ -45,7 +43,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     private Class<? extends T> _class;
     private String _className;
     private T _instance;
-    private ServletHandler _servletHandler;
+    private ContextHandler _contextHandler;
 
     protected BaseHolder(Source source)
     {
@@ -57,15 +55,17 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         return _source;
     }
 
-    AutoLock lock()
+    protected AutoLock lock()
     {
         return _lock.lock();
     }
 
-    boolean lockIsHeldByCurrentThread()
+    protected boolean lockIsHeldByCurrentThread()
     {
         return _lock.isHeldByCurrentThread();
     }
+
+    protected abstract Exception newUnavailableException(String message);
 
     /**
      * Do any setup necessary after starting
@@ -86,7 +86,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         //if no class already loaded and no classname, make permanently unavailable
         if (_class == null && (_className == null || _className.isEmpty()))
-            throw new UnavailableException("No class in holder " + toString());
+            throw newUnavailableException("No class in holder " + this);
 
         //try to load class
         if (_class == null)
@@ -100,7 +100,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             catch (Exception e)
             {
                 LOG.warn("Unable to load class {}", _className, e);
-                throw new UnavailableException("Class loading error for holder " + toString());
+                throw newUnavailableException("Class loading error for holder " + this);
             }
         }
     }
@@ -125,19 +125,26 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     }
 
     /**
-     * @return Returns the servletHandler.
+     * @return Returns the contextHandler.
      */
-    public ServletHandler getServletHandler()
+    public ContextHandler getContextHandler()
     {
-        return _servletHandler;
+        if (_contextHandler == null)
+        {
+            Context context = ContextHandler.getCurrentContext();
+            if (context instanceof ContextHandler.ScopedContext scopedContext)
+                _contextHandler = scopedContext.getContextHandler();
+        }
+
+        return _contextHandler;
     }
 
     /**
-     * @param servletHandler The {@link ServletHandler} that will handle requests dispatched to this servlet.
+     * @param contextHandler The {@link ContextHandler}
      */
-    public void setServletHandler(ServletHandler servletHandler)
+    public void setContextHandler(ContextHandler contextHandler)
     {
-        _servletHandler = servletHandler;
+        _contextHandler = contextHandler;
     }
 
     /**
@@ -163,29 +170,32 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     protected void illegalStateIfContextStarted()
     {
-        if (_servletHandler != null)
-        {
-            ServletContext context = _servletHandler.getServletContext();
-            if ((context instanceof ContextHandler.ScopedContext) && ((ContextHandler.ScopedContext)context).getContextHandler().isStarted())
-                throw new IllegalStateException("Started");
-        }
+        ContextHandler contextHandler = getContextHandler();
+        if (contextHandler != null && contextHandler.isStarted())
+            throw new IllegalStateException("Started");
     }
 
     protected void setInstance(T instance)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             _instance = instance;
             if (instance == null)
+            {
                 setHeldClass(null);
+            }
             else
-                setHeldClass((Class<T>)instance.getClass());
+            {
+                @SuppressWarnings("unchecked")
+                Class<? extends T> clazz = (Class<T>)instance.getClass();
+                setHeldClass(clazz);
+            }
         }
     }
 
     protected T getInstance()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _instance;
         }
@@ -193,47 +203,23 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     protected T createInstance() throws Exception
     {
-        try (AutoLock l = lock())
+        ContextHandler contextHandler = getContextHandler();
+        if (contextHandler == null)
+            return getHeldClass().getDeclaredConstructor().newInstance();
+
+        Context context = contextHandler.getContext();
+        DecoratedObjectFactory.associateInfo(this);
+        try
         {
-            ServletContext ctx = getServletContext();
-            if (ctx == null)
-                return getHeldClass().getDeclaredConstructor().newInstance();
-
-            if (ServletContextHandler.ServletContextApi.class.isAssignableFrom(ctx.getClass()))
-                return ((ServletContextHandler.ServletContextApi)ctx).getContext().createInstance(this);
-
-            return null;
+            T t = getHeldClass().getDeclaredConstructor().newInstance();
+            context.decorate(t);
+            return t;
         }
-    }
-
-    public ServletContext getServletContext()
-    {
-        ServletContext scontext = null;
-
-        //try the ServletHandler first
-        if (getServletHandler() != null)
-            scontext = getServletHandler().getServletContext();
-
-        if (scontext != null)
-            return scontext;
-
-        //try the ServletContextHandler next
-        return ServletContextHandler.getCurrentServletContext();
-    }
-
-    public ServletContextHandler getServletContextHandler()
-    {
-        ServletContext context = null;
-
-        //try the ServletHandler first
-        if (getServletHandler() != null)
-            context = getServletHandler().getServletContext();
-
-        if (context instanceof ServletContextHandler.ServletContextApi api)
-            return api.getContext().getServletContextHandler();
-
-        //try the ServletContextHandler next
-        return ServletContextHandler.getCurrentServletContextHandler();
+        finally
+        {
+            //unset the thread local
+            DecoratedObjectFactory.disassociateInfo();
+        }
     }
 
     /**
@@ -241,7 +227,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
      */
     public boolean isInstance()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _instance != null;
         }
@@ -251,7 +237,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
      * Wrap component using component specific Wrapper Function beans.
      *
      * @param component the component to optionally wrap
-     * @param wrapperFunctionType the bean class type to look for in the {@link ServletContextHandler}
+     * @param wrapperFunctionType the bean class type to look for in the {@link ContextHandler}
      * @param function the BiFunction to execute for each {@code wrapperFunctionType} Bean found (passing in the component and component type)
      * @param <W> the "wrapper function" implementation. (eg: {@code ServletHolder.WrapperFunction} or {@code FilterHolder.WrapperFunction}, etc)
      * @return the component that has passed through all Wrapper Function beans found.
@@ -259,7 +245,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     protected <W> T wrap(final T component, final Class<W> wrapperFunctionType, final BiFunction<W, T, T> function)
     {
         T ret = component;
-        ServletContextHandler contextHandler = getServletContextHandler();
+        ContextHandler contextHandler = getContextHandler();
         if (contextHandler != null)
         {
             for (W wrapperFunction : contextHandler.getBeans(wrapperFunctionType))
@@ -294,7 +280,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         return Dumpable.dump(this);
     }
 
-    interface Wrapped<C>
+    public interface Wrapped<C>
     {
         C getWrapped();
     }

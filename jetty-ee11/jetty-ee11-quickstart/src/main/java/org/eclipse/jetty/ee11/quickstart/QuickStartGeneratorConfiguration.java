@@ -30,6 +30,7 @@ import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee11.servlet.FilterHolder;
@@ -40,7 +41,6 @@ import org.eclipse.jetty.ee11.servlet.ServletContextHandler.ServletContainerInit
 import org.eclipse.jetty.ee11.servlet.ServletHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.ee11.servlet.ServletMapping;
-import org.eclipse.jetty.ee11.servlet.Source;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;

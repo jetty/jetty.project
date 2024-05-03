@@ -66,6 +66,7 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
@@ -1735,14 +1736,7 @@ public class ServletContextHandlerTest
         context.setContextPath("/");
         
         final Set<Class<?>> onStartupClasses = new HashSet<>();
-        context.addServletContainerInitializer(new ServletContainerInitializer()
-            {
-                @Override
-                public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
-                {
-                    onStartupClasses.addAll(c);
-                }
-            }, HelloServlet.class, TestServlet.class);
+        context.addServletContainerInitializer((c, ctx) -> onStartupClasses.addAll(c), HelloServlet.class, TestServlet.class);
 
         _server.setHandler(context);
         _server.start();

@@ -24,6 +24,8 @@ import java.util.regex.Pattern;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.UnavailableException;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
@@ -35,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Holds a ServletContainerInitializer.
  */
-public class ServletContainerInitializerHolder extends BaseHolder<ServletContainerInitializer>
+public class ServletContainerInitializerHolder extends ServletContextHolder<ServletContainerInitializer>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContainerInitializerHolder.class);
     protected Set<String> _startupClassNames = new HashSet<>();
@@ -76,6 +78,12 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         setInstance(sci);
         if (startupClasses != null)
             _startupClasses.addAll(Arrays.asList(startupClasses));
+    }
+
+    @Override
+    protected Exception newUnavailableException(String message)
+    {
+        return new UnavailableException(message);
     }
 
     /**
@@ -259,7 +267,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         @Override
         public String toString()
         {
-            return String.format("%s:%s", this.getClass().getSimpleName(), _wrappedSCI.toString());
+            return String.format("%s:%s", this.getClass().getSimpleName(), _wrappedSCI);
         }
     }
 }

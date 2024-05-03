@@ -22,6 +22,7 @@ import java.util.Set;
 
 import jakarta.servlet.Registration;
 import jakarta.servlet.ServletContext;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -29,29 +30,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Holder
- *
- * Specialization of AbstractHolder for servlet-related classes that
+ * Specialization of ServletContextHolder for servlet-related classes that
  * have init-params etc
  *
  * @param <T> the type of holder
  */
 @ManagedObject("Holder - a container for servlets and the like")
-public abstract class Holder<T> extends BaseHolder<T>
+public abstract class Holder<T> extends ServletContextHolder<T>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Holder.class);
 
-    private final Map<String, String> _initParams = new HashMap<String, String>(3);
-    private String _displayName;
+    private final Map<String, String> _initParams = new HashMap<>(3);
     private boolean _asyncSupported;
-    private String _name;
 
     protected Holder(Source source)
     {
         super(source);
         switch (getSource().getOrigin())
         {
-            case JAKARTA_API:
+            case SERVLET_API:
             case DESCRIPTOR:
             case ANNOTATION:
                 _asyncSupported = false;
@@ -61,23 +58,13 @@ public abstract class Holder<T> extends BaseHolder<T>
         }
     }
 
-    @ManagedAttribute(value = "Display Name", readonly = true)
-    public String getDisplayName()
-    {
-        return _displayName;
-    }
-
     public String getInitParameter(String param)
     {
-        if (_initParams == null)
-            return null;
-        return (String)_initParams.get(param);
+        return _initParams.get(param);
     }
 
     public Enumeration<String> getInitParameterNames()
     {
-        if (_initParams == null)
-            return Collections.enumeration(Collections.EMPTY_LIST);
         return Collections.enumeration(_initParams.keySet());
     }
 
@@ -87,16 +74,10 @@ public abstract class Holder<T> extends BaseHolder<T>
         return _initParams;
     }
 
-    @ManagedAttribute(value = "Name", readonly = true)
-    public String getName()
-    {
-        return _name;
-    }
-
     @Override
     protected void setInstance(T instance)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             super.setInstance(instance);
             if (getName() == null)
@@ -109,36 +90,6 @@ public abstract class Holder<T> extends BaseHolder<T>
     {
     }
 
-    /**
-     * @param className The className to set.
-     */
-    @Override
-    public void setClassName(String className)
-    {
-        super.setClassName(className);
-        if (_name == null)
-            _name = className + "-" + Integer.toHexString(this.hashCode());
-    }
-
-    /**
-     * @param held The class to hold
-     */
-    @Override
-    public void setHeldClass(Class<? extends T> held)
-    {
-        super.setHeldClass(held);
-        if (held != null)
-        {
-            if (_name == null)
-                _name = held.getName() + "-" + Integer.toHexString(this.hashCode());
-        }
-    }
-
-    public void setDisplayName(String name)
-    {
-        _displayName = name;
-    }
-
     public void setInitParameter(String param, String value)
     {
         _initParams.put(param, value);
@@ -148,18 +99,6 @@ public abstract class Holder<T> extends BaseHolder<T>
     {
         _initParams.clear();
         _initParams.putAll(map);
-    }
-
-    /**
-     * The name is a primary key for the held object.
-     * Ensure that the name is set BEFORE adding a Holder
-     * (eg ServletHolder or FilterHolder) to a ServletHandler.
-     *
-     * @param name The name to set.
-     */
-    public void setName(String name)
-    {
-        _name = name;
     }
 
     public void setAsyncSupported(boolean suspendable)
@@ -178,17 +117,11 @@ public abstract class Holder<T> extends BaseHolder<T>
         return super.dump();
     }
 
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x==%s", _name, hashCode(), getClassName());
-    }
-
     protected class HolderConfig
     {
         public ServletContext getServletContext()
         {
-            return getServletHandler().getServletContext();
+            return Holder.this.getServletContext();
         }
 
         public String getInitParameter(String param)

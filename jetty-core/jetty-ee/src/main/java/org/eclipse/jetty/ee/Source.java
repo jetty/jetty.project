@@ -11,24 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee;
 
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Source
- *
  * The source of a web artifact: servlet, filter, mapping etc
  */
 public class Source
 {
     public static final Source EMBEDDED = new Source(Origin.EMBEDDED);
-    public static final Source JAKARTA_API = new Source(Origin.JAKARTA_API);
+    public static final Source SERVLET_API = new Source(Origin.SERVLET_API);
 
     public enum Origin
     {
-        EMBEDDED,
-        JAKARTA_API, DESCRIPTOR, ANNOTATION
+        EMBEDDED, SERVLET_API, DESCRIPTOR, ANNOTATION
     }
 
     public final Origin _origin;

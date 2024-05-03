@@ -17,10 +17,14 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,6 +42,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextScopeListenerTest
 {
@@ -56,7 +61,6 @@ public class ContextScopeListenerTest
 
         _contextHandler = new ServletContextHandler();
         _server.setHandler(_contextHandler);
-        _server.start();
 
         _client = new HttpClient();
         _client.start();
@@ -72,12 +76,18 @@ public class ContextScopeListenerTest
     @Test
     public void testAsyncServlet() throws Exception
     {
-        _contextHandler.addServlet(new ServletHolder(new HttpServlet()
+        ServletHolder servletHolder = new ServletHolder(new HttpServlet()
         {
+            @Override
+            public void init(ServletConfig config) throws ServletException
+            {
+                super.init(config);
+            }
+
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             {
-                if  (req.getDispatcherType() == DispatcherType.ASYNC)
+                if (req.getDispatcherType() == DispatcherType.ASYNC)
                 {
                     _history.add("asyncDispatch");
                     return;
@@ -91,7 +101,11 @@ public class ContextScopeListenerTest
                     asyncContext.dispatch("/dispatch");
                 });
             }
-        }), "/");
+        });
+        assertTrue(servletHolder.isAsyncSupported());
+        _contextHandler.addServlet(servletHolder, "/");
+
+        CountDownLatch exited = new CountDownLatch(3);
 
         _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
@@ -112,13 +126,19 @@ public class ContextScopeListenerTest
                 String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
                 _history.add("exitScope " + pathInContext);
                 _lock.unlock();
+                exited.countDown();
             }
         });
+
+        _server.start();
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/initialPath");
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertTrue(exited.await(10, TimeUnit.SECONDS));
         assertHistory(
+            "enterScope null",
+            "exitScope null",
             "enterScope /initialPath",
             "doGet",
             "exitScope /initialPath",

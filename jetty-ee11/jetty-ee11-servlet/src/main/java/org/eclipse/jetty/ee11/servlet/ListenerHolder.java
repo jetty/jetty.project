@@ -16,18 +16,16 @@ package org.eclipse.jetty.ee11.servlet;
 import java.util.EventListener;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * ListenerHolder
- *
  * Specialization of BaseHolder for servlet listeners. This
  * allows us to record where the listener originated - web.xml,
  * annotation, api etc.
  */
-public class ListenerHolder extends BaseHolder<EventListener>
+public class ListenerHolder extends ServletContextHolder<EventListener>
 {
     private EventListener _listener;
 
@@ -87,25 +85,10 @@ public class ListenerHolder extends BaseHolder<EventListener>
         contextHandler.addEventListener(_listener);
     }
 
-    private ContextHandler getContextHandler()
-    {
-        Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ContextHandler.ScopedContext scopedContext)
-            return scopedContext.getContextHandler();
-
-        ContextHandler contextHandler = null;
-        if (getServletHandler() != null)
-            contextHandler = getServletHandler().getServletContextHandler();
-        if (contextHandler != null)
-            return contextHandler;
-
-        throw new IllegalStateException("No Context");
-    }
-
     @Override
     protected EventListener createInstance() throws Exception
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             EventListener listener = super.createInstance();
             if (listener == null)

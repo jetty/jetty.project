@@ -43,6 +43,8 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.BaseHolder;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -374,6 +376,8 @@ public class ServletHandler extends Handler.Wrapper
 
     public ServletContextHandler getServletContextHandler()
     {
+        if (_servletContextHandler == null)
+            _servletContextHandler = ServletContextHandler.getCurrentServletContextHandler();
         return _servletContextHandler;
     }
 
@@ -694,7 +698,7 @@ public class ServletHandler extends Handler.Wrapper
     {
         for (BaseHolder<?> holder : holders)
         {
-            holder.setServletHandler(this);
+            holder.setContextHandler(getServletContextHandler());
             if (isInitialized())
             {
                 try
@@ -832,7 +836,7 @@ public class ServletHandler extends Handler.Wrapper
     {
         if (holder == null)
             return;
-
+        holder.setServletHandler(this);
         try (AutoLock ignored = lock())
         {
             if (!containsServletHolder(holder))
@@ -1076,7 +1080,7 @@ public class ServletHandler extends Handler.Wrapper
             if (_filterMappings.isEmpty())
             {
                 _filterMappings.add(mapping);
-                if (source == Source.JAKARTA_API)
+                if (source == Source.SERVLET_API)
                     _matchAfterIndex = 0;
             }
             else
@@ -1084,7 +1088,7 @@ public class ServletHandler extends Handler.Wrapper
                 //there are existing entries. If this is a programmatic filtermapping, it is added at the end of the list.
                 //If this is a normal filtermapping, it is inserted after all the other filtermappings (matchBefores and normals),
                 //but before the first matchAfter filtermapping.
-                if (Source.JAKARTA_API == source)
+                if (Source.SERVLET_API == source)
                 {
                     _filterMappings.add(mapping);
                     if (_matchAfterIndex < 0)
@@ -1122,12 +1126,12 @@ public class ServletHandler extends Handler.Wrapper
             if (_filterMappings.isEmpty())
             {
                 _filterMappings.add(mapping);
-                if (Source.JAKARTA_API == source)
+                if (Source.SERVLET_API == source)
                     _matchBeforeIndex = 0;
             }
             else
             {
-                if (Source.JAKARTA_API == source)
+                if (Source.SERVLET_API == source)
                 {
                     //programmatically defined filter mappings are prepended to mapping list in the order
                     //in which they were defined. In other words, insert this mapping at the tail of the 
@@ -1198,7 +1202,7 @@ public class ServletHandler extends Handler.Wrapper
             for (FilterHolder filter : _filters)
             {
                 _filterNameMap.put(filter.getName(), filter);
-                filter.setServletHandler(this);
+                filter.setContextHandler(getServletContextHandler());
             }
 
             // Map servlet names to holders
@@ -1207,7 +1211,7 @@ public class ServletHandler extends Handler.Wrapper
             for (ServletHolder servlet : _servlets)
             {
                 _servletNameMap.put(servlet.getName(), new MappedServlet(null, servlet));
-                servlet.setServletHandler(this);
+                servlet.setContextHandler(getServletContextHandler());
             }
         }
     }

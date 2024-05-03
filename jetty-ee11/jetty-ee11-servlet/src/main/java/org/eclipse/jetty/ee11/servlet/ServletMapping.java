@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee11.servlet;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 

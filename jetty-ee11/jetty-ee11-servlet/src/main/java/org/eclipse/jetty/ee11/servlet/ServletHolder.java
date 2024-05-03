@@ -42,6 +42,8 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.BaseHolder;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.UserIdentity;
@@ -862,8 +864,8 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     {
         String jspPackageName = null;
 
-        if (getServletHandler() != null && getServletHandler().getServletContext() != null)
-            jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME);
+        if (getServletContext() != null)
+            jspPackageName = getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME);
 
         if (jspPackageName == null)
             jspPackageName = "org.apache.jsp";
@@ -944,7 +946,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
                 return clash;
 
             //otherwise apply all of them
-            ServletMapping mapping = new ServletMapping(Source.JAKARTA_API);
+            ServletMapping mapping = new ServletMapping(Source.SERVLET_API);
             mapping.setServletName(ServletHolder.this.getName());
             mapping.setPathSpecs(urlPatterns);
             getServletHandler().addServletMapping(mapping);

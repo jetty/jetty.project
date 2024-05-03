@@ -68,6 +68,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.ee11.servlet.ServletContextResponse.EncodingFrom;
 import org.eclipse.jetty.ee11.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
@@ -2012,29 +2013,6 @@ public class ServletContextHandler extends ContextHandler
             return _objFactory;
         }
 
-        public <T> T createInstance(BaseHolder<T> holder) throws ServletException
-        {
-            try
-            {
-                //set a thread local
-                DecoratedObjectFactory.associateInfo(holder);
-                try
-                {
-                    T t = holder.getHeldClass().getDeclaredConstructor().newInstance();
-                    return decorate(t);
-                }
-                catch (Exception e)
-                {
-                    throw new ServletException(e);
-                }
-            }
-            finally
-            {
-                //unset the thread local
-                DecoratedObjectFactory.disassociateInfo();
-            }
-        }
-
         public <T extends Filter> void destroyFilter(T f)
         {
             _objFactory.destroy(f);
@@ -2150,7 +2128,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Source.JAKARTA_API);
+                holder = handler.newFilterHolder(Source.SERVLET_API);
                 holder.setName(filterName);
                 holder.setHeldClass(filterClass);
                 handler.addFilter(holder);
@@ -2179,7 +2157,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Source.JAKARTA_API);
+                holder = handler.newFilterHolder(Source.SERVLET_API);
                 holder.setName(filterName);
                 holder.setClassName(className);
                 handler.addFilter(holder);
@@ -2208,7 +2186,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Source.JAKARTA_API);
+                holder = handler.newFilterHolder(Source.SERVLET_API);
                 holder.setName(filterName);
                 holder.setFilter(filter);
                 handler.addFilter(holder);
@@ -2238,7 +2216,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Source.JAKARTA_API);
+                holder = handler.newServletHolder(Source.SERVLET_API);
                 holder.setName(servletName);
                 holder.setHeldClass(servletClass);
                 handler.addServlet(holder);
@@ -2268,7 +2246,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Source.JAKARTA_API);
+                holder = handler.newServletHolder(Source.SERVLET_API);
                 holder.setName(servletName);
                 holder.setClassName(className);
                 handler.addServlet(holder);
@@ -2297,7 +2275,7 @@ public class ServletContextHandler extends ContextHandler
             ServletHolder holder = handler.getServlet(servletName);
             if (holder == null)
             {
-                holder = handler.newServletHolder(Source.JAKARTA_API);
+                holder = handler.newServletHolder(Source.SERVLET_API);
                 holder.setName(servletName);
                 holder.setServlet(servlet);
                 handler.addServlet(holder);
@@ -2324,7 +2302,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Source.JAKARTA_API);
+                holder = handler.newServletHolder(Source.SERVLET_API);
                 holder.setName(servletName);
                 holder.setForcedPath(jspFile);
                 handler.addServlet(holder);
@@ -2609,7 +2587,7 @@ public class ServletContextHandler extends ContextHandler
 
             checkListener(t.getClass());
 
-            ListenerHolder holder = getServletHandler().newListenerHolder(Source.JAKARTA_API);
+            ListenerHolder holder = getServletHandler().newListenerHolder(Source.SERVLET_API);
             holder.setListener(t);
             addProgrammaticListener(t);
             getServletHandler().addListener(holder);

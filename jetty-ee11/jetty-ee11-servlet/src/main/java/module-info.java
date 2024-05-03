@@ -16,6 +16,7 @@ import org.eclipse.jetty.security.Authenticator;
 module org.eclipse.jetty.ee11.servlet
 {
     requires org.slf4j;
+    requires org.eclipse.jetty.ee;
 
     requires transitive jakarta.servlet;
     requires transitive org.eclipse.jetty.server;

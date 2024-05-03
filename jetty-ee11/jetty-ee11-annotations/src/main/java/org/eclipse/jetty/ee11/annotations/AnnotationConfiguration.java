@@ -34,10 +34,10 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.annotation.HandlesTypes;
+import org.eclipse.jetty.ee.Source;
+import org.eclipse.jetty.ee.Source.Origin;
 import org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee11.servlet.ServletContainerInitializerHolder;
-import org.eclipse.jetty.ee11.servlet.Source;
-import org.eclipse.jetty.ee11.servlet.Source.Origin;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.FragmentConfiguration;
 import org.eclipse.jetty.ee11.webapp.FragmentDescriptor;

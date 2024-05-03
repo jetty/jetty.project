@@ -19,7 +19,7 @@ import java.util.regex.Matcher;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import org.eclipse.jetty.ee11.servlet.Source.Origin;
+import org.eclipse.jetty.ee.Source;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
@@ -69,8 +69,8 @@ public class ServletContainerInitializerHolderTest
     @Test
     public void testInstanceWithStartupClassesAndSource() throws Exception
     {
-        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(new Source(Origin.ANNOTATION), new SimpleSCI(), Integer.class);
-        assertEquals(Origin.ANNOTATION, holder.getSource().getOrigin());
+        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(new Source(Source.Origin.ANNOTATION), new SimpleSCI(), Integer.class);
+        assertEquals(Source.Origin.ANNOTATION, holder.getSource().getOrigin());
         assertEquals(SimpleSCI.class, holder.getHeldClass());
         assertEquals("ContainerInitializer{org.eclipse.jetty.ee11.servlet.ServletContainerInitializerHolderTest$SimpleSCI,interested=[java.lang.Integer],applicable=[],annotated=[]}", holder.toString());
     }

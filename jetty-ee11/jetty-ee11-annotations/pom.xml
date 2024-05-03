@@ -25,6 +25,10 @@
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-ee</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-plus</artifactId>
     </dependency>
