@@ -38,6 +38,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     private String _name = null;
     private Executor _virtualExecutor;
     private Thread _main;
+    private boolean _externalExecutor;
     private boolean _tracking;
     private boolean _detailedDump;
 
@@ -98,7 +99,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     @Override
     protected void doStart() throws Exception
     {
-        _main = new Thread("virtual main")
+        _main = new Thread("keepalive")
         {
             @Override
             public void run()
@@ -118,10 +119,14 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
         };
         _main.start();
 
-        _virtualExecutor = Objects.requireNonNull(StringUtil.isBlank(_name)
-            ? VirtualThreads.getDefaultVirtualThreadsExecutor()
-            : VirtualThreads.getNamedVirtualThreadsExecutor(_name));
-        if (_tracking)
+        if (_virtualExecutor == null)
+        {
+            _externalExecutor = false;
+            _virtualExecutor = Objects.requireNonNull(StringUtil.isBlank(_name)
+                ? VirtualThreads.getDefaultVirtualThreadsExecutor()
+                : VirtualThreads.getNamedVirtualThreadsExecutor(_name));
+        }
+        if (_tracking && !(_virtualExecutor instanceof TrackingExecutor))
             _virtualExecutor = new TrackingExecutor(_virtualExecutor, _detailedDump);
         addBean(_virtualExecutor);
         super.doStart();
@@ -131,7 +136,9 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     protected void doStop() throws Exception
     {
         super.doStop();
-        _virtualExecutor = null;
+        removeBean(_virtualExecutor);
+        if (!_externalExecutor)
+            _virtualExecutor = null;
         _main = null;
 
         try (AutoLock.WithCondition l = _joinLock.lock())
@@ -149,7 +156,10 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     @Override
     public void setVirtualThreadsExecutor(Executor executor)
     {
-        throw new UnsupportedOperationException("cannot set VirtualThreadExecutor");
+        if (isRunning())
+            throw new IllegalStateException(getState());
+        _externalExecutor = executor != null;
+        _virtualExecutor = executor;
     }
 
     @Override

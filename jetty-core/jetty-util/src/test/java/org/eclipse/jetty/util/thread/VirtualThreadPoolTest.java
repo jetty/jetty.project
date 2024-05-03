@@ -181,21 +181,14 @@ public class VirtualThreadPoolTest
             try
             {
                 _running.countDown();
-
                 while (_spin && getCount() > 0)
                     Thread.onSpinWait();
-
                 if (!await(10, TimeUnit.SECONDS))
                     throw new IllegalStateException();
-
             }
             catch (InterruptedException e)
             {
                 throw new RuntimeException(e);
-            }
-            finally
-            {
-                System.err.println("RAN!" + Thread.currentThread());
             }
         }
     }

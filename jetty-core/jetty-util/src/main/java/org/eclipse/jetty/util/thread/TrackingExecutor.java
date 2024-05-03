@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 
 @ManagedObject("Tracking Executor wrapper")
-class TrackingExecutor implements Executor, Dumpable
+public class TrackingExecutor implements Executor, Dumpable
 {
     private final Executor _threadFactoryExecutor;
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
@@ -40,14 +40,15 @@ class TrackingExecutor implements Executor, Dumpable
     {
         _threadFactoryExecutor.execute(() ->
         {
+            Thread thread = Thread.currentThread();
             try
             {
-                _threads.add(Thread.currentThread());
+                _threads.add(thread);
                 task.run();
             }
             finally
             {
-                _threads.remove(Thread.currentThread());
+                _threads.remove(thread);
             }
         });
     }
