@@ -129,8 +129,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <configuration>
-          <debug>true</debug>
-          <!-- ${it.debug} -->
+          <debug>${it.debug}</debug>
           <junitPackageName>org.eclipse.jetty.maven.its.ee11.runner</junitPackageName>
           <scope>test</scope>
           <scriptVariables>
