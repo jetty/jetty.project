@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee11.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.WriteThroughWriter;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
@@ -174,9 +176,17 @@ public class ServletApiResponse implements HttpServletResponse
     }
 
     @Override
-    public void sendRedirect(String s, int i, boolean b) throws IOException
+    public void sendRedirect(String location, int code, boolean clear) throws IOException
     {
-        //TODO servlet6.1
+        if (clear)
+        {
+            sendRedirect(code, location);
+        }
+        else
+        {
+            ByteBuffer buffer = getServletChannel().getHttpOutput().takeContentAndClose();
+            sendRedirect(code, location, buffer);
+        }
     }
 
     /**
@@ -189,9 +199,23 @@ public class ServletApiResponse implements HttpServletResponse
     public void sendRedirect(int code, String location) throws IOException
     {
         resetBuffer();
+        sendRedirect(code, location, null);
+    }
+
+    /**
+     * Sends a response with one of the 300 series redirection codes.
+     *
+     * @param code the redirect status code
+     * @param location the location to send in {@code Location} headers
+     * @param content the content of the response, or null for a generated HTML message if {@link HttpConfiguration#isGenerateRedirectBody()} is {@code true}.
+     * @throws IOException if unable to send the redirect
+     */
+    private void sendRedirect(int code, String location, ByteBuffer content) throws IOException
+    {
+        resetBuffer();
         try (Blocker.Callback callback = Blocker.callback())
         {
-            Response.sendRedirect(getServletRequestInfo().getRequest(), getResponse(), callback, code, location, false);
+            Response.sendRedirect(getServletRequestInfo().getRequest(), getResponse(), callback, code, location, false, content);
             callback.block();
         }
     }

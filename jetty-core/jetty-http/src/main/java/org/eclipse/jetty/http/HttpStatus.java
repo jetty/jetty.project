@@ -383,7 +383,7 @@ public class HttpStatus
      */
     public static boolean isRedirection(int code)
     {
-        return ((300 <= code) && (code <= 399));
+        return ((300 <= code) && (code <= 399) && code != 304);
     }
 
     /**

@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.URIUtil;
 
+@Deprecated(forRemoval = true)
 class PushBuilderImpl implements PushBuilder
 {
     private final ServletContextRequest _request;

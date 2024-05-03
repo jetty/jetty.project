@@ -52,7 +52,9 @@ public interface ConnectionMetaData extends Attributes
 
     /**
      * @return whether the functionality of pushing resources is supported
+     * @deprecated in favour of 103 Early Hints
      */
+    @Deprecated
     default boolean isPushSupported()
     {
         return false;
