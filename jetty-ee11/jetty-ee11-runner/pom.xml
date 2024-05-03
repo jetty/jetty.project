@@ -131,8 +131,8 @@
         <configuration>
           <debug>true</debug>
           <!-- ${it.debug} -->
-          <addTestClassPath>true</addTestClassPath>
           <junitPackageName>org.eclipse.jetty.maven.its.ee11.runner</junitPackageName>
+          <scope>test</scope>
           <scriptVariables>
             <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
