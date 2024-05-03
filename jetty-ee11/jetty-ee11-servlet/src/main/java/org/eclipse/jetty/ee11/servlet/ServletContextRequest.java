@@ -130,8 +130,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         _httpInput = _servletChannel.getHttpInput();
         _decodedPathInContext = decodedPathInContext;
         _sessionManager = sessionManager;
-        _servletApiRequest = newServletApiRequest();
-        _response =  newServletContextResponse(response);
         _attributes = new Attributes.Synthetic(request)
         {
             @Override
@@ -156,6 +154,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 return ATTRIBUTES;
             }
         };
+        _servletApiRequest = newServletApiRequest();
+        _response =  newServletContextResponse(response);
 
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
     }
