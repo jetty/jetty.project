@@ -144,7 +144,7 @@ class CrossContextDispatcher implements RequestDispatcher
         }
     }
 
-    private class IncludeResponse extends ServletCoreResponse
+    private static class IncludeResponse extends ServletCoreResponse
     {
         public IncludeResponse(Request coreRequest, HttpServletResponse httpServletResponse)
         {

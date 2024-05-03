@@ -656,4 +656,132 @@ public class ServletApiResponse implements HttpServletResponse
             return HttpCookie.toString(this);
         }
     }
+
+    public static class CrossContextInclude extends ServletApiResponse
+    {
+        public CrossContextInclude(ServletContextResponse servletContextResponse)
+        {
+            super(servletContextResponse);
+        }
+
+        @Override
+        public void setCharacterEncoding(String charset)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setLocale(Locale loc)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setContentLength(int len)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setContentLengthLong(long len)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setContentType(String type)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void reset()
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void resetBuffer()
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setDateHeader(String name, long date)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void addDateHeader(String name, long date)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setHeader(String name, String value)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void addHeader(String name, String value)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setIntHeader(String name, int value)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void addIntHeader(String name, int value)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setStatus(int sc)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendError(int sc, String msg) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendError(int sc) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location, boolean clearBuffer) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location, int sc) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location, int sc, boolean clearBuffer) throws IOException
+        {
+            // NOOP for include.
+        }
+    }
 }

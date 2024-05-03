@@ -19,6 +19,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletResponseWrapper;
@@ -174,6 +175,9 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
 
     protected ServletApiResponse newServletApiResponse()
     {
+        if (_servletChannel.getServletContextHandler().isCrossContextDispatchSupported() &&
+            DispatcherType.INCLUDE.toString().equals(_servletChannel.getRequest().getContext().getCrossContextDispatchType(_servletChannel.getRequest())))
+            return new ServletApiResponse.CrossContextInclude(this);
         return new ServletApiResponse(this);
     }
 
