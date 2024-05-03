@@ -123,23 +123,29 @@ public class ServletChannelState
         /**
          * The 'default' state, when there is no pending demand nor a pending notification to the ReadListener.
          * There are 3 ways to transition to this state:
-         * <li>from IDLE: when an async read() is called without a preceding call to isReady()</li>
-         * <li>from READY: just before unhandle() returns Action.READ_CALLBACK to call read listener or
-         * when read() steals available content after setReadListener()</li>
-         * <li>from UNREADY: when a blocking read() got unblocked</li>
+         * <ul>
+         *  <li>from IDLE: when an async read() is called without a preceding call to isReady()</li>
+         *  <li>from READY: just before unhandle() returns Action.READ_CALLBACK to call read listener or
+         *  when read() steals available content after setReadListener()</li>
+         *  <li>from UNREADY: when a blocking read() got unblocked</li>
+         * </ul>
          */
         IDLE,
 
         /**
          * The 'demand registered' state. There is only 1 way to transition to this state:
-         * <li>from IDLE: when isReady() is called and there is no content available, so a demand is registered</li>
+         * <ul>
+         *  <li>from IDLE: when isReady() is called and there is no content available, so a demand is registered</li>
+         * </ul>
          */
         UNREADY,
 
         /**
          * The 'dispatch a notification to the ReadListener' state. There are 2 ways to transition to this state:
-         * <li>from IDLE: when setReadListener() is called while there is content available</li>
-         * <li>from UNREADY: when demand is serviced</li>
+         * <ul>
+         *  <li>from IDLE: when setReadListener() is called while there is content available</li>
+         *  <li>from UNREADY: when demand is serviced because content is now available</li>
+         * </ul>
          */
         READY
     }
