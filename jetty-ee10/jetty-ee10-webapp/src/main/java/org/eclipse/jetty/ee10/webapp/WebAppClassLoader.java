@@ -111,9 +111,33 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         List<Resource> getExtraClasspath();
 
-        boolean isHiddenResource(String name, URL parentUrl);
+        /**
+         * @deprecated use {@link #isHiddenResource(String, URL)}
+         */
+        @Deprecated(since = "12.0.8", forRemoval = true)
+        default boolean isServerResource(String name, URL parentUrl)
+        {
+            return isHiddenResource(name, parentUrl);
+        }
 
-        boolean isProtectedResource(String name, URL webappUrl);
+        /**
+         * @deprecated use {@link #isProtectedResource(String, URL)}
+         */
+        @Deprecated(since = "12.0.8", forRemoval = true)
+        default boolean isSystemResource(String name, URL webappUrl)
+        {
+            return isProtectedResource(name, webappUrl);
+        }
+
+        default boolean isHiddenResource(String name, URL parentUrl)
+        {
+            return false;
+        }
+
+        default boolean isProtectedResource(String name, URL webappUrl)
+        {
+            return false;
+        }
     }
 
     /**
@@ -521,7 +545,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         if (webappUrl != null && (!checkSystemResource || !_context.isProtectedResource(name, webappUrl)))
         {
-
             webappClass = this.foundClass(name, webappUrl);
             resolveClass(webappClass);
             if (LOG.isDebugEnabled())

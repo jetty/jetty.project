@@ -55,7 +55,6 @@ import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -673,7 +672,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the server classes patterns.
      * <p>
-     * Server classes/packages are classes used to implement the server and are hidden
+     * These classes/packages are used to implement the server and are hidden
      * from the context.  If the context needs to load these classes, it must have its
      * own copy of them in WEB-INF/lib or WEB-INF/classes.
      *
@@ -688,7 +687,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the system classes patterns.
      * <p>
-     * System classes/packages are classes provided by the JVM and that
+     * These classes/packages are provided by the JVM and
      * cannot be replaced by classes of the same name from WEB-INF,
      * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
      *
@@ -753,11 +752,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public boolean isHiddenClass(Class<?> clazz)
     {
-        return _serverClasses.match(clazz);
+        return isServerClass(clazz);
     }
 
     @Override
     public boolean isProtectedClass(Class<?> clazz)
+    {
+        return isSystemClass(clazz);
+    }
+
+    @Override
+    public boolean isServerClass(Class<?> clazz)
+    {
+        return _serverClasses.match(clazz);
+    }
+
+    @Override
+    public boolean isSystemClass(Class<?> clazz)
     {
         return _systemClasses.match(clazz);
     }

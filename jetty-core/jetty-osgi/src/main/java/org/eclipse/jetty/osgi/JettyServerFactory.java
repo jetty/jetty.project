@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.deploy.AppLifeCycle;
@@ -195,13 +196,14 @@ public class JettyServerFactory
    private static DeploymentManager ensureDeploymentManager(Server server)
    {
        Collection<DeploymentManager> deployers = server.getBeans(DeploymentManager.class);
-       DeploymentManager deploymentManager;
+       DeploymentManager deploymentManager = null;
 
        if (deployers != null)
        {
-           deploymentManager = deployers.stream().findFirst().get();
+           deploymentManager = deployers.stream().findFirst().orElse(null);
        }
-       else
+
+       if (deploymentManager == null)
        {
            deploymentManager = new DeploymentManager();
            deploymentManager.setContexts(getContextHandlerCollection(server));
