@@ -1057,7 +1057,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream != null)
             {
-                HttpEofException bad = new HttpEofException("Early EOF");
+                HttpEofException bad = new HttpEofException();
                 Content.Chunk chunk = stream._chunk;
 
                 if (Content.Chunk.isFailure(chunk))
@@ -1647,9 +1647,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
      */
     private static class HttpEofException extends EofException implements HttpException
     {
-        private HttpEofException(String message)
+        private HttpEofException()
         {
-            super(message);
+            super("Early EOF");
         }
 
         @Override
