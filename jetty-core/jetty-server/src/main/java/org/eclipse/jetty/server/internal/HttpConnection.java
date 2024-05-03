@@ -1647,7 +1647,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
      */
     private static class HttpEofException extends EofException implements HttpException
     {
-        public HttpEofException(String message)
+        private HttpEofException(String message)
         {
             super(message);
         }
@@ -1661,7 +1661,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public String getReason()
         {
-            return "Early EOF";
+            return getMessage();
         }
     }
 }
