@@ -735,23 +735,5 @@ public class ServletApiResponse implements HttpServletResponse
         {
             // NOOP for include.
         }
-
-        @Override
-        public void sendRedirect(String location, boolean clearBuffer) throws IOException
-        {
-            // NOOP for include.
-        }
-
-        @Override
-        public void sendRedirect(String location, int sc) throws IOException
-        {
-            // NOOP for include.
-        }
-
-        @Override
-        public void sendRedirect(String location, int sc, boolean clearBuffer) throws IOException
-        {
-            // NOOP for include.
-        }
     }
 }
