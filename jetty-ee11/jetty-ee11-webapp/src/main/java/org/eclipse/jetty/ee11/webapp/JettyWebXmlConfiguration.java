@@ -33,6 +33,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String PROPERTY_WEB_INF = "web-inf";
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
+    public static final String JETTY_EE11_WEB_XML = "jetty-ee11-web.xml";
 
     public JettyWebXmlConfiguration()
     {
@@ -53,41 +54,68 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
             LOG.debug("Configuring web-jetty.xml");
 
         Resource webInf = context.getWebInf();
-        // handle any WEB-INF descriptors
-        if (webInf != null && webInf.isDirectory())
+        // get the jetty-ee11-web.xml or jetty-web.xml
+        Resource jetty = resolveJettyWebXml(webInf);
+        if (Resources.isReadableFile(jetty))
         {
-            // Attempt to load ancient jetty8-web.xml file
-            Resource jetty = webInf.resolve("jetty8-web.xml");
-            if (Resources.missing(jetty))
-                jetty = webInf.resolve(JETTY_WEB_XML);
-            if (Resources.missing(jetty))
-                jetty = webInf.resolve("web-jetty.xml");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Configure: {}", jetty);
 
-            if (Resources.isReadableFile(jetty))
+            Object xmlAttr = context.getAttribute(XML_CONFIGURATION);
+            context.removeAttribute(XML_CONFIGURATION);
+            final XmlConfiguration jetty_config = xmlAttr instanceof XmlConfiguration ? (XmlConfiguration)xmlAttr : new XmlConfiguration(jetty);
+
+            setupXmlConfiguration(context, jetty_config, webInf);
+
+            try
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Configure: {}", jetty);
-
-                Object xmlAttr = context.getAttribute(XML_CONFIGURATION);
-                context.removeAttribute(XML_CONFIGURATION);
-                final XmlConfiguration jetty_config = xmlAttr instanceof XmlConfiguration ? (XmlConfiguration)xmlAttr : new XmlConfiguration(jetty);
-
-                setupXmlConfiguration(context, jetty_config, webInf);
-
-                try
+                WebAppClassLoader.runWithServerClassAccess(() ->
                 {
-                    WebAppClassLoader.runWithServerClassAccess(() ->
-                    {
-                        jetty_config.configure(context);
-                        return null;
-                    });
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Error applying {}", jetty);
-                    throw e;
-                }
+                    jetty_config.configure(context);
+                    return null;
+                });
             }
+            catch (Exception e)
+            {
+                LOG.warn("Error applying {}", jetty);
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Obtain a WEB-INF/jetty-ee9-web.xml, falling back to
+     * looking for WEB-INF/jetty-web.xml.
+     *
+     * @param webInf the WEB-INF of the context to search
+     * @return the file if it exists or null otherwise
+     */
+    private Resource resolveJettyWebXml(Resource webInf)
+    {
+        String xmlFile = JETTY_EE11_WEB_XML;
+        try
+        {
+            if (webInf == null || !webInf.isDirectory())
+                return null;
+
+            //try to find jetty-ee11-web.xml
+            Resource jetty = webInf.resolve(xmlFile);
+            if (!Resources.missing(jetty))
+                return jetty;
+
+            xmlFile = JETTY_WEB_XML;
+            //failing that, look for jetty-web.xml
+            jetty = webInf.resolve(xmlFile);
+            if (!Resources.missing(jetty))
+                return jetty;
+
+            return null;
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Error resolving WEB-INF/" + xmlFile, e);
+            return null;
         }
     }
 
