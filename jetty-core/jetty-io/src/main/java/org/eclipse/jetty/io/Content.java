@@ -60,12 +60,13 @@ public class Content
      * <p>Copies the given content source to the given content sink, notifying
      * the given callback when the copy is complete (either succeeded or failed).</p>
      * <p>In case of {@link Chunk#getFailure() failure chunks},
-     * the content source is {@link Source#fail(Throwable) failed} if the failure
-     * chunk is {@link Chunk#isLast() last}, else the failing is transient and is ignored.</p>
+     * the content source is {@link Source#fail(Throwable) failed}.</p>
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
      * @param callback the callback to notify when the copy is complete
+     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual {@link Chunk}s, including
+     *      the ability to ignore transient failures.
      */
     public static void copy(Source source, Sink sink, Callback callback)
     {
@@ -89,7 +90,7 @@ public class Content
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
-     * @param chunkProcessor a (possibly {@code null}) predicate to handle the current chunk and its callback
+     * @param chunkProcessor a (possibly {@code null}) processor to handle the current {@link Chunk} and its callback
      * @param callback the callback to notify when the copy is complete
      */
     public static void copy(Source source, Sink sink, Chunk.Processor chunkProcessor, Callback callback)
@@ -902,9 +903,12 @@ public class Content
         interface Processor
         {
             /**
-             * @param chunk The chunk to be considered for processing.
+             * @param chunk The chunk to be considered for processing, including persistent and transient failures.
              * @param callback The callback that will be called once the accepted chunk is processed.
-             * @return True if the chunk will be process and the callback will be called (or may have already been called), false otherwise.
+             *                 {@link Callback#succeeded() Succeeding} this callback will allow the processing of subsequent chunks.
+             *                 {@link Callback#failed(Throwable) Failing} this callback will fail the processing of all chunks.
+             * @return {@code true} if the chunk will be processed asynchronously and the callback will be called (or may have already been called),
+             *         {@code false} otherwise, in which case subsequent chunks may be processed and the passed callback ignored.
              */
             boolean process(Chunk chunk, Callback callback);
         }

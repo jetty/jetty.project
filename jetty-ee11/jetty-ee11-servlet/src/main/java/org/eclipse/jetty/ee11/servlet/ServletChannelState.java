@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -102,12 +103,51 @@ public class ServletChannelState
 
     /*
      * The input readiness state.
+     * <pre>
+     *              read() without preceding
+     *              isReady()  ------
+     *                         \     \   unhandle() returns Action.READ_CALLBACK to call the ReadListener,
+     *                          \     \  or read() stole available content after setReadListener()
+     *                           --> IDLE <--------------
+     *     blocking read() unblocked  ^                  \
+     *                                |                   \
+     *                                |                    \  setReadListener() called while
+     *            registering demand  v                     v content is available
+     *                               UNREADY ------------> READY
+     *                                         demand
+     *                                         serviced
+     * </pre>
      */
     private enum InputState
     {
-        IDLE,       // No isReady; No data
-        UNREADY,    // isReady()==false; No data
-        READY       // isReady() was false; data is available
+        /**
+         * The 'default' state, when there is no pending demand nor a pending notification to the ReadListener.
+         * There are 3 ways to transition to this state:
+         * <ul>
+         *  <li>from IDLE: when an async read() is called without a preceding call to isReady()</li>
+         *  <li>from READY: just before unhandle() returns Action.READ_CALLBACK to call read listener or
+         *  when read() steals available content after setReadListener()</li>
+         *  <li>from UNREADY: when a blocking read() got unblocked</li>
+         * </ul>
+         */
+        IDLE,
+
+        /**
+         * The 'demand registered' state. There is only 1 way to transition to this state:
+         * <ul>
+         *  <li>from IDLE: when isReady() is called and there is no content available, so a demand is registered</li>
+         * </ul>
+         */
+        UNREADY,
+
+        /**
+         * The 'dispatch a notification to the ReadListener' state. There are 2 ways to transition to this state:
+         * <ul>
+         *  <li>from IDLE: when setReadListener() is called while there is content available</li>
+         *  <li>from UNREADY: when demand is serviced because content is now available</li>
+         * </ul>
+         */
+        READY
     }
 
     /*
@@ -1027,13 +1067,9 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("completing {}", toStringLocked());
 
-            switch (_requestState)
-            {
-                case COMPLETED:
-                    throw new IllegalStateException(getStatusStringLocked());
-                default:
-                    _requestState = RequestState.COMPLETING;
-            }
+            if (_requestState == RequestState.COMPLETED)
+                throw new IllegalStateException(getStatusStringLocked());
+            _requestState = RequestState.COMPLETING;
         }
     }
 
@@ -1049,7 +1085,7 @@ public class ServletChannelState
                 LOG.debug("completed {}", toStringLocked());
 
             if (_requestState != RequestState.COMPLETING)
-                throw new IllegalStateException(this.getStatusStringLocked());
+                failure = ExceptionUtil.combine(failure, new IllegalStateException(getStatusStringLocked()));
 
             if (failure != null)
                 abortResponse(failure);
@@ -1154,18 +1190,14 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {}", toStringLocked());
 
-            switch (_state)
-            {
-                case IDLE:
-                    break;
-                default:
-                    throw new IllegalStateException(getStatusStringLocked());
-            }
+            if (_state != State.IDLE)
+                throw new IllegalStateException(getStatusStringLocked());
+            if (_inputState != InputState.IDLE)
+                throw new IllegalStateException(getStatusStringLocked());
             _asyncListeners = null;
             _state = State.UPGRADED;
             _requestState = RequestState.BLOCKING;
             _initial = true;
-            _inputState = InputState.IDLE;
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
@@ -1306,19 +1338,17 @@ public class ServletChannelState
         return woken;
     }
 
-    public boolean onReadEof()
+    public boolean onReadListenerReady()
     {
         boolean woken = false;
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadEof {}", toStringLocked());
+                LOG.debug("onReadListenerReady {}", toStringLocked());
 
             switch (_inputState)
             {
                 case IDLE:
-                case READY:
-                case UNREADY:
                     _inputState = InputState.READY;
                     if (_state == State.WAITING)
                     {
@@ -1327,36 +1357,13 @@ public class ServletChannelState
                     }
                     break;
 
+                case READY:
+                case UNREADY:
                 default:
                     throw new IllegalStateException(toStringLocked());
             }
         }
         return woken;
-    }
-
-    /**
-     * Called to indicate that some content was produced and is
-     * ready for consumption.
-     */
-    public void onContentAdded()
-    {
-        try (AutoLock ignored = lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onContentAdded {}", toStringLocked());
-
-            switch (_inputState)
-            {
-                case IDLE:
-                case UNREADY:
-                case READY:
-                    _inputState = InputState.READY;
-                    break;
-
-                default:
-                    throw new IllegalStateException(toStringLocked());
-            }
-        }
     }
 
     /**
@@ -1398,11 +1405,11 @@ public class ServletChannelState
             switch (_inputState)
             {
                 case IDLE:
-                case UNREADY:
-                case READY:  // READY->UNREADY is needed by AsyncServletIOTest.testStolenAsyncRead
                     _inputState = InputState.UNREADY;
                     break;
 
+                case READY:
+                case UNREADY:
                 default:
                     throw new IllegalStateException(toStringLocked());
             }
