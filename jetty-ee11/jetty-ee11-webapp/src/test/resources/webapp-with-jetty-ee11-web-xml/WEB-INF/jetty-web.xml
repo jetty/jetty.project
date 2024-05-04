@@ -16,3 +16,4 @@
 <Configure class="org.eclipse.jetty.ee11.webapp.WebAppContext">
   <Set name="contextPath">/apple</Set>
 </Configure>
+
