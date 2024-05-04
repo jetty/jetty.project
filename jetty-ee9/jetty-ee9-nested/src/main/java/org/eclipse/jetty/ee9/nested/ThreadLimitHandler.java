@@ -21,17 +21,19 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
@@ -72,7 +74,7 @@ public class ThreadLimitHandler extends HandlerWrapper
     private final boolean _rfc7239;
     private final String _forwardedHeader;
     private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
-    private final ConcurrentMap<String, Remote> _remotes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Remote> _remotes = new ConcurrentHashMap<>();
     private volatile boolean _enabled;
     private int _threadLimit = 10;
 
@@ -178,6 +180,17 @@ public class ThreadLimitHandler extends HandlerWrapper
             }
             else
             {
+                baseRequest.addEventListener(new ServletRequestListener()
+                {
+                    @Override
+                    public void requestDestroyed(ServletRequestEvent sre)
+                    {
+                        // Use a compute method to remove the Remote instance as it is necessary for
+                        // the ref counter release and the removal to be atomic.
+                        _remotes.computeIfPresent(remote._ip, (k, v) -> v._referenceCounter.release() ? null : v);
+                    }
+                });
+
                 // Do we already have a future permit from a previous invocation?
                 Closeable permit = (Closeable)baseRequest.getAttribute(PERMIT);
                 try
@@ -249,14 +262,18 @@ public class ThreadLimitHandler extends HandlerWrapper
         if (limit <= 0)
             return null;
 
-        remote = _remotes.get(ip);
-        if (remote == null)
+        // Use a compute method to create or retain the Remote instance as it is necessary for
+        // the ref counter increment or the instance creation to be mutually exclusive.
+        // The map MUST be a CHM as it guarantees the remapping function is only called once.
+        remote = _remotes.compute(ip, (k, v) ->
         {
-            Remote r = new Remote(ip, limit);
-            remote = _remotes.putIfAbsent(ip, r);
-            if (remote == null)
-                remote = r;
-        }
+            if (v != null)
+            {
+                v._referenceCounter.retain();
+                return v;
+            }
+            return new Remote(k, limit);
+        });
 
         baseRequest.setAttribute(REMOTE, remote);
 
@@ -325,6 +342,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         private final String _ip;
         private final int _limit;
         private final AutoLock _lock = new AutoLock();
+        private final Retainable.ReferenceCounter _referenceCounter = new Retainable.ReferenceCounter();
         private int _permits;
         private Deque<CompletableFuture<Closeable>> _queue = new ArrayDeque<>();
         private final CompletableFuture<Closeable> _permitted = CompletableFuture.completedFuture(this);

@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -75,7 +74,7 @@ public class WebAppClassLoaderTest
     }
 
     @AfterEach
-    public void afterEach() throws Exception
+    public void afterEach()
     {
         IO.close(_loader);
         LifeCycle.stop(_server);
@@ -315,7 +314,6 @@ public class WebAppClassLoaderTest
 
         resources = Collections.list(_loader.getResources("org/acme/resource.txt"));
 
-        expected.clear();
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
         expected.add(targetTestClasses);
