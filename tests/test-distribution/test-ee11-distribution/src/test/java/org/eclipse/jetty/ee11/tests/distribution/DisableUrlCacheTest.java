@@ -121,7 +121,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 touch(warXmlPath);
 
                 // Wait for reload to start context
-                assertTrue(run2.awaitConsoleLogsFor("Started oeje10w.WebAppContext@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oeje11w.WebAppContext@", START_TIMEOUT, TimeUnit.SECONDS));
                 // wait for deployer node to complete so context is Started not Starting
                 assertTrue(run2.awaitConsoleLogsFor("Executing Node Node[started]", START_TIMEOUT, TimeUnit.SECONDS));
 
