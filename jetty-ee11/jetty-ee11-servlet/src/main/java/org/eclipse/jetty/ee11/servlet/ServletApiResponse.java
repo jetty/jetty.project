@@ -25,6 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler.ServletRequestInfo;
@@ -657,6 +659,11 @@ public class ServletApiResponse implements HttpServletResponse
         }
     }
 
+    /**
+     * Servlet API wrapper for cross context included responses.
+     * It prevents the headers or response code from being updated.
+     * @see jakarta.servlet.RequestDispatcher#include(ServletRequest, ServletResponse)
+     */
     public static class CrossContextInclude extends ServletApiResponse
     {
         public CrossContextInclude(ServletContextResponse servletContextResponse)
