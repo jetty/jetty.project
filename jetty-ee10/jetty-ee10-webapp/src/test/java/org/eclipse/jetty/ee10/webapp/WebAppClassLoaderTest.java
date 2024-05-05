@@ -75,7 +75,7 @@ public class WebAppClassLoaderTest
     }
 
     @AfterEach
-    public void afterEach() throws Exception
+    public void afterEach()
     {
         IO.close(_loader);
         LifeCycle.stop(_server);
@@ -315,7 +315,6 @@ public class WebAppClassLoaderTest
 
         resources = Collections.list(_loader.getResources("org/acme/resource.txt"));
 
-        expected.clear();
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
         expected.add(targetTestClasses);

@@ -1057,7 +1057,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream != null)
             {
-                BadMessageException bad = new BadMessageException("Early EOF");
+                HttpEofException bad = new HttpEofException();
                 Content.Chunk chunk = stream._chunk;
 
                 if (Content.Chunk.isFailure(chunk))
@@ -1638,6 +1638,30 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public EndPoint getEndPoint()
         {
             return HttpConnection.this.getEndPoint();
+        }
+    }
+
+    /**
+     * HttpParser converts some bad message event into early EOF.
+     * However, we want to send a 400 (not a 500) to the client because it's a client error.
+     */
+    private static class HttpEofException extends EofException implements HttpException
+    {
+        private HttpEofException()
+        {
+            super("Early EOF");
+        }
+
+        @Override
+        public int getCode()
+        {
+            return HttpStatus.BAD_REQUEST_400;
+        }
+
+        @Override
+        public String getReason()
+        {
+            return getMessage();
         }
     }
 }

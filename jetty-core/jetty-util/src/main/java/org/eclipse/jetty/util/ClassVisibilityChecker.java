@@ -21,7 +21,7 @@ public interface ClassVisibilityChecker
 {
     /**
      * Is the class a Protected (System) Class.
-     * A System class is a class that is visible to a webapplication,
+     * A System class is a class that is visible to a web application,
      * but that cannot be overridden by the contents of WEB-INF/lib or
      * WEB-INF/classes
      *
@@ -33,8 +33,8 @@ public interface ClassVisibilityChecker
     /**
      * Is the class a Hidden (Server) Class.
      * A Server class is a class that is part of the implementation of
-     * the server and is NIT visible to a webapplication. The web
-     * application may provide it's own implementation of the class,
+     * the server and is NOT visible to a web application. The web
+     * application may provide its own implementation of the class,
      * to be loaded from WEB-INF/lib or WEB-INF/classes
      *
      * @param clazz The fully qualified name of the class.
@@ -44,7 +44,7 @@ public interface ClassVisibilityChecker
 
     /**
      * Is the class a System Class.
-     * A System class is a class that is visible to a webapplication,
+     * A System class is a class that is visible to a web application,
      * but that cannot be overridden by the contents of WEB-INF/lib or
      * WEB-INF/classes
      *
@@ -61,8 +61,8 @@ public interface ClassVisibilityChecker
     /**
      * Is the class a Server Class.
      * A Server class is a class that is part of the implementation of
-     * the server and is NIT visible to a webapplication. The web
-     * application may provide it's own implementation of the class,
+     * the server and is NOT visible to a web application. The web
+     * application may provide its own implementation of the class,
      * to be loaded from WEB-INF/lib or WEB-INF/classes
      *
      * @param clazz The fully qualified name of the class.
