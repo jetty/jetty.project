@@ -761,12 +761,15 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * A {@link FixedCapacity} buffer that is not pooled, but may be {@link Retainable#canRetain() retained}.
+     * A {@code NonPooled} buffer, that is not {@link #isRetained() retained} can have its internal buffers taken
+     * without retention (e.g. {@link DynamicCapacity#takeByteArray()}).  The {@code wrap} methods return {@code NonPooled}
+     * buffers.
+     * @see #wrap(ByteBuffer)
+     * @see #wrap(ByteBuffer, Runnable)
+     * @see #wrap(ByteBuffer, Retainable)
      */
     class NonPooled extends FixedCapacity
     {
-        // TODO there be an isPooled() method? so the DynamicCapacity buffers can be seen as pooled if
-        //      they have a buffer pool.  Current usage of this class is only in optimization to determine if a buffer
-        //      array can be used directly. See takeByteArray
         public NonPooled(ByteBuffer byteBuffer)
         {
             super(byteBuffer);
@@ -802,6 +805,8 @@ public interface RetainableByteBuffer extends Retainable
      * When retaining, a chain of zero copy buffers are kept.
      * When aggregating, this class avoid repetitive copies of the same data during growth by aggregating
      * to a chain of buffers, which are only copied to a single buffer if required.
+     * If the {@code minRetainSize} is {code 0}, then appending to this buffer will always retain and accumulate.
+     * If the {@code minRetainSize} is {@link Integer#MAX_VALUE}, then appending to this buffer will always aggregate.
      */
     class DynamicCapacity extends Abstract implements Appendable
     {
