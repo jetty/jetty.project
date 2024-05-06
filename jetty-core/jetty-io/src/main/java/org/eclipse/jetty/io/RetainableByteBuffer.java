@@ -898,7 +898,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             return switch (_buffers.size())
             {
-                case 0 -> RetainableByteBuffer.EMPTY.getByteBuffer();
+                case 0 -> BufferUtil.EMPTY_BUFFER;
                 case 1 -> _buffers.get(0).getByteBuffer();
                 default ->
                 {
@@ -960,7 +960,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             return switch (_buffers.size())
             {
-                case 0 -> RetainableByteBuffer.EMPTY.getByteBuffer().array();
+                case 0 -> BufferUtil.EMPTY_BUFFER.array();
                 case 1 ->
                 {
                     RetainableByteBuffer buffer = _buffers.get(0);
