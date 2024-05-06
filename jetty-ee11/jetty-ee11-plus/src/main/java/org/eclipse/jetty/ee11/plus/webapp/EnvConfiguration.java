@@ -47,6 +47,9 @@ public class EnvConfiguration extends AbstractConfiguration
     private static final Logger LOG = LoggerFactory.getLogger(EnvConfiguration.class);
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
+    private static final String JETTY_EE11_ENV_XML_FILENAME = "jetty-ee11-env.xml";
+    private static final String JETTY_ENV_XML_FILENAME = "jetty-env.xml";
+
 
     public EnvConfiguration()
     {
@@ -69,25 +72,11 @@ public class EnvConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled())
             LOG.debug("Created java:comp/env for webapp {}", context.getContextPath());
 
-        //check to see if an explicit file has been set, if not,
-        //look in WEB-INF/jetty-env.xml
-
+        //check to see if an explicit file has been set,
         Resource jettyEnvXmlResource = (Resource)context.getAttribute(JETTY_ENV_XML);
         if (jettyEnvXmlResource == null)
         {
-            //look for a file called WEB-INF/jetty-env.xml
-            //and process it if it exists
-            Resource webInf = context.getWebInf();
-            if (webInf != null && webInf.isDirectory())
-            {
-                // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/jetty-env.xml
-                // TODO: should also never return from a META-INF/versions/#/WEB-INF/jetty-env.xml location
-                Resource jettyEnv = webInf.resolve("jetty-env.xml");
-                if (Resources.exists(jettyEnv))
-                {
-                    jettyEnvXmlResource = jettyEnv;
-                }
-            }
+           jettyEnvXmlResource = resolveJettyEnvXml(context.getWebInf());
         }
 
         if (jettyEnvXmlResource != null)
@@ -238,6 +227,43 @@ public class EnvConfiguration extends AbstractConfiguration
         finally
         {
             Thread.currentThread().setContextClassLoader(oldLoader);
+        }
+    }
+
+    /**
+     * Obtain a WEB-INF/jetty-ee11-env.xml, falling back to
+     * looking for WEB-INF/jetty-env.xml.
+     *
+     * @param webInf the WEB-INF of the context to search
+     * @return the file if it exists or null otherwise
+     */
+    private Resource resolveJettyEnvXml(Resource webInf)
+    {
+        String xmlFile = JETTY_EE11_ENV_XML_FILENAME;
+
+        try
+        {
+            if (webInf == null || !webInf.isDirectory())
+                return null;
+
+            //try to find jetty-ee10-env.xml
+            Resource xmlResource = webInf.resolve(xmlFile);
+            if (!Resources.missing(xmlResource))
+                return xmlResource;
+
+            //failing that, look for jetty-env.xml
+            xmlFile = JETTY_ENV_XML_FILENAME;
+            xmlResource = webInf.resolve(xmlFile);
+            if (!Resources.missing(xmlResource))
+                return xmlResource;
+
+            return null;
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Error resolving WEB-INF/" + xmlFile, e);
+            return null;
         }
     }
 
