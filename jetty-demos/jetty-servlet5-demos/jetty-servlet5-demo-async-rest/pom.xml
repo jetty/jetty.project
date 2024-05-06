@@ -3,18 +3,18 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee9.demos</groupId>
-    <artifactId>jetty-ee9-demos</artifactId>
+    <groupId>org.eclipse.jetty.demos</groupId>
+    <artifactId>jetty-servlet5-demos</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee9-demo-async-rest</artifactId>
+  <artifactId>jetty-servlet5-demo-async-rest</artifactId>
   <packaging>pom</packaging>
-  <name>EE9 :: Demo :: Async Rest</name>
+  <name>Servlet 5 :: Demo :: Async Rest</name>
 
   <modules>
-    <module>jetty-ee9-demo-async-rest-jar</module>
-    <module>jetty-ee9-demo-async-rest-server</module>
-    <module>jetty-ee9-demo-async-rest-webapp</module>
+    <module>jetty-servlet5-demo-async-rest-jar</module>
+    <module>jetty-servlet5-demo-async-rest-server</module>
+    <module>jetty-servlet5-demo-async-rest-webapp</module>
   </modules>
 
 </project>

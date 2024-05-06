@@ -13,13 +13,13 @@
   <name>Servlet 5 :: Demos</name>
 
   <modules>
-      <module>jetty-ee9-demo-async-rest</module>
-      <module>jetty-ee9-demo-jaas-webapp</module>
-      <module>jetty-ee9-demo-jndi-webapp</module>
-      <module>jetty-ee9-demo-jsp-webapp</module>
-      <module>jetty-ee9-demo-mock-resources</module>
-      <module>jetty-ee9-demo-simple-webapp</module>
-      <module>jetty-ee9-demo-spec</module>
+      <module>jetty-servlet5-demo-async-rest</module>
+      <module>jetty-servlet5-demo-jaas-webapp</module>
+      <module>jetty-servlet5-demo-jndi-webapp</module>
+      <module>jetty-servlet5-demo-jsp-webapp</module>
+      <module>jetty-servlet5-demo-mock-resources</module>
+      <module>jetty-servlet5-demo-simple-webapp</module>
+      <module>jetty-servlet5-demo-spec</module>
   </modules>
 
   <properties>
