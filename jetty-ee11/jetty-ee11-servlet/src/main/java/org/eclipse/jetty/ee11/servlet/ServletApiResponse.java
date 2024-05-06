@@ -660,7 +660,7 @@ public class ServletApiResponse implements HttpServletResponse
     }
 
     /**
-     * Servlet API wrapper for cross context included responses.
+     * Servlet API wrapper used on the post-dispatch side of a cross-context include.
      * It prevents the headers or response code from being updated.
      * @see jakarta.servlet.RequestDispatcher#include(ServletRequest, ServletResponse)
      */
