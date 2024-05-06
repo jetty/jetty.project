@@ -72,7 +72,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     }
 
     /**
-     *
+     * Get if this pool is tracking virtual threads.
      * @return {@code true} if the virtual threads will be tracked.
      * @see TrackingExecutor
      */
