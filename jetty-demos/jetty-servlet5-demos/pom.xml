@@ -3,20 +3,23 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>jetty-ee9</artifactId>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-demos</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <groupId>org.eclipse.jetty.ee9.demos</groupId>
-  <artifactId>jetty-ee9-demos</artifactId>
+  <groupId>org.eclipse.jetty.demos</groupId>
+  <artifactId>jetty-servlet5-demos</artifactId>
   <packaging>pom</packaging>
-  <name>EE9 :: Demos</name>
+  <name>Servlet 5 :: Demos</name>
 
   <modules>
-    <module>jetty-ee9-demo-embedded</module>
-    <module>jetty-ee9-demo-jetty-webapp</module>
-    <module>jetty-ee9-demo-proxy-webapp</module>
-    <module>jetty-ee9-demo-template</module>
+      <module>jetty-ee9-demo-async-rest</module>
+      <module>jetty-ee9-demo-jaas-webapp</module>
+      <module>jetty-ee9-demo-jndi-webapp</module>
+      <module>jetty-ee9-demo-jsp-webapp</module>
+      <module>jetty-ee9-demo-mock-resources</module>
+      <module>jetty-ee9-demo-simple-webapp</module>
+      <module>jetty-ee9-demo-spec</module>
   </modules>
 
   <properties>
