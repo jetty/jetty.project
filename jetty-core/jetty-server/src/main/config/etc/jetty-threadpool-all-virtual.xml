@@ -9,7 +9,7 @@
   <Call class="org.slf4j.LoggerFactory" name="getLogger">
     <Arg>org.eclipse.jetty</Arg>
     <Call name="info">
-      <Arg>Virtual threads enabled. Using all virtual threads.</Arg>
+      <Arg>Virtual threads enabled. Using virtual threads for all Jetty tasks.</Arg>
     </Call>
   </Call>
 </Configure>

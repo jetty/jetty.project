@@ -71,16 +71,22 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
         _name = name;
     }
 
+    /**
+     *
+     * @return {@code true} if the virtual threads will be tracked.
+     * @see TrackingExecutor
+     */
+    @ManagedAttribute("virtual threads are tracked")
+    public boolean isTracking()
+    {
+        return _tracking;
+    }
+
     public void setTracking(boolean tracking)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
         _tracking = tracking;
-    }
-
-    public boolean isTracking()
-    {
-        return _tracking;
     }
 
     @ManagedAttribute("reports additional details in the dump")
@@ -99,7 +105,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     @Override
     protected void doStart() throws Exception
     {
-        _main = new Thread("keepalive")
+        _main = new Thread("jetty-virtual-thread-pool-keepalive")
         {
             @Override
             public void run()

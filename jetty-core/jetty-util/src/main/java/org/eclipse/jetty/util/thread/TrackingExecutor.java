@@ -29,7 +29,7 @@ public class TrackingExecutor implements Executor, Dumpable
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private boolean _detailed;
 
-    TrackingExecutor(Executor executor, boolean detailed)
+    public TrackingExecutor(Executor executor, boolean detailed)
     {
         _threadFactoryExecutor = executor;
         _detailed = detailed;
