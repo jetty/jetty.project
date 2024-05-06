@@ -363,7 +363,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // If a write call is pending, take the writeCallback to fail below.
-            Runnable invokeWriteFailure = _response.lockedFailWrite(t, false);
+            Runnable invokeWriteFailure = _response.lockedFailWrite(t);
 
             // If there was a pending IO operation, deliver the idle timeout via them.
             if (invokeOnContentAvailable != null || invokeWriteFailure != null)
@@ -432,7 +432,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _onContentAvailable = null;
 
                 // If a write call is in progress, take the writeCallback to fail below.
-                Runnable invokeWriteFailure = _response.lockedFailWrite(x, true);
+                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
 
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
@@ -1120,20 +1120,17 @@ public class HttpChannelState implements HttpChannel, Components
             return _writeCallback != null;
         }
 
-        private Runnable lockedFailWrite(Throwable x, boolean fatal)
+        private Runnable lockedFailWrite(Throwable x)
         {
             assert _request._lock.isHeldByCurrentThread();
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
-            if (writeCallback != null || fatal)
-            {
-                if (_writeFailure == null)
-                    _writeFailure = x;
-                else
-                    ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
-            }
             if (writeCallback == null)
                 return null;
+            if (_writeFailure == null)
+                _writeFailure = x;
+            else
+                ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
             return () -> HttpChannelState.failed(writeCallback, x);
         }
 

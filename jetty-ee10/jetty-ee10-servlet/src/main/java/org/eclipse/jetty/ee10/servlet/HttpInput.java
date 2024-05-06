@@ -188,14 +188,14 @@ public class HttpInput extends ServletInputStream implements Runnable
             LOG.debug("setting read listener to {} {}", readListener, this);
         if (_readListener != null)
             throw new IllegalStateException("ReadListener already set");
-        //illegal if async not started
+        // illegal if async not started
         if (!_channelState.isAsyncStarted())
             throw new IllegalStateException("Async not started");
         _readListener = Objects.requireNonNull(readListener);
 
         _contentProducer = _asyncContentProducer;
         // trigger content production
-        if (isReady() && _channelState.onReadEof()) // onReadEof b/c we want to transition from WAITING to WOKEN
+        if (isReady() && _channelState.onReadListenerReady()) // onReadListenerReady b/c we want to transition from WAITING to WOKEN
             scheduleReadListenerNotification(); // this is needed by AsyncServletIOTest.testStolenAsyncRead
     }
 
@@ -244,6 +244,8 @@ public class HttpInput extends ServletInputStream implements Runnable
             Content.Chunk chunk = _contentProducer.nextChunk();
             if (chunk == null)
                 throw new IllegalStateException("read on unready input");
+
+            // Is it not empty?
             if (chunk.hasRemaining())
             {
                 int read = buffer == null ? get(chunk, b, off, len) : get(chunk, buffer);
@@ -254,6 +256,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 return read;
             }
 
+            // Is it a failure?
             if (Content.Chunk.isFailure(chunk))
             {
                 Throwable failure = chunk.getFailure();
@@ -264,10 +267,11 @@ public class HttpInput extends ServletInputStream implements Runnable
                 throw new IOException(failure);
             }
 
+            // Empty and not a failure; can only be EOF as per ContentProducer.nextChunk() contract.
             if (LOG.isDebugEnabled())
                 LOG.debug("read at EOF, setting consumed EOF to true {}", this);
             _consumedEof = true;
-            // If EOF do we need to wake for allDataRead callback?
+            // Do we need to wake for allDataRead callback?
             if (onContentProducible())
                 scheduleReadListenerNotification();
             return -1;
@@ -276,6 +280,8 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private void scheduleReadListenerNotification()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("scheduling ReadListener notification {}", this);
         _servletChannel.execute(_servletChannel::handle);
     }
 

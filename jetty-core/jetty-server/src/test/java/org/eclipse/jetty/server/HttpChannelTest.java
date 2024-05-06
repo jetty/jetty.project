@@ -44,7 +44,6 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -1229,10 +1228,11 @@ public class HttpChannelTest
         rq.demand(demand::countDown);
         assertThat(demand.getCount(), is(1L));
 
-        FuturePromise<Throwable> callback = new FuturePromise<>();
-        // Write callback not serialized until after the onFailure task runs.
-        handling.get().write(false, null, Callback.from(() -> {}, callback::succeeded));
+        Callback.Completable callback = new Callback.Completable();
+        // Writes are possible, unless a pending write is failed.
+        handling.get().write(false, null, callback);
         assertTrue(callback.isDone());
+        assertFalse(callback.isCompletedExceptionally());
 
         // Run the onFailure task.
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
@@ -1244,8 +1244,6 @@ public class HttpChannelTest
         assertThat(error.get(), sameInstance(failure));
         // Demand callback was called.
         assertTrue(demand.await(5, TimeUnit.SECONDS));
-        // Write callback was failed.
-        assertThat(callback.get(5, TimeUnit.SECONDS), sameInstance(failure));
 
         // Request handling was completed.
         assertTrue(stream.isComplete());
