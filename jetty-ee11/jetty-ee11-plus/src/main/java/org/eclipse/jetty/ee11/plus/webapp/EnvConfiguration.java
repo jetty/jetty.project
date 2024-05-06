@@ -50,7 +50,6 @@ public class EnvConfiguration extends AbstractConfiguration
     private static final String JETTY_EE11_ENV_XML_FILENAME = "jetty-ee11-env.xml";
     private static final String JETTY_ENV_XML_FILENAME = "jetty-env.xml";
 
-
     public EnvConfiguration()
     {
         super(new Builder()
