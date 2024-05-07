@@ -536,6 +536,12 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
                     _orderIsSignificant = true;
                 }
                 break;
+            case MIDDLE_GLOB:
+                if (!(pathSpec instanceof ServletPathSpec))
+                {
+                    _orderIsSignificant = true;
+                }
+                break;
             case DEFAULT:
                 if (pathSpec instanceof ServletPathSpec)
                 {
