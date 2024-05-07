@@ -37,7 +37,7 @@
   <Call class="org.slf4j.LoggerFactory" name="getLogger">
     <Arg>org.eclipse.jetty</Arg>
     <Call name="info">
-      <Arg>Virtual threads are enabled.</Arg>
+      <Arg>Virtual threads enabled. Using virtual threads for application tasks.</Arg>
     </Call>
   </Call>
 </Configure>

@@ -32,20 +32,8 @@ import org.slf4j.LoggerFactory;
 public class VirtualThreads
 {
     private static final Logger LOG = LoggerFactory.getLogger(VirtualThreads.class);
-    private static final Executor executor = probeVirtualThreadExecutor();
+    private static final Executor executor = getNamedVirtualThreadsExecutor(null);
     private static final Method isVirtualThread = probeIsVirtualThread();
-
-    private static Executor probeVirtualThreadExecutor()
-    {
-        try
-        {
-            return (Executor)Executors.class.getMethod("newVirtualThreadPerTaskExecutor").invoke(null);
-        }
-        catch (Throwable x)
-        {
-            return null;
-        }
-    }
 
     private static Method probeIsVirtualThread()
     {
@@ -131,7 +119,8 @@ public class VirtualThreads
         {
             Class<?> builderClass = Class.forName("java.lang.Thread$Builder");
             Object threadBuilder = Thread.class.getMethod("ofVirtual").invoke(null);
-            threadBuilder = builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, namePrefix, 0L);
+            if (StringUtil.isNotBlank(namePrefix))
+                threadBuilder = builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, namePrefix, 0L);
             ThreadFactory factory = (ThreadFactory)builderClass.getMethod("factory").invoke(threadBuilder);
             return (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
         }
