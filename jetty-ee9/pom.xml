@@ -46,7 +46,7 @@
     <jakarta.annotation.api.version>${ee9.jakarta.annotation.api.version}</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>${ee9.jakarta.authentication.api.version}</jakarta.authentication.api.version>
     <jakarta.el.api.version>${ee9.jakarta.el.api.version}</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>${ee9.jakarta.enterprise.cdi.api.version}<jakarta.enterprise.cdi.api.version>/
+    <jakarta.enterprise.cdi.api.version>${ee9.jakarta.enterprise.cdi.api.version}</jakarta.enterprise.cdi.api.version>
     <jakarta.inject.api.version>${ee9.jakarta.inject.api.version}</jakarta.inject.api.version>
     <jakarta.interceptor.api.version>${ee9.jakarta.interceptor.api.version}</jakarta.interceptor.api.version>
     <jakarta.mail.api.version>${ee9.jakarta.mail.api.version}</jakarta.mail.api.version>
