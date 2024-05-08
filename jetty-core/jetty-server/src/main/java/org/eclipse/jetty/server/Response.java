@@ -312,7 +312,7 @@ public interface Response extends Content.Sink
             code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
             ? HttpStatus.MOVED_TEMPORARILY_302
             : HttpStatus.SEE_OTHER_303;
-        if (!HttpStatus.isRedirection(code))
+        if (!HttpStatus.isRedirectWithLocation(code))
         {
             callback.failed(new IllegalArgumentException("Not a 3xx redirect code"));
             return;

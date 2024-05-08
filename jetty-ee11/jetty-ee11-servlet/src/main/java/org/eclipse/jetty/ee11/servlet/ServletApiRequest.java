@@ -739,7 +739,7 @@ public class ServletApiRequest implements HttpServletRequest
     }
 
     @Override
-    @Deprecated(forRemoval = true)
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public PushBuilder newPushBuilder()
     {
         if (!getRequest().getConnectionMetaData().isPushSupported())
