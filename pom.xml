@@ -115,6 +115,7 @@
     <module>build</module>
     <!-- <module>jetty-p2</module> -->
     <module>jetty-core</module>
+    <module>jetty-demos</module>
     <module>jetty-ee11</module>
     <module>jetty-ee10</module>
     <module>jetty-ee9</module>

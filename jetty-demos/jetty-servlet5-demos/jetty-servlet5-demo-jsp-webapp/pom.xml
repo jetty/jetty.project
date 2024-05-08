@@ -25,7 +25,7 @@
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-      <version>${ee9.jakarta.servlet.jsp.jstl-api.version}</version>
+      <version>${ee9.jakarta.servlet.jsp.jstl.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -46,31 +46,99 @@
           <supportedProjectTypes>
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
-          <!-- TODO need to gen ee10,ee11 osgi headers -->
           <instructions>
-            <Import-Package>jakarta.servlet.jsp.*;version="[3,4)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
+            <Import-Package>jakarta.servlet;version="5", jakarta.servlet.http;version="5", jakarta.servlet.jsp.*;version="3",*</Import-Package>
             <Export-Package>!org.example.*</Export-Package>
             <Web-ContextPath>/servlet5-demo-jsp</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
-            <Jetty-Environment>ee9</Jetty-Environment>
           </instructions>
         </configuration>
+        <executions>
+          <execution>
+            <id>ee10</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Jetty-Environment>ee10</Jetty-Environment>
+              </instructions>
+              <manifestLocation>${project.build.outputDirectory}/META-INF-ee10</manifestLocation>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee11</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Jetty-Environment>ee11</Jetty-Environment>
+              </instructions>
+              <manifestLocation>${project.build.outputDirectory}/META-INF-ee11</manifestLocation>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee9</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Jetty-Environment>ee9</Jetty-Environment>
+              </instructions>
+              <manifestLocation>${project.build.outputDirectory}/META-INF-ee9</manifestLocation>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
-            <id>web-bundle-assembly</id>
+            <id>ee10-web-bundle-assembly</id>
             <goals>
               <goal>single</goal>
             </goals>
             <phase>package</phase>
             <configuration>
               <descriptors>
-                <descriptor>src/main/assembly/web-bundle.xml</descriptor>
+                <descriptor>src/main/assembly/ee10-web-bundle.xml</descriptor>
               </descriptors>
               <archive>
-                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                <manifestFile>${project.build.outputDirectory}/META-INF-ee10/MANIFEST.MF</manifestFile>
+              </archive>
+              <mergeManifestMode>merge</mergeManifestMode>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee11-web-bundle-assembly</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/ee11-web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF-ee11/MANIFEST.MF</manifestFile>
+              </archive>
+              <mergeManifestMode>merge</mergeManifestMode>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee9-web-bundle-assembly</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/ee9-web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF-ee9/MANIFEST.MF</manifestFile>
               </archive>
               <mergeManifestMode>merge</mergeManifestMode>
             </configuration>

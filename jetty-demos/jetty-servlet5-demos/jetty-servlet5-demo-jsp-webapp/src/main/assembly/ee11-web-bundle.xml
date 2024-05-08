@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <assembly>
-  <id>webbundle</id>
+  <id>webbundle-ee11</id>
   <formats>
     <format>jar</format>
   </formats>
@@ -14,6 +14,7 @@
       </includes>
       <excludes>
         <exclude>WEB-INF/lib/**</exclude>
+        <exclude>META-INF/**</exclude>
       </excludes>
     </fileSet>
   </fileSets>

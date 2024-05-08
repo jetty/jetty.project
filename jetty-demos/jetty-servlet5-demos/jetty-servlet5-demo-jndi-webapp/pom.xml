@@ -65,8 +65,8 @@
               <version>${project.version}</version>
             </dependency>
           </dependencies>
-        </plugin>
-      </plugins -->
+        </plugin -->
+      </plugins>
     </pluginManagement>
     <plugins>
       <plugin>
