@@ -19,4 +19,7 @@ module org.eclipse.jetty.http.spi
     requires transitive org.eclipse.jetty.util;
 
     exports org.eclipse.jetty.http.spi;
+
+    provides com.sun.net.httpserver.spi.HttpServerProvider
+        with org.eclipse.jetty.http.spi.JettyHttpServerProvider;
 }
