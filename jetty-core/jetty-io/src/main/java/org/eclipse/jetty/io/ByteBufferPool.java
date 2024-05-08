@@ -126,7 +126,9 @@ public interface ByteBufferPool
      * or {@link #insert(int, RetainableByteBuffer) inserted} at a
      * specific position in the sequence, and then
      * {@link #release() released} when they are consumed.</p>
+     * @deprecated use {@link RetainableByteBuffer.DynamicCapacity}
      */
+    @Deprecated (forRemoval = true)
     class Accumulator
     {
         private final List<RetainableByteBuffer> buffers = new ArrayList<>();

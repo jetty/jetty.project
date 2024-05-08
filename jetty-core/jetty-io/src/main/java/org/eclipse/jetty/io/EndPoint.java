@@ -65,7 +65,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * completable.get();
  * }</pre>
  */
-public interface EndPoint extends Closeable
+public interface EndPoint extends Closeable, Content.Sink
 {
     /**
      * <p>Constant returned by {@link #receive(ByteBuffer)} to indicate the end-of-file.</p>
@@ -316,6 +316,30 @@ public interface EndPoint extends Closeable
     default void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
     {
         write(callback, buffers);
+    }
+
+    @Override
+    default void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    {
+        if (last)
+        {
+            write(Callback.from(() ->
+            {
+                try
+                {
+                    close();
+                    callback.succeeded();
+                }
+                catch (Throwable t)
+                {
+                    callback.failed(t);
+                }
+            }, callback::failed));
+        }
+        else
+        {
+            write(callback, byteBuffer);
+        }
     }
 
     /**
