@@ -39,33 +39,31 @@
   </modules>
 
   <properties>
-    <jakarta.activation.api.version>2.1.3</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>3.0.0</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>3.1.0-M1</jakarta.authentication.api.version>
-    <jakarta.el.api.version>6.0.0</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>4.1.0.RC1</jakarta.enterprise.cdi.api.version>
-    <jakarta.enterprise.lang.model.version>4.1.0.RC1</jakarta.enterprise.lang.model.version>
-    <jakarta.inject.api.version>2.0.1.MR</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>2.2.0</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.1.3</jakarta.mail.api.version>
-    <jakarta.servlet.api.version>6.1.0-M2</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>4.0.0-M2</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>3.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>3.0.1</jakarta.servlet.jsp.jstl.impl.version>
-    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
-    <jakarta.websocket.api.version>2.2.0-M1</jakarta.websocket.api.version>
-    <jakarta.ws.rs.api.version>4.0.0-M2</jakarta.ws.rs.api.version>
-    <jakarta.xml.bind.api.version>4.0.2</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>4.0.5</jakarta.xml.bind.impl.version>
-    <jakarta.xml.jaxws.impl.version>4.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>4.0.1</jakarta.xml.ws.api.version>
-    <jersey.version>4.0.0-M1</jersey.version>
-
-    <jsp.impl.version>11.0.0-SNAPSHOT</jsp.impl.version>
-    <mail.impl.version>2.0.1</mail.impl.version>
-
+    <jakarta.activation.api.version>${ee11.jakarta.activation.api.version}</jakarta.activation.api.version>
+    <jakarta.annotation.api.version>${ee11.jakarta.annotation.api.version}</jakarta.annotation.api.version>
+    <jakarta.authentication.api.version>${ee11.jakarta.authentication.api.version}</jakarta.authentication.api.version>
+    <jakarta.el.api.version>${ee11.jakarta.el.api.version}</jakarta.el.api.version>
+    <jakarta.enterprise.cdi.api.version>${ee11.jakarta.enterprise.cdi.api.version}</jakarta.enterprise.cdi.api.version>
+    <jakarta.enterprise.lang.model.version>${ee11.jakarta.enterprise.lang.model.version}</jakarta.enterprise.lang.model.version>
+    <jakarta.inject.api.version>${ee11.jakarta.inject.api.version}</jakarta.inject.api.version>
+    <jakarta.interceptor.api.version>${ee11.jakarta.interceptor.api.version}</jakarta.interceptor.api.version>
+    <jakarta.mail.api.version>${ee11.jakarta.mail.api.version}</jakarta.mail.api.version>
+    <jakarta.servlet.api.version>${ee11.jakarta.servlet.api.version}</jakarta.servlet.api.version>
+    <jakarta.servlet.jsp.api.version>${ee11.jakarta.servlet.jsp.api.version}</jakarta.servlet.jsp.api.version>
+    <jakarta.servlet.jsp.jstl.api.version>${ee11.jakarta.servlet.jsp.jstl.api.version}</jakarta.servlet.jsp.jstl.api.version>
+    <jakarta.servlet.jsp.jstl.impl.version>${ee11.jakarta.servlet.jsp.jstl.impl.version}</jakarta.servlet.jsp.jstl.impl.version>
+    <jakarta.transaction-api.version>${ee11.jakarta.transaction-api.version}</jakarta.transaction-api.version>
+    <jakarta.websocket.api.version>${ee11.jakarta.websocket.api.version}</jakarta.websocket.api.version>
+    <jakarta.ws.rs.api.version>${ee11.jakarta.ws.rs.api.version}</jakarta.ws.rs.api.version>
+    <jakarta.xml.bind.api.version>${ee11.jakarta.xml.bind.api.version}</jakarta.xml.bind.api.version>
+    <jakarta.xml.bind.impl.version>${ee11.jakarta.xml.bind.impl.version}</jakarta.xml.bind.impl.version>
+    <jakarta.xml.jaxws.impl.version>${ee11.jakarta.xml.jaxws.impl.version}</jakarta.xml.jaxws.impl.version>
+    <jakarta.xml.ws.api.version>${ee11.jakarta.xml.ws.api.version}</jakarta.xml.ws.api.version>
+    <jersey.version>${ee11.jersey.version}</jersey.version>
+    <jsp.impl.version>${ee11.jsp.impl.version}</jsp.impl.version>
+    <mail.impl.version>${ee11.mail.impl.version}</mail.impl.version>
     <sonar.skip>true</sonar.skip>
-    <weld.version>6.0.0.Beta1</weld.version>
+    <weld.version>${ee11.weld.version}</weld.version>
   </properties>
 
   <dependencyManagement>

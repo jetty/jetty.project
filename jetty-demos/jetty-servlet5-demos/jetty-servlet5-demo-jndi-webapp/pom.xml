@@ -16,28 +16,32 @@
     <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
+      <version>${ee9.jakarta.transaction-api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
+      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.mail.glassfish</artifactId>
+      <version>${ee9.javax.mail.glassfish.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <version>${ee9.jetty.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
   <build>
     <pluginManagement>
       <plugins>
-        <plugin>
+        <!-- plugin>
           <groupId>org.eclipse.jetty.ee9</groupId>
           <artifactId>jetty-ee9-maven-plugin</artifactId>
           <version>${project.version}</version>
@@ -62,7 +66,7 @@
             </dependency>
           </dependencies>
         </plugin>
-      </plugins>
+      </plugins -->
     </pluginManagement>
     <plugins>
       <plugin>
@@ -75,7 +79,7 @@
             </goals>
             <phase>package</phase>
             <configuration>
-              <includeArtifactIds>jakarta.transaction-api,ee9-demo-mock-resources</includeArtifactIds>
+              <includeArtifactIds>jakarta.transaction-api,jetty-servlet5-demo-mock-resources</includeArtifactIds>
               <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
             </configuration>
           </execution>

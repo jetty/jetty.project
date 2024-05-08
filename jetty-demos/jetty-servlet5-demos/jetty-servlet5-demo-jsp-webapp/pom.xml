@@ -3,13 +3,13 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee9.demos</groupId>
-    <artifactId>jetty-ee9-demos</artifactId>
+    <groupId>org.eclipse.jetty.demos</groupId>
+    <artifactId>jetty-servlet5-demos</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
+  <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EE9 :: Demo :: JSP WebApp</name>
+  <name>Servlet 5 :: Demo :: JSP WebApp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jsp</bundle-symbolic-name>
@@ -19,16 +19,19 @@
     <dependency>
       <groupId>jakarta.servlet.jsp</groupId>
       <artifactId>jakarta.servlet.jsp-api</artifactId>
+      <version>${ee9.jakarta.servlet.jsp.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <version>${ee9.jakarta.servlet.jsp.jstl-api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <version>${ee9.jetty.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -43,10 +46,11 @@
           <supportedProjectTypes>
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
+          <!-- TODO need to gen ee10,ee11 osgi headers -->
           <instructions>
             <Import-Package>jakarta.servlet.jsp.*;version="[3,4)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             <Export-Package>!org.example.*</Export-Package>
-            <Web-ContextPath>/ee9-demo-jsp</Web-ContextPath>
+            <Web-ContextPath>/servlet5-demo-jsp</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
             <Jetty-Environment>ee9</Jetty-Environment>
           </instructions>
@@ -68,6 +72,7 @@
               <archive>
                 <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
               </archive>
+              <mergeManifestMode>merge</mergeManifestMode>
             </configuration>
           </execution>
         </executions>
@@ -84,6 +89,7 @@
     </plugins>
   </build>
 
+  <!-- TODO need to generate ee10,ee11? -->
   <profiles>
     <profile>
       <id>precompile-jsp</id>
@@ -97,8 +103,8 @@
             </configuration>
           </plugin>
           <plugin>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-jspc-maven-plugin</artifactId>
+            <groupId>org.eclipse.jetty.ee9</groupId>
+            <artifactId>jetty-ee9-jspc-maven-plugin</artifactId>
             <version>${project.version}</version>
             <executions>
               <execution>
